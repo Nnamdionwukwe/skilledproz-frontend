@@ -1,0 +1,414 @@
+.container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  animation: fadeUp 0.45s ease both;
+}
+.containerWide {
+  max-width: 520px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -1.5px;
+  line-height: 1.08;
+}
+.subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.2px;
+}
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 15px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    box-shadow 0.18s;
+}
+.inputIcon {
+  padding-left: 42px;
+}
+.iconLeft {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.iconRight {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.iconRight:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+.input::placeholder {
+  color: var(--text-muted);
+}
+.input:focus {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+  box-shadow: 0 0 0 3px var(--orange-glow);
+}
+.input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.fieldError .input {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-dim);
+}
+.errMsg {
+  font-size: 11.5px;
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.select {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 15px 12px 42px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.25)' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+}
+.select:focus {
+  border-color: var(--orange);
+  background-color: var(--orange-dim);
+  box-shadow: 0 0 0 3px var(--orange-glow);
+}
+.select option {
+  background: #1a1a2e;
+  color: var(--text);
+}
+
+.btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btnPrimary {
+  background: var(--orange);
+  color: var(--bg);
+}
+.btnPrimary:hover:not(:disabled) {
+  background: var(--orange-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px var(--orange-glow);
+}
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btnPrimary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btnOutline {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btnOutline:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card);
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: var(--bg);
+  border-radius: 50%;
+  animation: spin 0.55s linear infinite;
+}
+.spinnerLight {
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.7);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.footer {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+.link {
+  color: var(--orange);
+  font-weight: 600;
+  transition: color 0.15s;
+}
+.link:hover {
+  color: var(--orange-hover);
+}
+.linkSmall {
+  font-size: 12px;
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.alertError {
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  padding: 11px 15px;
+  font-size: 13.5px;
+  color: #fca5a5;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  line-height: 1.4;
+}
+.alertSuccess {
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 10px;
+  padding: 11px 15px;
+  font-size: 13.5px;
+  color: #86efac;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.roleCard {
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 18px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+}
+.roleCard:hover {
+  border-color: rgba(249, 115, 22, 0.35);
+  background: var(--orange-dim);
+  transform: translateY(-2px);
+}
+.roleCardActive {
+  border-color: var(--orange) !important;
+  background: var(--orange-dim) !important;
+  box-shadow: 0 0 0 3px var(--orange-glow);
+}
+.roleIcon {
+  width: 40px;
+  height: 40px;
+  background: var(--orange-dim);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
+}
+.roleTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+.roleDesc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.checkRow input[type="checkbox"] {
+  accent-color: var(--orange);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.sectionLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+  font-family: var(--font-body);
+}
+.backBtn:hover {
+  color: var(--text);
+}
+
+.stateBox {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 28px;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.stateIcon {
+  font-size: 40px;
+  line-height: 1;
+}
+.stateTitle {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.stateSub {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.stateEmail {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
