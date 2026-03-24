@@ -5,14 +5,9 @@ import LandingPage from "./app/LandingPage";
 function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <BrowserRouter>
-          {/* Floating support chat — only renders for logged-in customers */}
-          <FloatingSupportChat />
-          <AppRoutes />
-          <PoweredByGestech />
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
     </GoogleOAuthProvider>
   );
 }
