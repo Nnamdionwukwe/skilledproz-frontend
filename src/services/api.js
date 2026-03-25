@@ -1,7 +1,13 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 function getToken() {
-  return localStorage.getItem("sp_token");
+  // Zustand persist stores as JSON under the store name
+  try {
+    const state = JSON.parse(localStorage.getItem("skilledproz-auth"));
+    return state?.state?.accessToken || null;
+  } catch {
+    return null;
+  }
 }
 
 async function request(path, options = {}) {

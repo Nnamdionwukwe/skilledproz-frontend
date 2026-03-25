@@ -16,7 +16,7 @@ import AuthGuard from "./components/auth/AuthGuard";
 // Worker pages
 import WorkerAvailability from "./pages/worker/availability/Availability";
 import WorkerCategories from "./pages/worker/categories/Categories";
-import WorkerDashboard from "./pages/worker/dashboard/Dashboard";
+import WorkerDashboard from "./pages/worker/dashboard/WorkerDashboard";
 import WorkerEarnings from "./pages/worker/dashboard/earnings/Earnings";
 import WorkerNotifications from "./pages/worker/dashboard/notifications/Notifications";
 import WorkerPortfolio from "./pages/worker/dashboard/portfolio/Portfolio";

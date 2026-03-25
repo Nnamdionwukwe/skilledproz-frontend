@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useFetch } from "../../../hooks/useFetch";
 import { workerAPI } from "../../../services/api";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
-import styles from "./Dashboard.module.css";
+import styles from "./WorkerDashboard.module.css";
 import ui from "../../../components/ui/ui.module.css";
 
 function statusBadge(status) {
