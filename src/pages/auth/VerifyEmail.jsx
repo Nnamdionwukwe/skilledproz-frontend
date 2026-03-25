@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -20,9 +20,12 @@ export default function VerifyEmail() {
   );
   const [resendEmail, setResendEmail] = useState("");
   const [resendStatus, setResendStatus] = useState("idle");
+  const hasVerified = useRef(false);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || hasVerified.current) return;
+    hasVerified.current = true;
+
     api
       .get(`/auth/verify-email?token=${token}`)
       .then(() => setVerifyStatus("success"))

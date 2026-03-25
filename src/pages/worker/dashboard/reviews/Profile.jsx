@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useFetch } from "../../../hooks/useFetch";
-import { workerAPI } from "../../../services/api";
-import WorkerLayout from "../../../components/layout/WorkerLayout";
-import ui from "../../../components/ui/ui.module.css";
+import { useFetch } from "../../../../hooks/useFetch";
+import { workerAPI } from "../../../../services/api";
+import WorkerLayout from "../../../../components/layout/WorkerLayout";
+import ui from "../../../../components/ui/ui.module.css";
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-NG", {

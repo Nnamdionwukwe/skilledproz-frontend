@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 function getToken() {
   return localStorage.getItem("sp_token");
@@ -17,16 +17,20 @@ async function request(path, options = {}) {
 
 // ── Auth ──────────────────────────────────────────────────────────
 export const authAPI = {
-  login: (body) => request("/auth/login", { method: "POST", body: JSON.stringify(body) }),
-  register: (body) => request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
+  login: (body) =>
+    request("/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  register: (body) =>
+    request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   me: () => request("/auth/me"),
 };
 
 // ── Worker Dashboard ──────────────────────────────────────────────
 export const workerAPI = {
   getDashboard: () => request("/workers/dashboard"),
-  getNotifications: (page = 1) => request(`/workers/dashboard/notifications?page=${page}`),
-  markAllNotificationsRead: () => request("/workers/dashboard/notifications/read-all", { method: "PATCH" }),
+  getNotifications: (page = 1) =>
+    request(`/workers/dashboard/notifications?page=${page}`),
+  markAllNotificationsRead: () =>
+    request("/workers/dashboard/notifications/read-all", { method: "PATCH" }),
   getEarnings: (params = {}) => {
     const q = new URLSearchParams(params).toString();
     return request(`/workers/dashboard/earnings${q ? `?${q}` : ""}`);
@@ -34,7 +38,8 @@ export const workerAPI = {
   getReviews: (page = 1) => request(`/workers/dashboard/reviews?page=${page}`),
 
   // Profile management
-  updateProfile: (body) => request("/workers/profile", { method: "PUT", body: JSON.stringify(body) }),
+  updateProfile: (body) =>
+    request("/workers/profile", { method: "PUT", body: JSON.stringify(body) }),
   getProfile: (userId) => request(`/workers/${userId}`),
 
   // Portfolio
@@ -46,7 +51,8 @@ export const workerAPI = {
       body: formData,
     }).then((r) => r.json());
   },
-  deletePortfolio: (id) => request(`/workers/portfolio/${id}`, { method: "DELETE" }),
+  deletePortfolio: (id) =>
+    request(`/workers/portfolio/${id}`, { method: "DELETE" }),
 
   // Certifications
   addCertification: (formData) => {
@@ -59,10 +65,18 @@ export const workerAPI = {
   },
 
   // Availability
-  updateAvailability: (body) => request("/workers/availability", { method: "PUT", body: JSON.stringify(body) }),
+  updateAvailability: (body) =>
+    request("/workers/availability", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 
   // Categories
-  addCategory: (body) => request("/workers/categories", { method: "POST", body: JSON.stringify(body) }),
+  addCategory: (body) =>
+    request("/workers/categories", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   // Search (public)
   search: (params) => {

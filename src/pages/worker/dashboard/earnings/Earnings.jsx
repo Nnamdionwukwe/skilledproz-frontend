@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useFetch } from "../../../hooks/useFetch";
-import { workerAPI } from "../../../services/api";
-import WorkerLayout from "../../../components/layout/WorkerLayout";
+import { useFetch } from "../../../../hooks/useFetch";
+import { workerAPI } from "../../../../services/api";
+import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import styles from "./Earnings.module.css";
-import ui from "../../../components/ui/ui.module.css";
+import ui from "../../../../components/ui/ui.module.css";
 
 function fmt(n, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", {

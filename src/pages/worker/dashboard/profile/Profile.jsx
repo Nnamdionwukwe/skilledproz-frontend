@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { workerAPI } from "../../../services/api";
-import { useFetch } from "../../../hooks/useFetch";
-import { useAuth } from "../../../hooks/useAuth";
-import WorkerLayout from "../../../components/layout/WorkerLayout";
-import ui from "../../../components/ui/ui.module.css";
+import { workerAPI } from "../../../../services/api";
+import { useFetch } from "../../../../hooks/useFetch";
+import { useAuth } from "../../../../hooks/useAuth";
+import WorkerLayout from "../../../../components/layout/WorkerLayout";
+import ui from "../../../../components/ui/ui.module.css";
 
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "GHS", "KES"];
 
