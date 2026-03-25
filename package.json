@@ -12,6 +12,7 @@
   "dependencies": {
     "@react-oauth/google": "^0.13.4",
     "axios": "^1.13.6",
+    "bcryptjs": "^3.0.3",
     "connect-mongo": "^6.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
