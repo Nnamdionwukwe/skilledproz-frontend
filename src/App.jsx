@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AuthGuard from "./components/auth/AuthGuard";
 import DashboardPlaceholder from "./pages/DashboardPlaceholder";
+import UserProfile from "./components/user/UserProfile";
 
 function GuestOnly({ children }) {
   const { accessToken } = useAuthStore();
@@ -69,6 +70,23 @@ export default function App() {
           element={
             <AuthGuard requireVerified>
               <DashboardPlaceholder />
+            </AuthGuard>
+          }
+        />
+
+        <Route
+          path="/profile/:id"
+          element={
+            <AuthGuard>
+              <UserProfile />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/profile/me"
+          element={
+            <AuthGuard>
+              <UserProfile />
             </AuthGuard>
           }
         />
