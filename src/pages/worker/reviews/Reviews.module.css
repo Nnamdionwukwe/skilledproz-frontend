@@ -1,0 +1,235 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeUp 0.3s ease;
+}
+
+/* ── Rating summary row ── */
+.summaryRow {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+/* Big number card */
+.ratingBig {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.375rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ratingBig::before {
+  content: "";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 120px;
+  background: var(--orange-dim);
+  border-radius: 50%;
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.ratingNumber {
+  font-family: var(--font-display);
+  font-size: 3.75rem;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.ratingStars {
+  font-size: 1rem;
+  color: var(--orange);
+  letter-spacing: 2px;
+  margin: 0.125rem 0;
+}
+
+.ratingCount {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Distribution bars */
+.distribution {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.distTitle {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.distRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.distRow:last-child {
+  margin-bottom: 0;
+}
+
+.distStar {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 12px;
+  text-align: right;
+}
+
+.distStarIcon {
+  color: var(--orange);
+  font-size: 0.6875rem;
+}
+
+.distTrack {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.distFill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px var(--orange-glow);
+}
+
+.distCount {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 24px;
+  text-align: right;
+}
+
+/* ── Review list ── */
+.reviewList {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.reviewItem {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  animation: fadeUp 0.25s ease;
+}
+
+.reviewItem:first-child {
+  padding-top: 0;
+}
+
+.reviewItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.reviewTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.625rem;
+}
+
+.reviewAuthor {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reviewAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--orange);
+  flex-shrink: 0;
+}
+
+.reviewName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.reviewJob {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.reviewMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.reviewStars {
+  color: var(--orange);
+  font-size: 0.8125rem;
+  letter-spacing: 1px;
+}
+
+.reviewDate {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.reviewComment {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.65;
+  padding-left: calc(36px + 0.75rem);
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .summaryRow {
+    grid-template-columns: 1fr;
+  }
+  .ratingBig {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+  .reviewComment {
+    padding-left: 0;
+  }
+}

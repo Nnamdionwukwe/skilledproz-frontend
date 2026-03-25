@@ -1,0 +1,405 @@
+.page {
+  padding: 32px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeUp 0.4s ease both;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 4px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.ctaBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+  white-space: nowrap;
+}
+.ctaBtn:hover {
+  background: var(--orange-hover);
+  transform: translateY(-1px);
+}
+
+.ctaBtnIcon {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+/* ── Stats ─────────────────────────────────────────────────── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.45s ease both;
+  transition: border-color 0.15s;
+}
+.statCard:hover {
+  border-color: var(--border-hover);
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at top left,
+    rgba(255, 255, 255, 0.02) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.statCard_orange {
+  border-color: rgba(249, 115, 22, 0.2);
+  background: var(--orange-dim);
+}
+.statCard_orange .statValue {
+  color: var(--orange);
+}
+
+.statCard_green {
+  border-color: rgba(34, 197, 94, 0.15);
+  background: var(--green-dim);
+}
+.statCard_green .statValue {
+  color: var(--green);
+}
+
+.statIcon {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 10px;
+}
+.statValue {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.statLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ── Two-column grid ───────────────────────────────────────── */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* ── Panel ─────────────────────────────────────────────────── */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: fadeUp 0.5s ease both;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panelTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.panelLink {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+  transition: opacity 0.15s;
+}
+.panelLink:hover {
+  opacity: 0.75;
+}
+
+/* ── Booking rows ──────────────────────────────────────────── */
+.bookingList {
+  display: flex;
+  flex-direction: column;
+}
+
+.bookingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  animation: fadeUp 0.4s ease both;
+  cursor: pointer;
+  text-decoration: none;
+}
+.bookingRow:last-child {
+  border-bottom: none;
+}
+.bookingRow:hover {
+  background: var(--bg-card);
+}
+
+.bookingRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bookingAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.bookingAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bookingTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bookingMeta {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ── Badges ────────────────────────────────────────────────── */
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.badge_pending {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+.badge_accepted {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.badge_inprogress {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+}
+.badge_completed {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.badge_cancelled {
+  background: var(--red-dim);
+  color: var(--red);
+}
+.badge_disputed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* ── Worker rows ───────────────────────────────────────────── */
+.workerList {
+  display: flex;
+  flex-direction: column;
+}
+
+.workerRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  animation: fadeUp 0.4s ease both;
+  text-decoration: none;
+}
+.workerRow:last-child {
+  border-bottom: none;
+}
+.workerRow:hover {
+  background: var(--bg-card);
+}
+
+.workerAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(129, 140, 248, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #818cf8;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.workerAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.workerInfo {
+  flex: 1;
+  min-width: 0;
+}
+.workerName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.workerTitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.workerRating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.star {
+  color: #fbbf24;
+}
+
+.empty {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── Skeletons ─────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeletonBase {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 10px;
+}
+.skeletonHeader {
+  composes: skeletonBase;
+  height: 48px;
+  width: 240px;
+  margin-bottom: 32px;
+}
+.skeletonCard {
+  composes: skeletonBase;
+  height: 110px;
+  border-radius: 14px;
+}
+.skeletonPanel {
+  composes: skeletonBase;
+  height: 320px;
+  border-radius: 16px;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (min-width: 900px) {
+  .grid2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .page {
+    padding: 40px 32px;
+  }
+}
