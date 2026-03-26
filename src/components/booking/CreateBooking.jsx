@@ -1,11 +1,37 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./CreateBooking.module.css";
 import api from "../../lib/api";
+import { useAuthStore } from "../../store/authStore";
 
 export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fetchingCategories, setFetchingCategories] = useState(true);
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+
+  // ✅ Only HIRERS can create bookings
+  if (user?.role !== "HIRER") {
+    return (
+      <div className={styles.page}>
+        <div className={styles.restrictedMsg}>
+          <h2>📋 Only Hirers Can Post Jobs</h2>
+          <p>
+            Workers can accept and complete jobs, but only Hirers can post them.
+          </p>
+          <button
+            onClick={() => navigate("/bookings")}
+            className={styles.submitBtn}
+          >
+            Back to Bookings
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [form, setForm] = useState({
     workerId: propWorkerId || "",
     categoryId: "",
@@ -27,7 +53,32 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     .slice(0, 16);
 
   useEffect(() => {
-    api.get("/categories").then((res) => setCategories(res.data.data || []));
+    // ✅ Try to fetch categories, but handle gracefully if endpoint doesn't exist
+    api
+      .get("/categories")
+      .then((res) => {
+        // Handle different response structures
+        const cats = Array.isArray(res.data.data)
+          ? res.data.data
+          : res.data.data?.categories || [];
+        setCategories(cats);
+        setFetchingCategories(false);
+      })
+      .catch((err) => {
+        console.warn("Categories endpoint not available, using defaults", err);
+        // ✅ Use default categories as fallback
+        setCategories([
+          { id: "1", name: "Plumbing" },
+          { id: "2", name: "Electrical" },
+          { id: "3", name: "Carpentry" },
+          { id: "4", name: "Painting" },
+          { id: "5", name: "Cleaning" },
+          { id: "6", name: "Landscaping" },
+          { id: "7", name: "Home Repair" },
+          { id: "8", name: "Other Services" },
+        ]);
+        setFetchingCategories(false);
+      });
   }, []);
 
   function set(key, val) {
@@ -65,8 +116,12 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         latitude: form.latitude ? parseFloat(form.latitude) : undefined,
         longitude: form.longitude ? parseFloat(form.longitude) : undefined,
       });
-      if (onSuccess) onSuccess(res.data.data.booking);
-      else window.location.href = `/bookings/${res.data.data.booking.id}`;
+      if (onSuccess) {
+        onSuccess(res.data.data.booking);
+      } else {
+        // ✅ Use navigate() instead of window.location.href
+        navigate(`/bookings/${res.data.data.booking.id}`);
+      }
     } catch (e) {
       setError(
         e.response?.data?.message ||
@@ -75,6 +130,17 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (fetchingCategories) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <p className={styles.eyebrow}>New Job</p>
+          <h1 className={styles.title}>Loading...</h1>
+        </div>
+      </div>
+    );
   }
 
   return (

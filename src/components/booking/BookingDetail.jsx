@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -16,7 +17,8 @@ const STATUS_META = {
 
 const TIMELINE_STEPS = ["Pending", "Accepted", "In Progress", "Completed"];
 
-export default function BookingDetail({ bookingId }) {
+export default function BookingDetail() {
+  const { id } = useParams();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
@@ -24,20 +26,23 @@ export default function BookingDetail({ bookingId }) {
   const [success, setSuccess] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
-
-  // Read role from stored user
   const { user } = useAuthStore();
-  const role = user.role;
-  const userId = user.id;
+  const navigate = useNavigate();
 
-  const id = bookingId || window.location.pathname.split("/").pop();
+  const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
+  const role = user?.role;
+  const userId = user?.id;
 
   useEffect(() => {
-    api.get(`/bookings/${id}`).then((res) => {
-      setBooking(res.data.data.booking);
-      setLoading(false);
-    });
+    api
+      .get(`/bookings/${id}`)
+      .then((res) => {
+        setBooking(res.data.data.booking);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+      });
   }, [id]);
 
   async function updateStatus(status, extra = {}) {
@@ -91,7 +96,7 @@ export default function BookingDetail({ bookingId }) {
     }
   }
 
-  if (loading) return <DetailSkeleton />;
+  if (loading) return <DetailSkeleton Layout={Layout} />;
   if (!booking) return <NotFound />;
 
   const meta = STATUS_META[booking.status] || {};
@@ -104,10 +109,10 @@ export default function BookingDetail({ bookingId }) {
   return (
     <Layout>
       <div className={styles.page}>
-        {/* Back */}
-        <a href="/bookings" className={styles.back}>
+        {/* ✅ Use Link instead of <a> */}
+        <Link to="/bookings" className={styles.back}>
           ← Back to Bookings
-        </a>
+        </Link>
 
         {/* Alerts */}
         {error && (
@@ -386,20 +391,22 @@ export default function BookingDetail({ bookingId }) {
 
               {/* HIRER actions */}
               {isHirer && booking.status === "ACCEPTED" && !booking.payment && (
-                <a
-                  href={`/bookings/${booking.id}/pay`}
+                // ✅ Use Link instead of <a href>
+                <Link
+                  to={`/bookings/${booking.id}/pay`}
                   className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
                 >
                   💳 Pay Now
-                </a>
+                </Link>
               )}
               {isHirer && booking.payment?.status === "HELD" && (
-                <a
-                  href={`/bookings/${booking.id}/release`}
+                // ✅ Use Link instead of <a href>
+                <Link
+                  to={`/bookings/${booking.id}/release`}
                   className={`${styles.actionBtn} ${styles.actionBtn_green}`}
                 >
                   💸 Release Payment
-                </a>
+                </Link>
               )}
               {isHirer && ["PENDING", "ACCEPTED"].includes(booking.status) && (
                 <>
@@ -447,12 +454,13 @@ export default function BookingDetail({ bookingId }) {
               {(booking.status === "COMPLETED" ||
                 booking.status === "CANCELLED") &&
                 !booking.review && (
-                  <a
-                    href={`/bookings/${booking.id}/review`}
+                  // ✅ Use Link instead of <a href>
+                  <Link
+                    to={`/bookings/${booking.id}/review`}
                     className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
                   >
                     ⭐ Leave a Review
-                  </a>
+                  </Link>
                 )}
             </div>
 
@@ -517,15 +525,17 @@ function Spinner() {
   return <span className={styles.spinner} />;
 }
 
-function DetailSkeleton() {
+function DetailSkeleton({ Layout }) {
   return (
-    <div className={styles.page}>
-      <div className={styles.skBack} />
-      <div className={styles.layout}>
-        <div className={styles.skMain} />
-        <div className={styles.skSide} />
+    <Layout>
+      <div className={styles.page}>
+        <div className={styles.skBack} />
+        <div className={styles.layout}>
+          <div className={styles.skMain} />
+          <div className={styles.skSide} />
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 
@@ -535,9 +545,9 @@ function NotFound() {
       <div className={styles.notFound}>
         <span className={styles.notFoundIcon}>🔍</span>
         <h2 className={styles.notFoundTitle}>Booking not found</h2>
-        <a href="/bookings" className={styles.back}>
+        <Link to="/bookings" className={styles.back}>
           ← Back to Bookings
-        </a>
+        </Link>
       </div>
     </div>
   );

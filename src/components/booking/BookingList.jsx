@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import styles from "./BookingList.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -32,7 +33,11 @@ export default function BookingList() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  // ✅ Use correct layout based on role
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
+  const isHirer = user?.role === "HIRER";
 
   useEffect(() => {
     setLoading(true);
@@ -58,9 +63,12 @@ export default function BookingList() {
               {total > 0 && <span className={styles.count}>{total}</span>}
             </h1>
           </div>
-          <a href="/bookings/new" className={styles.newBtn}>
-            <span>+</span> New Booking
-          </a>
+          {/* ✅ Only show "New Booking" button for HIRERS */}
+          {isHirer && (
+            <Link to="/bookings/create" className={styles.newBtn}>
+              <span>+</span> New Booking
+            </Link>
+          )}
         </div>
 
         {/* Filter tabs */}
@@ -91,7 +99,7 @@ export default function BookingList() {
             ))}
           </div>
         ) : bookings.length === 0 ? (
-          <Empty filter={filter} />
+          <Empty filter={filter} isHirer={isHirer} />
         ) : (
           <div className={styles.grid}>
             {bookings.map((b, i) => (
@@ -134,8 +142,9 @@ function BookingCard({ booking, index }) {
   const isPast = scheduled < new Date();
 
   return (
-    <a
-      href={`/bookings/${booking.id}`}
+    // ✅ Use Link instead of <a href>
+    <Link
+      to={`/bookings/${booking.id}`}
       className={styles.card}
       style={{ animationDelay: `${index * 0.04}s` }}
     >
@@ -196,7 +205,7 @@ function BookingCard({ booking, index }) {
           </span>
         )}
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -213,19 +222,25 @@ function Detail({ icon, text, truncate, faded }) {
   );
 }
 
-function Empty({ filter }) {
+function Empty({ filter, isHirer }) {
   return (
     <div className={styles.empty}>
       <span className={styles.emptyEmoji}>📋</span>
       <p className={styles.emptyTitle}>No bookings found</p>
       <p className={styles.emptyText}>
         {filter === "ALL"
-          ? "You don't have any bookings yet."
+          ? isHirer
+            ? "You haven't posted any jobs yet."
+            : "You don't have any bookings yet."
           : `No ${filter.toLowerCase().replace("_", " ")} bookings.`}
       </p>
-      <a href="/search" className={styles.emptyBtn}>
-        Find a Worker
-      </a>
+      {/* ✅ Use Link instead of <a href> */}
+      <Link
+        to={isHirer ? "/dashboard/hirer/post-job" : "/search"}
+        className={styles.emptyBtn}
+      >
+        {isHirer ? "Post a Job" : "Find a Worker"}
+      </Link>
     </div>
   );
 }

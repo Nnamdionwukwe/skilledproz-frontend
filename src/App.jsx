@@ -44,6 +44,8 @@ import EditProfile from "./components/user/EditProfile";
 import DashboardPlaceholder from "./pages/worker/dashboard/DashboardPlaceholder";
 import LandingPage from "./app/LandingPage";
 import HirerSavedWorkers from "./components/hirer/HirerSavedWorkers";
+import CategoriesBrowse from "./components/categories/CategoriesBrowse";
+import CategoryDetail from "./components/categories/CategoryDetail";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -276,6 +278,23 @@ export default function App() {
           element={
             <RequireAuth>
               <UserProfile />
+            </RequireAuth>
+          }
+        />
+        {/* ── Categories ── */}
+        <Route
+          path="/categories"
+          element={
+            <RequireAuth>
+              <CategoriesBrowse />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/categories/:slug"
+          element={
+            <RequireAuth>
+              <CategoryDetail />
             </RequireAuth>
           }
         />
