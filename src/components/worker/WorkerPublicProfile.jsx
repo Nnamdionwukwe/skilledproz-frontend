@@ -1,34 +1,56 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import styles from "./WorkerPublicProfile.module.css";
 import api from "../../lib/api";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function WorkerPublicProfile({ userId: propUserId }) {
+  const params = useParams();
   const [worker, setWorker] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("about");
 
-  const userId = propUserId || window.location.pathname.split("/").pop();
+  // ── Priority order for resolving userId ──────────────────────────────────
+  // 1. Explicit prop (e.g. <WorkerPublicProfile userId="abc" />)
+  // 2. React Router param  (e.g. route path="/workers/:userId")
+  // 3. Last path segment   (fallback for non-Router contexts only)
+  const userId =
+    propUserId ||
+    params?.userId ||
+    window.location.pathname.split("/").filter(Boolean).pop();
 
   useEffect(() => {
+    if (!userId) return;
+
+    setLoading(true);
+
+    // ── Single public endpoint — no auth required ────────────────────────
+    // GET /api/workers/:userId already returns worker + portfolio +
+    // certifications + availability in one call. Reviews come embedded
+    // in the worker profile or we fetch them from the public review route.
     Promise.all([
       api.get(`/workers/${userId}`),
+      // Public reviews endpoint — no auth token needed
       api
-        .get(`/workers/dashboard/reviews`, { params: { limit: 10 } })
+        .get(`/reviews/worker/${userId}`, { params: { limit: 10 } })
         .catch(() => ({ data: { data: { reviews: [] } } })),
-    ]).then(([wRes]) => {
-      setWorker(wRes.data.data.worker);
-      setLoading(false);
-    });
+    ])
+      .then(([wRes, rRes]) => {
+        setWorker(wRes.data.data.worker);
+        setReviews(rRes.data.data.reviews || []);
+      })
+      .catch(() => {
+        setWorker(null);
+      })
+      .finally(() => setLoading(false));
   }, [userId]);
 
   if (loading) return <ProfileSkeleton />;
   if (!worker) return <NotFound />;
 
   const { user, categories, portfolio, certifications, availability } = worker;
-  const primaryCat = categories.find((c) => c.isPrimary) || categories[0];
 
   const availDay = (day) =>
     availability.find((a) => a.dayOfWeek === day && a.isAvailable);
@@ -68,7 +90,11 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                 <p className={styles.workerTitle}>{worker.title}</p>
               </div>
               <span
-                className={`${styles.availBadge} ${worker.isAvailable ? styles.availBadgeOn : styles.availBadgeOff}`}
+                className={`${styles.availBadge} ${
+                  worker.isAvailable
+                    ? styles.availBadgeOn
+                    : styles.availBadgeOff
+                }`}
               >
                 {worker.isAvailable ? "● Available" : "○ Unavailable"}
               </span>
@@ -79,7 +105,9 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
               {categories.slice(0, 4).map((wc) => (
                 <span
                   key={wc.id}
-                  className={`${styles.catChip} ${wc.isPrimary ? styles.catChipPrimary : ""}`}
+                  className={`${styles.catChip} ${
+                    wc.isPrimary ? styles.catChipPrimary : ""
+                  }`}
                 >
                   {wc.category.icon && <span>{wc.category.icon}</span>}
                   {wc.category.name}
@@ -163,7 +191,6 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
               <p className={styles.bio}>
                 {worker.description || "No description provided."}
               </p>
-
               <div className={styles.infoCards}>
                 <InfoCard
                   icon="🏆"
@@ -194,7 +221,6 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
               </div>
             </section>
 
-            {/* Availability quick-view */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Weekly Availability</h2>
               <div className={styles.weekRow}>
@@ -203,7 +229,9 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                   return (
                     <div
                       key={d}
-                      className={`${styles.dayCell} ${slot ? styles.dayCellOn : styles.dayCellOff}`}
+                      className={`${styles.dayCell} ${
+                        slot ? styles.dayCellOn : styles.dayCellOff
+                      }`}
                     >
                       <span className={styles.dayName}>{d}</span>
                       {slot && (
@@ -272,10 +300,19 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                         <p className={styles.certDate}>
                           {new Date(cert.issueDate).toLocaleDateString(
                             "en-GB",
-                            { month: "short", year: "numeric" },
+                            {
+                              month: "short",
+                              year: "numeric",
+                            },
                           )}
                           {cert.expiryDate &&
-                            ` – ${new Date(cert.expiryDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`}
+                            ` – ${new Date(cert.expiryDate).toLocaleDateString(
+                              "en-GB",
+                              {
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}`}
                         </p>
                       )}
                     </div>
@@ -312,7 +349,11 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                   return (
                     <div
                       key={day}
-                      className={`${styles.availRow} ${slot?.isAvailable ? styles.availRowOn : styles.availRowOff}`}
+                      className={`${styles.availRow} ${
+                        slot?.isAvailable
+                          ? styles.availRowOn
+                          : styles.availRowOff
+                      }`}
                     >
                       <span className={styles.availDay}>{day}</span>
                       {slot?.isAvailable ? (
@@ -324,7 +365,11 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                         <span className={styles.availOff}>Unavailable</span>
                       )}
                       <span
-                        className={`${styles.availDot} ${slot?.isAvailable ? styles.availDotOn : styles.availDotOff}`}
+                        className={`${styles.availDot} ${
+                          slot?.isAvailable
+                            ? styles.availDotOn
+                            : styles.availDotOff
+                        }`}
                       />
                     </div>
                   );
@@ -377,6 +422,8 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
     </div>
   );
 }
+
+// ── Sub-components (unchanged) ────────────────────────────────────────────────
 
 function Stat({ icon, value, label }) {
   return (
