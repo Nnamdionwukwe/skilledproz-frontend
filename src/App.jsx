@@ -46,6 +46,8 @@ import LandingPage from "./app/LandingPage";
 import HirerSavedWorkers from "./components/hirer/HirerSavedWorkers";
 import CategoriesBrowse from "./components/categories/CategoriesBrowse";
 import CategoryDetail from "./components/categories/CategoryDetail";
+import WorkerPublicProfile from "./components/worker/WorkerPublicProfile";
+import SearchPage from "./components/search/SearchPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -298,6 +300,13 @@ export default function App() {
             </RequireAuth>
           }
         />
+
+        {/* ── Public Aceess ── */}
+        <Route
+          path="/worker-public-profile"
+          element={<WorkerPublicProfile />}
+        />
+        <Route path="/public-search-page" element={<SearchPage />} />
 
         {/* ── Fallback ── */}
         <Route
