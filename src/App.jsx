@@ -43,6 +43,7 @@ import EditProfile from "./components/user/EditProfile";
 // Fallback
 import DashboardPlaceholder from "./pages/worker/dashboard/DashboardPlaceholder";
 import LandingPage from "./app/LandingPage";
+import HirerSavedWorkers from "./components/hirer/HirerSavedWorkers";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -192,14 +193,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/dashboard/hirer/bookings"
-          element={
-            <RequireAuth requireVerified>
-              <HirerBookings />
-            </RequireAuth>
-          }
-        />
+
         <Route
           path="/dashboard/hirer/notifications"
           element={
@@ -225,6 +219,15 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/dashboard/hirer/saved-workers"
+          element={
+            <RequireAuth requireVerified>
+              <HirerSavedWorkers />
+            </RequireAuth>
+          }
+        />
+
         {/* ── Bookings ── */}
         <Route
           path="/bookings"
@@ -235,18 +238,18 @@ export default function App() {
           }
         />
         <Route
-          path="/bookings/:id"
-          element={
-            <RequireAuth>
-              <BookingDetail />
-            </RequireAuth>
-          }
-        />
-        <Route
           path="/bookings/create"
           element={
             <RequireAuth>
               <CreateBooking />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/bookings/:id"
+          element={
+            <RequireAuth>
+              <BookingDetail />
             </RequireAuth>
           }
         />
@@ -272,7 +275,7 @@ export default function App() {
           path="/profile/edit"
           element={
             <RequireAuth>
-              <EditProfile />
+              <UserProfile />
             </RequireAuth>
           }
         />

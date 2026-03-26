@@ -57,8 +57,8 @@
   margin-top: 3px;
 }
 
-/* ── Worker block ── */
-.sidebarWorker {
+/* ── User block ── */
+.sidebarUser {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -83,7 +83,7 @@
   flex-shrink: 0;
 }
 
-.sidebarWorkerName {
+.sidebarUserName {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
@@ -93,12 +93,12 @@
   text-overflow: ellipsis;
 }
 
-.sidebarWorkerBadge {
+.sidebarUserBadge {
   font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--green);
-  background: var(--green-dim);
+  color: var(--orange);
+  background: var(--orange-dim);
   padding: 2px 7px;
   border-radius: 999px;
   display: inline-block;
@@ -195,55 +195,6 @@
   flex-direction: column;
   gap: 0.25rem;
   flex-shrink: 0;
-}
-
-.availToggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5625rem 0.75rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 0.25rem;
-}
-
-.availLabel {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-.toggle {
-  width: 34px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-  border: none;
-  flex-shrink: 0;
-}
-
-.toggle.on {
-  background: var(--green);
-}
-
-.toggleThumb {
-  width: 12px;
-  height: 12px;
-  background: var(--text);
-  border-radius: 50%;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-  display: block;
-}
-
-.toggle.on .toggleThumb {
-  transform: translateX(16px);
 }
 
 .logoutBtn {

@@ -1,47 +1,35 @@
 import { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import styles from "./WorkerLayout.module.css";
+import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
 
 const NAV = [
   {
     group: "Overview",
     items: [
-      { label: "Dashboard", path: "/dashboard/worker", icon: "◈" },
+      { label: "Dashboard", path: "/dashboard/hirer", icon: "◈" },
       { label: "My Bookings", path: "/bookings", icon: "📋" },
-      { label: "Earnings", path: "/dashboard/worker/earnings", icon: "₦" },
+      { label: "Post a Job", path: "/dashboard/hirer/post-job", icon: "➕" },
     ],
   },
   {
-    group: "Profile",
+    group: "Workers",
     items: [
-      { label: "Edit Profile", path: "/dashboard/worker/profile", icon: "👤" },
-      { label: "Portfolio", path: "/dashboard/worker/portfolio", icon: "🖼" },
       {
-        label: "Certifications",
-        path: "/dashboard/worker/certifications",
-        icon: "🏅",
+        label: "Saved Workers",
+        path: "/dashboard/hirer/saved-workers",
+        icon: "🔖",
       },
-      {
-        label: "Availability",
-        path: "/dashboard/worker/availability",
-        icon: "📅",
-      },
-      { label: "Categories", path: "/dashboard/worker/categories", icon: "🔧" },
+      { label: "Reviews Given", path: "/dashboard/hirer/reviews", icon: "⭐" },
     ],
   },
   {
-    group: "Inbox",
+    group: "Account",
     items: [
-      {
-        label: "Reviews",
-        path: "/dashboard/worker/reviews",
-        icon: "⭐",
-        badge: null,
-      },
+      { label: "Profile", path: "/dashboard/hirer/profile", icon: "👤" },
       {
         label: "Notifications",
-        path: "/dashboard/worker/notifications",
+        path: "/dashboard/hirer/notifications",
         icon: "🔔",
         badge: "unread",
       },
@@ -50,32 +38,26 @@ const NAV = [
 ];
 
 const PAGE_TITLES = {
-  "/dashboard/worker": { title: "Dashboard", sub: "Your work at a glance" },
+  "/dashboard/hirer": { title: "Dashboard", sub: "Your hiring overview" },
   "/bookings": { title: "My Bookings", sub: "All your jobs" },
   "/bookings/create": { title: "Create Booking", sub: "Post a new job" },
-  "/dashboard/worker/earnings": { title: "Earnings", sub: "Track your income" },
-  "/dashboard/worker/profile": {
-    title: "Edit Profile",
-    sub: "Update your information",
+  "/dashboard/hirer/post-job": {
+    title: "Post a Job",
+    sub: "Find the right worker",
   },
-  "/dashboard/worker/portfolio": {
-    title: "Portfolio",
-    sub: "Showcase your work",
+  "/dashboard/hirer/saved-workers": {
+    title: "Saved Workers",
+    sub: "Workers you've hired before",
   },
-  "/dashboard/worker/certifications": {
-    title: "Certifications",
-    sub: "Your credentials",
+  "/dashboard/hirer/reviews": {
+    title: "Reviews Given",
+    sub: "Your feedback to workers",
   },
-  "/dashboard/worker/availability": {
-    title: "Availability",
-    sub: "Set your schedule",
+  "/dashboard/hirer/profile": {
+    title: "Profile",
+    sub: "Your account information",
   },
-  "/dashboard/worker/categories": {
-    title: "Categories",
-    sub: "Your trade categories",
-  },
-  "/dashboard/worker/reviews": { title: "Reviews", sub: "What clients say" },
-  "/dashboard/worker/notifications": {
+  "/dashboard/hirer/notifications": {
     title: "Notifications",
     sub: "Stay up to date",
   },
@@ -96,16 +78,15 @@ function isNavActive(itemPath, pathname) {
   return pathname === itemPath;
 }
 
-export default function WorkerLayout({ children, unreadNotifications = 0 }) {
+export default function HirerLayout({ children, unreadNotifications = 0 }) {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const [available, setAvailable] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
-    : "WK";
+    : "H";
 
   const pageInfo = getPageInfo(location.pathname);
   const closeSidebar = () => setSidebarOpen(false);
@@ -121,16 +102,16 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
           <div className={styles.logoText}>
             Skilled<span>Proz</span>
           </div>
-          <div className={styles.logoRole}>Worker Portal</div>
+          <div className={styles.logoRole}>Hirer Portal</div>
         </div>
 
-        <div className={styles.sidebarWorker}>
+        <div className={styles.sidebarUser}>
           <div className={styles.sidebarAvatar}>{initials}</div>
           <div>
-            <div className={styles.sidebarWorkerName}>
+            <div className={styles.sidebarUserName}>
               {user?.firstName} {user?.lastName}
             </div>
-            <div className={styles.sidebarWorkerBadge}>● Active Worker</div>
+            <div className={styles.sidebarUserBadge}>● Hirer</div>
           </div>
         </div>
 
@@ -159,17 +140,6 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <div className={styles.availToggle}>
-            <span className={styles.availLabel}>
-              {available ? "🟢 Available" : "⚫ Offline"}
-            </span>
-            <button
-              className={`${styles.toggle} ${available ? styles.on : ""}`}
-              onClick={() => setAvailable((v) => !v)}
-            >
-              <span className={styles.toggleThumb} />
-            </button>
-          </div>
           <button
             className={styles.logoutBtn}
             onClick={async () => {
@@ -201,7 +171,7 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
 
           <div className={styles.headerRight}>
             <Link
-              to="/dashboard/worker/notifications"
+              to="/dashboard/hirer/notifications"
               className={styles.headerIconBtn}
             >
               🔔

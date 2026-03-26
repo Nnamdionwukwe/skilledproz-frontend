@@ -1,103 +1,218 @@
 import { useState, useEffect } from "react";
-import styles from "./HirerNotifications.module.css";
+import HirerLayout from "../../components/layout/HirerLayout";
 import api from "../../lib/api";
 
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString("en-NG", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const TYPE_ICON = {
+  BOOKING_REQUEST: "📋",
+  BOOKING_ACCEPTED: "✅",
+  PAYMENT_RECEIVED: "₦",
+  REVIEW_RECEIVED: "⭐",
+  MESSAGE: "💬",
+  SYSTEM: "🔔",
+};
+
 export default function HirerNotifications() {
-  const [notifications, setNotifications] = useState([]);
-  const [unread, setUnread] = useState(0);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api.get("/hirers/me/notifications").then((res) => {
-      setNotifications(res.data.data.notifications);
-      setUnread(res.data.data.unread);
-      setLoading(false);
-    });
-  }, []);
-
-  async function markAllRead() {
-    await api.patch("/hirers/me/notifications/read");
-    setNotifications((n) => n.map((item) => ({ ...item, isRead: true })));
-    setUnread(0);
-  }
-
-  const typeIcon = {
-    booking_request: "📋",
-    booking_accepted: "✅",
-    booking_cancelled: "❌",
-    payment_held: "💳",
-    payment_released: "💸",
-    message: "💬",
-    review: "⭐",
+  const fetchNotifs = () => {
+    api
+      .get("/hirers/me/notifications")
+      .then((res) => setData(res.data.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
-  if (loading) return <NotificationsSkeleton />;
+  useEffect(() => {
+    fetchNotifs();
+  }, []);
+
+  const markAllRead = async () => {
+    await api.patch("/hirers/me/notifications/read");
+    setData((d) => ({
+      ...d,
+      unread: 0,
+      notifications: d.notifications.map((n) => ({ ...n, isRead: true })),
+    }));
+  };
+
+  const { notifications = [], unread = 0 } = data || {};
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <p className={styles.eyebrow}>Inbox</p>
-          <h1 className={styles.title}>
-            Notifications
-            {unread > 0 && <span className={styles.unreadBadge}>{unread}</span>}
-          </h1>
-        </div>
-        {unread > 0 && (
-          <button className={styles.markAllBtn} onClick={markAllRead}>
-            Mark all read
-          </button>
-        )}
-      </div>
-
-      {notifications.length === 0 ? (
-        <div className={styles.empty}>
-          <span className={styles.emptyIcon}>🔔</span>
-          <p className={styles.emptyTitle}>All clear</p>
-          <p className={styles.emptyText}>No notifications yet.</p>
-        </div>
-      ) : (
-        <div className={styles.list}>
-          {notifications.map((n, i) => (
-            <div
-              key={n.id}
-              className={`${styles.item} ${!n.isRead ? styles.itemUnread : ""}`}
-              style={{ animationDelay: `${i * 0.03}s` }}
+    <HirerLayout unreadNotifications={unread}>
+      <div style={{ maxWidth: 720 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.125rem",
+              fontWeight: 800,
+            }}
+          >
+            Notifications{" "}
+            {unread > 0 && (
+              <span
+                style={{
+                  marginLeft: "0.5rem",
+                  background: "var(--orange)",
+                  color: "#000",
+                  fontSize: "0.6875rem",
+                  fontWeight: 800,
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                }}
+              >
+                {unread} new
+              </span>
+            )}
+          </h2>
+          {unread > 0 && (
+            <button
+              onClick={markAllRead}
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                color: "var(--text-dim)",
+                padding: "0.4rem 1rem",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "0.8125rem",
+              }}
             >
-              <div className={styles.itemIcon}>{typeIcon[n.type] || "🔔"}</div>
-              <div className={styles.itemBody}>
-                <p className={styles.itemTitle}>{n.title}</p>
-                <p className={styles.itemText}>{n.body}</p>
-                <p className={styles.itemTime}>
-                  {timeAgo(new Date(n.createdAt))}
-                </p>
-              </div>
-              {!n.isRead && <div className={styles.unreadDot} />}
-            </div>
-          ))}
+              Mark all read
+            </button>
+          )}
         </div>
-      )}
-    </div>
-  );
-}
 
-function timeAgo(date) {
-  const diff = (Date.now() - date) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-function NotificationsSkeleton() {
-  return (
-    <div className={styles.page}>
-      <div className={styles.skeletonHeader} />
-      <div className={styles.list}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className={styles.skeletonItem} />
-        ))}
+        <div
+          style={{
+            background: "var(--bg-panel)",
+            border: "1px solid var(--border)",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}
+        >
+          {loading ? (
+            [1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  height: 72,
+                  background: "rgba(255,255,255,0.03)",
+                  margin: "1px 0",
+                  animation: "pulse 1.5s infinite",
+                }}
+              />
+            ))
+          ) : notifications.length === 0 ? (
+            <div
+              style={{
+                padding: "3rem",
+                textAlign: "center",
+                color: "var(--text-dim)",
+              }}
+            >
+              <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔔</div>
+              <div style={{ fontWeight: 700 }}>All caught up!</div>
+              <div style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                No notifications yet
+              </div>
+            </div>
+          ) : (
+            notifications.map((n, idx) => (
+              <div
+                key={n.id}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "1rem",
+                  padding: "1rem 1.5rem",
+                  background: n.isRead
+                    ? "transparent"
+                    : "rgba(249,115,22,0.06)",
+                  borderBottom:
+                    idx < notifications.length - 1
+                      ? "1px solid var(--border)"
+                      : "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    background: n.isRead
+                      ? "var(--bg-card)"
+                      : "var(--orange-dim)",
+                    border: `1px solid ${n.isRead ? "var(--border)" : "var(--orange-glow)"}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1rem",
+                  }}
+                >
+                  {TYPE_ICON[n.type] || "🔔"}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: n.isRead ? 500 : 700,
+                      fontSize: "0.9rem",
+                      color: "var(--text)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    {n.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.8125rem",
+                      color: "var(--text-dim)",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {n.message}
+                  </div>
+                  <div
+                    style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}
+                  >
+                    {fmtDate(n.createdAt)}
+                  </div>
+                </div>
+                {!n.isRead && (
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      background: "var(--orange)",
+                      borderRadius: "50%",
+                      flexShrink: 0,
+                      marginTop: 6,
+                    }}
+                  />
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </HirerLayout>
   );
 }

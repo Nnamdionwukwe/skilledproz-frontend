@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerDashboard.module.css";
 import api from "../../lib/api";
 
@@ -7,100 +9,118 @@ export default function HirerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get("/hirers/me/dashboard").then((res) => {
-      setData(res.data.data);
-      setLoading(false);
-    });
+    api
+      .get("/hirers/me/dashboard")
+      .then((res) => {
+        setData(res.data.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <DashboardSkeleton />;
+  if (loading)
+    return (
+      <HirerLayout>
+        <DashboardSkeleton />
+      </HirerLayout>
+    );
+  if (!data)
+    return (
+      <HirerLayout>
+        <p style={{ color: "var(--text-dim)", padding: "2rem" }}>
+          Failed to load dashboard.
+        </p>
+      </HirerLayout>
+    );
 
   const { stats, recentBookings, recentWorkers } = data;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Overview</p>
-          <h1 className={styles.title}>Your Dashboard</h1>
+    <HirerLayout>
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>Overview</p>
+            <h1 className={styles.title}>Your Dashboard</h1>
+          </div>
+          <Link to="/dashboard/hirer/post-job" className={styles.ctaBtn}>
+            <span className={styles.ctaBtnIcon}>+</span>
+            Post a Job
+          </Link>
         </div>
-        <button
-          className={styles.ctaBtn}
-          onClick={() => (window.location.href = "/search")}
-        >
-          <span className={styles.ctaBtnIcon}>+</span>
-          Post a Job
-        </button>
-      </div>
 
-      {/* Stats */}
-      <div className={styles.statsGrid}>
-        <StatCard
-          label="Total Bookings"
-          value={stats.totalBookings}
-          icon="📋"
-          delay={0}
-        />
-        <StatCard
-          label="Active Jobs"
-          value={stats.activeBookings}
-          icon="⚡"
-          accent="orange"
-          delay={0.05}
-        />
-        <StatCard
-          label="Completed"
-          value={stats.completedBookings}
-          icon="✅"
-          accent="green"
-          delay={0.1}
-        />
-        <StatCard
-          label="Total Spent"
-          value={`$${stats.totalSpent.toLocaleString()}`}
-          icon="💳"
-          delay={0.15}
-        />
-      </div>
+        {/* Stats */}
+        <div className={styles.statsGrid}>
+          <StatCard
+            label="Total Bookings"
+            value={stats.totalBookings}
+            icon="📋"
+            delay={0}
+          />
+          <StatCard
+            label="Active Jobs"
+            value={stats.activeBookings}
+            icon="⚡"
+            accent="orange"
+            delay={0.05}
+          />
+          <StatCard
+            label="Completed"
+            value={stats.completedBookings}
+            icon="✅"
+            accent="green"
+            delay={0.1}
+          />
+          <StatCard
+            label="Total Spent"
+            value={`₦${(stats.totalSpent || 0).toLocaleString()}`}
+            icon="💳"
+            delay={0.15}
+          />
+        </div>
 
-      <div className={styles.grid2}>
-        {/* Recent bookings */}
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2 className={styles.panelTitle}>Recent Bookings</h2>
-            <a href="/bookings" className={styles.panelLink}>
-              View all →
-            </a>
-          </div>
-          <div className={styles.bookingList}>
-            {recentBookings.length === 0 && (
-              <p className={styles.empty}>No bookings yet.</p>
-            )}
-            {recentBookings.map((b, i) => (
-              <BookingRow key={b.id} booking={b} delay={i * 0.05} />
-            ))}
-          </div>
-        </section>
+        <div className={styles.grid2}>
+          {/* Recent bookings */}
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}>Recent Bookings</h2>
+              <Link to="/dashboard/hirer/bookings" className={styles.panelLink}>
+                View all →
+              </Link>
+            </div>
+            <div className={styles.bookingList}>
+              {recentBookings.length === 0 && (
+                <p className={styles.empty}>No bookings yet.</p>
+              )}
+              {recentBookings.map((b, i) => (
+                <BookingRow key={b.id} booking={b} delay={i * 0.05} />
+              ))}
+            </div>
+          </section>
 
-        {/* Recent workers */}
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2 className={styles.panelTitle}>Recent Workers</h2>
-            <a href="/bookings" className={styles.panelLink}>
-              View all →
-            </a>
-          </div>
-          <div className={styles.workerList}>
-            {recentWorkers.length === 0 && (
-              <p className={styles.empty}>No workers hired yet.</p>
-            )}
-            {recentWorkers.map((w, i) => (
-              <WorkerRow key={w.id} worker={w} delay={i * 0.05} />
-            ))}
-          </div>
-        </section>
+          {/* Recent workers */}
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}>Recent Workers</h2>
+              <Link
+                to="/dashboard/hirer/saved-workers"
+                className={styles.panelLink}
+              >
+                View all →
+              </Link>
+            </div>
+            <div className={styles.workerList}>
+              {recentWorkers.length === 0 && (
+                <p className={styles.empty}>No workers hired yet.</p>
+              )}
+              {recentWorkers.map((w, i) => (
+                <WorkerRow key={w.id} worker={w} delay={i * 0.05} />
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
+    </HirerLayout>
   );
 }
 
@@ -126,10 +146,9 @@ function BookingRow({ booking, delay }) {
     CANCELLED: "cancelled",
     DISPUTED: "disputed",
   };
-
   return (
-    <a
-      href={`/bookings/${booking.id}`}
+    <Link
+      to={`/bookings/${booking.id}`}
       className={styles.bookingRow}
       style={{ animationDelay: `${delay}s` }}
     >
@@ -157,14 +176,14 @@ function BookingRow({ booking, delay }) {
       >
         {booking.status.replace("_", " ")}
       </span>
-    </a>
+    </Link>
   );
 }
 
 function WorkerRow({ worker, delay }) {
   return (
-    <a
-      href={`/workers/${worker.id}`}
+    <Link
+      to={`/workers/${worker.id}`}
       className={styles.workerRow}
       style={{ animationDelay: `${delay}s` }}
     >
@@ -188,7 +207,7 @@ function WorkerRow({ worker, delay }) {
         <span className={styles.star}>★</span>
         <span>{worker.workerProfile?.avgRating?.toFixed(1) || "—"}</span>
       </div>
-    </a>
+    </Link>
   );
 }
 

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import styles from "./BookingList.module.css";
 import api from "../../lib/api";
+import { useAuthStore } from "../../store/authStore";
+import HirerLayout from "../layout/HirerLayout";
+import WorkerLayout from "../layout/WorkerLayout";
 
 const STATUSES = [
   "ALL",
@@ -28,6 +31,8 @@ export default function BookingList() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const { user } = useAuthStore();
+  const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   useEffect(() => {
     setLoading(true);
@@ -42,81 +47,83 @@ export default function BookingList() {
   }, [filter, page]);
 
   return (
-    <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>My Jobs</p>
-          <h1 className={styles.title}>
-            Bookings
-            {total > 0 && <span className={styles.count}>{total}</span>}
-          </h1>
+    <Layout>
+      <div className={styles.page}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>My Jobs</p>
+            <h1 className={styles.title}>
+              Bookings
+              {total > 0 && <span className={styles.count}>{total}</span>}
+            </h1>
+          </div>
+          <a href="/bookings/new" className={styles.newBtn}>
+            <span>+</span> New Booking
+          </a>
         </div>
-        <a href="/bookings/new" className={styles.newBtn}>
-          <span>+</span> New Booking
-        </a>
-      </div>
 
-      {/* Filter tabs */}
-      <div className={styles.filters}>
-        {STATUSES.map((s) => (
-          <button
-            key={s}
-            className={`${styles.tab} ${filter === s ? styles.tabActive : ""}`}
-            onClick={() => {
-              setFilter(s);
-              setPage(1);
-            }}
-          >
-            {s === "IN_PROGRESS"
-              ? "In Progress"
-              : s === "ALL"
-                ? "All"
-                : STATUS_META[s]?.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className={styles.grid}>
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} />
+        {/* Filter tabs */}
+        <div className={styles.filters}>
+          {STATUSES.map((s) => (
+            <button
+              key={s}
+              className={`${styles.tab} ${filter === s ? styles.tabActive : ""}`}
+              onClick={() => {
+                setFilter(s);
+                setPage(1);
+              }}
+            >
+              {s === "IN_PROGRESS"
+                ? "In Progress"
+                : s === "ALL"
+                  ? "All"
+                  : STATUS_META[s]?.label}
+            </button>
           ))}
         </div>
-      ) : bookings.length === 0 ? (
-        <Empty filter={filter} />
-      ) : (
-        <div className={styles.grid}>
-          {bookings.map((b, i) => (
-            <BookingCard key={b.id} booking={b} index={i} />
-          ))}
-        </div>
-      )}
 
-      {/* Pagination */}
-      {pages > 1 && (
-        <div className={styles.pager}>
-          <button
-            className={styles.pageBtn}
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ← Prev
-          </button>
-          <span className={styles.pageInfo}>
-            {page} of {pages}
-          </span>
-          <button
-            className={styles.pageBtn}
-            disabled={page === pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-    </div>
+        {/* Content */}
+        {loading ? (
+          <div className={styles.grid}>
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} />
+            ))}
+          </div>
+        ) : bookings.length === 0 ? (
+          <Empty filter={filter} />
+        ) : (
+          <div className={styles.grid}>
+            {bookings.map((b, i) => (
+              <BookingCard key={b.id} booking={b} index={i} />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pages > 1 && (
+          <div className={styles.pager}>
+            <button
+              className={styles.pageBtn}
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ← Prev
+            </button>
+            <span className={styles.pageInfo}>
+              {page} of {pages}
+            </span>
+            <button
+              className={styles.pageBtn}
+              disabled={page === pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }
 
