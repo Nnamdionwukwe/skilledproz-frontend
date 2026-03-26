@@ -1,18 +1,24 @@
 import { useState, useEffect } from "react";
-import { workerAPI } from "../../../../services/api";
+import api from "../../../../lib/api";
 import { useFetch } from "../../../../hooks/useFetch";
-import { useAuth } from "../../../../hooks/useAuth";
+import { useAuthStore } from "../../../../store/authStore";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import ui from "../../../../components/ui/ui.module.css";
 
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "GHS", "KES"];
 
 export default function EditProfilePage() {
-  const { user } = useAuth();
-  const { data, loading } = useFetch(
-    () => workerAPI.getProfile(user?.id),
-    [user?.id],
-  );
+  const { user } = useAuthStore();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (user?.id) {
+      api.get(`/workers/${user?.id}`).then((res) => {
+        setData(res.data.data);
+        setLoading(false);
+      });
+    }
+  }, [user?.id]);
 
   const [form, setForm] = useState({
     title: "",
@@ -52,7 +58,7 @@ export default function EditProfilePage() {
     setSaving(true);
     setMsg(null);
     try {
-      await workerAPI.updateProfile(form);
+      await api.put("/workers/profile", form);
       setMsg({ type: "success", text: "Profile updated successfully!" });
     } catch (err) {
       setMsg({ type: "error", text: err.message });

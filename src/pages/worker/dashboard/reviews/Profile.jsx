@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useFetch } from "../../../../hooks/useFetch";
-import { workerAPI } from "../../../../services/api";
+import api from "../../../../lib/api";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import ui from "../../../../components/ui/ui.module.css";
 

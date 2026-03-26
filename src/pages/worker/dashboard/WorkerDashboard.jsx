@@ -1,9 +1,10 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useFetch } from "../../../hooks/useFetch";
-import { workerAPI } from "../../../services/api";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import styles from "./WorkerDashboard.module.css";
 import ui from "../../../components/ui/ui.module.css";
+import { useAuthStore } from "../../../store/authStore";
+import api from "../../../lib/api";
 
 function statusBadge(status) {
   const map = {
@@ -44,7 +45,20 @@ function SkeletonCard() {
 }
 
 export default function WorkerDashboard() {
-  const { data, loading, error } = useFetch(() => workerAPI.getDashboard());
+  const { user } = useAuthStore();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    api
+      .get("/workers/dashboard")
+      .then((res) => setData(res.data.data))
+      .catch((err) =>
+        setError(err.response?.data?.message || "Failed to load dashboard"),
+      )
+      .finally(() => setLoading(false));
+  }, []);
 
   if (loading) {
     return (
@@ -155,7 +169,7 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Earnings trend</span>
-              <Link to="/worker/earnings" className={ui.cardLink}>
+              <Link to="/dashboard/worker/earnings" className={ui.cardLink}>
                 Full report →
               </Link>
             </div>
@@ -202,7 +216,7 @@ export default function WorkerDashboard() {
                 >
                   Complete your profile to attract more clients.{" "}
                   <Link
-                    to="/worker/profile"
+                    to="/dashboard/worker/profile"
                     style={{ color: "var(--brand)", fontWeight: 700 }}
                   >
                     Update now →
@@ -215,7 +229,7 @@ export default function WorkerDashboard() {
             <div className={ui.card} style={{ flex: 1 }}>
               <div className={ui.cardHeader}>
                 <span className={ui.cardTitle}>Upcoming jobs</span>
-                <Link to="/worker/bookings" className={ui.cardLink}>
+                <Link to="/dashboard/worker/bookings" className={ui.cardLink}>
                   See all →
                 </Link>
               </div>
@@ -259,7 +273,7 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Recent bookings</span>
-              <Link to="/worker/bookings" className={ui.cardLink}>
+              <Link to="/dashboard/worker/bookings" className={ui.cardLink}>
                 View all →
               </Link>
             </div>
@@ -309,7 +323,7 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Recent reviews</span>
-              <Link to="/worker/reviews" className={ui.cardLink}>
+              <Link to="/dashboard/worker/reviews" className={ui.cardLink}>
                 See all →
               </Link>
             </div>

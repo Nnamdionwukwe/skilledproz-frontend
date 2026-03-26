@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { useFetch } from "../../../../hooks/useFetch";
-import { workerAPI } from "../../../../services/api";
-import { useAuth } from "../../../../hooks/useAuth";
+import api from "../../../../lib/api";
+import { useAuthStore } from "../../../../store/authStore";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import ui from "../../../../components/ui/ui.module.css";
 
 export default function PortfolioPage() {
-  const { user } = useAuth();
-  const { data, loading, refetch } = useFetch(
-    () => workerAPI.getProfile(user?.id),
-    [user?.id],
-  );
+  const { user } = useAuthStore();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const refetch = () => {
+    api
+      .get(`/workers/${user?.id}`)
+      .then((res) => setData(res.data.data))
+      .catch(() => {});
+  };
+
   const portfolio = data?.worker?.portfolio || [];
 
   const [form, setForm] = useState({ title: "", description: "", file: null });
@@ -29,7 +33,15 @@ export default function PortfolioPage() {
       fd.append("image", form.file);
       fd.append("title", form.title);
       fd.append("description", form.description);
-      await workerAPI.addPortfolio(fd);
+      const token = localStorage.getItem("accessToken");
+      await fetch(
+        `${import.meta.env.VITE_API_URL || "/api"}/workers/portfolio`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        },
+      );
       setForm({ title: "", description: "", file: null });
       setMsg({ type: "success", text: "Portfolio item added!" });
       refetch();
@@ -44,7 +56,7 @@ export default function PortfolioPage() {
     if (!window.confirm("Delete this portfolio item?")) return;
     setDeletingId(id);
     try {
-      await workerAPI.deletePortfolio(id);
+      await api.delete(`/workers/portfolio/${id}`);
       refetch();
     } finally {
       setDeletingId(null);

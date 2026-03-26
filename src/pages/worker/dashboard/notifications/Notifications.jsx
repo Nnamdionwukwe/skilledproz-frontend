@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useFetch } from "../../../../hooks/useFetch";
-import { workerAPI } from "../../../../services/api";
+import { useEffect, useState } from "react";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import ui from "../../../../components/ui/ui.module.css";
+import api from "../../../../lib/api";
+import { useAuthStore } from "../../../../store/authStore";
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-NG", {
@@ -24,10 +24,20 @@ const TYPE_ICON = {
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
-  const { data, loading, error, refetch } = useFetch(
-    () => workerAPI.getNotifications(page),
-    [page],
-  );
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    api
+      .get(`/workers/dashboard/notifications?page=${page}`)
+      .then((res) => setData(res.data.data))
+      .catch((err) => setError(err.response?.data?.message || "Failed to load"))
+      .finally(() => setLoading(false));
+  }, [page]);
+
   const {
     notifications = [],
     total = 0,
@@ -36,8 +46,12 @@ export default function NotificationsPage() {
   } = data || {};
 
   const markAllRead = async () => {
-    await workerAPI.markAllNotificationsRead();
-    refetch();
+    await api.patch("/workers/dashboard/notifications/read-all");
+    setData((d) => ({
+      ...d,
+      unreadCount: 0,
+      notifications: d.notifications.map((n) => ({ ...n, isRead: true })),
+    }));
   };
 
   return (

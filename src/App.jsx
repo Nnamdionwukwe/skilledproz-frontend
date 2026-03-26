@@ -16,6 +16,7 @@ import AuthGuard from "./components/auth/AuthGuard";
 // Worker pages
 import WorkerAvailability from "./pages/worker/availability/Availability";
 import WorkerCategories from "./pages/worker/categories/Categories";
+import WorkerCertifications from "./pages/worker/certifications/Certifications";
 import WorkerDashboard from "./pages/worker/dashboard/WorkerDashboard";
 import WorkerEarnings from "./pages/worker/dashboard/earnings/Earnings";
 import WorkerNotifications from "./pages/worker/dashboard/notifications/Notifications";
@@ -41,7 +42,6 @@ import EditProfile from "./components/user/EditProfile";
 
 // Fallback
 import DashboardPlaceholder from "./pages/worker/dashboard/DashboardPlaceholder";
-import { AuthProvider } from "./hooks/useAuth";
 import LandingPage from "./app/LandingPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
@@ -62,241 +62,233 @@ export default function App() {
   const isHirer = user?.role === "HIRER";
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+    <BrowserRouter>
+      <Routes>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* ── Auth (guest only) ── */}
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/register"
-            element={
-              <GuestOnly>
-                <Register />
-              </GuestOnly>
-            }
-          />
-          <Route
-            path="/register/hirer"
-            element={
-              <GuestOnly>
-                <RegisterHirer />
-              </GuestOnly>
-            }
-          />
-          <Route
-            path="/register/worker"
-            element={
-              <GuestOnly>
-                <RegisterWorker />
-              </GuestOnly>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <GuestOnly>
-                <ForgotPassword />
-              </GuestOnly>
-            }
-          />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+        {/* ── Auth (guest only) ── */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register/hirer" element={<RegisterHirer />} />
+        <Route
+          path="/register/worker"
+          element={
+            <GuestOnly>
+              <RegisterWorker />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestOnly>
+              <ForgotPassword />
+            </GuestOnly>
+          }
+        />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
-          {/* ── Dashboard root — redirects by role ── */}
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth requireVerified>
-                <Navigate
-                  to={
-                    isWorker
-                      ? "/dashboard/worker"
-                      : isHirer
-                        ? "/dashboard/hirer"
-                        : "/dashboard/placeholder"
-                  }
-                  replace
-                />
-              </RequireAuth>
-            }
-          />
+        {/* ── Dashboard root — redirects by role ── */}
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth requireVerified>
+              <Navigate
+                to={
+                  isWorker
+                    ? "/dashboard/worker"
+                    : isHirer
+                      ? "/dashboard/hirer"
+                      : "/dashboard/placeholder"
+                }
+                replace
+              />
+            </RequireAuth>
+          }
+        />
 
-          {/* ── Worker dashboard ── */}
-          <Route
-            path="/dashboard/worker"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerDashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/earnings"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerEarnings />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/notifications"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerNotifications />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/portfolio"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerPortfolio />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/profile"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerProfile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/reviews"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerReviews />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/availability"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerAvailability />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/worker/categories"
-            element={
-              <RequireAuth requireVerified>
-                <WorkerCategories />
-              </RequireAuth>
-            }
-          />
+        {/* ── Worker dashboard ── */}
+        <Route
+          path="/dashboard/worker"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/earnings"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerEarnings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/notifications"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerNotifications />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/portfolio"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerPortfolio />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/profile"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerProfile />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/reviews"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerReviews />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/availability"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerAvailability />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/categories"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerCategories />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="dashboard/worker/certifications"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerCertifications />
+            </RequireAuth>
+          }
+        />
 
-          {/* ── Hirer dashboard ── */}
-          <Route
-            path="/dashboard/hirer"
-            element={
-              <RequireAuth requireVerified>
-                <HirerDashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/hirer/bookings"
-            element={
-              <RequireAuth requireVerified>
-                <HirerBookings />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/hirer/notifications"
-            element={
-              <RequireAuth requireVerified>
-                <HirerNotifications />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/hirer/profile"
-            element={
-              <RequireAuth requireVerified>
-                <HirerProfile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/dashboard/hirer/post-job"
-            element={
-              <RequireAuth requireVerified>
-                <PostJob />
-              </RequireAuth>
-            }
-          />
+        {/* ── Hirer dashboard ── */}
+        <Route
+          path="/dashboard/hirer"
+          element={
+            <RequireAuth requireVerified>
+              <HirerDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/bookings"
+          element={
+            <RequireAuth requireVerified>
+              <HirerBookings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/notifications"
+          element={
+            <RequireAuth requireVerified>
+              <HirerNotifications />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/profile"
+          element={
+            <RequireAuth requireVerified>
+              <HirerProfile />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/post-job"
+          element={
+            <RequireAuth requireVerified>
+              <PostJob />
+            </RequireAuth>
+          }
+        />
 
-          {/* ── Bookings ── */}
-          <Route
-            path="/bookings"
-            element={
-              <RequireAuth>
-                <BookingList />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/bookings/:id"
-            element={
-              <RequireAuth>
-                <BookingDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/bookings/create"
-            element={
-              <RequireAuth>
-                <CreateBooking />
-              </RequireAuth>
-            }
-          />
+        {/* ── Bookings ── */}
+        <Route
+          path="/bookings"
+          element={
+            <RequireAuth>
+              <BookingList />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/bookings/:id"
+          element={
+            <RequireAuth>
+              <BookingDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/bookings/create"
+          element={
+            <RequireAuth>
+              <CreateBooking />
+            </RequireAuth>
+          }
+        />
 
-          {/* ── User profile ── */}
-          <Route
-            path="/profile/me"
-            element={
-              <RequireAuth>
-                <UserProfile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile/:id"
-            element={
-              <RequireAuth>
-                <UserProfile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile/edit"
-            element={
-              <RequireAuth>
-                <EditProfile />
-              </RequireAuth>
-            }
-          />
+        {/* ── User profile ── */}
+        <Route
+          path="/profile/me"
+          element={
+            <RequireAuth>
+              <UserProfile />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/profile/:id"
+          element={
+            <RequireAuth>
+              <UserProfile />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <RequireAuth>
+              <EditProfile />
+            </RequireAuth>
+          }
+        />
 
-          {/* ── Fallback ── */}
-          <Route
-            path="/dashboard/placeholder"
-            element={
-              <RequireAuth>
-                <DashboardPlaceholder />
-              </RequireAuth>
-            }
-          />
-          <Route path="landingpage" element={<LandingPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+        {/* ── Fallback ── */}
+        <Route
+          path="/dashboard/placeholder"
+          element={
+            <RequireAuth>
+              <DashboardPlaceholder />
+            </RequireAuth>
+          }
+        />
+        <Route path="landingpage" element={<LandingPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

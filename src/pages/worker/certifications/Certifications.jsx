@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useFetch } from "../../../hooks/useFetch";
-import { workerAPI } from "../../../services/api";
-import { useAuth } from "../../../hooks/useAuth";
+import { useEffect, useState } from "react";
+import api from "../../../lib/api";
+import { useAuthStore } from "../../../store/authStore";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import ui from "../../../components/ui/ui.module.css";
 
@@ -15,11 +14,19 @@ function fmtDate(d) {
 }
 
 export default function CertificationsPage() {
-  const { user } = useAuth();
-  const { data, loading, refetch } = useFetch(
-    () => workerAPI.getProfile(user?.id),
-    [user?.id],
-  );
+  const { user } = useAuthStore();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const refetch = () =>
+    api.get(`/workers/${user?.id}`).then((res) => setData(res.data.data));
+  useEffect(() => {
+    if (user?.id) {
+      api.get(`/workers/${user?.id}`).then((res) => {
+        setData(res.data.data);
+        setLoading(false);
+      });
+    }
+  }, [user?.id]);
   const certs = data?.worker?.certifications || [];
 
   const [form, setForm] = useState({
@@ -49,7 +56,15 @@ export default function CertificationsPage() {
       if (form.issueDate) fd.append("issueDate", form.issueDate);
       if (form.expiryDate) fd.append("expiryDate", form.expiryDate);
       if (form.file) fd.append("document", form.file);
-      await workerAPI.addCertification(fd);
+      const token = localStorage.getItem("accessToken");
+      await fetch(
+        `${import.meta.env.VITE_API_URL || "/api"}/workers/certifications`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        },
+      );
       setForm({
         name: "",
         issuedBy: "",

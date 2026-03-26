@@ -1,34 +1,47 @@
 import { useState } from "react";
-import { useLocation, Link } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./WorkerLayout.module.css";
+import { useAuthStore } from "../../store/authStore";
 
 const NAV = [
   {
     group: "Overview",
     items: [
-      { label: "Dashboard", path: "/worker/dashboard", icon: "◈" },
-      { label: "My Bookings", path: "/worker/bookings", icon: "📋" },
-      { label: "Earnings", path: "/worker/earnings", icon: "₦" },
+      { label: "Dashboard", path: "/dashboard/worker", icon: "◈" },
+      { label: "My Bookings", path: "/dashboard/worker/bookings", icon: "📋" },
+      { label: "Earnings", path: "/dashboard/worker/earnings", icon: "₦" },
     ],
   },
   {
     group: "Profile",
     items: [
-      { label: "Edit Profile", path: "/worker/profile", icon: "👤" },
-      { label: "Portfolio", path: "/worker/portfolio", icon: "🖼" },
-      { label: "Certifications", path: "/worker/certifications", icon: "🏅" },
-      { label: "Availability", path: "/worker/availability", icon: "📅" },
-      { label: "Categories", path: "/worker/categories", icon: "🔧" },
+      { label: "Edit Profile", path: "/dashboard/worker/profile", icon: "👤" },
+      { label: "Portfolio", path: "/dashboard/worker/portfolio", icon: "🖼" },
+      {
+        label: "Certifications",
+        path: "/dashboard/worker/certifications",
+        icon: "🏅",
+      },
+      {
+        label: "Availability",
+        path: "/dashboard/worker/availability",
+        icon: "📅",
+      },
+      { label: "Categories", path: "/dashboard/worker/categories", icon: "🔧" },
     ],
   },
   {
     group: "Inbox",
     items: [
-      { label: "Reviews", path: "/worker/reviews", icon: "⭐", badge: null },
+      {
+        label: "Reviews",
+        path: "/dashboard/worker/reviews",
+        icon: "⭐",
+        badge: null,
+      },
       {
         label: "Notifications",
-        path: "/worker/notifications",
+        path: "/dashboard/worker/notifications",
         icon: "🔔",
         badge: "unread",
       },
@@ -37,26 +50,45 @@ const NAV = [
 ];
 
 const PAGE_TITLES = {
-  "/worker/dashboard": { title: "Dashboard", sub: "Your work at a glance" },
-  "/worker/bookings": { title: "My Bookings", sub: "Manage your job requests" },
-  "/worker/earnings": { title: "Earnings", sub: "Track your income" },
-  "/worker/profile": { title: "Edit Profile", sub: "Update your information" },
-  "/worker/portfolio": { title: "Portfolio", sub: "Showcase your work" },
-  "/worker/certifications": {
+  "/dashboard/worker": { title: "Dashboard", sub: "Your work at a glance" },
+  "/dashboard/worker/bookings": {
+    title: "My Bookings",
+    sub: "Manage your job requests",
+  },
+  "/dashboard/worker/earnings": { title: "Earnings", sub: "Track your income" },
+  "/dashboard/worker/profile": {
+    title: "Edit Profile",
+    sub: "Update your information",
+  },
+  "/dashboard/worker/portfolio": {
+    title: "Portfolio",
+    sub: "Showcase your work",
+  },
+  "/dashboard/worker/certifications": {
     title: "Certifications",
     sub: "Your credentials",
   },
-  "/worker/availability": { title: "Availability", sub: "Set your schedule" },
-  "/worker/categories": { title: "Categories", sub: "Your trade categories" },
-  "/worker/reviews": { title: "Reviews", sub: "What clients say" },
-  "/worker/notifications": { title: "Notifications", sub: "Stay up to date" },
+  "/dashboard/worker/availability": {
+    title: "Availability",
+    sub: "Set your schedule",
+  },
+  "/dashboard/worker/categories": {
+    title: "Categories",
+    sub: "Your trade categories",
+  },
+  "/dashboard/worker/reviews": { title: "Reviews", sub: "What clients say" },
+  "/dashboard/worker/notifications": {
+    title: "Notifications",
+    sub: "Stay up to date",
+  },
 };
 
 export default function WorkerLayout({ children, unreadNotifications = 0 }) {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthStore();
   const location = useLocation();
   const [available, setAvailable] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate;
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -127,8 +159,11 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
             </button>
           </div>
           <button
-            className={`${styles.navItem}`}
-            onClick={logout}
+            className={styles.navItem}
+            onClick={async () => {
+              await logout();
+              navigate("/login"); // add useNavigate() at the top
+            }}
             style={{ color: "rgba(255,255,255,0.4)", width: "100%" }}
           >
             <span className={styles.navIcon}>🚪</span>
@@ -145,23 +180,28 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
             <span className={styles.headerSub}>{pageInfo.sub}</span>
           </div>
           <div className={styles.headerRight}>
-            <Link to="/worker/notifications" className={styles.headerIconBtn}>
+            <Link
+              to="/dashboard/worker/notifications"
+              className={styles.headerIconBtn}
+            >
               🔔
               {unreadNotifications > 0 && (
                 <span className={styles.headerBellDot} />
               )}
             </Link>
-            <div
-              className={styles.sidebarAvatar}
-              style={{
-                width: 38,
-                height: 38,
-                fontSize: "0.8125rem",
-                cursor: "pointer",
-              }}
-            >
-              {initials}
-            </div>
+            <Link to="/profile/me" className={styles.headerIconBtn}>
+              <div
+                className={styles.sidebarAvatar}
+                style={{
+                  width: 38,
+                  height: 38,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                }}
+              >
+                {initials}
+              </div>
+            </Link>
           </div>
         </header>
 

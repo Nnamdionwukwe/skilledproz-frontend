@@ -1,16 +1,23 @@
-import { useState } from "react";
-import { useFetch } from "../../../hooks/useFetch";
-import { workerAPI } from "../../../services/api";
-import { useAuth } from "../../../hooks/useAuth";
+import { useEffect, useState } from "react";
+import api from "../../../lib/api";
+import { useAuthStore } from "../../../store/authStore";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import ui from "../../../components/ui/ui.module.css";
 
 export default function CategoriesPage() {
-  const { user } = useAuth();
-  const { data, loading, refetch } = useFetch(
-    () => workerAPI.getProfile(user?.id),
-    [user?.id],
-  );
+  const { user } = useAuthStore();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const refetch = () =>
+    api.get(`/workers/${user?.id}`).then((res) => setData(res.data.data));
+  useEffect(() => {
+    if (user?.id) {
+      api.get(`/workers/${user?.id}`).then((res) => {
+        setData(res.data.data);
+        setLoading(false);
+      });
+    }
+  }, [user?.id]);
   const categories = data?.worker?.categories || [];
 
   const [categoryId, setCategoryId] = useState("");
@@ -24,7 +31,7 @@ export default function CategoriesPage() {
     setSaving(true);
     setMsg(null);
     try {
-      await workerAPI.addCategory({ categoryId, isPrimary });
+      await api.post("/workers/categories", { categoryId, isPrimary });
       setCategoryId("");
       setIsPrimary(false);
       setMsg({ type: "success", text: "Category added!" });

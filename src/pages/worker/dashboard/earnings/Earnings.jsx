@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useFetch } from "../../../../hooks/useFetch";
-import { workerAPI } from "../../../../services/api";
+import { useEffect, useState } from "react";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import styles from "./Earnings.module.css";
 import ui from "../../../../components/ui/ui.module.css";
+import { useAuthStore } from "../../../../store/authStore";
+import api from "../../../../lib/api";
 
 function fmt(n, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", {
@@ -26,15 +26,22 @@ export default function EarningsPage() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data, loading, error, refetch } = useFetch(
-    () =>
-      workerAPI.getEarnings({
-        from: from || undefined,
-        to: to || undefined,
-        page,
-      }),
-    [from, to, page],
-  );
+  // ✅ Now (correct)
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    api;
+    api
+      .get("/workers/dashboard/earnings")
+      .then((res) => setData(res.data.data))
+      .catch((err) =>
+        setError(err.response?.data?.message || "Failed to load dashboard"),
+      )
+      .finally(() => setLoading(false));
+  }, []);
 
   const { payments = [], total = 0, pages = 1, summary = {} } = data || {};
 
