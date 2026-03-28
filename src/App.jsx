@@ -54,6 +54,8 @@ import InitiatePayment from "./components/payment/InitiatePayment";
 import ReleasePayment from "./components/payment/ReleasePayment";
 import PaystackVerify from "./components/payment/PaystackVerify";
 import StripeConfirm from "./components/payment/StripeConfirm";
+import LeaveReview from "./components/review/LeaveReview";
+import WorkerReviewsPage from "./components/review/WorkerReviewsPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -165,7 +167,7 @@ export default function App() {
           path="/dashboard/worker/reviews"
           element={
             <RequireAuth requireVerified>
-              <WorkerReviews />
+              <WorkerReviewsPage />
             </RequireAuth>
           }
         />
@@ -290,6 +292,15 @@ export default function App() {
             </RequireAuth>
           }
         />
+        <Route
+          path="/bookings/:bookingId/review"
+          element={
+            <RequireAuth>
+              <LeaveReview />
+            </RequireAuth>
+          }
+        />
+
         {/* ── User profile ── */}
         <Route
           path="/profile/me"
