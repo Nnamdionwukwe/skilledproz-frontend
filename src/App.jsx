@@ -237,6 +237,7 @@ export default function App() {
         />
 
         {/* ── Bookings ── */}
+
         <Route
           path="/bookings"
           element={
