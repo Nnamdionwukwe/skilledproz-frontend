@@ -261,6 +261,24 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/bookings/:bookingId/pay"
+          element={
+            <RequireAuth>
+              <InitiatePayment />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/bookings/:bookingId/release"
+          element={
+            <RequireAuth>
+              <ReleasePayment />
+            </RequireAuth>
+          }
+        />
+        <Route path="/payments/verify/paystack" element={<PaystackVerify />} />
+
         {/* ── User profile ── */}
         <Route
           path="/profile/me"
