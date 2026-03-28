@@ -56,6 +56,8 @@ import PaystackVerify from "./components/payment/PaystackVerify";
 import StripeConfirm from "./components/payment/StripeConfirm";
 import LeaveReview from "./components/review/LeaveReview";
 import WorkerReviewsPage from "./components/review/WorkerReviewsPage";
+import HirerReviewsGiven from "./components/hirer/HirerReviewsGiven";
+import HirerReviewsReceived from "./components/hirer/HirerReviewsReceived";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -236,6 +238,23 @@ export default function App() {
           element={
             <RequireAuth requireVerified>
               <HirerSavedWorkers />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/dashboard/hirer/reviews/received"
+          element={
+            <RequireAuth requireVerified>
+              <HirerReviewsReceived />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/reviews/given"
+          element={
+            <RequireAuth requireVerified>
+              <HirerReviewsGiven />
             </RequireAuth>
           }
         />

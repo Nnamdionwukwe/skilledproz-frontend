@@ -1,0 +1,398 @@
+.page {
+  padding: 2rem;
+  max-width: 860px;
+  animation: fadeUp 0.5s ease both;
+}
+
+/* Header */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--orange-dim);
+  color: var(--orange);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.8rem;
+  border-radius: 100px;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--orange-glow);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.sub {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+.switchBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+  white-space: nowrap;
+  margin-top: 0.5rem;
+}
+.switchBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* Summary block */
+.summary {
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.ratingHero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ratingBig {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+}
+
+.ratingCount {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.starOn {
+  color: var(--orange);
+  font-size: 1rem;
+}
+.starOff {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.bars {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.barLabel {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.barTrack {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.barCount {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  width: 20px;
+}
+
+/* Given stats */
+.givenStats {
+  display: flex;
+  gap: 2rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.givenStatItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.givenStatValue {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.givenStatLabel {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* Review cards */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  animation: fadeUp 0.5s ease both;
+  transition: border-color 0.2s;
+}
+.card:hover {
+  border-color: var(--border-hover);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 0.875rem;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  color: var(--orange);
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--orange-glow);
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reviewerInfo {
+  flex: 1;
+}
+
+.reviewerName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reviewerRole {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.reviewerLocation {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.reviewDate {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.ratingRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.ratingNum {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.comment {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  font-style: italic;
+  border-left: 2px solid var(--orange-glow);
+  padding-left: 0.875rem;
+  margin-bottom: 0.875rem;
+}
+
+.bookingChip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.875rem;
+  flex-wrap: wrap;
+}
+
+.bookingIcon {
+  font-size: 0.9rem;
+}
+
+.bookingTitle {
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.bookingCat {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.viewProfileLink {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--orange);
+  font-weight: 600;
+}
+.viewProfileLink:hover {
+  color: var(--orange-hover);
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+}
+.emptyTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.emptySub {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.emptyBtn {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange-glow);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.emptyBtn:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+/* Skeleton */
+.skeleton {
+  height: 120px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: pulse 1.4s ease infinite;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.pageBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.pageBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

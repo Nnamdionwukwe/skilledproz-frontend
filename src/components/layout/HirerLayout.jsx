@@ -20,7 +20,16 @@ const NAV = [
         path: "/dashboard/hirer/saved-workers",
         icon: "🔖",
       },
-      { label: "Reviews Given", path: "/dashboard/hirer/reviews", icon: "⭐" },
+      {
+        label: "Reviews Received",
+        path: "/dashboard/hirer/reviews/received",
+        icon: "⭐",
+      },
+      {
+        label: "Reviews Given",
+        path: "/dashboard/hirer/reviews/given",
+        icon: "✍️",
+      },
     ],
   },
   {
@@ -49,9 +58,13 @@ const PAGE_TITLES = {
     title: "Saved Workers",
     sub: "Workers you've hired before",
   },
-  "/dashboard/hirer/reviews": {
+  "/dashboard/hirer/reviews/given": {
     title: "Reviews Given",
     sub: "Your feedback to workers",
+  },
+  "/dashboard/hirer/reviews/received": {
+    title: "Reviews Received",
+    sub: "Feedback from workers",
   },
   "/dashboard/hirer/profile": {
     title: "Profile",
@@ -75,6 +88,10 @@ function getPageInfo(pathname) {
 function isNavActive(itemPath, pathname) {
   if (itemPath === "/bookings")
     return pathname === "/bookings" || pathname.startsWith("/bookings/");
+  if (itemPath === "/dashboard/hirer/reviews/received")
+    return pathname === "/dashboard/hirer/reviews/received";
+  if (itemPath === "/dashboard/hirer/reviews/given")
+    return pathname === "/dashboard/hirer/reviews/given";
   return pathname === itemPath;
 }
 
