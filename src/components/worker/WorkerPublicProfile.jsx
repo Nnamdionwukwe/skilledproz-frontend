@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import styles from "./WorkerPublicProfile.module.css";
 import api from "../../lib/api";
 
@@ -11,6 +11,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("about");
+  const navigate = useNavigate();
 
   // ── Priority order for resolving userId ──────────────────────────────────
   // 1. Explicit prop (e.g. <WorkerPublicProfile userId="abc" />)
@@ -150,13 +151,16 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
             </span>
             <span className={styles.rateLabel}>/ hr</span>
           </div>
-          <a
-            href={`/bookings/new?workerId=${user.id}`}
+          <button
             className={styles.bookBtn}
+            onClick={() => navigate(`/bookings/create?workerId=${user.id}`)}
           >
             Book Now
-          </a>
-          <a href={`/messages?with=${user.id}`} className={styles.msgBtn}>
+          </button>
+          <a
+            onClick={() => navigate(`/messages?with=${user.id}`)}
+            className={styles.msgBtn}
+          >
             💬 Message
           </a>
         </div>

@@ -26,7 +26,6 @@ import WorkerReviews from "./pages/worker/dashboard/reviews/Profile";
 
 // Hirer pages
 import HirerDashboard from "./components/hirer/HirerDashboard";
-import HirerBookings from "./components/hirer/HirerBookings";
 import HirerNotifications from "./components/hirer/HirerNotifications";
 import HirerProfile from "./components/hirer/HirerProfile";
 import PostJob from "./components/hirer/PostJob";
@@ -38,7 +37,6 @@ import CreateBooking from "./components/booking/CreateBooking";
 
 // User / shared
 import UserProfile from "./components/user/UserProfile";
-import EditProfile from "./components/user/EditProfile";
 
 // Fallback
 import DashboardPlaceholder from "./pages/worker/dashboard/DashboardPlaceholder";
@@ -184,7 +182,7 @@ export default function App() {
           }
         />
         <Route
-          path="dashboard/worker/certifications"
+          path="/dashboard/worker/certifications"
           element={
             <RequireAuth requireVerified>
               <WorkerCertifications />
