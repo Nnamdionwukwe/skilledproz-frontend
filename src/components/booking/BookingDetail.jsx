@@ -349,71 +349,87 @@ export default function BookingDetail() {
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Reviews</h2>
 
-                {/* Show existing review(s) */}
-                {booking.review && (
-                  <div className={styles.reviewCard}>
-                    <div className={styles.reviewCardTop}>
-                      <div className={styles.reviewerAvatar}>
-                        {booking.review.giver?.avatar ? (
-                          <img src={booking.review.giver.avatar} alt="" />
-                        ) : (
-                          <span>
-                            {booking.review.giver?.firstName?.[0]}
-                            {booking.review.giver?.lastName?.[0]}
-                          </span>
+                {/* Show all reviews for this booking */}
+                {booking.reviews && booking.reviews.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "1rem",
+                    }}
+                  >
+                    {booking.reviews.map((review) => (
+                      <div key={review.id} className={styles.reviewCard}>
+                        <div className={styles.reviewCardTop}>
+                          <div className={styles.reviewerAvatar}>
+                            {review.giver?.avatar ? (
+                              <img src={review.giver.avatar} alt="" />
+                            ) : (
+                              <span>
+                                {review.giver?.firstName?.[0]}
+                                {review.giver?.lastName?.[0]}
+                              </span>
+                            )}
+                          </div>
+                          <div className={styles.reviewerInfo}>
+                            <p className={styles.reviewerName}>
+                              {review.giver?.firstName} {review.giver?.lastName}
+                              <span className={styles.reviewerRole}>
+                                {" "}
+                                ·{" "}
+                                {review.giver?.role === "HIRER"
+                                  ? "Hirer"
+                                  : "Worker"}
+                              </span>
+                            </p>
+                            <p className={styles.reviewDate}>
+                              {new Date(review.createdAt).toLocaleDateString(
+                                "en-GB",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )}{" "}
+                              at{" "}
+                              {new Date(review.createdAt).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </p>
+                          </div>
+                          <div className={styles.stars}>
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={
+                                  i < review.rating
+                                    ? styles.starFilled
+                                    : styles.starEmpty
+                                }
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span className={styles.ratingNum}>
+                              {review.rating}/5
+                            </span>
+                          </div>
+                        </div>
+                        {review.comment && (
+                          <p className={styles.reviewComment}>
+                            "{review.comment}"
+                          </p>
                         )}
                       </div>
-                      <div className={styles.reviewerInfo}>
-                        <p className={styles.reviewerName}>
-                          {booking.review.giver?.firstName}{" "}
-                          {booking.review.giver?.lastName}
-                          <span className={styles.reviewerRole}>
-                            {" "}
-                            ·{" "}
-                            {booking.review.giver?.role === "HIRER"
-                              ? "Hirer"
-                              : "Worker"}
-                          </span>
-                        </p>
-                        <p className={styles.reviewDate}>
-                          {new Date(
-                            booking.review.createdAt,
-                          ).toLocaleDateString("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                      <div className={styles.stars}>
-                        {[...Array(5)].map((_, i) => (
-                          <span
-                            key={i}
-                            className={
-                              i < booking.review.rating
-                                ? styles.starFilled
-                                : styles.starEmpty
-                            }
-                          >
-                            ★
-                          </span>
-                        ))}
-                        <span className={styles.ratingNum}>
-                          {booking.review.rating}/5
-                        </span>
-                      </div>
-                    </div>
-                    {booking.review.comment && (
-                      <p className={styles.reviewComment}>
-                        "{booking.review.comment}"
-                      </p>
-                    )}
+                    ))}
                   </div>
                 )}
 
-                {/* Leave a review button — only if not yet reviewed */}
+                {/* Leave a review — only if this user hasn't reviewed yet */}
                 {reviewCheckDone && !hasReviewed && (
                   <Link
                     to={`/bookings/${booking.id}/review`}
@@ -424,16 +440,12 @@ export default function BookingDetail() {
                   </Link>
                 )}
 
-                {reviewCheckDone && hasReviewed && !booking.review && (
+                {reviewCheckDone && hasReviewed && (
                   <div className={styles.reviewedNote}>
-                    ✅ You have submitted your review. Waiting for the other
-                    party.
-                  </div>
-                )}
-
-                {reviewCheckDone && hasReviewed && booking.review && (
-                  <div className={styles.reviewedNote}>
-                    ✅ Both reviews submitted.
+                    ✅ Your review has been submitted.
+                    {booking.reviews?.length < 2 &&
+                      " Waiting for the other party."}
+                    {booking.reviews?.length >= 2 && " Both reviews submitted."}
                   </div>
                 )}
               </section>
