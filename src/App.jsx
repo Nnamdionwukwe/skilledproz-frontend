@@ -307,7 +307,7 @@ export default function App() {
 
         {/* ── Public Aceess ── */}
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
-        <Route path="/workers-search-page" element={<SearchPage />} />
+        <Route path="/search" element={<SearchPage />} />
 
         {/* ── Fallback ── */}
         <Route

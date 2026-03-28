@@ -239,7 +239,10 @@ function Empty({ filter, isHirer }) {
         to={isHirer ? "/dashboard/hirer/post-job" : "/search"}
         className={styles.emptyBtn}
       >
-        {isHirer ? "Post a Job" : "Find a Worker"}
+        {isHirer ? "Post a Job" : "Find a Hirer"}
+      </Link>
+      <Link to={isHirer && "/search"} className={styles.emptyBtn}>
+        {isHirer && "Find a Worker"}
       </Link>
     </div>
   );
