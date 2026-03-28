@@ -10,6 +10,12 @@ const NAV = [
       { label: "Dashboard", path: "/dashboard/hirer", icon: "◈" },
       { label: "My Bookings", path: "/bookings", icon: "📋" },
       { label: "Post a Job", path: "/dashboard/hirer/post-job", icon: "➕" },
+      {
+        label: "Browse Jobs",
+        path: "/search",
+        icon: "🔍",
+      },
+      { label: "Browse By Categories", path: "/categories", icon: "🔍" },
     ],
   },
   {
@@ -53,6 +59,14 @@ const PAGE_TITLES = {
   "/dashboard/hirer/post-job": {
     title: "Post a Job",
     sub: "Find the right worker",
+  },
+  "/search": {
+    title: "Browse Jobs",
+    sub: "Get the right worker",
+  },
+  "/categories": {
+    title: "Browse By Categories",
+    sub: "Find workers by skill",
   },
   "/dashboard/hirer/saved-workers": {
     title: "Saved Workers",
