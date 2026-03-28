@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../../lib/api";
+import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
 
-export default function ReleasePayment() {
+export default function InitiatePayment() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [releasing, setReleasing] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     api
@@ -21,17 +22,24 @@ export default function ReleasePayment() {
       .finally(() => setLoading(false));
   }, [bookingId]);
 
-  async function handleRelease() {
-    setReleasing(true);
+  async function handlePay() {
+    setPaying(true);
     setError("");
     try {
-      await api.post(`/payments/release/${bookingId}`);
-      setConfirmed(true);
-      setTimeout(() => navigate(`/bookings/${bookingId}`), 2500);
+      const res = await api.post(`/payments/initiate/${bookingId}`);
+      const { authorizationUrl, clientSecret } = res.data.data;
+      if (authorizationUrl) {
+        window.location.href = authorizationUrl; // Paystack
+      } else if (clientSecret) {
+        sessionStorage.setItem("stripe_client_secret", clientSecret);
+        navigate(`/bookings/${bookingId}/stripe-confirm`); // Stripe
+      } else {
+        setError("Unknown payment provider response.");
+      }
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to release payment.");
+      setError(e.response?.data?.message || "Payment initiation failed.");
     } finally {
-      setReleasing(false);
+      setPaying(false);
     }
   }
 
@@ -44,132 +52,143 @@ export default function ReleasePayment() {
       </HirerLayout>
     );
 
-  if (confirmed)
+  if (error && !booking)
     return (
       <HirerLayout>
         <div className={styles.page}>
-          <div className={styles.successWrap}>
-            <div className={styles.successRing}>
-              <span className={styles.successCheck}>✓</span>
-            </div>
-            <h2 className={styles.successTitle}>Payment Released!</h2>
-            <p className={styles.successText}>
-              Funds have been transferred to {booking?.worker?.firstName}. The
-              job is now marked complete.
-            </p>
-            <p className={styles.successSub}>Redirecting you back...</p>
+          <div className={styles.errorBox}>
+            <span className={styles.errorIcon}>⚠️</span>
+            <p>{error}</p>
+            <Link to="/bookings" className={styles.backLink}>
+              ← Back to Bookings
+            </Link>
           </div>
         </div>
       </HirerLayout>
     );
 
+  const fee = booking?.agreedRate ? (booking.agreedRate * 0.1).toFixed(2) : "—";
+  const total = booking?.agreedRate
+    ? (booking.agreedRate * 1.1).toFixed(2)
+    : "—";
+
   return (
     <HirerLayout>
       <div className={styles.page}>
         <div className={styles.payWrap}>
+          {/* Header */}
           <div className={styles.payHeader}>
             <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
               ← Back to Booking
             </Link>
-            <div className={`${styles.payBadge} ${styles.payBadgeGreen}`}>
-              Release Escrow
-            </div>
+            <div className={styles.payBadge}>Secure Payment</div>
           </div>
 
-          {/* Worker card */}
+          {/* Booking summary */}
           <div className={styles.summaryCard}>
             <div className={styles.summaryTop}>
-              <div className={styles.workerAvatar}>
-                {booking?.worker?.avatar ? (
-                  <img src={booking.worker.avatar} alt="" />
-                ) : (
-                  <span>
-                    {booking?.worker?.firstName?.[0]}
-                    {booking?.worker?.lastName?.[0]}
-                  </span>
-                )}
+              <div className={styles.summaryIconWrap}>
+                <span className={styles.summaryIcon}>📋</span>
               </div>
               <div>
-                <p className={styles.summaryLabel}>Releasing payment to</p>
-                <h2 className={styles.summaryTitle}>
+                <p className={styles.summaryLabel}>You're paying for</p>
+                <h2 className={styles.summaryTitle}>{booking?.title}</h2>
+                <p className={styles.summaryCategory}>
+                  {booking?.category?.name}
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.summaryMeta}>
+              <div className={styles.metaItem}>
+                <span className={styles.metaIcon}>👷</span>
+                <span className={styles.metaText}>
                   {booking?.worker?.firstName} {booking?.worker?.lastName}
-                </h2>
-                <p className={styles.summaryCategory}>{booking?.title}</p>
+                </span>
+              </div>
+              <div className={styles.metaItem}>
+                <span className={styles.metaIcon}>📅</span>
+                <span className={styles.metaText}>
+                  {new Date(booking?.scheduledAt).toLocaleDateString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className={styles.metaItem}>
+                <span className={styles.metaIcon}>📍</span>
+                <span className={styles.metaText}>{booking?.address}</span>
               </div>
             </div>
           </div>
 
-          {/* Amount */}
+          {/* Breakdown */}
           <div className={styles.breakdownCard}>
-            <p className={styles.breakdownTitle}>Release Summary</p>
+            <p className={styles.breakdownTitle}>Payment Breakdown</p>
             <div className={styles.breakdownRows}>
               <div className={styles.breakdownRow}>
-                <span className={styles.breakdownLabel}>Total Paid</span>
+                <span className={styles.breakdownLabel}>Agreed Rate</span>
                 <span className={styles.breakdownVal}>
-                  {booking?.payment?.currency}{" "}
-                  {Number(booking?.payment?.amount).toLocaleString()}
+                  {booking?.currency}{" "}
+                  {Number(booking?.agreedRate).toLocaleString()}
                 </span>
               </div>
               <div className={styles.breakdownRow}>
-                <span className={styles.breakdownLabel}>Platform Fee</span>
+                <span className={styles.breakdownLabel}>
+                  Platform Fee (10%)
+                </span>
                 <span className={styles.breakdownVal}>
-                  {booking?.payment?.currency}{" "}
-                  {Number(booking?.payment?.platformFee).toLocaleString()}
+                  {booking?.currency} {fee}
                 </span>
               </div>
               <div className={styles.breakdownDivider} />
               <div className={styles.breakdownRow}>
-                <span className={styles.breakdownLabelTotal}>
-                  Worker Receives
-                </span>
-                <span
-                  className={styles.breakdownValTotal}
-                  style={{ color: "var(--green)" }}
-                >
-                  {booking?.payment?.currency}{" "}
-                  {Number(booking?.payment?.workerPayout).toLocaleString()}
+                <span className={styles.breakdownLabelTotal}>Total</span>
+                <span className={styles.breakdownValTotal}>
+                  {booking?.currency} {Number(total).toLocaleString()}
                 </span>
               </div>
             </div>
 
-            <div
-              className={styles.escrowNote}
-              style={{
-                background: "rgba(34,197,94,0.06)",
-                borderColor: "rgba(34,197,94,0.15)",
-              }}
-            >
-              <span className={styles.escrowIcon}>✅</span>
+            <div className={styles.escrowNote}>
+              <span className={styles.escrowIcon}>🔒</span>
               <p>
-                By releasing payment, you confirm the job has been completed to
-                your satisfaction. This action cannot be undone.
+                Funds are held in escrow and only released to the worker after
+                you confirm the job is complete.
               </p>
             </div>
           </div>
 
+          {/* Error */}
           {error && (
             <div className={styles.inlineError}>
               <span>⚠️</span> {error}
             </div>
           )}
 
+          {/* CTA */}
           <button
-            className={`${styles.payBtn} ${styles.payBtnGreen}`}
-            onClick={handleRelease}
-            disabled={releasing}
+            className={styles.payBtn}
+            onClick={handlePay}
+            disabled={paying}
           >
-            {releasing ? (
+            {paying ? (
               <>
-                <span className={styles.spinner} /> Releasing...
+                <span className={styles.spinner} /> Processing...
               </>
             ) : (
-              <>💸 Release Payment to Worker</>
+              <>
+                💳 Pay {booking?.currency} {Number(total).toLocaleString()}{" "}
+                Securely
+              </>
             )}
           </button>
 
           <p className={styles.payDisclaimer}>
-            Once released, funds are transferred immediately and cannot be
-            reversed.
+            Powered by Paystack & Stripe. Your payment is protected and
+            encrypted.
           </p>
         </div>
       </div>

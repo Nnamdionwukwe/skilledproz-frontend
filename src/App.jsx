@@ -50,6 +50,10 @@ import About from "./pages/Terms pages/About";
 import Contact from "./pages/Terms pages/Contact";
 import PrivacyPolicy from "./pages/Terms pages/PrivacyPolicy";
 import Terms from "./pages/Terms pages/Terms";
+import InitiatePayment from "./components/payment/InitiatePayment";
+import ReleasePayment from "./components/payment/ReleasePayment";
+import PaystackVerify from "./components/payment/PaystackVerify";
+import StripeConfirm from "./components/payment/StripeConfirm";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -278,7 +282,14 @@ export default function App() {
           }
         />
         <Route path="/payments/verify/paystack" element={<PaystackVerify />} />
-
+        <Route
+          path="/bookings/:bookingId/stripe-confirm"
+          element={
+            <RequireAuth>
+              <StripeConfirm />
+            </RequireAuth>
+          }
+        />
         {/* ── User profile ── */}
         <Route
           path="/profile/me"
