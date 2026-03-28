@@ -48,6 +48,10 @@ import CategoriesBrowse from "./components/categories/CategoriesBrowse";
 import CategoryDetail from "./components/categories/CategoryDetail";
 import WorkerPublicProfile from "./components/worker/WorkerPublicProfile";
 import SearchPage from "./components/search/SearchPage";
+import About from "./pages/Terms pages/About";
+import Contact from "./pages/Terms pages/Contact";
+import PrivacyPolicy from "./pages/Terms pages/PrivacyPolicy";
+import Terms from "./pages/Terms pages/Terms";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -303,7 +307,7 @@ export default function App() {
 
         {/* ── Public Aceess ── */}
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
-        <Route path="/public-search-page" element={<SearchPage />} />
+        <Route path="/workers-search-page" element={<SearchPage />} />
 
         {/* ── Fallback ── */}
         <Route
@@ -315,6 +319,11 @@ export default function App() {
           }
         />
         <Route path="landingpage" element={<LandingPage />} />
+
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
