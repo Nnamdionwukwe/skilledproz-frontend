@@ -43,8 +43,9 @@ export default function HirerReviewsReceived() {
 
   useEffect(() => {
     setLoading(true);
+    api;
     api
-      .get(`/hirers/me/reviews?page=${page}&limit=${limit}`)
+      .get(`/hirers/me/reviews/received?page=${page}&limit=${limit}`)
       .then((res) => {
         const d = res.data.data;
         setReviews(d.reviews || []);
