@@ -28,21 +28,49 @@ export default function BookingDetail() {
   const [cancelReason, setCancelReason] = useState("");
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewCheckDone, setReviewCheckDone] = useState(false);
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const role = user?.role;
   const userId = user?.id;
 
+  // useEffect(() => {
+  //   api
+  //     .get(`/bookings/${id}`)
+  //     .then((res) => {
+  //       setBooking(res.data.data.booking);
+  //       setLoading(false);
+  //     })
+  //     .catch((err) => {
+  //       setLoading(false);
+  //     });
+  // }, [id]);
+
   useEffect(() => {
     api
       .get(`/bookings/${id}`)
       .then((res) => {
-        setBooking(res.data.data.booking);
+        const b = res.data.data.booking;
+        setBooking(b);
+
+        // Check if current user already reviewed this booking
+        if (b.status === "COMPLETED") {
+          api
+            .get(`/reviews/check/${id}`)
+            .then((r) => {
+              setHasReviewed(r.data.data.hasReviewed);
+            })
+            .catch(() => setHasReviewed(false))
+            .finally(() => setReviewCheckDone(true));
+        } else {
+          setReviewCheckDone(true);
+        }
+      })
+      .catch(() => {
         setLoading(false);
       })
-      .catch((err) => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   }, [id]);
 
   async function updateStatus(status, extra = {}) {
@@ -287,7 +315,7 @@ export default function BookingDetail() {
             )}
 
             {/* Review */}
-            {booking.review && (
+            {/* {booking.review && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Review</h2>
                 <div className={styles.reviewCard}>
@@ -314,6 +342,100 @@ export default function BookingDetail() {
                     </p>
                   )}
                 </div>
+              </section>
+            )} */}
+            {/* Reviews Section */}
+            {booking.status === "COMPLETED" && (
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Reviews</h2>
+
+                {/* Show existing review(s) */}
+                {booking.review && (
+                  <div className={styles.reviewCard}>
+                    <div className={styles.reviewCardTop}>
+                      <div className={styles.reviewerAvatar}>
+                        {booking.review.giver?.avatar ? (
+                          <img src={booking.review.giver.avatar} alt="" />
+                        ) : (
+                          <span>
+                            {booking.review.giver?.firstName?.[0]}
+                            {booking.review.giver?.lastName?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.reviewerInfo}>
+                        <p className={styles.reviewerName}>
+                          {booking.review.giver?.firstName}{" "}
+                          {booking.review.giver?.lastName}
+                          <span className={styles.reviewerRole}>
+                            {" "}
+                            ·{" "}
+                            {booking.review.giver?.role === "HIRER"
+                              ? "Hirer"
+                              : "Worker"}
+                          </span>
+                        </p>
+                        <p className={styles.reviewDate}>
+                          {new Date(
+                            booking.review.createdAt,
+                          ).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      <div className={styles.stars}>
+                        {[...Array(5)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={
+                              i < booking.review.rating
+                                ? styles.starFilled
+                                : styles.starEmpty
+                            }
+                          >
+                            ★
+                          </span>
+                        ))}
+                        <span className={styles.ratingNum}>
+                          {booking.review.rating}/5
+                        </span>
+                      </div>
+                    </div>
+                    {booking.review.comment && (
+                      <p className={styles.reviewComment}>
+                        "{booking.review.comment}"
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Leave a review button — only if not yet reviewed */}
+                {reviewCheckDone && !hasReviewed && (
+                  <Link
+                    to={`/bookings/${booking.id}/review`}
+                    className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+                    style={{ display: "inline-flex", marginTop: "1rem" }}
+                  >
+                    ⭐ Leave a Review
+                  </Link>
+                )}
+
+                {reviewCheckDone && hasReviewed && !booking.review && (
+                  <div className={styles.reviewedNote}>
+                    ✅ You have submitted your review. Waiting for the other
+                    party.
+                  </div>
+                )}
+
+                {reviewCheckDone && hasReviewed && booking.review && (
+                  <div className={styles.reviewedNote}>
+                    ✅ Both reviews submitted.
+                  </div>
+                )}
               </section>
             )}
           </div>
@@ -454,7 +576,6 @@ export default function BookingDetail() {
               {(booking.status === "COMPLETED" ||
                 booking.status === "CANCELLED") &&
                 !booking.review && (
-                  // ✅ Use Link instead of <a href>
                   <Link
                     to={`/bookings/${booking.id}/review`}
                     className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
