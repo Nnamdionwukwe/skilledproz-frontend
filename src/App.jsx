@@ -58,6 +58,7 @@ import LeaveReview from "./components/review/LeaveReview";
 import WorkerReviewsPage from "./components/review/WorkerReviewsPage";
 import HirerReviewsGiven from "./components/hirer/HirerReviewsGiven";
 import HirerReviewsReceived from "./components/hirer/HirerReviewsReceived";
+import Messages from "./components/messages/Messages";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -120,6 +121,14 @@ export default function App() {
                 }
                 replace
               />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <RequireAuth>
+              <Messages />
             </RequireAuth>
           }
         />

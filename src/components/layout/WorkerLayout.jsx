@@ -45,6 +45,7 @@ const NAV = [
         icon: "🔔",
         badge: "unread",
       },
+      { label: "Messages", path: "/messages", icon: "💬" },
     ],
   },
 ];
@@ -79,6 +80,7 @@ const PAGE_TITLES = {
     title: "Notifications",
     sub: "Stay up to date",
   },
+  "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
 };
 

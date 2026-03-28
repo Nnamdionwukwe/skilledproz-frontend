@@ -36,6 +36,7 @@ const NAV = [
         path: "/dashboard/hirer/reviews/given",
         icon: "✍️",
       },
+      { label: "Messages", path: "/messages", icon: "💬" },
     ],
   },
   {
@@ -80,6 +81,7 @@ const PAGE_TITLES = {
     title: "Reviews Received",
     sub: "Feedback from workers",
   },
+  "/messages": { title: "Messages", sub: "Your conversations" },
   "/dashboard/hirer/profile": {
     title: "Profile",
     sub: "Your account information",
