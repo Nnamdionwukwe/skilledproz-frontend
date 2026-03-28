@@ -12,7 +12,7 @@ import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
 
 // ── Load Stripe once outside component to avoid re-initialisation ─────────────
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // ── Stripe appearance config — matches dark theme ────────────────────────────
 const stripeAppearance = {
