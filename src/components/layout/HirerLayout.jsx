@@ -42,11 +42,11 @@ const NAV = [
       },
       { label: "Messages", path: "/messages", icon: "💬" },
       {
-        label: "Browse Jobs",
+        label: "Browse Workers",
         path: "/search",
         icon: "🔍",
       },
-      { label: "Browse By Categories", path: "/categories", icon: "🔍" },
+      { label: "Browse By Categories", path: "/categories", icon: "🔧" },
     ],
   },
   {
