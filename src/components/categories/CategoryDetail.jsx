@@ -4,7 +4,7 @@ import styles from "./CategoryDetail.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 
-export default function oCategoryDetail() {
+export default function CategoryDetail() {
   const { slug } = useParams();
   const [category, setCategory] = useState(null);
   const [workers, setWorkers] = useState([]);
