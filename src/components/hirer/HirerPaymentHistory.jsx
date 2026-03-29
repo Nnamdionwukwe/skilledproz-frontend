@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./HirerPaymentHistory.module.css";
+import HirerLayout from "../layout/HirerLayout";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -405,241 +406,245 @@ export default function HirerPaymentHistory() {
       .reduce((s, p) => s + (p.amount ?? 0), 0);
 
   return (
-    <div className={styles.page}>
-      {/* ── Page header ── */}
-      <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>Payment History</h1>
-          <p className={styles.pageSubtitle}>All transactions and receipts</p>
+    <HirerLayout>
+      <div className={styles.page}>
+        {/* ── Page header ── */}
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>Payment History</h1>
+            <p className={styles.pageSubtitle}>All transactions and receipts</p>
+          </div>
         </div>
-      </div>
 
-      {/* ── Summary row ── */}
-      <div className={styles.summaryRow}>
-        <SummaryCard
-          label="Total Spent"
-          value={fmt(totalSpent)}
-          sub={`${total} transaction${total !== 1 ? "s" : ""}`}
-          accent
-        />
-        <SummaryCard
-          label="In Escrow"
-          value={fmt(inEscrow)}
-          sub="Awaiting release"
-        />
-        <SummaryCard
-          label="Refunded"
-          value={fmt(totalRefunds)}
-          sub="Returned to you"
-        />
-      </div>
-
-      {/* ── Filters ── */}
-      <div className={styles.filters}>
-        <div className={styles.searchWrap}>
-          <svg
-            className={styles.searchIcon}
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
-            <circle
-              cx="7"
-              cy="7"
-              r="5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="11"
-              y1="11"
-              x2="14"
-              y2="14"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="Search by job, worker, or ID…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+        {/* ── Summary row ── */}
+        <div className={styles.summaryRow}>
+          <SummaryCard
+            label="Total Spent"
+            value={fmt(totalSpent)}
+            sub={`${total} transaction${total !== 1 ? "s" : ""}`}
+            accent
+          />
+          <SummaryCard
+            label="In Escrow"
+            value={fmt(inEscrow)}
+            sub="Awaiting release"
+          />
+          <SummaryCard
+            label="Refunded"
+            value={fmt(totalRefunds)}
+            sub="Returned to you"
           />
         </div>
 
-        <div className={styles.statusTabs}>
-          {["ALL", "HELD", "RELEASED", "REFUNDED", "FAILED"].map((s) => (
-            <button
-              key={s}
-              className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ""}`}
-              onClick={() => {
-                setStatus(s);
-                setPage(1);
-              }}
+        {/* ── Filters ── */}
+        <div className={styles.filters}>
+          <div className={styles.searchWrap}>
+            <svg
+              className={styles.searchIcon}
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
             >
-              {s === "ALL" ? "All" : (STATUS_META[s]?.label ?? s)}
-            </button>
-          ))}
+              <circle
+                cx="7"
+                cy="7"
+                r="5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="11"
+                y1="11"
+                x2="14"
+                y2="14"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="Search by job, worker, or ID…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.statusTabs}>
+            {["ALL", "HELD", "RELEASED", "REFUNDED", "FAILED"].map((s) => (
+              <button
+                key={s}
+                className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ""}`}
+                onClick={() => {
+                  setStatus(s);
+                  setPage(1);
+                }}
+              >
+                {s === "ALL" ? "All" : (STATUS_META[s]?.label ?? s)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ── Table ── */}
-      <div className={styles.tableWrap}>
-        {error ? (
-          <div className={styles.errorState}>{error}</div>
-        ) : (
-          <>
-            {/* Table header */}
-            <div className={styles.tableHead}>
-              <span>Job</span>
-              <span>Worker</span>
-              <span>Date</span>
-              <span>Amount</span>
-              <span>Status</span>
-              <span></span>
-            </div>
+        {/* ── Table ── */}
+        <div className={styles.tableWrap}>
+          {error ? (
+            <div className={styles.errorState}>{error}</div>
+          ) : (
+            <>
+              {/* Table header */}
+              <div className={styles.tableHead}>
+                <span>Job</span>
+                <span>Worker</span>
+                <span>Date</span>
+                <span>Amount</span>
+                <span>Status</span>
+                <span></span>
+              </div>
 
-            {/* Rows */}
-            <div className={styles.tableBody}>
-              {loading ? (
-                <SkeletonRows />
-              ) : visible.length === 0 ? (
-                <Empty />
-              ) : (
-                visible.map((payment, idx) => {
-                  const statusMeta = STATUS_META[payment.status] ?? {
-                    label: payment.status,
-                    cls: "pending",
-                  };
-                  const worker = payment.booking?.worker ?? {};
-                  const bookingStatus =
-                    BOOKING_STATUS_META[payment.booking?.status];
+              {/* Rows */}
+              <div className={styles.tableBody}>
+                {loading ? (
+                  <SkeletonRows />
+                ) : visible.length === 0 ? (
+                  <Empty />
+                ) : (
+                  visible.map((payment, idx) => {
+                    const statusMeta = STATUS_META[payment.status] ?? {
+                      label: payment.status,
+                      cls: "pending",
+                    };
+                    const worker = payment.booking?.worker ?? {};
+                    const bookingStatus =
+                      BOOKING_STATUS_META[payment.booking?.status];
 
-                  return (
-                    <div
-                      key={payment.id}
-                      className={styles.tableRow}
-                      style={{ animationDelay: `${idx * 40}ms` }}
-                    >
-                      {/* Job */}
-                      <div className={styles.jobCell}>
-                        <span className={styles.jobTitle}>
-                          {payment.booking?.title ?? "—"}
-                        </span>
-                        {payment.booking?.category?.name && (
-                          <span className={styles.jobCat}>
-                            {payment.booking.category.name}
+                    return (
+                      <div
+                        key={payment.id}
+                        className={styles.tableRow}
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                      >
+                        {/* Job */}
+                        <div className={styles.jobCell}>
+                          <span className={styles.jobTitle}>
+                            {payment.booking?.title ?? "—"}
                           </span>
-                        )}
-                        {bookingStatus && (
-                          <span
-                            className={`${styles.bookingBadge} ${styles[bookingStatus.cls]}`}
-                          >
-                            {bookingStatus.label}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Worker */}
-                      <div className={styles.workerCell}>
-                        <div className={styles.workerAvatar}>
-                          {worker.avatar ? (
-                            <img src={worker.avatar} alt="" />
-                          ) : (
-                            <span>
-                              {initials(worker.firstName, worker.lastName)}
+                          {payment.booking?.category?.name && (
+                            <span className={styles.jobCat}>
+                              {payment.booking.category.name}
+                            </span>
+                          )}
+                          {bookingStatus && (
+                            <span
+                              className={`${styles.bookingBadge} ${styles[bookingStatus.cls]}`}
+                            >
+                              {bookingStatus.label}
                             </span>
                           )}
                         </div>
-                        <span className={styles.workerName}>
-                          {worker.firstName} {worker.lastName}
-                        </span>
-                      </div>
 
-                      {/* Date */}
-                      <div className={styles.dateCell}>
-                        {fmtDate(payment.createdAt)}
-                      </div>
+                        {/* Worker */}
+                        <div className={styles.workerCell}>
+                          <div className={styles.workerAvatar}>
+                            {worker.avatar ? (
+                              <img src={worker.avatar} alt="" />
+                            ) : (
+                              <span>
+                                {initials(worker.firstName, worker.lastName)}
+                              </span>
+                            )}
+                          </div>
+                          <span className={styles.workerName}>
+                            {worker.firstName} {worker.lastName}
+                          </span>
+                        </div>
 
-                      {/* Amount */}
-                      <div className={styles.amountCell}>
-                        <span className={styles.amount}>
-                          {fmt(payment.amount, payment.currency)}
-                        </span>
-                        <span className={styles.amountSub}>
-                          Worker gets{" "}
-                          {fmt(payment.workerPayout, payment.currency)}
-                        </span>
-                      </div>
+                        {/* Date */}
+                        <div className={styles.dateCell}>
+                          {fmtDate(payment.createdAt)}
+                        </div>
 
-                      {/* Status */}
-                      <div className={styles.statusCell}>
-                        <span
-                          className={`${styles.statusPill} ${styles[statusMeta.cls]}`}
-                        >
-                          {statusMeta.label}
-                        </span>
-                      </div>
+                        {/* Amount */}
+                        <div className={styles.amountCell}>
+                          <span className={styles.amount}>
+                            {fmt(payment.amount, payment.currency)}
+                          </span>
+                          <span className={styles.amountSub}>
+                            Worker gets{" "}
+                            {fmt(payment.workerPayout, payment.currency)}
+                          </span>
+                        </div>
 
-                      {/* Actions */}
-                      <div className={styles.actionsCell}>
-                        <button
-                          className={styles.receiptBtn}
-                          onClick={() => setReceipt(payment)}
-                          title="View Receipt"
-                        >
-                          Receipt
-                        </button>
-                        {payment.status === "HELD" && (
-                          <button
-                            className={styles.releaseBtn}
-                            onClick={() => handleRelease(payment.bookingId)}
-                            disabled={releasing === payment.bookingId}
-                            title="Release payment to worker"
+                        {/* Status */}
+                        <div className={styles.statusCell}>
+                          <span
+                            className={`${styles.statusPill} ${styles[statusMeta.cls]}`}
                           >
-                            {releasing === payment.bookingId ? "…" : "Release"}
+                            {statusMeta.label}
+                          </span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className={styles.actionsCell}>
+                          <button
+                            className={styles.receiptBtn}
+                            onClick={() => setReceipt(payment)}
+                            title="View Receipt"
+                          >
+                            Receipt
                           </button>
-                        )}
+                          {payment.status === "HELD" && (
+                            <button
+                              className={styles.releaseBtn}
+                              onClick={() => handleRelease(payment.bookingId)}
+                              disabled={releasing === payment.bookingId}
+                              title="Release payment to worker"
+                            >
+                              {releasing === payment.bookingId
+                                ? "…"
+                                : "Release"}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Pagination ── */}
+        {!loading && totalPages > 1 && (
+          <div className={styles.pagination}>
+            <button
+              className={styles.pageBtn}
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ← Prev
+            </button>
+            <span className={styles.pageInfo}>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              className={styles.pageBtn}
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
+
+        {/* ── Receipt modal ── */}
+        {receipt && (
+          <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
         )}
       </div>
-
-      {/* ── Pagination ── */}
-      {!loading && totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            className={styles.pageBtn}
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ← Prev
-          </button>
-          <span className={styles.pageInfo}>
-            Page {page} of {totalPages}
-          </span>
-          <button
-            className={styles.pageBtn}
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-
-      {/* ── Receipt modal ── */}
-      {receipt && (
-        <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
-      )}
-    </div>
+    </HirerLayout>
   );
 }

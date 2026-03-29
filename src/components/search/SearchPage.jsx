@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./SearchPage.module.css";
 import api from "../../lib/api";
+import HirerLayout from "../layout/HirerLayout";
 
 const CURRENCIES = ["USD", "NGN", "GBP", "EUR", "GHS", "KES", "ZAR", "INR"];
 const RATINGS = [
@@ -187,416 +188,430 @@ export default function SearchPage() {
   ).length;
 
   return (
-    <div className={styles.page}>
-      {/* ── Search bar ── */}
-      <div className={styles.searchWrap} ref={sugRef}>
-        <form className={styles.searchBar} onSubmit={handleSearch}>
-          <span className={styles.searchIcon}>🔍</span>
-          <input
-            className={styles.searchInput}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Search plumbers, electricians, cleaners..."
-            autoComplete="off"
-          />
-          {input && (
-            <button
-              type="button"
-              className={styles.clearBtn}
-              onClick={() => {
-                setInput("");
-                setSuggestions(null);
-              }}
-            >
-              ×
-            </button>
-          )}
-          <button
-            type="button"
-            className={styles.nearbyBtn}
-            onClick={findNearby}
-            title="Find nearby workers"
-          >
-            {locating ? <span className={styles.spinner} /> : "📍"}
-          </button>
-          <button type="submit" className={styles.searchSubmit}>
-            Search
-          </button>
-        </form>
-
-        {/* Suggestions dropdown */}
-        {suggestions && (
-          <div className={styles.suggestions}>
-            {suggestions.categories?.length > 0 && (
-              <div className={styles.sugGroup}>
-                <p className={styles.sugLabel}>Categories</p>
-                {suggestions.categories.map((c) => (
-                  <button
-                    key={c.slug}
-                    className={styles.sugItem}
-                    onClick={() => {
-                      setInput(c.name);
-                      applyFilter("category", c.slug);
-                      setSuggestions(null);
-                      handleSearch();
-                    }}
-                  >
-                    <span>{c.icon || "🔧"}</span> {c.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            {suggestions.workers?.length > 0 && (
-              <div className={styles.sugGroup}>
-                <p className={styles.sugLabel}>Workers</p>
-                {suggestions.workers.map((w) => (
-                  <a
-                    key={w.id}
-                    href={`/workers/${w.id}`}
-                    className={styles.sugItem}
-                  >
-                    <div className={styles.sugAvatar}>
-                      {w.avatar ? (
-                        <img src={w.avatar} alt="" />
-                      ) : (
-                        <span>
-                          {w.firstName?.[0]}
-                          {w.lastName?.[0]}
-                        </span>
-                      )}
-                    </div>
-                    <span>
-                      {w.firstName} {w.lastName}
-                    </span>
-                    <span className={styles.sugSub}>
-                      {w.workerProfile?.title}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
-            {suggestions.cities?.length > 0 && (
-              <div className={styles.sugGroup}>
-                <p className={styles.sugLabel}>Cities</p>
-                {suggestions.cities.map((c, i) => (
-                  <button
-                    key={i}
-                    className={styles.sugItem}
-                    onClick={() => {
-                      setInput(c.city);
-                      applyFilter("city", c.city);
-                      setSuggestions(null);
-                    }}
-                  >
-                    📍 {c.city}, {c.country}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className={styles.layout}>
-        {/* ── Filters sidebar ── */}
-        <aside
-          className={`${styles.filterSidebar} ${showFilters ? styles.filterSidebarOpen : ""}`}
-        >
-          <div className={styles.filterHeader}>
-            <p className={styles.filterTitle}>
-              Filters{" "}
-              {activeFiltersCount > 0 && (
-                <span className={styles.filterCount}>{activeFiltersCount}</span>
-              )}
-            </p>
-            {activeFiltersCount > 0 && (
-              <button className={styles.clearFiltersBtn} onClick={clearFilters}>
-                Clear all
+    <HirerLayout>
+      <div className={styles.page}>
+        {/* ── Search bar ── */}
+        <div className={styles.searchWrap} ref={sugRef}>
+          <form className={styles.searchBar} onSubmit={handleSearch}>
+            <span className={styles.searchIcon}>🔍</span>
+            <input
+              className={styles.searchInput}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Search plumbers, electricians, cleaners..."
+              autoComplete="off"
+            />
+            {input && (
+              <button
+                type="button"
+                className={styles.clearBtn}
+                onClick={() => {
+                  setInput("");
+                  setSuggestions(null);
+                }}
+              >
+                ×
               </button>
             )}
-          </div>
-
-          {/* Availability toggle */}
-          <FilterSection title="Availability">
-            <label className={styles.toggle}>
-              <input
-                type="checkbox"
-                checked={filters.available === "true"}
-                onChange={(e) =>
-                  applyFilter("available", e.target.checked ? "true" : "false")
-                }
-              />
-              <span className={styles.toggleSlider} />
-              <span className={styles.toggleLabel}>Available only</span>
-            </label>
-          </FilterSection>
-
-          {/* Category */}
-          <FilterSection title="Category">
-            <select
-              className={styles.filterSelect}
-              value={filters.category}
-              onChange={(e) => applyFilter("category", e.target.value)}
-            >
-              <option value="">All categories</option>
-              {filterMeta.categories?.map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </FilterSection>
-
-          {/* Location */}
-          <FilterSection title="City">
-            <input
-              className={styles.filterInput}
-              placeholder="e.g. Lagos"
-              value={filters.city}
-              onChange={(e) => applyFilter("city", e.target.value)}
-            />
-          </FilterSection>
-
-          {/* Rate range */}
-          <FilterSection title="Hourly Rate">
-            <div className={styles.rateInputs}>
-              <input
-                className={styles.filterInput}
-                type="number"
-                placeholder={`Min (${filterMeta.rateRange?.min || 0})`}
-                value={filters.minRate}
-                onChange={(e) => applyFilter("minRate", e.target.value)}
-              />
-              <span className={styles.rateSep}>–</span>
-              <input
-                className={styles.filterInput}
-                type="number"
-                placeholder={`Max (${filterMeta.rateRange?.max || 500})`}
-                value={filters.maxRate}
-                onChange={(e) => applyFilter("maxRate", e.target.value)}
-              />
-            </div>
-          </FilterSection>
-
-          {/* Rating */}
-          <FilterSection title="Minimum Rating">
-            <div className={styles.ratingOptions}>
-              {RATINGS.map((r) => (
-                <button
-                  key={r.value}
-                  className={`${styles.ratingOpt} ${filters.rating == r.value ? styles.ratingOptActive : ""}`}
-                  onClick={() => applyFilter("rating", r.value)}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </FilterSection>
-        </aside>
-
-        {/* ── Main content ── */}
-        <div className={styles.mainContent}>
-          {/* Tab bar */}
-          <div className={styles.tabBar}>
-            <div className={styles.tabs}>
-              {[
-                { key: "trending", label: "Trending" },
-                {
-                  key: "results",
-                  label: `Results${total > 0 ? ` (${total})` : ""}`,
-                },
-                { key: "nearby", label: "Nearby" },
-              ].map((t) => (
-                <button
-                  key={t.key}
-                  className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-                  onClick={() => setTab(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
             <button
-              className={styles.mobileFilterBtn}
-              onClick={() => setShowFilters((s) => !s)}
+              type="button"
+              className={styles.nearbyBtn}
+              onClick={findNearby}
+              title="Find nearby workers"
             >
-              🔧 Filters{" "}
-              {activeFiltersCount > 0 && (
-                <span className={styles.filterCount}>{activeFiltersCount}</span>
-              )}
+              {locating ? <span className={styles.spinner} /> : "📍"}
             </button>
-          </div>
+            <button type="submit" className={styles.searchSubmit}>
+              Search
+            </button>
+          </form>
 
-          {/* ── TRENDING ── */}
-          {tab === "trending" && (
-            <div className={styles.trendingWrap}>
-              {/* Categories */}
-              {trending.categories?.length > 0 && (
-                <section className={styles.trendSection}>
-                  <h2 className={styles.trendTitle}>Popular Categories</h2>
-                  <div className={styles.catGrid}>
-                    {trending.categories.map((c) => (
-                      <button
-                        key={c.id}
-                        className={styles.catCard}
-                        onClick={() => {
-                          applyFilter("category", c.slug);
-                          setTab("results");
-                        }}
-                      >
-                        <span className={styles.catIcon}>{c.icon || "🔧"}</span>
-                        <span className={styles.catName}>{c.name}</span>
-                        <span className={styles.catCount}>
-                          {c._count?.workers || 0} workers
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
+          {/* Suggestions dropdown */}
+          {suggestions && (
+            <div className={styles.suggestions}>
+              {suggestions.categories?.length > 0 && (
+                <div className={styles.sugGroup}>
+                  <p className={styles.sugLabel}>Categories</p>
+                  {suggestions.categories.map((c) => (
+                    <button
+                      key={c.slug}
+                      className={styles.sugItem}
+                      onClick={() => {
+                        setInput(c.name);
+                        applyFilter("category", c.slug);
+                        setSuggestions(null);
+                        handleSearch();
+                      }}
+                    >
+                      <span>{c.icon || "🔧"}</span> {c.name}
+                    </button>
+                  ))}
+                </div>
               )}
-
-              {/* Top rated */}
-              {trending.topWorkers?.length > 0 && (
-                <section className={styles.trendSection}>
-                  <h2 className={styles.trendTitle}>Top Rated Workers</h2>
-                  <div className={styles.workerGrid}>
-                    {trending.topWorkers.map((w, i) => (
-                      <WorkerCard key={w.user?.id || i} worker={w} />
-                    ))}
-                  </div>
-                </section>
+              {suggestions.workers?.length > 0 && (
+                <div className={styles.sugGroup}>
+                  <p className={styles.sugLabel}>Workers</p>
+                  {suggestions.workers.map((w) => (
+                    <a
+                      key={w.id}
+                      href={`/workers/${w.id}`}
+                      className={styles.sugItem}
+                    >
+                      <div className={styles.sugAvatar}>
+                        {w.avatar ? (
+                          <img src={w.avatar} alt="" />
+                        ) : (
+                          <span>
+                            {w.firstName?.[0]}
+                            {w.lastName?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <span>
+                        {w.firstName} {w.lastName}
+                      </span>
+                      <span className={styles.sugSub}>
+                        {w.workerProfile?.title}
+                      </span>
+                    </a>
+                  ))}
+                </div>
               )}
-
-              {/* Recently joined */}
-              {trending.recentlyJoined?.length > 0 && (
-                <section className={styles.trendSection}>
-                  <h2 className={styles.trendTitle}>New on SkilledProz</h2>
-                  <div className={styles.workerGrid}>
-                    {trending.recentlyJoined.map((w, i) => (
-                      <WorkerCard key={w.user?.id || i} worker={w} isNew />
-                    ))}
-                  </div>
-                </section>
+              {suggestions.cities?.length > 0 && (
+                <div className={styles.sugGroup}>
+                  <p className={styles.sugLabel}>Cities</p>
+                  {suggestions.cities.map((c, i) => (
+                    <button
+                      key={i}
+                      className={styles.sugItem}
+                      onClick={() => {
+                        setInput(c.city);
+                        applyFilter("city", c.city);
+                        setSuggestions(null);
+                      }}
+                    >
+                      📍 {c.city}, {c.country}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-          )}
-
-          {/* ── RESULTS ── */}
-          {tab === "results" && (
-            <>
-              {!query ? (
-                <div className={styles.promptSearch}>
-                  <span className={styles.promptIcon}>🔍</span>
-                  <p className={styles.promptTitle}>
-                    Search for a skilled worker
-                  </p>
-                  <p className={styles.promptText}>
-                    Try "plumber Lagos", "electrician", or "house cleaning"
-                  </p>
-                </div>
-              ) : loading ? (
-                <div className={styles.workerGrid}>
-                  {[...Array(6)].map((_, i) => (
-                    <WorkerSkeleton key={i} />
-                  ))}
-                </div>
-              ) : workers.length === 0 ? (
-                <div className={styles.empty}>
-                  <span className={styles.emptyIcon}>😕</span>
-                  <p className={styles.emptyTitle}>
-                    No workers found for "{query}"
-                  </p>
-                  <p className={styles.emptyText}>
-                    Try different keywords or adjust your filters.
-                  </p>
-                  <button className={styles.emptyBtn} onClick={clearFilters}>
-                    Clear Filters
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className={styles.resultsMeta}>
-                    {total} worker{total !== 1 ? "s" : ""} found for "{query}"
-                  </p>
-                  <div className={styles.workerGrid}>
-                    {workers.map((w, i) => (
-                      <WorkerCard
-                        key={w.user?.id || i}
-                        worker={w}
-                        delay={i * 0.04}
-                      />
-                    ))}
-                  </div>
-                  {pages > 1 && (
-                    <div className={styles.pager}>
-                      <button
-                        className={styles.pageBtn}
-                        disabled={page === 1}
-                        onClick={() => changePage(page - 1)}
-                      >
-                        ← Prev
-                      </button>
-                      <span className={styles.pageInfo}>
-                        {page} / {pages}
-                      </span>
-                      <button
-                        className={styles.pageBtn}
-                        disabled={page === pages}
-                        onClick={() => changePage(page + 1)}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── NEARBY ── */}
-          {tab === "nearby" && (
-            <>
-              {nearbyLoading ? (
-                <div className={styles.workerGrid}>
-                  {[...Array(4)].map((_, i) => (
-                    <WorkerSkeleton key={i} />
-                  ))}
-                </div>
-              ) : nearbyWorkers.length === 0 ? (
-                <div className={styles.empty}>
-                  <span className={styles.emptyIcon}>📍</span>
-                  <p className={styles.emptyTitle}>No nearby workers found</p>
-                  <p className={styles.emptyText}>
-                    Allow location access and tap the 📍 button to find workers
-                    near you.
-                  </p>
-                  <button className={styles.emptyBtn} onClick={findNearby}>
-                    Try Again
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className={styles.resultsMeta}>
-                    {nearbyWorkers.length} worker
-                    {nearbyWorkers.length !== 1 ? "s" : ""} within 25 km
-                  </p>
-                  <div className={styles.workerGrid}>
-                    {nearbyWorkers.map((w, i) => (
-                      <WorkerCard
-                        key={w.user?.id || i}
-                        worker={w}
-                        delay={i * 0.04}
-                        showDistance
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
           )}
         </div>
+
+        <div className={styles.layout}>
+          {/* ── Filters sidebar ── */}
+          <aside
+            className={`${styles.filterSidebar} ${showFilters ? styles.filterSidebarOpen : ""}`}
+          >
+            <div className={styles.filterHeader}>
+              <p className={styles.filterTitle}>
+                Filters{" "}
+                {activeFiltersCount > 0 && (
+                  <span className={styles.filterCount}>
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </p>
+              {activeFiltersCount > 0 && (
+                <button
+                  className={styles.clearFiltersBtn}
+                  onClick={clearFilters}
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Availability toggle */}
+            <FilterSection title="Availability">
+              <label className={styles.toggle}>
+                <input
+                  type="checkbox"
+                  checked={filters.available === "true"}
+                  onChange={(e) =>
+                    applyFilter(
+                      "available",
+                      e.target.checked ? "true" : "false",
+                    )
+                  }
+                />
+                <span className={styles.toggleSlider} />
+                <span className={styles.toggleLabel}>Available only</span>
+              </label>
+            </FilterSection>
+
+            {/* Category */}
+            <FilterSection title="Category">
+              <select
+                className={styles.filterSelect}
+                value={filters.category}
+                onChange={(e) => applyFilter("category", e.target.value)}
+              >
+                <option value="">All categories</option>
+                {filterMeta.categories?.map((c) => (
+                  <option key={c.id} value={c.slug}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </FilterSection>
+
+            {/* Location */}
+            <FilterSection title="City">
+              <input
+                className={styles.filterInput}
+                placeholder="e.g. Lagos"
+                value={filters.city}
+                onChange={(e) => applyFilter("city", e.target.value)}
+              />
+            </FilterSection>
+
+            {/* Rate range */}
+            <FilterSection title="Hourly Rate">
+              <div className={styles.rateInputs}>
+                <input
+                  className={styles.filterInput}
+                  type="number"
+                  placeholder={`Min (${filterMeta.rateRange?.min || 0})`}
+                  value={filters.minRate}
+                  onChange={(e) => applyFilter("minRate", e.target.value)}
+                />
+                <span className={styles.rateSep}>–</span>
+                <input
+                  className={styles.filterInput}
+                  type="number"
+                  placeholder={`Max (${filterMeta.rateRange?.max || 500})`}
+                  value={filters.maxRate}
+                  onChange={(e) => applyFilter("maxRate", e.target.value)}
+                />
+              </div>
+            </FilterSection>
+
+            {/* Rating */}
+            <FilterSection title="Minimum Rating">
+              <div className={styles.ratingOptions}>
+                {RATINGS.map((r) => (
+                  <button
+                    key={r.value}
+                    className={`${styles.ratingOpt} ${filters.rating == r.value ? styles.ratingOptActive : ""}`}
+                    onClick={() => applyFilter("rating", r.value)}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </FilterSection>
+          </aside>
+
+          {/* ── Main content ── */}
+          <div className={styles.mainContent}>
+            {/* Tab bar */}
+            <div className={styles.tabBar}>
+              <div className={styles.tabs}>
+                {[
+                  { key: "trending", label: "Trending" },
+                  {
+                    key: "results",
+                    label: `Results${total > 0 ? ` (${total})` : ""}`,
+                  },
+                  { key: "nearby", label: "Nearby" },
+                ].map((t) => (
+                  <button
+                    key={t.key}
+                    className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
+                    onClick={() => setTab(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                className={styles.mobileFilterBtn}
+                onClick={() => setShowFilters((s) => !s)}
+              >
+                🔧 Filters{" "}
+                {activeFiltersCount > 0 && (
+                  <span className={styles.filterCount}>
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* ── TRENDING ── */}
+            {tab === "trending" && (
+              <div className={styles.trendingWrap}>
+                {/* Categories */}
+                {trending.categories?.length > 0 && (
+                  <section className={styles.trendSection}>
+                    <h2 className={styles.trendTitle}>Popular Categories</h2>
+                    <div className={styles.catGrid}>
+                      {trending.categories.map((c) => (
+                        <button
+                          key={c.id}
+                          className={styles.catCard}
+                          onClick={() => {
+                            applyFilter("category", c.slug);
+                            setTab("results");
+                          }}
+                        >
+                          <span className={styles.catIcon}>
+                            {c.icon || "🔧"}
+                          </span>
+                          <span className={styles.catName}>{c.name}</span>
+                          <span className={styles.catCount}>
+                            {c._count?.workers || 0} workers
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Top rated */}
+                {trending.topWorkers?.length > 0 && (
+                  <section className={styles.trendSection}>
+                    <h2 className={styles.trendTitle}>Top Rated Workers</h2>
+                    <div className={styles.workerGrid}>
+                      {trending.topWorkers.map((w, i) => (
+                        <WorkerCard key={w.user?.id || i} worker={w} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Recently joined */}
+                {trending.recentlyJoined?.length > 0 && (
+                  <section className={styles.trendSection}>
+                    <h2 className={styles.trendTitle}>New on SkilledProz</h2>
+                    <div className={styles.workerGrid}>
+                      {trending.recentlyJoined.map((w, i) => (
+                        <WorkerCard key={w.user?.id || i} worker={w} isNew />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
+
+            {/* ── RESULTS ── */}
+            {tab === "results" && (
+              <>
+                {!query ? (
+                  <div className={styles.promptSearch}>
+                    <span className={styles.promptIcon}>🔍</span>
+                    <p className={styles.promptTitle}>
+                      Search for a skilled worker
+                    </p>
+                    <p className={styles.promptText}>
+                      Try "plumber Lagos", "electrician", or "house cleaning"
+                    </p>
+                  </div>
+                ) : loading ? (
+                  <div className={styles.workerGrid}>
+                    {[...Array(6)].map((_, i) => (
+                      <WorkerSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : workers.length === 0 ? (
+                  <div className={styles.empty}>
+                    <span className={styles.emptyIcon}>😕</span>
+                    <p className={styles.emptyTitle}>
+                      No workers found for "{query}"
+                    </p>
+                    <p className={styles.emptyText}>
+                      Try different keywords or adjust your filters.
+                    </p>
+                    <button className={styles.emptyBtn} onClick={clearFilters}>
+                      Clear Filters
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className={styles.resultsMeta}>
+                      {total} worker{total !== 1 ? "s" : ""} found for "{query}"
+                    </p>
+                    <div className={styles.workerGrid}>
+                      {workers.map((w, i) => (
+                        <WorkerCard
+                          key={w.user?.id || i}
+                          worker={w}
+                          delay={i * 0.04}
+                        />
+                      ))}
+                    </div>
+                    {pages > 1 && (
+                      <div className={styles.pager}>
+                        <button
+                          className={styles.pageBtn}
+                          disabled={page === 1}
+                          onClick={() => changePage(page - 1)}
+                        >
+                          ← Prev
+                        </button>
+                        <span className={styles.pageInfo}>
+                          {page} / {pages}
+                        </span>
+                        <button
+                          className={styles.pageBtn}
+                          disabled={page === pages}
+                          onClick={() => changePage(page + 1)}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ── NEARBY ── */}
+            {tab === "nearby" && (
+              <>
+                {nearbyLoading ? (
+                  <div className={styles.workerGrid}>
+                    {[...Array(4)].map((_, i) => (
+                      <WorkerSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : nearbyWorkers.length === 0 ? (
+                  <div className={styles.empty}>
+                    <span className={styles.emptyIcon}>📍</span>
+                    <p className={styles.emptyTitle}>No nearby workers found</p>
+                    <p className={styles.emptyText}>
+                      Allow location access and tap the 📍 button to find
+                      workers near you.
+                    </p>
+                    <button className={styles.emptyBtn} onClick={findNearby}>
+                      Try Again
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className={styles.resultsMeta}>
+                      {nearbyWorkers.length} worker
+                      {nearbyWorkers.length !== 1 ? "s" : ""} within 25 km
+                    </p>
+                    <div className={styles.workerGrid}>
+                      {nearbyWorkers.map((w, i) => (
+                        <WorkerCard
+                          key={w.user?.id || i}
+                          worker={w}
+                          delay={i * 0.04}
+                          showDistance
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </HirerLayout>
   );
 }
 
