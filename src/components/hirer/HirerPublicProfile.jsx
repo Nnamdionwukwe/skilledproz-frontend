@@ -50,7 +50,7 @@ export default function HirerPublicProfile() {
 
   useEffect(() => {
     api
-      .get(`/jobs/hirers/${userId}/profile`)
+      .get(`/hirers/${userId}/profile`)
       .then((res) => setData(res.data.data))
       .catch(() => {})
       .finally(() => setLoading(false));

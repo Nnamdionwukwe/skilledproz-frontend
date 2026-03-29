@@ -27,6 +27,7 @@ import { useAuthStore } from "../../store/authStore";
 import EditProfile from "./EditProfile";
 import s from "./UserProfile.module.css";
 import HirerLayout from "../layout/HirerLayout";
+import WorkerLayout from "../layout/WorkerLayout";
 
 /* ── helpers ─────────────────────────────────────────────── */
 function initials(u) {
@@ -143,6 +144,7 @@ export default function UserProfile() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("About");
   const [editing, setEditing] = useState(false);
+  const Layout = me?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   const isOwn = me?.id === id || (!id && !!me);
   const profileId = id || me?.id;
@@ -210,7 +212,7 @@ export default function UserProfile() {
   const tabs = TABS[user.role] ?? ["About"];
 
   return (
-    <HirerLayout>
+    <Layout>
       <div className={s.page}>
         {/* ── Back nav ── */}
         {!isOwn && (
@@ -586,6 +588,6 @@ export default function UserProfile() {
           </section>
         </div>
       </div>
-    </HirerLayout>
+    </Layout>
   );
 }

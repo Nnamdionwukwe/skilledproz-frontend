@@ -5,7 +5,7 @@ import HirerLayout from "../layout/HirerLayout";
 
 export default function PostJob() {
   const [categories, setCategories] = useState([]);
-  const [matched, setMatched] = useState([]);
+  const [postedJob, setPostedJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ export default function PostJob() {
     scheduledAt: "",
     estimatedHours: "",
     budget: "",
-    currency: "USD",
+    currency: "NGN",
     notes: "",
   });
 
@@ -48,17 +48,37 @@ export default function PostJob() {
     }
     setLoading(true);
     try {
-      const res = await api.post("/hirers/me/post-job", form);
-      setMatched(res.data.data.matchedWorkers || []);
+      // ✅ POST to /api/jobs — saves to DB and appears in worker job board
+      const res = await api.post("/jobs", form);
+      setPostedJob(res.data.data.jobPost);
       setSubmitted(true);
-    } catch {
-      setError("Failed to post job. Please try again.");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to post job. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  if (submitted) {
+  function resetForm() {
+    setSubmitted(false);
+    setPostedJob(null);
+    setError("");
+    setForm({
+      categoryId: "",
+      title: "",
+      description: "",
+      address: "",
+      scheduledAt: "",
+      estimatedHours: "",
+      budget: "",
+      currency: "NGN",
+      notes: "",
+    });
+  }
+
+  if (submitted && postedJob) {
     return (
       <HirerLayout>
         <div className={styles.page}>
@@ -66,68 +86,86 @@ export default function PostJob() {
             <div className={styles.successIcon}>🎯</div>
             <h2 className={styles.successTitle}>Job Posted!</h2>
             <p className={styles.successText}>
-              We found <strong>{matched.length}</strong> available worker
-              {matched.length !== 1 ? "s" : ""} in your category.
+              Your job <strong>"{postedJob.title}"</strong> is now live and
+              visible to all skilled workers on the platform.
             </p>
 
-            {matched.length > 0 && (
-              <div className={styles.matchedGrid}>
-                {matched.map((w) => (
-                  <a
-                    key={w.user.id}
-                    href={`/workers/${w.user.id}`}
-                    className={styles.matchedCard}
-                  >
-                    <div className={styles.matchedAvatar}>
-                      {w.user.avatar ? (
-                        <img src={w.user.avatar} alt="" />
-                      ) : (
-                        <span>
-                          {w.user.firstName?.[0]}
-                          {w.user.lastName?.[0]}
-                        </span>
-                      )}
-                    </div>
-                    <div className={styles.matchedInfo}>
-                      <p className={styles.matchedName}>
-                        {w.user.firstName} {w.user.lastName}
-                      </p>
-                      <p className={styles.matchedTitle}>{w.title}</p>
-                      <div className={styles.matchedMeta}>
-                        <span className={styles.matchedRate}>
-                          {w.currency} {w.hourlyRate}/hr
-                        </span>
-                        <span className={styles.matchedRating}>
-                          ★ {w.avgRating?.toFixed(1) || "New"}
-                        </span>
-                      </div>
-                    </div>
-                    <span className={styles.viewArrow}>→</span>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            <button
-              className={styles.resetBtn}
-              onClick={() => {
-                setSubmitted(false);
-                setMatched([]);
-                setForm({
-                  categoryId: "",
-                  title: "",
-                  description: "",
-                  address: "",
-                  scheduledAt: "",
-                  estimatedHours: "",
-                  budget: "",
-                  currency: "USD",
-                  notes: "",
-                });
+            <div
+              style={{
+                background: "var(--orange-dim)",
+                border: "1px solid var(--orange-glow)",
+                borderRadius: 12,
+                padding: "1.25rem 1.5rem",
+                marginTop: "1.5rem",
+                textAlign: "left",
+                maxWidth: 480,
+                width: "100%",
               }}
             >
-              Post Another Job
-            </button>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--orange)",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {postedJob.category?.name || "Job"}
+              </div>
+              <div
+                style={{
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: "var(--text)",
+                  marginBottom: "0.25rem",
+                }}
+              >
+                {postedJob.title}
+              </div>
+              <div style={{ fontSize: "0.875rem", color: "var(--text-dim)" }}>
+                📍 {postedJob.address}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--text-dim)",
+                  marginTop: "0.25rem",
+                }}
+              >
+                💰 {postedJob.currency}{" "}
+                {Number(postedJob.budget).toLocaleString()}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                marginTop: "2rem",
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              <a
+                href="/dashboard/hirer/jobs"
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: "var(--orange)",
+                  color: "#fff",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  fontSize: "0.9rem",
+                }}
+              >
+                View My Jobs
+              </a>
+              <button className={styles.resetBtn} onClick={resetForm}>
+                Post Another Job
+              </button>
+            </div>
           </div>
         </div>
       </HirerLayout>
@@ -160,6 +198,7 @@ export default function PostJob() {
               <option value="">Select a category</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
+                  {c.icon ? `${c.icon} ` : ""}
                   {c.name}
                 </option>
               ))}
@@ -256,7 +295,7 @@ export default function PostJob() {
                 value={form.currency}
                 onChange={(e) => set("currency", e.target.value)}
               >
-                {["USD", "NGN", "GBP", "EUR", "GHS", "KES", "ZAR", "INR"].map(
+                {["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR", "INR"].map(
                   (c) => (
                     <option key={c} value={c}>
                       {c}
@@ -284,10 +323,10 @@ export default function PostJob() {
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? (
               <>
-                <span className={styles.spinner} /> Finding Workers...
+                <span className={styles.spinner} /> Posting Job...
               </>
             ) : (
-              <>🎯 Post Job &amp; Find Workers</>
+              <>🎯 Post Job</>
             )}
           </button>
         </form>
