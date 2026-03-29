@@ -9,13 +9,12 @@ const NAV = [
     items: [
       { label: "Dashboard", path: "/dashboard/hirer", icon: "◈" },
       { label: "My Bookings", path: "/bookings", icon: "📋" },
-      { label: "Post a Job", path: "/dashboard/hirer/post-job", icon: "➕" },
       {
-        label: "Browse Jobs",
-        path: "/search",
-        icon: "🔍",
+        label: "Payment History",
+        path: "/dashboard/hirer/payment-history",
+        icon: "�",
       },
-      { label: "Browse By Categories", path: "/categories", icon: "🔍" },
+      { label: "Post a Job", path: "/dashboard/hirer/post-job", icon: "➕" },
     ],
   },
   {
@@ -37,6 +36,12 @@ const NAV = [
         icon: "✍️",
       },
       { label: "Messages", path: "/messages", icon: "💬" },
+      {
+        label: "Browse Jobs",
+        path: "/search",
+        icon: "🔍",
+      },
+      { label: "Browse By Categories", path: "/categories", icon: "🔍" },
     ],
   },
   {
@@ -91,6 +96,10 @@ const PAGE_TITLES = {
     sub: "Stay up to date",
   },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
+  "/dashboard/hirer/payment-history": {
+    title: "Payment History",
+    sub: "Your payment records",
+  },
 };
 
 function getPageInfo(pathname) {
@@ -108,6 +117,8 @@ function isNavActive(itemPath, pathname) {
     return pathname === "/dashboard/hirer/reviews/received";
   if (itemPath === "/dashboard/hirer/reviews/given")
     return pathname === "/dashboard/hirer/reviews/given";
+  if (itemPath === "/dashboard/hirer/payment-history")
+    return pathname === "/dashboard/hirer/payment-history";
   return pathname === itemPath;
 }
 
