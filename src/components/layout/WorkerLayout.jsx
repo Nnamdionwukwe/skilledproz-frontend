@@ -10,6 +10,11 @@ const NAV = [
       { label: "Dashboard", path: "/dashboard/worker", icon: "◈" },
       { label: "My Bookings", path: "/bookings", icon: "📋" },
       { label: "Earnings", path: "/dashboard/worker/earnings", icon: "₦" },
+      {
+        label: "Verification",
+        path: "/dashboard/worker/verification",
+        icon: "🛡️",
+      },
     ],
   },
   {

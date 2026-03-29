@@ -60,6 +60,8 @@ import HirerReviewsGiven from "./components/hirer/HirerReviewsGiven";
 import HirerReviewsReceived from "./components/hirer/HirerReviewsReceived";
 import Messages from "./components/messages/Messages";
 import HirerPaymentHistory from "./components/hirer/HirerPaymentHistory";
+import WorkerVerification from "./pages/worker/verification/WorkerVerification";
+import HirerVerification from "./components/hirer/verification/HirerVerification";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -395,6 +397,24 @@ export default function App() {
           }
         />
         <Route path="landingpage" element={<LandingPage />} />
+
+        {/* ── Verification ── */}
+        <Route
+          path="/dashboard/worker/verification"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerVerification />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/verification"
+          element={
+            <RequireAuth requireVerified>
+              <HirerVerification />
+            </RequireAuth>
+          }
+        />
 
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

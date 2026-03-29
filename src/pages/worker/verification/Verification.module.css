@@ -1,0 +1,610 @@
+.page {
+  padding: 2rem;
+  max-width: 760px;
+  animation: fadeUp 0.5s ease both;
+}
+
+/* Header */
+.pageHeader {
+  margin-bottom: 2rem;
+}
+
+.badge2 {
+  display: inline-block;
+  background: var(--orange-dim);
+  color: var(--orange);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.8rem;
+  border-radius: 100px;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--orange-glow);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.sub {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+/* Status card */
+.statusCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  animation: fadeUp 0.5s ease 0.1s both;
+}
+
+.statusLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex: 1;
+}
+
+.statusIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.statusLabel {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.statusMsg {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.statusDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+.rejectionReason {
+  font-size: 0.8rem;
+  color: var(--red);
+  margin-top: 0.3rem;
+  background: var(--red-dim);
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid var(--red);
+}
+
+.statusRight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.checkIcon {
+  font-size: 1rem;
+}
+.checkLabel {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: 100px;
+}
+
+.badgeDefault {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.badgePending {
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange-glow);
+}
+.badgeVerified {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.badgeRejected {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.65rem 1rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabActive {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+.tabBadge {
+  background: var(--orange-dim);
+  color: var(--orange);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 100px;
+}
+
+/* Tab content */
+.tabContent {
+  animation: fadeUp 0.4s ease both;
+}
+
+/* Info box */
+.infoBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.infoTitle {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.infoList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.infoList li {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  padding-left: 1rem;
+  position: relative;
+}
+
+.infoList li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--orange);
+  font-size: 0.75rem;
+}
+
+/* Type selector */
+.typeSelector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.typeBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  gap: 0.3rem;
+}
+
+.typeBtn:hover {
+  border-color: var(--border-hover);
+}
+
+.typeBtnActive {
+  background: var(--orange-dim);
+  border-color: var(--orange);
+}
+
+.typeBtnIcon {
+  font-size: 1.75rem;
+}
+.typeBtnLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.typeBtnSub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--border-focus);
+}
+.input option {
+  background: #1a1a2e;
+}
+
+/* Dropzone */
+.dropzone {
+  background: var(--bg-input);
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.75rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  text-align: center;
+}
+
+.dropzone:hover {
+  border-color: var(--border-focus);
+  background: var(--orange-dim);
+}
+
+.dropzoneHasFile {
+  border-color: var(--green);
+  border-style: solid;
+  background: var(--green-dim);
+}
+
+.dropzoneInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dropzoneIcon {
+  font-size: 1.75rem;
+}
+
+.dropzoneText {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.dropzoneHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.fileSelected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.fileIcon {
+  font-size: 1.2rem;
+}
+
+.fileName {
+  font-size: 0.85rem;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.removeFile {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.removeFile:hover {
+  color: var(--red);
+}
+
+/* Alerts */
+.errorBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+}
+
+.successBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* Submit button */
+.submitBtn {
+  width: 100%;
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  padding: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Certifications list */
+.certList {
+  margin-bottom: 2rem;
+}
+
+.certListTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.875rem;
+}
+
+.certCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.625rem;
+  transition: border-color 0.2s;
+}
+
+.certCard:hover {
+  border-color: var(--border-hover);
+}
+
+.certLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+
+.certIcon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.certName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.certIssuer {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.certDate {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.certRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.viewLink {
+  font-size: 0.78rem;
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.viewLink:hover {
+  color: var(--orange-hover);
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  padding: 0;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+}
+
+.addCertSection {
+  padding-top: 0.5rem;
+}
+
+/* Already verified / pending states */
+.alreadyVerified,
+.pendingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  gap: 0.75rem;
+  animation: fadeUp 0.5s ease both;
+}
+
+.pendingBox {
+  border-color: var(--orange-glow);
+  background: var(--orange-dim);
+}
+
+.bigIcon {
+  font-size: 3rem;
+}
+
+.alreadyVerified h3,
+.pendingBox h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.alreadyVerified p,
+.pendingBox p {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: var(--bg);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .typeSelector {
+    grid-template-columns: 1fr;
+  }
+  .page {
+    padding: 1.25rem;
+  }
+}

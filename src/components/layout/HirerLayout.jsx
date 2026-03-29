@@ -15,6 +15,11 @@ const NAV = [
         icon: "�",
       },
       { label: "Post a Job", path: "/dashboard/hirer/post-job", icon: "➕" },
+      {
+        label: "Verification",
+        path: "/dashboard/hirer/verification",
+        icon: "🛡️",
+      },
     ],
   },
   {
