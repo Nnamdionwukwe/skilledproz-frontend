@@ -59,6 +59,7 @@ import WorkerReviewsPage from "./components/review/WorkerReviewsPage";
 import HirerReviewsGiven from "./components/hirer/HirerReviewsGiven";
 import HirerReviewsReceived from "./components/hirer/HirerReviewsReceived";
 import Messages from "./components/messages/Messages";
+import HirerPaymentHistory from "./components/hirer/HirerPaymentHistory";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -264,6 +265,14 @@ export default function App() {
           element={
             <RequireAuth requireVerified>
               <HirerReviewsGiven />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/payment-history"
+          element={
+            <RequireAuth requireVerified>
+              <HirerPaymentHistory />
             </RequireAuth>
           }
         />
