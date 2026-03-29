@@ -260,7 +260,7 @@ export default function App() {
           }
         />
         <Route
-          path="/jobs-management"
+          path="/dashboard/hirer/jobs-management"
           element={
             <RequireAuth>
               <HirerJobBoardManagement />

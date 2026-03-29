@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./HirerJobBoardManagement.module.css";
 import api from "../../../lib/api";
+import HirerLayout from "../../layout/HirerLayout";
 
 const STATUS_TABS = ["ALL", "OPEN", "FILLED", "CANCELLED"];
 
@@ -66,96 +67,98 @@ export default function HirerJobBoardManagement() {
   const cancelledCount = jobs.filter((j) => j.status === "CANCELLED").length;
 
   return (
-    <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>My Jobs</p>
-          <h1 className={styles.title}>Job Board</h1>
+    <HirerLayout>
+      <div className={styles.page}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>My Jobs</p>
+            <h1 className={styles.title}>Job Board</h1>
+          </div>
+          <Link to="/dashboard/hirer/post-job" className={styles.postBtn}>
+            <span>+</span> Post New Job
+          </Link>
         </div>
-        <Link to="/dashboard/hirer/post-job" className={styles.postBtn}>
-          <span>+</span> Post New Job
-        </Link>
-      </div>
 
-      {/* Alerts */}
-      {error && (
-        <Alert type="error" text={error} onClose={() => setError("")} />
-      )}
-      {success && (
-        <Alert type="success" text={success} onClose={() => setSuccess("")} />
-      )}
+        {/* Alerts */}
+        {error && (
+          <Alert type="error" text={error} onClose={() => setError("")} />
+        )}
+        {success && (
+          <Alert type="success" text={success} onClose={() => setSuccess("")} />
+        )}
 
-      {/* Summary pills */}
-      <div className={styles.summaryRow}>
-        <SummaryPill label="Open" value={openCount} color="green" />
-        <SummaryPill label="Filled" value={filledCount} color="indigo" />
-        <SummaryPill label="Cancelled" value={cancelledCount} color="red" />
-        <SummaryPill label="Total" value={total} color="dim" />
-      </div>
+        {/* Summary pills */}
+        <div className={styles.summaryRow}>
+          <SummaryPill label="Open" value={openCount} color="green" />
+          <SummaryPill label="Filled" value={filledCount} color="indigo" />
+          <SummaryPill label="Cancelled" value={cancelledCount} color="red" />
+          <SummaryPill label="Total" value={total} color="dim" />
+        </div>
 
-      {/* Filter tabs */}
-      <div className={styles.filterBar}>
-        {STATUS_TABS.map((s) => (
-          <button
-            key={s}
-            className={`${styles.filterTab} ${filter === s ? styles.filterTabActive : ""}`}
-            onClick={() => {
-              setFilter(s);
-              setPage(1);
-            }}
-          >
-            {s === "ALL" ? "All Jobs" : STATUS_META[s]?.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Grid */}
-      {loading ? (
-        <div className={styles.grid}>
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} />
+        {/* Filter tabs */}
+        <div className={styles.filterBar}>
+          {STATUS_TABS.map((s) => (
+            <button
+              key={s}
+              className={`${styles.filterTab} ${filter === s ? styles.filterTabActive : ""}`}
+              onClick={() => {
+                setFilter(s);
+                setPage(1);
+              }}
+            >
+              {s === "ALL" ? "All Jobs" : STATUS_META[s]?.label}
+            </button>
           ))}
         </div>
-      ) : jobs.length === 0 ? (
-        <Empty filter={filter} />
-      ) : (
-        <div className={styles.grid}>
-          {jobs.map((job, i) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              delay={i * 0.04}
-              acting={acting === job.id}
-              onStatusChange={updateStatus}
-            />
-          ))}
-        </div>
-      )}
 
-      {/* Pagination */}
-      {pages > 1 && (
-        <div className={styles.pager}>
-          <button
-            className={styles.pageBtn}
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ← Prev
-          </button>
-          <span className={styles.pageInfo}>
-            {page} / {pages}
-          </span>
-          <button
-            className={styles.pageBtn}
-            disabled={page === pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-    </div>
+        {/* Grid */}
+        {loading ? (
+          <div className={styles.grid}>
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} />
+            ))}
+          </div>
+        ) : jobs.length === 0 ? (
+          <Empty filter={filter} />
+        ) : (
+          <div className={styles.grid}>
+            {jobs.map((job, i) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                delay={i * 0.04}
+                acting={acting === job.id}
+                onStatusChange={updateStatus}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pages > 1 && (
+          <div className={styles.pager}>
+            <button
+              className={styles.pageBtn}
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              ← Prev
+            </button>
+            <span className={styles.pageInfo}>
+              {page} / {pages}
+            </span>
+            <button
+              className={styles.pageBtn}
+              disabled={page === pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
+      </div>
+    </HirerLayout>
   );
 }
 
