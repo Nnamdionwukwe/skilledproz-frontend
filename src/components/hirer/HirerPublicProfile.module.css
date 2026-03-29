@@ -1,0 +1,486 @@
+/* ── HirerPublicProfile.module.css ── */
+
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  animation: fadeUp 0.3s ease;
+}
+
+/* ── Hero ── */
+.hero {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--orange), transparent);
+}
+
+.heroInner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.avatarWrap {
+  flex-shrink: 0;
+}
+
+.avatarImg {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--orange-glow);
+}
+
+.avatarFallback {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 3px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.heroName {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.companyName {
+  font-size: 0.9375rem;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.metaItem {
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statNum {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.statLabel {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.statDivider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+}
+
+.heroCta {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.msgBtn {
+  padding: 0.625rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.msgBtn:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Tabs ── */
+.tabBar {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.tabBtn {
+  padding: 0.625rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+  font-family: var(--font-body);
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--text);
+}
+.tabBtnActive {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+/* ── Jobs grid ── */
+.jobsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.jobCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.jobCard:hover {
+  border-color: var(--border-hover);
+}
+
+.jobCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jobCat {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.jobTime {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.jobTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.jobDesc {
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.jobMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.jobBudget {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.jobApps,
+.jobLocation {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.applySection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.applyInput {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  resize: none;
+  outline: none;
+}
+
+.applyInput::placeholder {
+  color: var(--text-muted);
+}
+.applyInput:focus {
+  border-color: var(--border-focus);
+}
+
+.applyBtn {
+  width: 100%;
+  padding: 0.5625rem;
+  background: var(--orange);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.15s;
+}
+
+.applyBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.applyBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.applySuccess {
+  padding: 0.5rem 0.875rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--green);
+}
+
+.applyError {
+  padding: 0.5rem 0.875rem;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--red);
+}
+
+.jobViewLink {
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.jobViewLink:hover {
+  color: var(--orange);
+}
+
+/* ── Reviews ── */
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reviewCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.125rem 1.5rem;
+}
+
+.reviewTop {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.reviewAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.reviewAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reviewerName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.reviewDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.reviewComment {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  font-style: italic;
+  border-left: 2px solid var(--orange-glow);
+  padding-left: 0.875rem;
+  line-height: 1.65;
+}
+
+/* ── Empty ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.empty span {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+/* ── Skeleton ── */
+.skHero {
+  height: 220px;
+  background: var(--bg-panel);
+  border-radius: 18px;
+  margin-bottom: 1.5rem;
+  animation: pulse 1.5s infinite;
+}
+
+.skContent {
+  height: 400px;
+  background: var(--bg-panel);
+  border-radius: 14px;
+  animation: pulse 1.5s infinite;
+}
+
+/* ── Not found ── */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem;
+  text-align: center;
+}
+
+.notFound h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.backLink {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.backLink:hover {
+  color: var(--orange);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1.25rem 1rem;
+  }
+  .heroInner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .metaRow {
+    justify-content: center;
+  }
+  .statsRow {
+    justify-content: center;
+  }
+  .jobsGrid {
+    grid-template-columns: 1fr;
+  }
+}

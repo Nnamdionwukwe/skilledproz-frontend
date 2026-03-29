@@ -33,6 +33,7 @@ const NAV = [
         icon: "📅",
       },
       { label: "Categories", path: "/dashboard/worker/categories", icon: "🔧" },
+      { label: "Browse Jobs", path: "/jobs", icon: "🔍" },
     ],
   },
   {
