@@ -66,6 +66,7 @@ import HirerPublicProfile from "./components/hirer/HirerPublicProfile";
 import HirerJobBoard from "./components/hirer/hirerjobs/HirerJobBoard";
 import JobDetail from "./components/hirer/JobDetail";
 import HirerJobBoardManagement from "./components/hirer/hirerjobs/HirerJobBoardManagement";
+import JobApplications from "./components/hirer/JobApplications";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -256,6 +257,14 @@ export default function App() {
           element={
             <RequireAuth>
               <HirerJobBoard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/jobs/:id/applications"
+          element={
+            <RequireAuth requireVerified>
+              <JobApplications />
             </RequireAuth>
           }
         />
