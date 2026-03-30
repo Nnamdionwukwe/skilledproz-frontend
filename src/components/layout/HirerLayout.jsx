@@ -20,11 +20,6 @@ const NAV = [
         path: "/dashboard/hirer/jobs-management",
         icon: "📋",
       },
-      {
-        label: "Verification",
-        path: "/dashboard/hirer/verification",
-        icon: "🛡️",
-      },
     ],
   },
   {
@@ -35,6 +30,19 @@ const NAV = [
         path: "/dashboard/hirer/saved-workers",
         icon: "🔖",
       },
+
+      {
+        label: "Browse Workers",
+        path: "/search",
+        icon: "🔍",
+      },
+      { label: "Browse By Categories", path: "/categories", icon: "🔧" },
+      { label: "Messages", path: "/messages", icon: "💬" },
+    ],
+  },
+  {
+    group: "Reviews",
+    items: [
       {
         label: "Reviews Received",
         path: "/dashboard/hirer/reviews/received",
@@ -45,13 +53,6 @@ const NAV = [
         path: "/dashboard/hirer/reviews/given",
         icon: "✍️",
       },
-      { label: "Messages", path: "/messages", icon: "💬" },
-      {
-        label: "Browse Workers",
-        path: "/search",
-        icon: "🔍",
-      },
-      { label: "Browse By Categories", path: "/categories", icon: "🔧" },
     ],
   },
   {
@@ -63,6 +64,11 @@ const NAV = [
         path: "/dashboard/hirer/notifications",
         icon: "🔔",
         badge: "unread",
+      },
+      {
+        label: "Verification",
+        path: "/dashboard/hirer/verification",
+        icon: "🛡️",
       },
     ],
   },

@@ -84,7 +84,7 @@ export default function HirerDashboard() {
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Recent Bookings</h2>
-              <Link to="/dashboard/hirer/bookings" className={styles.panelLink}>
+              <Link to="/bookings" className={styles.panelLink}>
                 View all →
               </Link>
             </div>
