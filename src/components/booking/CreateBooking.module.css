@@ -5,6 +5,25 @@
   animation: fadeUp 0.4s ease both;
 }
 
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: all 0.15s;
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+.back:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
 .header {
   margin-bottom: 28px;
 }
