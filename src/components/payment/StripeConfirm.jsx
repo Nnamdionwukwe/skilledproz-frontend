@@ -149,10 +149,10 @@ function CheckoutForm({ bookingId, booking }) {
             </span>
           </div>
           <div className={styles.breakdownRow}>
-            <span className={styles.breakdownLabel}>Platform Fee (15%)</span>
+            <span className={styles.breakdownLabel}>Platform Fee (10%)</span>
             <span className={styles.breakdownVal}>
               {booking.currency}{" "}
-              {Number(booking.agreedRate * 0.15).toLocaleString()}
+              {Number(booking.agreedRate * 0.1).toLocaleString()}
             </span>
           </div>
           <div className={styles.breakdownDivider} />
