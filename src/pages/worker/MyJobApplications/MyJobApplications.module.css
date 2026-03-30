@@ -1,0 +1,469 @@
+/* ── Page ── */
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  animation: fadeUp 0.4s ease both;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+  gap: 1rem;
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+
+.pageSubtitle {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
+}
+
+.browseLink {
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  border-radius: 8px;
+  color: var(--orange);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.browseLink:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 0.375rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.tab:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.tabActive {
+  background: var(--orange-dim);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.tabBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+.badge_PENDING {
+  background: rgba(249, 115, 22, 0.2);
+  color: var(--orange);
+}
+.badge_ACCEPTED {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+}
+.badge_REJECTED {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+/* ── List ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  animation: fadeUp 0.35s ease both;
+  transition: border-color 0.2s;
+}
+.card:hover {
+  border-color: var(--border-hover);
+}
+.cardAccepted {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.acceptedStrip {
+  height: 3px;
+  background: linear-gradient(90deg, var(--green), rgba(34, 197, 94, 0.3));
+  width: 100%;
+}
+
+.cardBody {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
+}
+
+/* ── Job info (left) ── */
+.jobInfo {
+  min-width: 0;
+}
+
+.cardTopRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.catChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.625rem;
+  border-radius: 999px;
+}
+
+.jobStatusBadge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.jobOpen {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.jobFilled {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+.jobCancelled {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.jobTitle {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.625rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.metaItem {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.hirerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+}
+
+.hirerAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hirerAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hirerName {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.yourMessage {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+}
+.yourMessageLabel {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.yourMessageText {
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Card right (status + actions) ── */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 130px;
+}
+
+.appStatusBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.pending {
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange-glow);
+}
+.accepted {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+.rejected {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.appliedDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.viewJobBtn {
+  display: block;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  padding: 0.4rem 0.75rem;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.viewJobBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.messageBtn {
+  display: block;
+  text-align: center;
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 7px;
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.messageBtn:hover {
+  background: var(--green);
+  color: var(--bg);
+}
+
+.hirerProfileBtn {
+  display: block;
+  text-align: center;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  border-radius: 7px;
+  color: var(--orange);
+  font-size: 0.78rem;
+  padding: 0.4rem 0.75rem;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.hirerProfileBtn:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+/* ── Empty ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5rem 2rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+.emptyIcon {
+  font-size: 3rem;
+}
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.emptyText {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  max-width: 320px;
+}
+.browseBtn {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--orange);
+  color: var(--bg);
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.browseBtn:hover {
+  background: var(--orange-hover);
+}
+
+/* ── Error ── */
+.errorState {
+  text-align: center;
+  padding: 3rem;
+  color: var(--red);
+  font-size: 0.875rem;
+}
+
+/* ── Skeleton ── */
+.skCard {
+  height: 140px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  animation: pulse 1.4s ease infinite;
+}
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+.pageBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pageInfo {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .cardBody {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .cardRight {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .cardActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .jobTitle {
+    font-size: 0.9375rem;
+  }
+}
