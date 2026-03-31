@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import styles from "./WorkerDashboard.module.css";
 import ui from "../../../components/ui/ui.module.css";
@@ -49,6 +49,7 @@ export default function WorkerDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api
@@ -229,7 +230,7 @@ export default function WorkerDashboard() {
             <div className={ui.card} style={{ flex: 1 }}>
               <div className={ui.cardHeader}>
                 <span className={ui.cardTitle}>Upcoming jobs</span>
-                <Link to="/dashboard/worker/bookings" className={ui.cardLink}>
+                <Link to="/bookings" className={ui.cardLink}>
                   See all →
                 </Link>
               </div>
@@ -241,7 +242,11 @@ export default function WorkerDashboard() {
                 upcomingBookings.map((b) => {
                   const d = b.scheduledAt ? new Date(b.scheduledAt) : null;
                   return (
-                    <div key={b.id} className={styles.upcomingItem}>
+                    <div
+                      onClick={() => navigate(`/bookings/${b.id}`)}
+                      key={b.id}
+                      className={styles.upcomingItem}
+                    >
                       {d && (
                         <div className={styles.upcomingDate}>
                           <span className={styles.upcomingDay}>
@@ -273,7 +278,7 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Recent bookings</span>
-              <Link to="/dashboard/worker/bookings" className={ui.cardLink}>
+              <Link to="/bookings" className={ui.cardLink}>
                 View all →
               </Link>
             </div>
@@ -283,7 +288,11 @@ export default function WorkerDashboard() {
               </div>
             ) : (
               recentBookings.slice(0, 6).map((b) => (
-                <div key={b.id} className={styles.bookingItem}>
+                <div
+                  onClick={() => navigate(`/bookings/${b.id}`)}
+                  key={b.id}
+                  className={styles.bookingItem}
+                >
                   <div className={styles.bookingAvatar}>
                     {initials(b.hirer)}
                   </div>
