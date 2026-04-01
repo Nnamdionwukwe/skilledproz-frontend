@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
+import api from "../../lib/api";
 
 const NAV = [
   {
@@ -15,7 +16,7 @@ const NAV = [
       {
         label: "My Applications",
         path: "/dashboard/worker/applications",
-        icon: "📋",
+        icon: "📝",
       },
     ],
   },
@@ -44,12 +45,7 @@ const NAV = [
   {
     group: "Inbox",
     items: [
-      {
-        label: "Reviews",
-        path: "/dashboard/worker/reviews",
-        icon: "⭐",
-        badge: null,
-      },
+      { label: "Reviews", path: "/dashboard/worker/reviews", icon: "⭐" },
       {
         label: "Notifications",
         path: "/dashboard/worker/notifications",
@@ -91,8 +87,13 @@ const PAGE_TITLES = {
     title: "Notifications",
     sub: "Stay up to date",
   },
+  "/dashboard/worker/applications": {
+    title: "My Applications",
+    sub: "Jobs you applied to",
+  },
   "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
+  "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
 };
 
 function getPageInfo(pathname) {
@@ -100,6 +101,7 @@ function getPageInfo(pathname) {
   if (pathname.startsWith("/bookings/"))
     return { title: "Booking Detail", sub: "Job details and actions" };
   if (pathname.startsWith("/profile/")) return { title: "Profile", sub: "" };
+  if (pathname.startsWith("/jobs/")) return { title: "Job Detail", sub: "" };
   return { title: "SkilledProz", sub: "" };
 }
 
@@ -109,12 +111,20 @@ function isNavActive(itemPath, pathname) {
   return pathname === itemPath;
 }
 
-export default function WorkerLayout({ children, unreadNotifications = 0 }) {
+export default function WorkerLayout({ children }) {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [available, setAvailable] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    api
+      .get("/notifications?limit=1")
+      .then((res) => setUnreadCount(res.data.data?.unreadCount || 0))
+      .catch(() => {});
+  }, [location.pathname]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -125,10 +135,8 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
 
   return (
     <div className={styles.shell}>
-      {/* ── Mobile overlay ── */}
       {sidebarOpen && <div className={styles.overlay} onClick={closeSidebar} />}
 
-      {/* ── Sidebar ── */}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ""}`}>
         <div className={styles.sidebarLogo}>
           <div className={styles.logoText}>
@@ -138,7 +146,25 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
         </div>
 
         <div className={styles.sidebarWorker}>
-          <div className={styles.sidebarAvatar}>{initials}</div>
+          <div
+            onClick={() => navigate("/profile/me")}
+            className={styles.sidebarAvatar}
+          >
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                }}
+              />
+            ) : (
+              initials
+            )}
+          </div>
           <div>
             <div className={styles.sidebarWorkerName}>
               {user?.firstName} {user?.lastName}
@@ -160,9 +186,9 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
                 >
                   <span className={styles.navIcon}>{item.icon}</span>
                   {item.label}
-                  {item.badge === "unread" && unreadNotifications > 0 && (
+                  {item.badge === "unread" && unreadCount > 0 && (
                     <span className={styles.navBadge}>
-                      {unreadNotifications}
+                      {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
                 </Link>
@@ -196,7 +222,6 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
         </div>
       </aside>
 
-      {/* ── Main ── */}
       <div className={styles.main}>
         <header className={styles.header}>
           <div className={styles.headerLeft}>
@@ -216,14 +241,32 @@ export default function WorkerLayout({ children, unreadNotifications = 0 }) {
             <Link
               to="/dashboard/worker/notifications"
               className={styles.headerIconBtn}
+              style={{ position: "relative" }}
             >
               🔔
-              {unreadNotifications > 0 && (
-                <span className={styles.headerBellDot} />
+              {unreadCount > 0 && (
+                <span className={styles.bellBadge}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
               )}
             </Link>
             <Link to="/profile/me" className={styles.headerIconBtn}>
-              <div className={styles.headerAvatar}>{initials}</div>
+              <div className={styles.headerAvatar}>
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                    }}
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
             </Link>
           </div>
         </header>

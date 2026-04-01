@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
+import api from "../../lib/api";
 
 const NAV = [
   {
@@ -143,6 +144,14 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    api
+      .get("/notifications?limit=1")
+      .then((res) => setUnreadCount(res.data.data?.unreadCount || 0))
+      .catch(() => {});
+  }, [location.pathname]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -166,7 +175,25 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
         </div>
 
         <div className={styles.sidebarUser}>
-          <div className={styles.sidebarAvatar}>{initials}</div>
+          <div
+            onClick={() => navigate("/profile/me")}
+            className={styles.sidebarAvatar}
+          >
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                }}
+              />
+            ) : (
+              initials
+            )}
+          </div>
           <div>
             <div className={styles.sidebarUserName}>
               {user?.firstName} {user?.lastName}
@@ -231,16 +258,34 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
 
           <div className={styles.headerRight}>
             <Link
-              to="/dashboard/hirer/notifications"
+              to="/dashboard/worker/notifications"
               className={styles.headerIconBtn}
+              style={{ position: "relative" }}
             >
               🔔
-              {unreadNotifications > 0 && (
-                <span className={styles.headerBellDot} />
+              {unreadCount > 0 && (
+                <span className={styles.bellBadge}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
               )}
             </Link>
             <Link to="/profile/me" className={styles.headerIconBtn}>
-              <div className={styles.headerAvatar}>{initials}</div>
+              <div className={styles.headerAvatar}>
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                    }}
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
             </Link>
           </div>
         </header>
