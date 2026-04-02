@@ -10,13 +10,24 @@ const NAV = [
     items: [
       { label: "Dashboard", path: "/dashboard/worker", icon: "◈" },
       { label: "My Bookings", path: "/bookings", icon: "📋" },
-      { label: "Earnings", path: "/dashboard/worker/earnings", icon: "₦" },
       { label: "Categories", path: "/dashboard/worker/categories", icon: "🔧" },
       { label: "Browse Jobs", path: "/jobs", icon: "🔍" },
       {
         label: "My Applications",
         path: "/dashboard/worker/applications",
         icon: "📝",
+      },
+    ],
+  },
+  {
+    group: "Payouts",
+    items: [
+      { label: "Earnings", path: "/dashboard/worker/earnings", icon: "💸" },
+      { label: "Cashouts", path: "/dashboard/worker/payouts", icon: "💸" },
+      {
+        label: "Withdrawals",
+        path: "/dashboard/worker/withdrawals",
+        icon: "↑",
       },
     ],
   },
@@ -62,6 +73,10 @@ const PAGE_TITLES = {
   "/bookings": { title: "My Bookings", sub: "All your jobs" },
   "/bookings/create": { title: "Create Booking", sub: "Post a new job" },
   "/dashboard/worker/earnings": { title: "Earnings", sub: "Track your income" },
+  "/dashboard/worker/payouts": {
+    title: "Cashouts",
+    sub: "Withdraw your earnings",
+  },
   "/dashboard/worker/profile": {
     title: "Edit Profile",
     sub: "Update your information",

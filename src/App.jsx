@@ -68,6 +68,8 @@ import JobDetail from "./components/hirer/JobDetail";
 import HirerJobBoardManagement from "./components/hirer/hirerjobs/HirerJobBoardManagement";
 import JobApplications from "./components/hirer/JobApplications";
 import MyJobApplications from "./pages/worker/MyJobApplications/MyJobApplications";
+import WorkerPayouts from "./pages/worker/dashboard/earnings/WorkerPayouts";
+import WorkerWithdrawals from "./pages/worker/dashboard/earnings/WorkerWithdrawals";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -156,6 +158,14 @@ export default function App() {
           element={
             <RequireAuth requireVerified>
               <WorkerEarnings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/payouts"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerPayouts />
             </RequireAuth>
           }
         />
@@ -316,6 +326,14 @@ export default function App() {
           element={
             <RequireAuth requireVerified>
               <HirerPaymentHistory />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/withdrawals"
+          element={
+            <RequireAuth requireVerified>
+              <WorkerWithdrawals />
             </RequireAuth>
           }
         />
