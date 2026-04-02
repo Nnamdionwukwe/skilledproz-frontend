@@ -3,7 +3,7 @@ import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import api from "../../../../lib/api";
 import styles from "./WorkerWithdrawals.module.css";
 
-// ── Payout methods by region ──────────────────────────────────────────────────
+// ── Payout methods ─────────────────────────────────────────────────────────────
 const PAYOUT_METHODS = [
   {
     id: "bank_transfer",
@@ -73,7 +73,7 @@ const PAYOUT_METHODS = [
     label: "GCash / Maya",
     icon: "🇵🇭",
     desc: "Philippines",
-    regions: "Southeast Asia",
+    regions: "SE Asia",
     fields: ["mobileNumber"],
   },
   {
@@ -98,7 +98,7 @@ const FIELD_LABELS = {
   bankName: "Bank Name",
   accountNumber: "Account Number",
   accountName: "Account Name",
-  swiftBic: "SWIFT / BIC Code",
+  swiftBic: "SWIFT / BIC",
   routingNumber: "Routing Number (US/CA)",
   bankCountry: "Bank Country",
   paystackEmail: "Paystack Email",
@@ -112,20 +112,28 @@ const FIELD_LABELS = {
 };
 
 const FIELD_PLACEHOLDERS = {
-  bankName: "e.g. First Bank, Barclays, Chase",
+  bankName: "e.g. First Bank, Barclays",
   accountNumber: "0123456789",
-  accountName: "As it appears on your account",
+  accountName: "As on your account",
   swiftBic: "e.g. FBNINGLA",
-  routingNumber: "9-digit routing number",
-  bankCountry: "e.g. Nigeria, UK, USA",
+  routingNumber: "9-digit routing",
+  bankCountry: "e.g. Nigeria, UK",
   paystackEmail: "your@email.com",
   paypalEmail: "your@paypal.com",
   wiseEmail: "email or +1234567890",
   mobileNumber: "+234 800 000 0000",
-  mobileProvider: "OPay / PalmPay / Kuda...",
+  mobileProvider: "OPay / PalmPay...",
   mobileCountry: "Kenya / Tanzania...",
   walletAddress: "0x... or TRC20...",
-  cryptoNetwork: "Ethereum / Tron / Polygon",
+  cryptoNetwork: "Ethereum / Tron",
+};
+
+const STATUS_META = {
+  PENDING: { label: "Pending", cls: "pending" },
+  PROCESSING: { label: "Processing", cls: "processing" },
+  COMPLETED: { label: "Paid Out", cls: "paid" },
+  FAILED: { label: "Failed", cls: "failed" },
+  CANCELLED: { label: "Cancelled", cls: "cancelled" },
 };
 
 function fmt(amount, currency = "NGN") {
@@ -154,62 +162,16 @@ function timeAgo(d) {
   });
 }
 
-const WITHDRAWAL_STATUS = {
-  PENDING: { label: "Pending", cls: "pending" },
-  PROCESSING: { label: "Processing", cls: "processing" },
-  COMPLETED: { label: "Paid Out", cls: "paid" },
-  FAILED: { label: "Failed", cls: "failed" },
-  CANCELLED: { label: "Cancelled", cls: "cancelled" },
-};
-
-// ── Mock withdrawal history (replace with real API when payout endpoint exists) ──
-const MOCK_HISTORY = [
-  {
-    id: "wd-001",
-    amount: 45000,
-    currency: "NGN",
-    method: "Bank Transfer",
-    destination: "First Bank ••• 4521",
-    status: "COMPLETED",
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    completedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    reference: "WD-2024-001",
-  },
-  {
-    id: "wd-002",
-    amount: 22500,
-    currency: "NGN",
-    method: "OPay / PalmPay",
-    destination: "+234 812 345 6789",
-    status: "COMPLETED",
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    completedAt: new Date(Date.now() - 86400000 * 9).toISOString(),
-    reference: "WD-2024-002",
-  },
-  {
-    id: "wd-003",
-    amount: 15000,
-    currency: "NGN",
-    method: "Bank Transfer",
-    destination: "GTBank ••• 7890",
-    status: "PROCESSING",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    completedAt: null,
-    reference: "WD-2024-003",
-  },
-];
-
-// ── Receipt modal ─────────────────────────────────────────────────────────────
-function ReceiptModal({ withdrawal, onClose }) {
+// ── Receipt modal ──────────────────────────────────────────────────────────────
+function ReceiptModal({ withdrawal, currency, onClose }) {
   const ref = useRef();
   useEffect(() => {
     const fn = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [onClose]);
-
   if (!withdrawal) return null;
-  const sm = WITHDRAWAL_STATUS[withdrawal.status] || {
+  const sm = STATUS_META[withdrawal.status] || {
     label: withdrawal.status,
     cls: "pending",
   };
@@ -227,72 +189,57 @@ function ReceiptModal({ withdrawal, onClose }) {
             <span className={styles.receiptLogoMark}>SP</span>
             <span className={styles.receiptLogoText}>SkilledProz</span>
           </div>
-          <button className={styles.receiptClose} onClick={onClose}>
+          <button className={styles.modalClose} onClick={onClose}>
             ✕
           </button>
         </div>
 
         <div className={styles.receiptTitle}>
           <h2 className={styles.receiptHeading}>Withdrawal Receipt</h2>
-          <span className={`${styles.receiptStatusPill} ${styles[sm.cls]}`}>
-            {sm.label}
-          </span>
+          <span className={`${styles.pill} ${styles[sm.cls]}`}>{sm.label}</span>
         </div>
 
         <div className={styles.receiptGrid}>
-          <div className={styles.receiptMetaItem}>
-            <span className={styles.receiptMetaLabel}>Reference</span>
-            <span className={styles.receiptMetaValue}>
-              #{withdrawal.reference}
-            </span>
-          </div>
-          <div className={styles.receiptMetaItem}>
-            <span className={styles.receiptMetaLabel}>Requested</span>
-            <span className={styles.receiptMetaValue}>
-              {new Date(withdrawal.createdAt).toLocaleString("en-GB")}
-            </span>
-          </div>
+          <MetaItem label="Reference" value={`#${withdrawal.reference}`} />
+          <MetaItem
+            label="Requested"
+            value={new Date(withdrawal.createdAt).toLocaleString("en-GB")}
+          />
           {withdrawal.completedAt && (
-            <div className={styles.receiptMetaItem}>
-              <span className={styles.receiptMetaLabel}>Completed</span>
-              <span className={styles.receiptMetaValue}>
-                {new Date(withdrawal.completedAt).toLocaleString("en-GB")}
-              </span>
-            </div>
+            <MetaItem
+              label="Completed"
+              value={new Date(withdrawal.completedAt).toLocaleString("en-GB")}
+            />
           )}
-          <div className={styles.receiptMetaItem}>
-            <span className={styles.receiptMetaLabel}>Method</span>
-            <span className={styles.receiptMetaValue}>{withdrawal.method}</span>
-          </div>
+          <MetaItem
+            label="Method"
+            value={withdrawal.method?.replace(/_/g, " ")}
+          />
         </div>
 
         <div className={styles.receiptDivider} />
-
-        <div className={styles.receiptDestination}>
-          <span className={styles.receiptMetaLabel}>Paid to</span>
-          <span className={styles.receiptDestValue}>
+        <div className={styles.receiptDest}>
+          <span className={styles.metaLabel}>Paid to</span>
+          <span className={styles.receiptDestVal}>
             {withdrawal.destination}
           </span>
         </div>
-
         <div className={styles.receiptDivider} />
 
         <div className={styles.receiptBreakdown}>
-          <div className={styles.receiptBreakdownRow}>
+          <div className={styles.breakRow}>
             <span>Withdrawal amount</span>
             <span>{fmt(withdrawal.amount, withdrawal.currency)}</span>
           </div>
-          <div className={styles.receiptBreakdownRow}>
-            <span>Processing fee</span>
+          <div className={styles.breakRow}>
+            <span>Processing fee (1%)</span>
             <span className={styles.feeText}>
-              — {fmt(withdrawal.amount * 0.01, withdrawal.currency)}
+              − {fmt(withdrawal.amount * 0.01, withdrawal.currency)}
             </span>
           </div>
-          <div
-            className={`${styles.receiptBreakdownRow} ${styles.receiptTotal}`}
-          >
+          <div className={`${styles.breakRow} ${styles.breakTotal}`}>
             <span>Net payout</span>
-            <span className={styles.receiptTotalAmount}>
+            <span className={styles.breakTotalAmt}>
               {fmt(withdrawal.amount * 0.99, withdrawal.currency)}
             </span>
           </div>
@@ -309,14 +256,21 @@ function ReceiptModal({ withdrawal, onClose }) {
   );
 }
 
+function MetaItem({ label, value }) {
+  return (
+    <div className={styles.metaItem}>
+      <span className={styles.metaLabel}>{label}</span>
+      <span className={styles.metaValue}>{value}</span>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function WorkerWithdrawals() {
-  const [earnings, setEarnings] = useState(null);
-  const [history, setHistory] = useState(MOCK_HISTORY);
+  const [balance, setBalance] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [receipt, setReceipt] = useState(null);
-
-  // Withdraw form state
   const [showForm, setShowForm] = useState(false);
   const [method, setMethod] = useState(PAYOUT_METHODS[0]);
   const [amount, setAmount] = useState("");
@@ -324,17 +278,27 @@ export default function WorkerWithdrawals() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+
+  async function loadData(p = 1) {
+    setLoading(true);
+    try {
+      const res = await api.get(`/payments/withdrawals?page=${p}&limit=15`);
+      setHistory(res.data.data.withdrawals);
+      setBalance(res.data.data.balance);
+      setPages(res.data.data.pages);
+      setPage(p);
+    } catch {
+      setError("Failed to load withdrawal data.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    api
-      .get("/payments/earnings")
-      .then((r) => setEarnings(r.data.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
-
-  const available = earnings?.totalEarned || 0;
-  const inEscrow = earnings?.pendingEscrow || 0;
 
   function setField(k, v) {
     setFields((prev) => ({ ...prev, [k]: v }));
@@ -345,51 +309,49 @@ export default function WorkerWithdrawals() {
     setError("");
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return setError("Enter a valid amount.");
-    if (amt > available) return setError("Amount exceeds available balance.");
     if (amt < 500) return setError("Minimum withdrawal is 500.");
+    if (amt > (balance?.available || 0))
+      return setError("Amount exceeds available balance.");
+
+    // Build destination label from fields
+    const dest = fields[method.fields[0]] || "—";
 
     setSubmitting(true);
-    // Simulate API call — replace with real payout endpoint
-    await new Promise((r) => setTimeout(r, 2000));
-
-    const newWithdrawal = {
-      id: `wd-${Date.now()}`,
-      amount: amt,
-      currency: "NGN",
-      method: method.label,
-      destination: fields[method.fields[0]] || "—",
-      status: "PENDING",
-      createdAt: new Date().toISOString(),
-      completedAt: null,
-      reference: `WD-${Date.now()}`,
-    };
-
-    setHistory((prev) => [newWithdrawal, ...prev]);
-    setSuccess(
-      `Withdrawal request of ${fmt(amt)} submitted. Processing within 1–3 business days.`,
-    );
-    setAmount("");
-    setFields({});
-    setSubmitting(false);
+    try {
+      await api.post("/payments/withdraw", {
+        amount: amt,
+        currency: "NGN",
+        method: method.id,
+        destination: dest,
+        details: fields,
+      });
+      setSuccess(
+        `Withdrawal of ${fmt(amt)} submitted. Processing within 1–3 business days.`,
+      );
+      setAmount("");
+      setFields({});
+      loadData(1); // refresh history
+    } catch (e) {
+      setError(
+        e.response?.data?.message || "Withdrawal failed. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  const totalWithdrawn = history
-    .filter((w) => w.status === "COMPLETED")
-    .reduce((s, w) => s + w.amount, 0);
-  const pending = history
-    .filter((w) => ["PENDING", "PROCESSING"].includes(w.status))
-    .reduce((s, w) => s + w.amount, 0);
+  const available = balance?.available || 0;
 
   return (
     <WorkerLayout>
       <div className={styles.page}>
-        {/* ── Header ── */}
+        {/* Header */}
         <div className={styles.header}>
           <div>
-            <div className={styles.eyebrow}>Payouts</div>
-            <h1 className={styles.title}>Withdrawal History</h1>
+            <div className={styles.eyebrow}>Earnings & Payouts</div>
+            <h1 className={styles.title}>Your Wallet</h1>
             <p className={styles.sub}>
-              Request payouts and view your full withdrawal history
+              Track earnings, escrows, and withdraw funds
             </p>
           </div>
           <button
@@ -401,11 +363,11 @@ export default function WorkerWithdrawals() {
             }}
             disabled={available <= 0}
           >
-            ↑ Request Payout
+            ↑ Withdraw Funds
           </button>
         </div>
 
-        {/* ── Summary cards ── */}
+        {/* Summary cards */}
         <div className={styles.summaryGrid}>
           <div className={`${styles.summaryCard} ${styles.summaryAccent}`}>
             <span className={styles.summaryLabel}>Available to Withdraw</span>
@@ -417,18 +379,22 @@ export default function WorkerWithdrawals() {
           <div className={styles.summaryCard}>
             <span className={styles.summaryLabel}>In Escrow</span>
             <span className={styles.summaryValue}>
-              {loading ? "—" : fmt(inEscrow)}
+              {loading ? "—" : fmt(balance?.inEscrow || 0)}
             </span>
-            <span className={styles.summarySub}>Awaiting job completion</span>
+            <span className={styles.summarySub}>Awaiting completion</span>
           </div>
           <div className={styles.summaryCard}>
             <span className={styles.summaryLabel}>Total Withdrawn</span>
-            <span className={styles.summaryValue}>{fmt(totalWithdrawn)}</span>
+            <span className={styles.summaryValue}>
+              {loading ? "—" : fmt(balance?.totalWithdrawn || 0)}
+            </span>
             <span className={styles.summarySub}>All time</span>
           </div>
           <div className={styles.summaryCard}>
             <span className={styles.summaryLabel}>Pending Payouts</span>
-            <span className={styles.summaryValue}>{fmt(pending)}</span>
+            <span className={styles.summaryValue}>
+              {loading ? "—" : fmt(balance?.pendingPayout || 0)}
+            </span>
             <span className={styles.summarySub}>
               {
                 history.filter((w) =>
@@ -440,13 +406,14 @@ export default function WorkerWithdrawals() {
           </div>
         </div>
 
-        {/* ── Withdrawal history table ── */}
+        {/* History table */}
         <div className={styles.tableWrap}>
           <div className={styles.tableHeader}>
             <h2 className={styles.tableTitle}>Withdrawal History</h2>
             <span className={styles.tableCount}>{history.length} records</span>
           </div>
 
+          {/* Desktop head */}
           <div className={styles.tableHead}>
             <span>Reference</span>
             <span>Method</span>
@@ -458,7 +425,11 @@ export default function WorkerWithdrawals() {
           </div>
 
           <div className={styles.tableBody}>
-            {history.length === 0 ? (
+            {loading ? (
+              [...Array(3)].map((_, i) => (
+                <div key={i} className={styles.skRow} />
+              ))
+            ) : history.length === 0 ? (
               <div className={styles.empty}>
                 <span className={styles.emptyIcon}>💸</span>
                 <p className={styles.emptyTitle}>No withdrawals yet</p>
@@ -468,28 +439,43 @@ export default function WorkerWithdrawals() {
               </div>
             ) : (
               history.map((w, i) => {
-                const sm = WITHDRAWAL_STATUS[w.status] || {
+                const sm = STATUS_META[w.status] || {
                   label: w.status,
                   cls: "pending",
                 };
+                const methodMeta = PAYOUT_METHODS.find(
+                  (m) => m.id === w.method,
+                );
                 return (
                   <div
                     key={w.id}
                     className={styles.tableRow}
-                    style={{ animationDelay: `${i * 40}ms` }}
+                    style={{ animationDelay: `${i * 35}ms` }}
                   >
-                    <div className={styles.refCell}>
-                      <span className={styles.refText}>#{w.reference}</span>
+                    {/* Mobile: stacked layout */}
+                    <div className={styles.rowMobileTop}>
+                      <div className={styles.refCell}>
+                        <span className={styles.refText}>#{w.reference}</span>
+                        <span className={styles.dateCell}>
+                          {timeAgo(w.createdAt)}
+                        </span>
+                      </div>
+                      <span className={`${styles.pill} ${styles[sm.cls]}`}>
+                        {sm.label}
+                      </span>
                     </div>
+
+                    {/* Desktop cells */}
                     <div className={styles.methodCell}>
                       <span className={styles.methodIcon}>
-                        {PAYOUT_METHODS.find((m) => m.label === w.method)
-                          ?.icon || "💳"}
+                        {methodMeta?.icon || "💳"}
                       </span>
-                      <span className={styles.methodName}>{w.method}</span>
+                      <span className={styles.methodName}>
+                        {methodMeta?.label || w.method}
+                      </span>
                     </div>
                     <div className={styles.destCell}>{w.destination}</div>
-                    <div className={styles.dateCell}>
+                    <div className={styles.dateCellDesktop}>
                       {timeAgo(w.createdAt)}
                     </div>
                     <div className={styles.amountCell}>
@@ -502,10 +488,8 @@ export default function WorkerWithdrawals() {
                         </span>
                       )}
                     </div>
-                    <div className={styles.statusCell}>
-                      <span
-                        className={`${styles.statusPill} ${styles[sm.cls]}`}
-                      >
+                    <div className={styles.statusCellDesktop}>
+                      <span className={`${styles.pill} ${styles[sm.cls]}`}>
                         {sm.label}
                       </span>
                     </div>
@@ -522,9 +506,32 @@ export default function WorkerWithdrawals() {
               })
             )}
           </div>
+
+          {/* Pagination */}
+          {pages > 1 && (
+            <div className={styles.pager}>
+              <button
+                className={styles.pageBtn}
+                disabled={page === 1}
+                onClick={() => loadData(page - 1)}
+              >
+                ← Prev
+              </button>
+              <span className={styles.pageInfo}>
+                {page} / {pages}
+              </span>
+              <button
+                className={styles.pageBtn}
+                disabled={page === pages}
+                onClick={() => loadData(page + 1)}
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* ── Payout request modal ── */}
+        {/* Payout request modal */}
         {showForm && (
           <div
             className={styles.backdrop}
@@ -536,14 +543,14 @@ export default function WorkerWithdrawals() {
               <div className={styles.formModalHeader}>
                 <h2 className={styles.formModalTitle}>Request Payout</h2>
                 <button
-                  className={styles.receiptClose}
+                  className={styles.modalClose}
                   onClick={() => setShowForm(false)}
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Balance */}
+              {/* Balance bar */}
               <div className={styles.balanceBar}>
                 <div>
                   <p className={styles.balanceLabel}>Available</p>
@@ -551,7 +558,9 @@ export default function WorkerWithdrawals() {
                 </div>
                 <div>
                   <p className={styles.balanceLabel}>In Escrow</p>
-                  <p className={styles.balanceEscrow}>{fmt(inEscrow)}</p>
+                  <p className={styles.balanceEscrow}>
+                    {fmt(balance?.inEscrow || 0)}
+                  </p>
                 </div>
                 <div>
                   <p className={styles.balanceLabel}>Min. Withdrawal</p>
@@ -575,7 +584,7 @@ export default function WorkerWithdrawals() {
                 </div>
               ) : (
                 <form className={styles.payoutForm} onSubmit={handleSubmit}>
-                  {/* ── Payout method selector ── */}
+                  {/* Method selector */}
                   <div className={styles.formSection}>
                     <p className={styles.formSectionLabel}>Payout Method</p>
                     <div className={styles.methodGrid}>
@@ -604,7 +613,7 @@ export default function WorkerWithdrawals() {
                     <p className={styles.methodDesc}>{method.desc}</p>
                   </div>
 
-                  {/* ── Amount ── */}
+                  {/* Amount */}
                   <div className={styles.formSection}>
                     <p className={styles.formSectionLabel}>Amount</p>
                     <div className={styles.amountWrap}>
@@ -636,7 +645,7 @@ export default function WorkerWithdrawals() {
                     </div>
                   </div>
 
-                  {/* ── Method-specific fields ── */}
+                  {/* Method fields */}
                   <div className={styles.formSection}>
                     <p className={styles.formSectionLabel}>Payout Details</p>
                     <div className={styles.fieldsGrid}>
@@ -662,9 +671,8 @@ export default function WorkerWithdrawals() {
                   <div className={styles.formInfo}>
                     <span>ℹ️</span>
                     <p>
-                      Payouts are processed within 1–3 business days. A 1%
-                      processing fee applies. Crypto withdrawals are in
-                      USDC/USDT equivalent.
+                      Payouts processed within 1–3 business days. 1% processing
+                      fee applies. Crypto payouts are USDC/USDT equivalent.
                     </p>
                   </div>
 
@@ -687,7 +695,6 @@ export default function WorkerWithdrawals() {
           </div>
         )}
 
-        {/* ── Receipt modal ── */}
         {receipt && (
           <ReceiptModal withdrawal={receipt} onClose={() => setReceipt(null)} />
         )}
