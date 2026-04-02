@@ -68,7 +68,6 @@ import JobDetail from "./components/hirer/JobDetail";
 import HirerJobBoardManagement from "./components/hirer/hirerjobs/HirerJobBoardManagement";
 import JobApplications from "./components/hirer/JobApplications";
 import MyJobApplications from "./pages/worker/MyJobApplications/MyJobApplications";
-import WorkerPayouts from "./pages/worker/dashboard/earnings/WorkerPayouts";
 import WorkerWithdrawals from "./pages/worker/dashboard/earnings/WorkerWithdrawals";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
@@ -162,10 +161,10 @@ export default function App() {
           }
         />
         <Route
-          path="/dashboard/worker/payouts"
+          path="/dashboard/worker/withdrawals"
           element={
             <RequireAuth requireVerified>
-              <WorkerPayouts />
+              <WorkerWithdrawals />
             </RequireAuth>
           }
         />
@@ -326,14 +325,6 @@ export default function App() {
           element={
             <RequireAuth requireVerified>
               <HirerPaymentHistory />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/withdrawals"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerWithdrawals />
             </RequireAuth>
           }
         />
