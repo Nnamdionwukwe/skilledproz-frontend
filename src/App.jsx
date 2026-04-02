@@ -18,11 +18,9 @@ import WorkerAvailability from "./pages/worker/availability/Availability";
 import WorkerCategories from "./pages/worker/categories/Categories";
 import WorkerCertifications from "./pages/worker/certifications/Certifications";
 import WorkerDashboard from "./pages/worker/dashboard/WorkerDashboard";
-import WorkerEarnings from "./pages/worker/dashboard/earnings/Earnings";
 import WorkerNotifications from "./pages/worker/dashboard/notifications/Notifications";
 import WorkerPortfolio from "./pages/worker/dashboard/portfolio/Portfolio";
 import WorkerProfile from "./pages/worker/dashboard/profile/Profile";
-import WorkerReviews from "./pages/worker/dashboard/reviews/Profile";
 
 // Hirer pages
 import HirerDashboard from "./components/hirer/HirerDashboard";
@@ -69,6 +67,7 @@ import HirerJobBoardManagement from "./components/hirer/hirerjobs/HirerJobBoardM
 import JobApplications from "./components/hirer/JobApplications";
 import MyJobApplications from "./pages/worker/MyJobApplications/MyJobApplications";
 import WorkerWithdrawals from "./pages/worker/dashboard/earnings/WorkerWithdrawals";
+import WorkerEarningsPage from "./pages/worker/dashboard/earnings/WorkerEarningsPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -156,7 +155,7 @@ export default function App() {
           path="/dashboard/worker/earnings"
           element={
             <RequireAuth requireVerified>
-              <WorkerEarnings />
+              <WorkerEarningsPage />
             </RequireAuth>
           }
         />

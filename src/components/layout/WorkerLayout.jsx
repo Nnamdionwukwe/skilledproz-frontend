@@ -23,7 +23,6 @@ const NAV = [
     group: "Payouts",
     items: [
       { label: "Earnings", path: "/dashboard/worker/earnings", icon: "💸" },
-      { label: "Cashouts", path: "/dashboard/worker/payouts", icon: "💸" },
       {
         label: "Withdrawals",
         path: "/dashboard/worker/withdrawals",

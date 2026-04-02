@@ -223,6 +223,26 @@ function ReceiptModal({ payment, onClose }) {
           </div>
         )}
 
+        {payment.currency && (
+          <span
+            style={{
+              background: ["USDC", "USDT"].includes(payment.currency)
+                ? "rgba(139,92,246,0.12)"
+                : "var(--orange-dim)",
+              color: ["USDC", "USDT"].includes(payment.currency)
+                ? "#a78bfa"
+                : "var(--orange)",
+              border: "1px solid var(--orange-glow)",
+              borderRadius: 999,
+              padding: "1px 6px",
+              fontSize: "0.65rem",
+              fontWeight: 700,
+            }}
+          >
+            {payment.currency}
+          </span>
+        )}
+
         {/* Footer */}
         <div className={styles.receiptFooter}>
           <span>SkilledPro · Global Skills Marketplace</span>
@@ -323,6 +343,8 @@ export default function HirerPaymentHistory() {
   const [statusFilter, setStatus] = useState("ALL");
   const [search, setSearch] = useState("");
   const [releasing, setReleasing] = useState(null); // bookingId being released
+  const [currencyFilter, setCurrency] = useState("ALL");
+  const [availableCurrencies, setAvailableCurrencies] = useState([]);
 
   const LIMIT = 10;
 
@@ -333,6 +355,7 @@ export default function HirerPaymentHistory() {
 
     const params = { page, limit: LIMIT };
     if (statusFilter !== "ALL") params.status = statusFilter;
+    if (currencyFilter !== "ALL") params.currency = currencyFilter; // ← ADD
 
     api
       .get("/payments/hirer", { params })
@@ -342,6 +365,7 @@ export default function HirerPaymentHistory() {
         setTotal(d.total ?? 0);
         setTotalPages(d.pages ?? 1);
         setSummary(d.summary ?? null);
+        setAvailableCurrencies(d.availableCurrencies ?? []); // ← ADD
       })
       .catch(() => setError("Failed to load payment history."))
       .finally(() => setLoading(false));
@@ -494,6 +518,27 @@ export default function HirerPaymentHistory() {
             <div className={styles.errorState}>{error}</div>
           ) : (
             <>
+              <select
+                className={styles.statusTab}
+                style={{
+                  borderRadius: 8,
+                  padding: "0.375rem 0.875rem",
+                  cursor: "pointer",
+                }}
+                value={currencyFilter}
+                onChange={(e) => {
+                  setCurrency(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="ALL">All Currencies</option>
+                {availableCurrencies.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+
               {/* Table header */}
               <div className={styles.tableHead}>
                 <span>Job</span>
