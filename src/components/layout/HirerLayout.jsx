@@ -21,6 +21,7 @@ const NAV = [
         path: "/dashboard/hirer/jobs-management",
         icon: "📋",
       },
+      { label: "Disputes", path: "/disputes", icon: "⚖️" },
     ],
   },
   {
@@ -117,6 +118,7 @@ const PAGE_TITLES = {
     title: "Payment History",
     sub: "Your payment records",
   },
+  "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
 };
 
 function getPageInfo(pathname) {

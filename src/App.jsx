@@ -68,6 +68,7 @@ import JobApplications from "./components/hirer/JobApplications";
 import MyJobApplications from "./pages/worker/MyJobApplications/MyJobApplications";
 import WorkerWithdrawals from "./pages/worker/dashboard/earnings/WorkerWithdrawals";
 import WorkerEarningsPage from "./pages/worker/dashboard/earnings/WorkerEarningsPage";
+import MyDisputes from "./components/disputes/MyDisputes";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -385,6 +386,14 @@ export default function App() {
           element={
             <RequireAuth>
               <LeaveReview />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/disputes"
+          element={
+            <RequireAuth>
+              <MyDisputes />
             </RequireAuth>
           }
         />

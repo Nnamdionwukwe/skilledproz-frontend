@@ -17,6 +17,7 @@ const NAV = [
         path: "/dashboard/worker/applications",
         icon: "📝",
       },
+      { label: "Disputes", path: "/disputes", icon: "⚖️" },
     ],
   },
   {
@@ -108,6 +109,7 @@ const PAGE_TITLES = {
   "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
   "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
+  "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
 };
 
 function getPageInfo(pathname) {

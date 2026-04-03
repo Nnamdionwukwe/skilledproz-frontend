@@ -4,6 +4,7 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./Disputes.module.css";
+import { Link } from "react-router-dom";
 
 const STATUS_META = {
   OPEN: { label: "Open", cls: "statusOpen" },
@@ -14,9 +15,7 @@ const STATUS_META = {
 
 function StatusBadge({ status }) {
   const s = STATUS_META[status] || { label: status, cls: "statusOpen" };
-  return (
-    <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>
-  );
+  return <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>;
 }
 
 export default function MyDisputes() {
@@ -46,19 +45,22 @@ export default function MyDisputes() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleCancel = async (bookingId) => {
     if (!confirm("Cancel this dispute? This action cannot be undone.")) return;
     setCancelling(bookingId);
-    setError(""); setSuccess("");
+    setError("");
+    setSuccess("");
     try {
       await api.patch(`/disputes/${bookingId}/cancel`);
       setSuccess("Dispute cancelled successfully.");
-      setDisputes(prev =>
-        prev.map(d =>
-          d.bookingId === bookingId ? { ...d, status: "CANCELLED" } : d
-        )
+      setDisputes((prev) =>
+        prev.map((d) =>
+          d.bookingId === bookingId ? { ...d, status: "CANCELLED" } : d,
+        ),
       );
     } catch (err) {
       setError(err.response?.data?.message || "Failed to cancel dispute.");
@@ -68,7 +70,7 @@ export default function MyDisputes() {
   };
 
   const filtered = filterStatus
-    ? disputes.filter(d => d.status === filterStatus)
+    ? disputes.filter((d) => d.status === filterStatus)
     : disputes;
 
   return (
@@ -89,14 +91,24 @@ export default function MyDisputes() {
               <span className={styles.headerStatLabel}>Total</span>
             </div>
             <div className={styles.headerStat}>
-              <span className={styles.headerStatNum} style={{ color: "var(--orange)" }}>
-                {disputes.filter(d => d.status === "OPEN" || d.status === "UNDER_REVIEW").length}
+              <span
+                className={styles.headerStatNum}
+                style={{ color: "var(--orange)" }}
+              >
+                {
+                  disputes.filter(
+                    (d) => d.status === "OPEN" || d.status === "UNDER_REVIEW",
+                  ).length
+                }
               </span>
               <span className={styles.headerStatLabel}>Active</span>
             </div>
             <div className={styles.headerStat}>
-              <span className={styles.headerStatNum} style={{ color: "var(--green)" }}>
-                {disputes.filter(d => d.status === "RESOLVED").length}
+              <span
+                className={styles.headerStatNum}
+                style={{ color: "var(--green)" }}
+              >
+                {disputes.filter((d) => d.status === "RESOLVED").length}
               </span>
               <span className={styles.headerStatLabel}>Resolved</span>
             </div>
@@ -105,7 +117,7 @@ export default function MyDisputes() {
 
         {/* Filter tabs */}
         <div className={styles.filterTabs}>
-          {["", "OPEN", "UNDER_REVIEW", "RESOLVED", "CANCELLED"].map(s => (
+          {["", "OPEN", "UNDER_REVIEW", "RESOLVED", "CANCELLED"].map((s) => (
             <button
               key={s}
               className={`${styles.filterTab} ${filterStatus === s ? styles.filterTabActive : ""}`}
@@ -133,17 +145,18 @@ export default function MyDisputes() {
         {/* List */}
         <div className={styles.disputeList}>
           {loading ? (
-            [1, 2, 3].map(i => (
-              <div key={i} className={styles.skeleton} />
-            ))
+            [1, 2, 3].map((i) => <div key={i} className={styles.skeleton} />)
           ) : filtered.length === 0 ? (
             <div className={styles.empty}>
               <span className={styles.emptyIcon}>🛡️</span>
               <p className={styles.emptyTitle}>
-                {filterStatus ? `No ${STATUS_META[filterStatus]?.label?.toLowerCase()} disputes` : "No disputes yet"}
+                {filterStatus
+                  ? `No ${STATUS_META[filterStatus]?.label?.toLowerCase()} disputes`
+                  : "No disputes yet"}
               </p>
               <p className={styles.emptySub}>
-                Disputes can be raised from any active booking that has an issue.
+                Disputes can be raised from any active booking that has an
+                issue.
               </p>
             </div>
           ) : (
@@ -154,10 +167,23 @@ export default function MyDisputes() {
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
                 {/* Card top */}
-                <div className={styles.cardTop} onClick={() => setExpanded(prev => prev === dispute.bookingId ? null : dispute.bookingId)}>
+                <div
+                  className={styles.cardTop}
+                  onClick={() =>
+                    setExpanded((prev) =>
+                      prev === dispute.bookingId ? null : dispute.bookingId,
+                    )
+                  }
+                >
                   <div className={styles.cardLeft}>
-                    <div className={`${styles.disputeIcon} ${styles[`icon_${(dispute.status || "OPEN").toLowerCase()}`]}`}>
-                      {dispute.status === "RESOLVED" ? "✓" : dispute.status === "CANCELLED" ? "✕" : "⚠"}
+                    <div
+                      className={`${styles.disputeIcon} ${styles[`icon_${(dispute.status || "OPEN").toLowerCase()}`]}`}
+                    >
+                      {dispute.status === "RESOLVED"
+                        ? "✓"
+                        : dispute.status === "CANCELLED"
+                          ? "✕"
+                          : "⚠"}
                     </div>
                     <div>
                       <p className={styles.disputeTitle}>
@@ -165,13 +191,20 @@ export default function MyDisputes() {
                       </p>
                       <p className={styles.disputeMeta}>
                         {dispute.reason && (
-                          <span className={styles.reasonTag}>{dispute.reason.replace(/_/g, " ")}</span>
+                          <span className={styles.reasonTag}>
+                            {dispute.reason.replace(/_/g, " ")}
+                          </span>
                         )}
                         <span className={styles.metaDot}>·</span>
                         <span>
-                          {new Date(dispute.createdAt).toLocaleDateString("en-GB", {
-                            day: "numeric", month: "short", year: "numeric",
-                          })}
+                          {new Date(dispute.createdAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
                         </span>
                       </p>
                     </div>
@@ -197,12 +230,20 @@ export default function MyDisputes() {
                     {dispute.resolution && (
                       <div className={styles.resolutionBlock}>
                         <p className={styles.resolutionLabel}>✅ Resolution</p>
-                        <p className={styles.resolutionText}>{dispute.resolution}</p>
+                        <p className={styles.resolutionText}>
+                          {dispute.resolution}
+                        </p>
                         {dispute.resolvedAt && (
                           <p className={styles.resolvedDate}>
-                            Resolved on {new Date(dispute.resolvedAt).toLocaleDateString("en-GB", {
-                              day: "numeric", month: "short", year: "numeric",
-                            })}
+                            Resolved on{" "}
+                            {new Date(dispute.resolvedAt).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
                           </p>
                         )}
                       </div>
@@ -215,7 +256,10 @@ export default function MyDisputes() {
                           <div className={styles.partyChip}>
                             <div className={styles.partyAvatar}>
                               {dispute.booking.hirer.avatar ? (
-                                <img src={dispute.booking.hirer.avatar} alt="" />
+                                <img
+                                  src={dispute.booking.hirer.avatar}
+                                  alt=""
+                                />
                               ) : (
                                 <span>
                                   {dispute.booking.hirer.firstName?.[0]}
@@ -225,7 +269,8 @@ export default function MyDisputes() {
                             </div>
                             <div>
                               <p className={styles.partyName}>
-                                {dispute.booking.hirer.firstName} {dispute.booking.hirer.lastName}
+                                {dispute.booking.hirer.firstName}{" "}
+                                {dispute.booking.hirer.lastName}
                               </p>
                               <p className={styles.partyRole}>Hirer</p>
                             </div>
@@ -235,7 +280,10 @@ export default function MyDisputes() {
                           <div className={styles.partyChip}>
                             <div className={styles.partyAvatar}>
                               {dispute.booking.worker.avatar ? (
-                                <img src={dispute.booking.worker.avatar} alt="" />
+                                <img
+                                  src={dispute.booking.worker.avatar}
+                                  alt=""
+                                />
                               ) : (
                                 <span>
                                   {dispute.booking.worker.firstName?.[0]}
@@ -245,7 +293,8 @@ export default function MyDisputes() {
                             </div>
                             <div>
                               <p className={styles.partyName}>
-                                {dispute.booking.worker.firstName} {dispute.booking.worker.lastName}
+                                {dispute.booking.worker.firstName}{" "}
+                                {dispute.booking.worker.lastName}
                               </p>
                               <p className={styles.partyRole}>Worker</p>
                             </div>
@@ -263,16 +312,20 @@ export default function MyDisputes() {
                           onClick={() => handleCancel(dispute.bookingId)}
                         >
                           {cancelling === dispute.bookingId ? (
-                            <><span className={styles.spinner} /> Cancelling...</>
-                          ) : "Cancel Dispute"}
+                            <>
+                              <span className={styles.spinner} /> Cancelling...
+                            </>
+                          ) : (
+                            "Cancel Dispute"
+                          )}
                         </button>
                       )}
-                      
+                      <Link
                         href={`/bookings/${dispute.bookingId}`}
                         className={styles.viewBookingBtn}
                       >
                         View Booking →
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 )}

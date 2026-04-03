@@ -5,6 +5,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import RaiseDisputeModal from "../disputes/RaiseDisputeModal";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -30,6 +31,7 @@ export default function BookingDetail() {
   const navigate = useNavigate();
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewCheckDone, setReviewCheckDone] = useState(false);
+  const [showDispute, setShowDispute] = useState(false);
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const role = user?.role;
@@ -579,6 +581,36 @@ export default function BookingDetail() {
                         </button>
                       </div>
                     </div>
+                  )}
+                  {/* Raise dispute — show for active bookings */}
+                  {["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
+                    booking.status,
+                  ) && (
+                    <button
+                      className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+                      style={{
+                        borderColor: "var(--red)",
+                        color: "var(--red)",
+                        marginTop: "0.5rem",
+                      }}
+                      onClick={() => setShowDispute(true)}
+                    >
+                      ⚠️ Raise a Dispute
+                    </button>
+                  )}
+
+                  {/* Dispute modal */}
+                  {showDispute && (
+                    <RaiseDisputeModal
+                      bookingId={booking.id}
+                      bookingTitle={booking.title}
+                      onClose={() => setShowDispute(false)}
+                      onSuccess={() =>
+                        setSuccess(
+                          "Dispute raised. Our team will review within 24–48 hours.",
+                        )
+                      }
+                    />
                   )}
                 </>
               )}
