@@ -501,7 +501,7 @@ export default function BookingDetail() {
                     onClick={() => updateStatus("ACCEPTED")}
                   />
                   <ActionBtn
-                    label="Reject Booking"
+                    label=" Cancel Booking"
                     color="red"
                     loading={acting}
                     onClick={() => updateStatus("REJECTED")}
@@ -545,6 +545,77 @@ export default function BookingDetail() {
                 </Link>
               )}
               {isHirer && ["PENDING", "ACCEPTED"].includes(booking.status) && (
+                <>
+                  {!showCancel ? (
+                    <ActionBtn
+                      label="Cancel Booking"
+                      color="red"
+                      outline
+                      loading={false}
+                      onClick={() => setShowCancel(true)}
+                    />
+                  ) : (
+                    <div className={styles.cancelBox}>
+                      <textarea
+                        className={styles.cancelInput}
+                        placeholder="Reason for cancellation (optional)"
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        rows={3}
+                      />
+                      <div className={styles.cancelRow}>
+                        <button
+                          className={styles.cancelConfirm}
+                          disabled={acting}
+                          onClick={() =>
+                            updateStatus("CANCELLED", { cancelReason })
+                          }
+                        >
+                          {acting ? <Spinner /> : "Confirm Cancel"}
+                        </button>
+                        <button
+                          className={styles.cancelAbort}
+                          onClick={() => setShowCancel(false)}
+                        >
+                          Keep Booking
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Raise dispute — show for active bookings */}
+                  {["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
+                    booking.status,
+                  ) && (
+                    <button
+                      className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+                      style={{
+                        borderColor: "var(--red)",
+                        color: "var(--red)",
+                        marginTop: "0.5rem",
+                      }}
+                      onClick={() => setShowDispute(true)}
+                    >
+                      ⚠️ Raise a Dispute
+                    </button>
+                  )}
+
+                  {/* Dispute modal */}
+                  {showDispute && (
+                    <RaiseDisputeModal
+                      bookingId={booking.id}
+                      bookingTitle={booking.title}
+                      onClose={() => setShowDispute(false)}
+                      onSuccess={() =>
+                        setSuccess(
+                          "Dispute raised. Our team will review within 24–48 hours.",
+                        )
+                      }
+                    />
+                  )}
+                </>
+              )}
+
+              {isWorker && ["PENDING", "ACCEPTED"].includes(booking.status) && (
                 <>
                   {!showCancel ? (
                     <ActionBtn
