@@ -69,6 +69,10 @@ import MyJobApplications from "./pages/worker/MyJobApplications/MyJobApplication
 import WorkerWithdrawals from "./pages/worker/dashboard/earnings/WorkerWithdrawals";
 import WorkerEarningsPage from "./pages/worker/dashboard/earnings/WorkerEarningsPage";
 import MyDisputes from "./components/disputes/MyDisputes";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminDisputes from "./pages/admin/AdminDisputes";
+import AdminBroadcast from "./pages/admin/AdminBroadcast";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -86,6 +90,14 @@ export default function App() {
   const { user } = useAuthStore();
   const isWorker = user?.role === "WORKER";
   const isHirer = user?.role === "HIRER";
+  const isAdmin = user?.role === "ADMIN";
+
+  function RequireAdmin({ children }) {
+    const { user } = useAuthStore();
+    if (!user) return <Navigate to="/login" replace />;
+    if (user.role !== "ADMIN") return <Navigate to="/" replace />;
+    return children;
+  }
 
   return (
     <BrowserRouter>
@@ -134,6 +146,41 @@ export default function App() {
             </RequireAuth>
           }
         />
+        {/* ── ADMIN dashboard ── */}
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <AdminDashboard />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAdmin>
+              <AdminUsers />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/disputes"
+          element={
+            <RequireAdmin>
+              <AdminDisputes />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/broadcast"
+          element={
+            <RequireAdmin>
+              <AdminBroadcast />
+            </RequireAdmin>
+          }
+        />
+
+        {/* ── Hirer/Worker Messages ── */}
         <Route
           path="/messages"
           element={

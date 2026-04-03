@@ -1,0 +1,447 @@
+/* ── AdminUsers.module.css ── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeUp 0.3s ease;
+}
+
+/* Filter bar */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+  border-color: var(--border-focus);
+}
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.roleTabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.roleTab {
+  padding: 0.4375rem 0.875rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.roleTab:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.roleTabActive {
+  background: var(--orange-dim);
+  border-color: var(--orange);
+  color: var(--orange);
+  font-weight: 700;
+}
+
+.totalPill {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0.625rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Table */
+.tableWrap {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: 2.5fr 0.8fr 1.2fr 0.8fr 0.9fr 0.9fr 1.2fr;
+  padding: 0.625rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  gap: 0.5rem;
+}
+
+.tableBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2.5fr 0.8fr 1.2fr 0.8fr 0.9fr 0.9fr 1.2fr;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  gap: 0.5rem;
+  transition: background 0.12s;
+  animation: fadeUp 0.3s ease both;
+  grid-column: 1 / -1;
+  display: contents; /* use contents so expanded row can span */
+}
+
+/* Reset display:contents for the outer row */
+.row {
+  display: grid;
+}
+.rowBanned {
+  opacity: 0.6;
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row:hover {
+  background: var(--bg-card);
+}
+
+/* User cell */
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.active {
+  background: var(--green);
+}
+.inactive {
+  background: var(--text-muted);
+}
+.banned {
+  background: var(--red);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--orange);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userInfo {
+  min-width: 0;
+}
+.userName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.userEmail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Role pill */
+.rolePill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.role_worker {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+.role_hirer {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.role_admin {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+}
+
+.cell {
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+}
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  font-family: var(--font-body);
+  transition: all 0.12s;
+}
+
+.actionBan {
+  background: var(--red-dim);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--red);
+}
+.actionUnban {
+  background: var(--green-dim);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: var(--green);
+}
+.actionBan:hover {
+  background: var(--red);
+  color: #fff;
+}
+.actionUnban:hover {
+  background: var(--green);
+  color: #fff;
+}
+.actionBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.viewBtn {
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+/* Expanded row */
+.expandedRow {
+  grid-column: 1 / -1;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+
+.expandedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+
+.expandedGrid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.expandLabel {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.expandedGrid > div > span:last-child {
+  font-size: 0.8125rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.expandActions {
+  display: flex;
+  gap: 0.5rem;
+}
+.actionGreen {
+  padding: 0.375rem 0.875rem;
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 7px;
+  color: var(--green);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.actionRed {
+  padding: 0.375rem 0.875rem;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 7px;
+  color: var(--red);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+/* Empty */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+}
+.empty span {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+
+/* Skeleton */
+.skRow {
+  height: 60px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    var(--bg-card) 100%
+  );
+  background-size: 200% 100%;
+  animation:
+    shimmer 1.4s ease infinite,
+    fadeUp 0.3s ease both;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+}
+.pageBtn {
+  padding: 0.4375rem 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color 0.15s;
+}
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pageInfo {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .tableHead {
+    display: none;
+  }
+  .row {
+    grid-template-columns: 1fr;
+    padding: 0.875rem 1rem;
+    gap: 0.375rem;
+  }
+  .userCell {
+    grid-column: 1;
+  }
+  .rolePill,
+  .cell,
+  .actions {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .roleTabs {
+    flex-wrap: wrap;
+  }
+  .filterBar {
+    gap: 0.5rem;
+  }
+}
