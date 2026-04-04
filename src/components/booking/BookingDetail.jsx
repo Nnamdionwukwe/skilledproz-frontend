@@ -653,7 +653,29 @@ export default function BookingDetail() {
                         rows={3}
                       />
                       <div className={styles.cancelRow}>
-                        <button
+                        {" "}
+                        1875rem
+                        {isWorker && booking.status === "PENDING" && (
+                          <>
+                            <ActionBtn
+                              label="Accept Booking"
+                              color="green"
+                              loading={acting}
+                              onClick={() =>
+                                updateStatus("ACCEPTED", { cancelReason })
+                              }
+                            />
+                            <ActionBtn
+                              label="Decline Booking"
+                              color="red"
+                              loading={acting}
+                              onClick={() =>
+                                updateStatus("REJECTED", { cancelReason })
+                              }
+                            />
+                          </>
+                        )}
+                        {/* <button
                           className={styles.cancelConfirm}
                           disabled={acting}
                           onClick={() =>
@@ -661,7 +683,7 @@ export default function BookingDetail() {
                           }
                         >
                           {acting ? <Spinner /> : "Confirm Cancel"}
-                        </button>
+                        </button> */}
                         <button
                           className={styles.cancelAbort}
                           onClick={() => setShowCancel(false)}

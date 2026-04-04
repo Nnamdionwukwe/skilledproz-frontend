@@ -39,8 +39,8 @@ export default function GpsCheckIn({ bookingId, status, isWorker, onSuccess }) {
     const { latitude, longitude } = await getGPS();
     try {
       const res = await api.patch(`/bookings/${bookingId}/checkin`, {
-        latitude,
-        longitude,
+        latitude: latitude || null,
+        longitude: longitude || null,
       });
       onSuccess?.(res.data.data.booking, { latitude, longitude });
     } catch (e) {
@@ -56,8 +56,8 @@ export default function GpsCheckIn({ bookingId, status, isWorker, onSuccess }) {
     const { latitude, longitude } = await getGPS();
     try {
       const res = await api.patch(`/bookings/${bookingId}/checkout`, {
-        latitude,
-        longitude,
+        latitude: latitude || null,
+        longitude: longitude || null,
       });
       onSuccess?.(res.data.data.booking, { latitude, longitude });
     } catch (e) {

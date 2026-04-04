@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "./AIJobAssistant.module.css";
+import api from "../../lib/api";
 
 export default function AIJobAssistant({ onApply }) {
   const [prompt, setPrompt] = useState("");
@@ -15,16 +16,8 @@ export default function AIJobAssistant({ onApply }) {
     setResult(null);
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [
-            {
-              role: "user",
-              content: `You are a job posting assistant for SkilledProz, a global skills marketplace. A hirer described what they need in plain language. Convert it into a structured job posting.
+      const response = await api.post("/ai/assist", {
+        prompt: `You are a job posting assistant for SkilledProz, a global skills marketplace. A hirer described what they need in plain language. Convert it into a structured job posting.
 
 User description: "${prompt}"
 
@@ -32,17 +25,14 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) with these exa
 {
   "title": "short clear job title",
   "description": "2-3 sentence professional description of the work needed",
-  "suggestedCategory": "most relevant skill category from: Electrical, Plumbing, Carpentry, Cleaning, Painting, Roofing, Landscaping, HVAC, Tiling, Welding, Security, Catering, Web Development, Graphic Design, Photography, Moving, Tutoring, Healthcare Support, Auto Repair, Beauty & Hair",
-  "estimatedHours": number (realistic estimate),
+  "suggestedCategory": "most relevant skill category",
+  "estimatedHours": number,
   "budgetRange": "e.g. ₦15,000 - ₦25,000",
-  "tips": ["tip 1 for a better hire", "tip 2"]
+  "tips": ["tip 1", "tip 2"]
 }`,
-            },
-          ],
-        }),
       });
 
-      const data = await response.json();
+      const data = response.data.data;
       const text = data.content?.[0]?.text || "";
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       setResult(parsed);
