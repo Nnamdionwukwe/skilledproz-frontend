@@ -7,6 +7,7 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import RaiseDisputeModal from "../disputes/RaiseDisputeModal";
 import BookingInvoice from "./BookingInvoice";
+import GpsCheckIn from "./GpsCheckIn";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -653,27 +654,25 @@ export default function BookingDetail() {
                         rows={3}
                       />
                       <div className={styles.cancelRow}>
-                        {" "}
-                        1875rem
-                        {isWorker && booking.status === "PENDING" && (
-                          <>
-                            <ActionBtn
-                              label="Accept Booking"
-                              color="green"
-                              loading={acting}
-                              onClick={() =>
-                                updateStatus("ACCEPTED", { cancelReason })
-                              }
-                            />
-                            <ActionBtn
-                              label="Decline Booking"
-                              color="red"
-                              loading={acting}
-                              onClick={() =>
-                                updateStatus("REJECTED", { cancelReason })
-                              }
-                            />
-                          </>
+                        {isWorker && (
+                          <GpsCheckIn
+                            bookingId={booking.id}
+                            status={booking.status}
+                            isWorker={isWorker}
+                            jobLatitude={booking.latitude}
+                            jobLongitude={booking.longitude}
+                            onSuccess={(updatedBooking) => {
+                              setBooking((prev) => ({
+                                ...prev,
+                                ...updatedBooking,
+                              }));
+                              setSuccess(
+                                updatedBooking.status === "IN_PROGRESS"
+                                  ? "✅ Checked in — job is now in progress."
+                                  : "✅ Checked out — job marked as completed.",
+                              );
+                            }}
+                          />
                         )}
                         {/* <button
                           className={styles.cancelConfirm}
