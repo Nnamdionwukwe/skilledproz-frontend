@@ -4,6 +4,7 @@ import { useFetch } from "../../../../hooks/useFetch";
 import { useAuthStore } from "../../../../store/authStore";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import ui from "../../../../components/ui/ui.module.css";
+import VideoIntro from "../../VideoIntro";
 
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "GHS", "KES"];
 
@@ -115,6 +116,16 @@ export default function EditProfilePage() {
                 onChange={set("description")}
               />
             </div>
+
+            <VideoIntro
+              currentUrl={data?.worker?.videoIntroUrl}
+              onUpdate={(url) =>
+                setData((prev) => ({
+                  ...prev,
+                  worker: { ...prev.worker, videoIntroUrl: url },
+                }))
+              }
+            />
 
             <div
               style={{

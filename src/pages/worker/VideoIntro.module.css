@@ -1,0 +1,133 @@
+.wrap {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.header {
+  margin-bottom: 1.25rem;
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.sub {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.dropzone {
+  background: var(--bg-input);
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dropzone:hover {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+}
+
+.dropIcon {
+  font-size: 2.5rem;
+}
+.dropTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.dropSub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.videoWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.video {
+  width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+  background: #000;
+}
+
+.videoActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.reuploadBtn {
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  padding: 0.55rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+}
+.reuploadBtn:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+.reuploadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteBtn {
+  background: none;
+  border: 1px solid var(--border-hover);
+  color: var(--text-dim);
+  padding: 0.55rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  font-family: var(--font-body);
+}
+.deleteBtn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.error {
+  font-size: 0.8rem;
+  color: var(--red);
+  margin-top: 0.5rem;
+}
+.successMsg {
+  font-size: 0.8rem;
+  color: var(--green);
+  margin-top: 0.5rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(249, 115, 22, 0.2);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}

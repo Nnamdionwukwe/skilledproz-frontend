@@ -6,6 +6,7 @@ import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import RaiseDisputeModal from "../disputes/RaiseDisputeModal";
+import BookingInvoice from "./BookingInvoice";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -486,7 +487,6 @@ export default function BookingDetail() {
                 💬 Send Message
               </a>
             </div>
-
             {/* Actions */}
             <div className={styles.actionsCard}>
               <p className={styles.actionsTitle}>Actions</p>
@@ -524,10 +524,8 @@ export default function BookingDetail() {
                   onClick={handleCheckOut}
                 />
               )}
-
               {/* HIRER actions */}
               {isHirer && booking.status === "ACCEPTED" && !booking.payment && (
-                // ✅ Use Link instead of <a href>
                 <Link
                   to={`/bookings/${booking.id}/pay`}
                   className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
@@ -536,7 +534,6 @@ export default function BookingDetail() {
                 </Link>
               )}
               {isHirer && booking.payment?.status === "HELD" && (
-                // ✅ Use Link instead of <a href>
                 <Link
                   to={`/bookings/${booking.id}/release`}
                   className={`${styles.actionBtn} ${styles.actionBtn_green}`}
@@ -582,39 +579,60 @@ export default function BookingDetail() {
                       </div>
                     </div>
                   )}
-                  {/* Raise dispute — show for active bookings */}
-                  {["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
-                    booking.status,
-                  ) && (
-                    <button
-                      className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
-                      style={{
-                        borderColor: "var(--red)",
-                        color: "var(--red)",
-                        marginTop: "0.5rem",
-                      }}
-                      onClick={() => setShowDispute(true)}
-                    >
-                      ⚠️ Raise a Dispute
-                    </button>
-                  )}
-
-                  {/* Dispute modal */}
-                  {showDispute && (
-                    <RaiseDisputeModal
-                      bookingId={booking.id}
-                      bookingTitle={booking.title}
-                      onClose={() => setShowDispute(false)}
-                      onSuccess={() =>
-                        setSuccess(
-                          "Dispute raised. Our team will review within 24–48 hours.",
-                        )
-                      }
-                    />
-                  )}
                 </>
               )}
 
+              {/* Dispute button — OUTSIDE cancel block, for BOTH hirer and worker */}
+              {(isHirer || isWorker) &&
+                ["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
+                  booking.status,
+                ) && (
+                  <button
+                    className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+                    style={{
+                      borderColor: "var(--red)",
+                      color: "var(--red)",
+                      marginTop: "0.5rem",
+                    }}
+                    onClick={() => setShowDispute(true)}
+                  >
+                    ⚠️ Raise a Dispute
+                  </button>
+                )}
+
+              {/* WORKER actions */}
+              {isWorker && booking.status === "PENDING" && (
+                <>
+                  <ActionBtn
+                    label="Accept Booking"
+                    color="green"
+                    loading={acting}
+                    onClick={() => updateStatus("ACCEPTED")}
+                  />
+                  <ActionBtn
+                    label="Reject Booking"
+                    color="red"
+                    loading={acting}
+                    onClick={() => updateStatus("REJECTED")}
+                  />
+                </>
+              )}
+              {isWorker && booking.status === "ACCEPTED" && (
+                <ActionBtn
+                  label="Check In — Start Job"
+                  color="indigo"
+                  loading={acting}
+                  onClick={handleCheckIn}
+                />
+              )}
+              {isWorker && booking.status === "IN_PROGRESS" && (
+                <ActionBtn
+                  label="Check Out — Mark Complete"
+                  color="green"
+                  loading={acting}
+                  onClick={handleCheckOut}
+                />
+              )}
               {isWorker && ["PENDING", "ACCEPTED"].includes(booking.status) && (
                 <>
                   {!showCancel ? (
@@ -653,41 +671,27 @@ export default function BookingDetail() {
                       </div>
                     </div>
                   )}
-                  {/* Raise dispute — show for active bookings */}
-                  {["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
-                    booking.status,
-                  ) && (
-                    <button
-                      className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
-                      style={{
-                        borderColor: "var(--red)",
-                        color: "var(--red)",
-                        marginTop: "0.5rem",
-                      }}
-                      onClick={() => setShowDispute(true)}
-                    >
-                      ⚠️ Raise a Dispute
-                    </button>
-                  )}
-
-                  {/* Dispute modal */}
-                  {showDispute && (
-                    <RaiseDisputeModal
-                      bookingId={booking.id}
-                      bookingTitle={booking.title}
-                      onClose={() => setShowDispute(false)}
-                      onSuccess={() =>
-                        setSuccess(
-                          "Dispute raised. Our team will review within 24–48 hours.",
-                        )
-                      }
-                    />
-                  )}
                 </>
               )}
+
               {!isHirer && !isWorker && (
                 <p className={styles.noActions}>No actions available.</p>
               )}
+
+              {/* Dispute modal — single instance for both roles */}
+              {showDispute && (
+                <RaiseDisputeModal
+                  bookingId={booking.id}
+                  bookingTitle={booking.title}
+                  onClose={() => setShowDispute(false)}
+                  onSuccess={() =>
+                    setSuccess(
+                      "Dispute raised. Our team will review within 24–48 hours.",
+                    )
+                  }
+                />
+              )}
+
               {(booking.status === "COMPLETED" ||
                 booking.status === "CANCELLED") &&
                 !booking.review && (
@@ -700,6 +704,9 @@ export default function BookingDetail() {
                 )}
             </div>
 
+            {booking.status === "COMPLETED" && booking.payment && (
+              <BookingInvoice booking={booking} />
+            )}
             {/* Cancel reason */}
             {booking.cancelReason && (
               <div className={styles.cancelReasonCard}>

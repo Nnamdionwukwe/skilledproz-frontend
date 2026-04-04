@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../lib/api";
-import AdminLayout from "./AdminLayout";
+import AdminLayout from "../../components/layout/AdminLayout";
 import styles from "./AdminDisputes.module.css";
 
 function fmt(n) {

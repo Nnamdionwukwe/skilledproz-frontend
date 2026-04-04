@@ -1,0 +1,254 @@
+.wrap {
+  margin-bottom: 1.5rem;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: var(--font-body);
+}
+.trigger:hover {
+  background: var(--orange);
+  color: var(--bg);
+}
+
+.triggerIcon {
+  font-size: 1rem;
+}
+.triggerBadge {
+  background: var(--orange);
+  color: var(--bg);
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 100px;
+  font-weight: 800;
+}
+.trigger:hover .triggerBadge {
+  background: var(--bg);
+  color: var(--orange);
+}
+.triggerChevron {
+  font-size: 0.65rem;
+  margin-left: 0.25rem;
+}
+
+.panel {
+  margin-top: 0.75rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  animation: fadeUp 0.3s ease;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+.panelHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.panelIcon {
+  font-size: 1.5rem;
+}
+.panelTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.panelSub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.exampleChip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0.4rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  font-family: var(--font-body);
+  text-align: left;
+}
+.exampleChip:hover {
+  border-color: var(--orange-glow);
+  color: var(--orange);
+}
+
+.inputWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+.textarea:focus {
+  border-color: var(--border-focus);
+}
+.textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.generateBtn {
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+}
+.generateBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.generateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.errorBox {
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.result {
+  margin-top: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  animation: fadeUp 0.3s ease;
+}
+
+.resultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.resultLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.applyBtn {
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: var(--font-body);
+}
+.applyBtn:hover {
+  background: var(--orange-hover);
+}
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.resultField {
+}
+.fieldLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+.fieldValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.fieldText {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.65;
+}
+
+.tips {
+  margin-top: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: var(--orange-dim);
+  border-radius: 8px;
+  border: 1px solid var(--orange-glow);
+}
+.tipsLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--orange);
+  margin-bottom: 0.4rem;
+}
+.tipItem {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 0.2rem;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}

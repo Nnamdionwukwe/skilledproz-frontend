@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import styles from "./PostJob.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
+import AIJobAssistant from "./AIJobAssistant";
 
 export default function PostJob() {
   const [categories, setCategories] = useState([]);
@@ -183,6 +184,13 @@ export default function PostJob() {
             worker.
           </p>
         </div>
+
+        <AIJobAssistant
+          onApply={(result) => {
+            set("title", result.title);
+            set("description", result.description);
+          }}
+        />
 
         <form className={styles.form} onSubmit={handleSubmit}>
           {/* Category */}

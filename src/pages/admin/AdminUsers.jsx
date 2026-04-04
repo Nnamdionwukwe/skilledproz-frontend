@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import api from "../../lib/api";
-import AdminLayout from "./AdminLayout";
+import AdminLayout from "../../components/layout/AdminLayout";
 import styles from "./AdminUsers.module.css";
 
 function timeAgo(d) {

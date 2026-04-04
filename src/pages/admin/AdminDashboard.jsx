@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../lib/api";
-import AdminLayout from "./AdminLayout";
+import AdminLayout from "../../components/layout/AdminLayout";
 import styles from "./AdminDashboard.module.css";
 
 function fmt(n, currency = "") {

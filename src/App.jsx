@@ -73,6 +73,14 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminDisputes from "./pages/admin/AdminDisputes";
 import AdminBroadcast from "./pages/admin/AdminBroadcast";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminVerifications from "./pages/admin/AdminVerifications";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminCategories from "./pages/admin/AdminCategories";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminSettings from "./pages/admin/AdminSettings";
+import BackgroundCheck from "./pages/worker/verification/BackgroundCheck";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -176,6 +184,63 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminBroadcast />
+            </RequireAdmin>
+          }
+        />
+
+        <Route
+          path="/admin/analytics"
+          element={
+            <RequireAdmin>
+              <AdminAnalytics />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/verifications"
+          element={
+            <RequireAdmin>
+              <AdminVerifications />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/bookings"
+          element={
+            <RequireAdmin>
+              <AdminBookings />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <RequireAdmin>
+              <AdminCategories />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/reviews"
+          element={
+            <RequireAdmin>
+              <AdminReviews />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            <RequireAdmin>
+              <AdminPayments />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <RequireAdmin>
+              <AdminSettings />
             </RequireAdmin>
           }
         />
@@ -517,6 +582,14 @@ export default function App() {
           element={
             <RequireAuth requireVerified>
               <HirerVerification />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/background-check"
+          element={
+            <RequireAuth requireVerified>
+              <BackgroundCheck />
             </RequireAuth>
           }
         />

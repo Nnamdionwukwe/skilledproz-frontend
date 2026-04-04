@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../../lib/api";
-import AdminLayout from "./AdminLayout";
+import AdminLayout from "../../components/layout/AdminLayout";
 import styles from "./AdminBroadcast.module.css";
 
 const TEMPLATES = [

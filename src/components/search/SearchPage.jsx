@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./SearchPage.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
+import VoiceSearch from "./VoiceSearch";
 
 const CURRENCIES = ["USD", "NGN", "GBP", "EUR", "GHS", "KES", "ZAR", "INR"];
 const RATINGS = [
@@ -426,6 +427,10 @@ export default function SearchPage() {
                   </button>
                 ))}
               </div>
+              <VoiceSearch
+                onResult={(text) => setInput(text)} // set your search input state
+                onError={(msg) => console.warn(msg)}
+              />
               <button
                 className={styles.mobileFilterBtn}
                 onClick={() => setShowFilters((s) => !s)}

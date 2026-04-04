@@ -1,0 +1,21 @@
+.invoiceBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+  font-family: var(--font-body);
+}
+.invoiceBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}

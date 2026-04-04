@@ -47,6 +47,11 @@ const NAV = [
         icon: "📅",
       },
       {
+        label: "Background Check",
+        path: "/dashboard/worker/background-check",
+        icon: "🛡️",
+      },
+      {
         label: "Verification",
         path: "/dashboard/worker/verification",
         icon: "🛡️",
@@ -105,6 +110,10 @@ const PAGE_TITLES = {
   "/dashboard/worker/applications": {
     title: "My Applications",
     sub: "Jobs you applied to",
+  },
+  "/dashboard/worker/background-check": {
+    title: "Background Check",
+    sub: "Build hirer trust",
   },
   "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
