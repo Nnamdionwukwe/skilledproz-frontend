@@ -4,7 +4,8 @@
   gap: 0.5rem;
 }
 
-.btn {
+/* Main button */
+.mainBtn {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 10px;
@@ -15,57 +16,293 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
   transition: all 0.2s;
   font-family: var(--font-body);
 }
 
-.btnIn {
+.btnCheckIn {
   background: var(--orange);
   color: var(--bg);
 }
-.btnIn:hover:not(:disabled) {
+.btnCheckIn:hover {
   background: var(--orange-hover);
 }
 
-.btnOut {
+.btnCheckOut {
   background: var(--green);
   color: var(--bg);
 }
-.btnOut:hover:not(:disabled) {
+.btnCheckOut:hover {
   filter: brightness(1.1);
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.pulse {
+/* Pulse dot */
+.pulseDot {
   width: 8px;
   height: 8px;
-  background: currentColor;
   border-radius: 50%;
-  animation: pulse 1.2s ease infinite;
-  display: inline-block;
+  animation: pulse 1.4s ease infinite;
+  flex-shrink: 0;
+}
+.dotGreen {
+  background: rgba(8, 8, 16, 0.5);
+}
+.dotOrange {
+  background: rgba(8, 8, 16, 0.5);
 }
 
-.hint {
+/* Locating state */
+.locatingBox {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  animation: fadeUp 0.3s ease;
+}
+
+.locatingIcon {
+  font-size: 1.5rem;
+}
+
+.locatingTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.locatingHint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* Confirm box */
+.confirmBox {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeUp 0.3s ease;
+}
+
+.confirmHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.confirmIcon {
+  font-size: 1.5rem;
+}
+
+.confirmTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.1rem;
+}
+
+.confirmTime {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* Location card */
+.locationCard {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.locationRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.locationIcon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.locationLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.locationValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.15rem;
+}
+
+.locationAccuracy {
   font-size: 0.72rem;
   color: var(--text-muted);
-  text-align: center;
-}
-.err {
-  font-size: 0.78rem;
-  color: var(--red);
+  margin-bottom: 0.1rem;
 }
 
+.locationCoords {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+/* Distance row */
+.distanceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 7px;
+}
+
+.distanceNear {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.distanceFar {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+
+/* No GPS */
+.noGpsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border-radius: 7px;
+}
+
+/* Warning */
+.warningBox {
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+  font-size: 0.78rem;
+  color: var(--orange);
+}
+
+/* Actions */
+.confirmActions {
+  display: flex;
+  gap: 0.625rem;
+  padding-top: 0.25rem;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid var(--border-hover);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.83rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.cancelBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.confirmBtn {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s;
+}
+
+.confirmBtnIn {
+  background: var(--orange);
+  color: var(--bg);
+}
+.confirmBtnIn:hover {
+  background: var(--orange-hover);
+}
+
+.confirmBtnOut {
+  background: var(--green);
+  color: var(--bg);
+}
+.confirmBtnOut:hover {
+  filter: brightness(1.1);
+}
+
+/* Submitting */
+.submittingBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+/* Error */
+.errorBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+  font-size: 0.83rem;
+}
+
+.retryBtn {
+  background: none;
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-left: auto;
+  font-family: var(--font-body);
+}
+
+/* Spinner */
 .spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: currentColor;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--orange);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+  flex-shrink: 0;
 }
