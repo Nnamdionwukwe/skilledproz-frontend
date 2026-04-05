@@ -379,7 +379,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
+
         <Route path="/jobs/:id" element={<JobDetail />} />
 
         <Route
@@ -555,6 +555,7 @@ export default function App() {
 
         {/* ── Public Aceess ── */}
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
+        <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
         <Route path="/search" element={<SearchPage />} />
 
         {/* ── Fallback ── */}
