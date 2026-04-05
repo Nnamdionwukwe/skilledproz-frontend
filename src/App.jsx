@@ -81,6 +81,7 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import BackgroundCheck from "./pages/worker/verification/BackgroundCheck";
+import InsuranceAddon from "./components/hirer/InsuranceAddon";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -467,7 +468,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route
           path="/bookings/:bookingId/pay"
           element={

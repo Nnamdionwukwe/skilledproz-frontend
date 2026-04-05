@@ -9,6 +9,7 @@ import RaiseDisputeModal from "../disputes/RaiseDisputeModal";
 import BookingInvoice from "./BookingInvoice";
 import GpsCheckIn from "./GpsCheckIn";
 import Translator from "../common/Translator";
+import InsuranceAddon from "../hirer/InsuranceAddon";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -789,6 +790,7 @@ export default function BookingDetail() {
           }
         />
       )}
+      <InsuranceAddon />
     </Layout>
   );
 }
