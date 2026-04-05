@@ -794,3 +794,151 @@
   font-size: 0.825rem;
   color: var(--green);
 }
+
+/* ── GPS location cards ──────────────────────────────────────────────── */
+.gpsNote {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 14px;
+}
+.gpsCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gpsCard {
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid;
+}
+.gpsCardIn {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.gpsCardOut {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+.gpsCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.gpsCardDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.gpsCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  flex: 1;
+}
+.gpsCardTime {
+  font-size: 12px;
+  color: #888;
+}
+.gpsCoordRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.gpsCoordLabel {
+  color: #888;
+}
+.gpsCoordValue {
+  font-family: monospace;
+  color: #333;
+}
+.gpsDistRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.gpsDistNear {
+  background: #dcfce7;
+  color: #166534;
+}
+.gpsDistFar {
+  background: #fef3c7;
+  color: #92400e;
+}
+.gpsMapLink {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+.gpsMapLink:hover {
+  text-decoration: underline;
+}
+.gpsLink {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 13px;
+}
+.gpsLink:hover {
+  text-decoration: underline;
+}
+
+/* ── Cancel box ──────────────────────────────────────────────────────── */
+.cancelBoxTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 6px;
+}
+.cancelRequired {
+  color: #dc2626;
+}
+.cancelInputError {
+  border-color: #dc2626 !important;
+}
+.cancelFieldError {
+  font-size: 12px;
+  color: #dc2626;
+  margin: 4px 0 0;
+}
+
+/* ── Review list ──────────────────────────────────────────────────────── */
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Pay helpers ──────────────────────────────────────────────────────── */
+.payCapitalize {
+  text-transform: capitalize;
+}
+
+@media (min-width: 600px) {
+  .gpsCards {
+    flex-direction: row;
+  }
+  .gpsCard {
+    flex: 1;
+  }
+}
+
+.waitingPayment {
+  padding: 12px 14px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fbbf24;
+  text-align: center;
+  line-height: 1.5;
+}

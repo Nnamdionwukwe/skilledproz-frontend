@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -20,8 +20,26 @@ const STATUS_META = {
 
 const TIMELINE_STEPS = ["Pending", "Accepted", "In Progress", "Completed"];
 
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function mapsUrl(lat, lng) {
+  return `https://www.google.com/maps?q=${lat},${lng}`;
+}
+
 export default function BookingDetail() {
   const { id } = useParams();
+  const { user } = useAuthStore();
+
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
@@ -29,27 +47,13 @@ export default function BookingDetail() {
   const [success, setSuccess] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const { user } = useAuthStore();
-  const navigate = useNavigate();
+  const [cancelError, setCancelError] = useState("");
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewCheckDone, setReviewCheckDone] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
-  const role = user?.role;
   const userId = user?.id;
-
-  // useEffect(() => {
-  //   api
-  //     .get(`/bookings/${id}`)
-  //     .then((res) => {
-  //       setBooking(res.data.data.booking);
-  //       setLoading(false);
-  //     })
-  //     .catch((err) => {
-  //       setLoading(false);
-  //     });
-  // }, [id]);
 
   useEffect(() => {
     api
@@ -57,24 +61,44 @@ export default function BookingDetail() {
       .then((res) => {
         const b = res.data.data.booking;
         setBooking(b);
-
-        // Check if current user already reviewed this booking
         if (b.status === "COMPLETED") {
           api
             .get(`/reviews/check/${id}`)
-            .then((r) => {
-              setHasReviewed(r.data.data.hasReviewed);
-            })
+            .then((r) => setHasReviewed(r.data.data.hasReviewed))
             .catch(() => setHasReviewed(false))
             .finally(() => setReviewCheckDone(true));
         } else {
           setReviewCheckDone(true);
         }
       })
-      .catch(() => {
-        setLoading(false);
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
+  }, [id]);
+
+  // 1. Add this useEffect for silent auto-refresh (add after your existing useEffect)
+  useEffect(() => {
+    if (!id) return;
+    const interval = setInterval(() => {
+      api
+        .get(`/bookings/${id}`)
+        .then((res) => {
+          const updated = res.data.data.booking;
+          // Only update state if something actually changed — avoids flicker
+          setBooking((prev) => {
+            if (!prev) return updated;
+            if (
+              prev.status !== updated.status ||
+              prev.payment?.status !== updated.payment?.status
+            ) {
+              return updated;
+            }
+            return prev;
+          });
+        })
+        .catch(() => {});
+    }, 30000); // poll every 30 seconds
+
+    return () => clearInterval(interval);
   }, [id]);
 
   async function updateStatus(status, extra = {}) {
@@ -91,6 +115,8 @@ export default function BookingDetail() {
         `Booking ${status.toLowerCase().replace("_", " ")} successfully.`,
       );
       setShowCancel(false);
+      setCancelReason("");
+      setCancelError("");
     } catch (e) {
       setError(e.response?.data?.message || "Action failed. Please try again.");
     } finally {
@@ -98,34 +124,12 @@ export default function BookingDetail() {
     }
   }
 
-  async function handleCheckIn() {
-    setActing(true);
-    setError("");
-    setSuccess("");
-    try {
-      const res = await api.patch(`/bookings/${id}/checkin`);
-      setBooking(res.data.data.booking);
-      setSuccess("Checked in — job is now in progress.");
-    } catch {
-      setError("Check-in failed.");
-    } finally {
-      setActing(false);
+  function handleCancelSubmit() {
+    if (!cancelReason.trim()) {
+      setCancelError("Please provide a reason for cancellation.");
+      return;
     }
-  }
-
-  async function handleCheckOut() {
-    setActing(true);
-    setError("");
-    setSuccess("");
-    try {
-      const res = await api.patch(`/bookings/${id}/checkout`);
-      setBooking(res.data.data.booking);
-      setSuccess("Checked out — job marked as completed.");
-    } catch {
-      setError("Check-out failed.");
-    } finally {
-      setActing(false);
-    }
+    updateStatus("CANCELLED", { cancelReason: cancelReason.trim() });
   }
 
   if (loading) return <DetailSkeleton Layout={Layout} />;
@@ -138,15 +142,39 @@ export default function BookingDetail() {
   const other = isHirer ? booking.worker : booking.hirer;
   const scheduled = new Date(booking.scheduledAt);
 
+  // ── Derived GPS data ────────────────────────────────────────────────────────
+  const hasCheckInGps =
+    booking.checkInLat != null && booking.checkInLng != null;
+  const hasCheckOutGps =
+    booking.checkOutLat != null && booking.checkOutLng != null;
+
+  const checkInDistKm =
+    hasCheckInGps && booking.latitude && booking.longitude
+      ? haversineKm(
+          booking.checkInLat,
+          booking.checkInLng,
+          booking.latitude,
+          booking.longitude,
+        )
+      : null;
+
+  const checkOutDistKm =
+    hasCheckOutGps && booking.latitude && booking.longitude
+      ? haversineKm(
+          booking.checkOutLat,
+          booking.checkOutLng,
+          booking.latitude,
+          booking.longitude,
+        )
+      : null;
+
   return (
     <Layout>
       <div className={styles.page}>
-        {/* ✅ Use Link instead of <a> */}
         <Link to="/bookings" className={styles.back}>
           ← Back to Bookings
         </Link>
 
-        {/* Alerts */}
         {error && (
           <Alert type="error" text={error} onClose={() => setError("")} />
         )}
@@ -155,9 +183,9 @@ export default function BookingDetail() {
         )}
 
         <div className={styles.layout}>
-          {/* ── Main column ── */}
+          {/* ══ MAIN COLUMN ══ */}
           <div className={styles.main}>
-            {/* Title block */}
+            {/* Title */}
             <div className={styles.titleBlock}>
               <div className={styles.titleRow}>
                 <h1 className={styles.title}>{booking.title}</h1>
@@ -211,7 +239,7 @@ export default function BookingDetail() {
               )}
             </section>
 
-            {/* Details grid */}
+            {/* Job details */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Job Details</h2>
               <div className={styles.detailGrid}>
@@ -222,7 +250,7 @@ export default function BookingDetail() {
                 />
                 <DetailItem
                   icon="📍"
-                  label="Location"
+                  label="Job Site Address"
                   value={booking.address}
                 />
                 <DetailItem
@@ -238,130 +266,221 @@ export default function BookingDetail() {
                     value={`${booking.estimatedHours}h`}
                   />
                 )}
-                {booking.checkInAt && (
+                {booking.latitude && booking.longitude && (
                   <DetailItem
-                    icon="🟢"
-                    label="Checked In"
-                    value={new Date(booking.checkInAt).toLocaleString()}
-                  />
-                )}
-                {booking.checkOutAt && (
-                  <DetailItem
-                    icon="🔴"
-                    label="Checked Out"
-                    value={new Date(booking.checkOutAt).toLocaleString()}
-                  />
-                )}
-                {booking.completedAt && (
-                  <DetailItem
-                    icon="✅"
-                    label="Completed"
-                    value={new Date(booking.completedAt).toLocaleString()}
+                    icon="🗺️"
+                    label="Job Site GPS"
+                    value={
+                      <a
+                        href={mapsUrl(booking.latitude, booking.longitude)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.gpsLink}
+                      >
+                        {booking.latitude.toFixed(5)},{" "}
+                        {booking.longitude.toFixed(5)} →
+                      </a>
+                    }
                   />
                 )}
               </div>
             </section>
 
-            {/* Payment info */}
-            {booking.payment && (
+            {/* ══ WORKER GPS LOCATION — visible to BOTH parties ══ */}
+            {(hasCheckInGps || hasCheckOutGps) && (
               <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Payment</h2>
-                <div className={styles.paymentCard}>
-                  <div className={styles.paymentRow}>
-                    <span className={styles.payLabel}>Total</span>
-                    <span className={styles.payValue}>
-                      {booking.payment.currency}{" "}
-                      {booking.payment.amount?.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.paymentRow}>
-                    <span className={styles.payLabel}>Platform Fee</span>
-                    <span className={styles.payMuted}>
-                      {booking.payment.currency}{" "}
-                      {booking.payment.platformFee?.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.paymentRow}>
-                    <span className={styles.payLabel}>Worker Payout</span>
-                    <span className={styles.payGreen}>
-                      {booking.payment.currency}{" "}
-                      {booking.payment.workerPayout?.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.paymentDivider} />
-                  <div className={styles.paymentRow}>
-                    <span className={styles.payLabel}>Provider</span>
-                    <span
-                      className={styles.payValue}
-                      style={{ textTransform: "capitalize" }}
-                    >
-                      {booking.payment.provider}
-                    </span>
-                  </div>
-                  <div className={styles.paymentRow}>
-                    <span className={styles.payLabel}>Status</span>
-                    <span
-                      className={`${styles.payStatus} ${styles[`payStatus_${booking.payment.status.toLowerCase()}`]}`}
-                    >
-                      {booking.payment.status}
-                    </span>
-                  </div>
-                  {booking.payment.providerRef && (
-                    <div className={styles.paymentRow}>
-                      <span className={styles.payLabel}>Ref</span>
-                      <span className={styles.payRef}>
-                        {booking.payment.providerRef}
-                      </span>
+                <h2 className={styles.sectionTitle}>Worker Location</h2>
+                <p className={styles.gpsNote}>
+                  GPS coordinates recorded when the worker checked in and out.
+                  Visible to both the worker and hirer.
+                </p>
+
+                <div className={styles.gpsCards}>
+                  {/* Check-in location */}
+                  {hasCheckInGps && (
+                    <div className={`${styles.gpsCard} ${styles.gpsCardIn}`}>
+                      <div className={styles.gpsCardHeader}>
+                        <span
+                          className={styles.gpsCardDot}
+                          style={{ background: "#16a34a" }}
+                        />
+                        <span className={styles.gpsCardTitle}>
+                          Check-in Location
+                        </span>
+                        <span className={styles.gpsCardTime}>
+                          {booking.checkInAt
+                            ? new Date(booking.checkInAt).toLocaleTimeString(
+                                [],
+                                { hour: "2-digit", minute: "2-digit" },
+                              )
+                            : ""}
+                          {booking.checkInAt
+                            ? ` · ${new Date(booking.checkInAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+                            : ""}
+                        </span>
+                      </div>
+
+                      <div className={styles.gpsCoordRow}>
+                        <span className={styles.gpsCoordLabel}>
+                          Coordinates
+                        </span>
+                        <span className={styles.gpsCoordValue}>
+                          {booking.checkInLat.toFixed(5)},{" "}
+                          {booking.checkInLng.toFixed(5)}
+                        </span>
+                      </div>
+
+                      {checkInDistKm !== null && (
+                        <div
+                          className={`${styles.gpsDistRow} ${checkInDistKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
+                        >
+                          <span>
+                            {checkInDistKm < 0.1
+                              ? "✅"
+                              : checkInDistKm > 1
+                                ? "⚠️"
+                                : "📏"}
+                          </span>
+                          <span>
+                            {checkInDistKm < 0.1
+                              ? "Worker was at the job site"
+                              : `${checkInDistKm.toFixed(2)} km from job site`}
+                          </span>
+                        </div>
+                      )}
+
+                      <a
+                        href={mapsUrl(booking.checkInLat, booking.checkInLng)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.gpsMapLink}
+                      >
+                        🗺️ View on Google Maps
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Check-out location */}
+                  {hasCheckOutGps && (
+                    <div className={`${styles.gpsCard} ${styles.gpsCardOut}`}>
+                      <div className={styles.gpsCardHeader}>
+                        <span
+                          className={styles.gpsCardDot}
+                          style={{ background: "#dc2626" }}
+                        />
+                        <span className={styles.gpsCardTitle}>
+                          Check-out Location
+                        </span>
+                        <span className={styles.gpsCardTime}>
+                          {booking.checkOutAt
+                            ? new Date(booking.checkOutAt).toLocaleTimeString(
+                                [],
+                                { hour: "2-digit", minute: "2-digit" },
+                              )
+                            : ""}
+                          {booking.checkOutAt
+                            ? ` · ${new Date(booking.checkOutAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+                            : ""}
+                        </span>
+                      </div>
+
+                      <div className={styles.gpsCoordRow}>
+                        <span className={styles.gpsCoordLabel}>
+                          Coordinates
+                        </span>
+                        <span className={styles.gpsCoordValue}>
+                          {booking.checkOutLat.toFixed(5)},{" "}
+                          {booking.checkOutLng.toFixed(5)}
+                        </span>
+                      </div>
+
+                      {checkOutDistKm !== null && (
+                        <div
+                          className={`${styles.gpsDistRow} ${checkOutDistKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
+                        >
+                          <span>
+                            {checkOutDistKm < 0.1
+                              ? "✅"
+                              : checkOutDistKm > 1
+                                ? "⚠️"
+                                : "📏"}
+                          </span>
+                          <span>
+                            {checkOutDistKm < 0.1
+                              ? "Worker was at the job site"
+                              : `${checkOutDistKm.toFixed(2)} km from job site`}
+                          </span>
+                        </div>
+                      )}
+
+                      <a
+                        href={mapsUrl(booking.checkOutLat, booking.checkOutLng)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.gpsMapLink}
+                      >
+                        🗺️ View on Google Maps
+                      </a>
                     </div>
                   )}
                 </div>
               </section>
             )}
 
-            {/* Review */}
-            {/* {booking.review && (
+            {/* Payment */}
+            {booking.payment && (
               <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Review</h2>
-                <div className={styles.reviewCard}>
-                  <div className={styles.stars}>
-                    {[...Array(5)].map((_, i) => (
+                <h2 className={styles.sectionTitle}>Payment</h2>
+                <div className={styles.paymentCard}>
+                  <PayRow
+                    label="Total"
+                    value={`${booking.payment.currency} ${booking.payment.amount?.toLocaleString()}`}
+                  />
+                  <PayRow
+                    label="Platform Fee"
+                    value={`${booking.payment.currency} ${booking.payment.platformFee?.toLocaleString()}`}
+                    muted
+                  />
+                  <PayRow
+                    label="Worker Payout"
+                    value={`${booking.payment.currency} ${booking.payment.workerPayout?.toLocaleString()}`}
+                    green
+                  />
+                  <div className={styles.paymentDivider} />
+                  <PayRow
+                    label="Provider"
+                    value={booking.payment.provider}
+                    capitalize
+                  />
+                  <PayRow
+                    label="Status"
+                    value={booking.payment.status}
+                    extra={
                       <span
-                        key={i}
-                        className={
-                          i < booking.review.rating
-                            ? styles.starFilled
-                            : styles.starEmpty
-                        }
+                        className={`${styles.payStatus} ${styles[`payStatus_${booking.payment.status?.toLowerCase()}`]}`}
                       >
-                        ★
+                        {booking.payment.status}
                       </span>
-                    ))}
-                    <span className={styles.ratingNum}>
-                      {booking.review.rating}/5
-                    </span>
-                  </div>
-                  {booking.review.comment && (
-                    <p className={styles.reviewComment}>
-                      "{booking.review.comment}"
-                    </p>
+                    }
+                  />
+                  {booking.payment.providerRef && (
+                    <PayRow
+                      label="Ref"
+                      value={booking.payment.providerRef}
+                      mono
+                    />
                   )}
                 </div>
               </section>
-            )} */}
-            {/* Reviews Section */}
+            )}
+
+            {/* Reviews */}
             {booking.status === "COMPLETED" && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Reviews</h2>
 
-                {/* Show all reviews for this booking */}
-                {booking.reviews && booking.reviews.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1rem",
-                    }}
-                  >
+                {booking.reviews?.length > 0 && (
+                  <div className={styles.reviewsList}>
                     {booking.reviews.map((review) => (
                       <div key={review.id} className={styles.reviewCard}>
                         <div className={styles.reviewCardTop}>
@@ -394,14 +513,6 @@ export default function BookingDetail() {
                                   month: "short",
                                   year: "numeric",
                                 },
-                              )}{" "}
-                              at{" "}
-                              {new Date(review.createdAt).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                },
                               )}
                             </p>
                           </div>
@@ -433,7 +544,6 @@ export default function BookingDetail() {
                   </div>
                 )}
 
-                {/* Leave a review — only if this user hasn't reviewed yet */}
                 {reviewCheckDone && !hasReviewed && (
                   <Link
                     to={`/bookings/${booking.id}/review`}
@@ -443,22 +553,33 @@ export default function BookingDetail() {
                     ⭐ Leave a Review
                   </Link>
                 )}
-
                 {reviewCheckDone && hasReviewed && (
                   <div className={styles.reviewedNote}>
                     ✅ Your review has been submitted.
-                    {booking.reviews?.length < 2 &&
+                    {(booking.reviews?.length ?? 0) < 2 &&
                       " Waiting for the other party."}
-                    {booking.reviews?.length >= 2 && " Both reviews submitted."}
                   </div>
                 )}
               </section>
             )}
+
+            {/* Cancellation reason */}
+            {booking.cancelReason && (
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Cancellation Reason</h2>
+                <div className={styles.cancelReasonCard}>
+                  <span className={styles.cancelReasonIcon}>⚠️</span>
+                  <p className={styles.cancelReasonText}>
+                    {booking.cancelReason}
+                  </p>
+                </div>
+              </section>
+            )}
           </div>
 
-          {/* ── Sidebar ── */}
+          {/* ══ SIDEBAR ══ */}
           <div className={styles.sidebar}>
-            {/* Other party */}
+            {/* Other party card */}
             <div className={styles.partyCard}>
               <p className={styles.partyLabel}>
                 {isHirer ? "Worker" : "Hirer"}
@@ -488,261 +609,189 @@ export default function BookingDetail() {
                 💬 Send Message
               </a>
             </div>
-            {/* Actions */}
+
+            {/* Actions card */}
             <div className={styles.actionsCard}>
               <p className={styles.actionsTitle}>Actions</p>
 
-              {/* WORKER actions */}
-              {isWorker && booking.status === "PENDING" && (
+              {/* WORKER ACTIONS */}
+              {isWorker && (
                 <>
-                  <ActionBtn
-                    label="Accept Booking"
-                    color="green"
-                    loading={acting}
-                    onClick={() => updateStatus("ACCEPTED")}
-                  />
-                  <ActionBtn
-                    label=" Cancel Booking"
-                    color="red"
-                    loading={acting}
-                    onClick={() => updateStatus("REJECTED")}
-                  />
-                </>
-              )}
-              {isWorker && booking.status === "ACCEPTED" && (
-                <ActionBtn
-                  label="Check In — Start Job"
-                  color="indigo"
-                  loading={acting}
-                  onClick={handleCheckIn}
-                />
-              )}
-              {isWorker && booking.status === "IN_PROGRESS" && (
-                <ActionBtn
-                  label="Check Out — Mark Complete"
-                  color="green"
-                  loading={acting}
-                  onClick={handleCheckOut}
-                />
-              )}
-              {/* HIRER actions */}
-              {isHirer && booking.status === "ACCEPTED" && !booking.payment && (
-                <Link
-                  to={`/bookings/${booking.id}/pay`}
-                  className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
-                >
-                  💳 Pay Now
-                </Link>
-              )}
-              {isHirer && booking.payment?.status === "HELD" && (
-                <Link
-                  to={`/bookings/${booking.id}/release`}
-                  className={`${styles.actionBtn} ${styles.actionBtn_green}`}
-                >
-                  💸 Release Payment
-                </Link>
-              )}
-              {isHirer && ["PENDING", "ACCEPTED"].includes(booking.status) && (
-                <>
-                  {!showCancel ? (
+                  {booking.status === "PENDING" && (
                     <ActionBtn
-                      label="Cancel Booking"
-                      color="red"
-                      outline
-                      loading={false}
-                      onClick={() => setShowCancel(true)}
+                      label="Accept Booking"
+                      color="green"
+                      loading={acting}
+                      onClick={() => updateStatus("ACCEPTED")}
                     />
-                  ) : (
-                    <div className={styles.cancelBox}>
-                      <textarea
-                        className={styles.cancelInput}
-                        placeholder="Reason for cancellation (optional)"
-                        value={cancelReason}
-                        onChange={(e) => setCancelReason(e.target.value)}
-                        rows={3}
+                  )}
+
+                  {/* ✅ Only show GPS check-in when booking is ACCEPTED AND payment is HELD */}
+                  {booking.status === "ACCEPTED" &&
+                    booking.payment?.status === "HELD" && (
+                      <GpsCheckIn
+                        bookingId={booking.id}
+                        status={booking.status}
+                        isWorker={isWorker}
+                        jobLatitude={booking.latitude}
+                        jobLongitude={booking.longitude}
+                        onSuccess={(updatedBooking) => {
+                          setBooking((prev) => ({
+                            ...prev,
+                            ...updatedBooking,
+                          }));
+                          setSuccess(
+                            updatedBooking.status === "IN_PROGRESS"
+                              ? "✅ Checked in — job is now in progress."
+                              : "✅ Checked out — job marked as completed.",
+                          );
+                        }}
                       />
-                      <div className={styles.cancelRow}>
-                        <button
-                          className={styles.cancelConfirm}
-                          disabled={acting}
-                          onClick={() =>
-                            updateStatus("CANCELLED", { cancelReason })
-                          }
-                        >
-                          {acting ? <Spinner /> : "Confirm Cancel"}
-                        </button>
-                        <button
-                          className={styles.cancelAbort}
-                          onClick={() => setShowCancel(false)}
-                        >
-                          Keep Booking
-                        </button>
+                    )}
+
+                  {/* Show this message when accepted but payment not yet received */}
+                  {booking.status === "ACCEPTED" &&
+                    (!booking.payment ||
+                      booking.payment.status === "PENDING") && (
+                      <div className={styles.waitingPayment}>
+                        ⏳ Waiting for hirer to complete payment before you can
+                        check in.
                       </div>
-                    </div>
+                    )}
+
+                  {/* Check-out is available once IN_PROGRESS */}
+                  {booking.status === "IN_PROGRESS" && (
+                    <GpsCheckIn
+                      bookingId={booking.id}
+                      status={booking.status}
+                      isWorker={isWorker}
+                      jobLatitude={booking.latitude}
+                      jobLongitude={booking.longitude}
+                      onSuccess={(updatedBooking) => {
+                        setBooking((prev) => ({ ...prev, ...updatedBooking }));
+                        setSuccess("✅ Checked out — job marked as completed.");
+                      }}
+                    />
+                  )}
+
+                  {["PENDING", "ACCEPTED"].includes(booking.status) && (
+                    <CancelBox
+                      label="Cancel Booking"
+                      show={showCancel}
+                      reason={cancelReason}
+                      reasonError={cancelError}
+                      acting={acting}
+                      onOpen={() => {
+                        setShowCancel(true);
+                        setCancelError("");
+                      }}
+                      onClose={() => {
+                        setShowCancel(false);
+                        setCancelReason("");
+                        setCancelError("");
+                      }}
+                      onChangeReason={(v) => {
+                        setCancelReason(v);
+                        setCancelError("");
+                      }}
+                      onConfirm={handleCancelSubmit}
+                    />
                   )}
                 </>
               )}
 
-              {/* Dispute button — OUTSIDE cancel block, for BOTH hirer and worker */}
+              {/* ── HIRER ACTIONS ── */}
+              {isHirer && (
+                <>
+                  {booking.status === "ACCEPTED" && !booking.payment && (
+                    <Link
+                      to={`/bookings/${booking.id}/pay`}
+                      className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
+                    >
+                      💳 Pay Now
+                    </Link>
+                  )}
+
+                  {booking.payment?.status === "HELD" && (
+                    <Link
+                      to={`/bookings/${booking.id}/release`}
+                      className={`${styles.actionBtn} ${styles.actionBtn_green}`}
+                    >
+                      💸 Release Payment
+                    </Link>
+                  )}
+
+                  {/* Hirer can cancel PENDING or ACCEPTED */}
+                  {["PENDING", "ACCEPTED"].includes(booking.status) && (
+                    <CancelBox
+                      label="Cancel Booking"
+                      show={showCancel}
+                      reason={cancelReason}
+                      reasonError={cancelError}
+                      acting={acting}
+                      onOpen={() => {
+                        setShowCancel(true);
+                        setCancelError("");
+                      }}
+                      onClose={() => {
+                        setShowCancel(false);
+                        setCancelReason("");
+                        setCancelError("");
+                      }}
+                      onChangeReason={(v) => {
+                        setCancelReason(v);
+                        setCancelError("");
+                      }}
+                      onConfirm={handleCancelSubmit}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* ── DISPUTE — both roles ── */}
               {(isHirer || isWorker) &&
                 ["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
                   booking.status,
                 ) && (
                   <button
                     className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
-                    style={{
-                      borderColor: "var(--red)",
-                      color: "var(--red)",
-                      marginTop: "0.5rem",
-                    }}
+                    style={{ borderColor: "var(--red)", color: "var(--red)" }}
                     onClick={() => setShowDispute(true)}
                   >
                     ⚠️ Raise a Dispute
                   </button>
                 )}
 
-              {/* WORKER actions */}
-              {isWorker && booking.status === "PENDING" && (
-                <>
-                  <ActionBtn
-                    label="Accept Booking"
-                    color="green"
-                    loading={acting}
-                    onClick={() => updateStatus("ACCEPTED")}
-                  />
-                  <ActionBtn
-                    label="Reject Booking"
-                    color="red"
-                    loading={acting}
-                    onClick={() => updateStatus("REJECTED")}
-                  />
-                </>
-              )}
-              {isWorker && booking.status === "ACCEPTED" && (
-                <ActionBtn
-                  label="Check In — Start Job"
-                  color="indigo"
-                  loading={acting}
-                  onClick={handleCheckIn}
-                />
-              )}
-              {isWorker && booking.status === "IN_PROGRESS" && (
-                <ActionBtn
-                  label="Check Out — Mark Complete"
-                  color="green"
-                  loading={acting}
-                  onClick={handleCheckOut}
-                />
-              )}
-              {isWorker && ["PENDING", "ACCEPTED"].includes(booking.status) && (
-                <>
-                  {!showCancel ? (
-                    <ActionBtn
-                      label="Cancel Booking"
-                      color="red"
-                      outline
-                      loading={false}
-                      onClick={() => setShowCancel(true)}
-                    />
-                  ) : (
-                    <div className={styles.cancelBox}>
-                      <textarea
-                        className={styles.cancelInput}
-                        placeholder="Reason for cancellation (optional)"
-                        value={cancelReason}
-                        onChange={(e) => setCancelReason(e.target.value)}
-                        rows={3}
-                      />
-                      <div className={styles.cancelRow}>
-                        {isWorker && (
-                          <GpsCheckIn
-                            bookingId={booking.id}
-                            status={booking.status}
-                            isWorker={isWorker}
-                            jobLatitude={booking.latitude}
-                            jobLongitude={booking.longitude}
-                            onSuccess={(updatedBooking) => {
-                              setBooking((prev) => ({
-                                ...prev,
-                                ...updatedBooking,
-                              }));
-                              setSuccess(
-                                updatedBooking.status === "IN_PROGRESS"
-                                  ? "✅ Checked in — job is now in progress."
-                                  : "✅ Checked out — job marked as completed.",
-                              );
-                            }}
-                          />
-                        )}
-                        {/* <button
-                          className={styles.cancelConfirm}
-                          disabled={acting}
-                          onClick={() =>
-                            updateStatus("CANCELLED", { cancelReason })
-                          }
-                        >
-                          {acting ? <Spinner /> : "Confirm Cancel"}
-                        </button> */}
-                        <button
-                          className={styles.cancelAbort}
-                          onClick={() => setShowCancel(false)}
-                        >
-                          Keep Booking
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
               {!isHirer && !isWorker && (
                 <p className={styles.noActions}>No actions available.</p>
               )}
-
-              {/* Dispute modal — single instance for both roles */}
-              {showDispute && (
-                <RaiseDisputeModal
-                  bookingId={booking.id}
-                  bookingTitle={booking.title}
-                  onClose={() => setShowDispute(false)}
-                  onSuccess={() =>
-                    setSuccess(
-                      "Dispute raised. Our team will review within 24–48 hours.",
-                    )
-                  }
-                />
-              )}
-
-              {(booking.status === "COMPLETED" ||
-                booking.status === "CANCELLED") &&
-                !booking.review && (
-                  <Link
-                    to={`/bookings/${booking.id}/review`}
-                    className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
-                  >
-                    ⭐ Leave a Review
-                  </Link>
-                )}
             </div>
 
+            {/* Invoice */}
             {booking.status === "COMPLETED" && booking.payment && (
               <BookingInvoice booking={booking} />
-            )}
-            {/* Cancel reason */}
-            {booking.cancelReason && (
-              <div className={styles.cancelReasonCard}>
-                <p className={styles.cancelReasonLabel}>Cancellation reason</p>
-                <p className={styles.cancelReasonText}>
-                  {booking.cancelReason}
-                </p>
-              </div>
             )}
           </div>
         </div>
       </div>
+
+      {showDispute && (
+        <RaiseDisputeModal
+          bookingId={booking.id}
+          bookingTitle={booking.title}
+          onClose={() => setShowDispute(false)}
+          onSuccess={() =>
+            setSuccess(
+              "Dispute raised. Our team will review within 24–48 hours.",
+            )
+          }
+        />
+      )}
     </Layout>
   );
 }
+
+/* ── Sub-components ──────────────────────────────────────────────────────────*/
 
 function DetailItem({ icon, label, value, accent }) {
   return (
@@ -760,10 +809,77 @@ function DetailItem({ icon, label, value, accent }) {
   );
 }
 
+function PayRow({ label, value, muted, green, capitalize, mono, extra }) {
+  return (
+    <div className={styles.paymentRow}>
+      <span className={styles.payLabel}>{label}</span>
+      {extra || (
+        <span
+          className={`${styles.payValue} ${muted ? styles.payMuted : ""} ${green ? styles.payGreen : ""} ${capitalize ? styles.payCapitalize : ""} ${mono ? styles.payRef : ""}`}
+        >
+          {value}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function CancelBox({
+  label,
+  show,
+  reason,
+  reasonError,
+  acting,
+  onOpen,
+  onClose,
+  onChangeReason,
+  onConfirm,
+}) {
+  if (!show) {
+    return (
+      <button
+        className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+        style={{ borderColor: "var(--red)", color: "var(--red)" }}
+        onClick={onOpen}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <div className={styles.cancelBox}>
+      <p className={styles.cancelBoxTitle}>
+        Reason for cancellation <span className={styles.cancelRequired}>*</span>
+      </p>
+      <textarea
+        className={`${styles.cancelInput} ${reasonError ? styles.cancelInputError : ""}`}
+        placeholder="Please explain why you are cancelling this booking…"
+        value={reason}
+        onChange={(e) => onChangeReason(e.target.value)}
+        rows={3}
+      />
+      {reasonError && <p className={styles.cancelFieldError}>{reasonError}</p>}
+      <div className={styles.cancelRow}>
+        <button
+          className={styles.cancelConfirm}
+          disabled={acting}
+          onClick={onConfirm}
+        >
+          {acting ? <Spinner /> : "Confirm Cancellation"}
+        </button>
+        <button className={styles.cancelAbort} onClick={onClose}>
+          Keep Booking
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ActionBtn({ label, color, outline, loading, onClick }) {
   return (
     <button
-      className={`${styles.actionBtn} ${outline ? styles[`actionBtn_outline`] : styles[`actionBtn_${color}`]}`}
+      className={`${styles.actionBtn} ${outline ? styles.actionBtn_outline : styles[`actionBtn_${color}`]}`}
       disabled={loading}
       onClick={onClick}
     >
