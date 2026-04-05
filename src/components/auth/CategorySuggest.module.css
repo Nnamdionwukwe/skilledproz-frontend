@@ -1,0 +1,138 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.searchWrap {
+  position: relative;
+}
+.searchInput {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+.searchInput:focus {
+  border-color: var(--border-focus);
+}
+.searchSpinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.results {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.resultItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  font-family: var(--font-body);
+  border-bottom: 1px solid var(--border);
+}
+.resultItem:hover {
+  background: var(--bg-card);
+  color: var(--text);
+}
+.resultSelected {
+  background: var(--orange-dim) !important;
+  color: var(--orange) !important;
+}
+.checkmark {
+  margin-left: auto;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.selectedChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.chip {
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange-glow);
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.customSection {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+}
+.customLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.customRow {
+  display: flex;
+  gap: 0.5rem;
+}
+.customInput {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.55rem 0.875rem;
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+.customInput:focus {
+  border-color: var(--border-focus);
+}
+.customBtn {
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.customBtn:disabled {
+  opacity: 0.5;
+}
+.customMsg {
+  font-size: 0.75rem;
+  color: var(--green);
+  margin-top: 0.4rem;
+}

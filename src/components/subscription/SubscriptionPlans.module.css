@@ -1,0 +1,277 @@
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+  animation: fadeUp 0.4s ease;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.sub {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Current plan */
+.currentBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.currentTitle {
+  font-weight: 600;
+  color: var(--text);
+}
+.currentExpiry {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.cancelLink {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--red);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--font-body);
+}
+
+/* Alerts */
+.errorBox {
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.successBox {
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Plans grid */
+.plansGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.planCard {
+  background: var(--bg-panel);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+}
+
+.planCard:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+.planPopular {
+  border-color: var(--orange) !important;
+  background: var(--orange-dim);
+}
+.planCurrent {
+  border-color: var(--green) !important;
+}
+
+.popularBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--orange);
+  color: var(--bg);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.25rem 0.875rem;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.currentBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: var(--bg);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.25rem 0.875rem;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.planTier {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.planName {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.planPrice {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.priceCurrency {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.priceAmount {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--orange);
+}
+.planPopular .priceAmount {
+  color: var(--orange);
+}
+.pricePer {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.featureList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  margin-bottom: 1.5rem;
+}
+.featureList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+.featureCheck {
+  color: var(--green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.planBtn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+  font-family: var(--font-body);
+}
+
+.planBtnDefault {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.planBtnDefault:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.planBtnPopular {
+  background: var(--orange);
+  color: var(--bg);
+}
+.planBtnPopular:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.planBtnCurrent {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid var(--green);
+  cursor: default;
+}
+.planBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skeleton {
+  height: 400px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  animation: pulse 1.4s ease infinite;
+}
+
+.disclaimer {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}

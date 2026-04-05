@@ -81,7 +81,8 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import BackgroundCheck from "./pages/worker/verification/BackgroundCheck";
-import InsuranceAddon from "./components/hirer/InsuranceAddon";
+import FeaturedBoost from "./components/featured/FeaturedBoost";
+import SubscriptionPlans from "./components/subscription/SubscriptionPlans";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -113,7 +114,6 @@ export default function App() {
       <Routes>
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
         {/* ── Auth (guest only) ── */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -136,7 +136,6 @@ export default function App() {
         />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-
         {/* ── Dashboard root — redirects by role ── */}
         <Route
           path="/dashboard"
@@ -188,7 +187,6 @@ export default function App() {
             </RequireAdmin>
           }
         />
-
         <Route
           path="/admin/analytics"
           element={
@@ -245,7 +243,6 @@ export default function App() {
             </RequireAdmin>
           }
         />
-
         {/* ── Hirer/Worker Messages ── */}
         <Route
           path="/messages"
@@ -255,7 +252,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         {/* ── Worker dashboard ── */}
         <Route
           path="/dashboard/worker"
@@ -345,7 +341,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         {/* ── Hirer dashboard ── */}
         <Route
           path="/dashboard/hirer"
@@ -355,7 +350,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route
           path="/dashboard/hirer/notifications"
           element={
@@ -380,9 +374,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route path="/jobs/:id" element={<JobDetail />} />
-
         <Route
           path="/jobs"
           element={
@@ -407,7 +399,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route
           path="/dashboard/hirer/saved-workers"
           element={
@@ -416,7 +407,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route
           path="/dashboard/hirer/reviews/received"
           element={
@@ -441,9 +431,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         {/* ── Bookings ── */}
-
         <Route
           path="/bookings"
           element={
@@ -509,7 +497,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         {/* ── User profile ── */}
         <Route
           path="/profile/me"
@@ -552,11 +539,44 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         {/* ── Public Aceess ── */}
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
         <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
         <Route path="/search" element={<SearchPage />} />
+        {/* ── Subscriptions ── */}
+        <Route
+          path="/dashboard/worker/subscription"
+          element={
+            <RequireAuth>
+              <SubscriptionPlans />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/worker/featured"
+          element={
+            <RequireAuth>
+              <FeaturedBoost />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/dashboard/hirer/subscription"
+          element={
+            <RequireAuth>
+              <SubscriptionPlans />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/featured"
+          element={
+            <RequireAuth>
+              <FeaturedBoost />
+            </RequireAuth>
+          }
+        />
 
         {/* ── Fallback ── */}
         <Route
@@ -568,7 +588,6 @@ export default function App() {
           }
         />
         <Route path="landingpage" element={<LandingPage />} />
-
         {/* ── Verification ── */}
         <Route
           path="/dashboard/worker/verification"
@@ -594,7 +613,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />

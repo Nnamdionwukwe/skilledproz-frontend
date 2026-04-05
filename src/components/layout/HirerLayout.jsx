@@ -74,6 +74,17 @@ const NAV = [
       },
     ],
   },
+  {
+    group: "Subscriptions & Features",
+    items: [
+      {
+        label: "Subscription",
+        path: "/dashboard/hirer/subscription",
+        icon: "⭐",
+      },
+      { label: "Boost Listing", path: "/dashboard/hirer/featured", icon: "🚀" },
+    ],
+  },
 ];
 
 const PAGE_TITLES = {
@@ -117,6 +128,14 @@ const PAGE_TITLES = {
   "/dashboard/hirer/payment-history": {
     title: "Payment History",
     sub: "Your payment records",
+  },
+  "/dashboard/worker/subscription": {
+    title: "Subscriptions",
+    sub: "Manage your subscription",
+  },
+  "/dashboard/worker/featured": {
+    title: "Featured Boost",
+    sub: "Boost your listing",
   },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
 };

@@ -71,6 +71,17 @@ const NAV = [
       { label: "Messages", path: "/messages", icon: "💬" },
     ],
   },
+  {
+    group: "Subscriptions & Features",
+    items: [
+      {
+        label: "Subscription",
+        path: "/dashboard/hirer/subscription",
+        icon: "⭐",
+      },
+      { label: "Boost Listing", path: "/dashboard/hirer/featured", icon: "🚀" },
+    ],
+  },
 ];
 
 const PAGE_TITLES = {
@@ -119,6 +130,18 @@ const PAGE_TITLES = {
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
   "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
+  "/dashboard/worker/subscription": {
+    title: "Subscriptions",
+    sub: "Manage your subscription",
+  },
+  "/dashboard/worker/featured": {
+    title: "Featured Boost",
+    sub: "Boost your listing",
+  },
+  "/dashboard/worker/disputes": {
+    title: "My Disputes",
+    sub: "Track and manage your disputes",
+  },
 };
 
 function getPageInfo(pathname) {
