@@ -790,7 +790,7 @@ export default function BookingDetail() {
           }
         />
       )}
-      <InsuranceAddon />
+      {isHirer && <InsuranceAddon />}
     </Layout>
   );
 }
