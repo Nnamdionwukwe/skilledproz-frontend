@@ -117,16 +117,6 @@ export default function EditProfilePage() {
               />
             </div>
 
-            <VideoIntro
-              currentUrl={data?.worker?.videoIntroUrl}
-              onUpdate={(url) =>
-                setData((prev) => ({
-                  ...prev,
-                  worker: { ...prev.worker, videoIntroUrl: url },
-                }))
-              }
-            />
-
             <div
               style={{
                 display: "grid",
