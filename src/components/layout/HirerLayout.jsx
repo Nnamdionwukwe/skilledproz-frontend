@@ -78,7 +78,7 @@ const NAV = [
     group: "Subscriptions & Features",
     items: [
       {
-        label: "Subscription",
+        label: "Subscriptions",
         path: "/dashboard/hirer/subscription",
         icon: "⭐",
       },
