@@ -46,11 +46,11 @@ const NAV = [
         path: "/dashboard/worker/availability",
         icon: "📅",
       },
-      {
-        label: "Background Check",
-        path: "/dashboard/worker/background-check",
-        icon: "🛡️",
-      },
+      // {
+      //   label: "Background Check",
+      //   path: "/dashboard/worker/background-check",
+      //   icon: "🛡️",
+      // },
       {
         label: "Verification",
         path: "/dashboard/worker/verification",
@@ -111,10 +111,10 @@ const PAGE_TITLES = {
     title: "My Applications",
     sub: "Jobs you applied to",
   },
-  "/dashboard/worker/background-check": {
-    title: "Background Check",
-    sub: "Build hirer trust",
-  },
+  // "/dashboard/worker/background-check": {
+  //   title: "Background Check",
+  //   sub: "Build hirer trust",
+  // },
   "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
   "/jobs": { title: "Browse Jobs", sub: "Find your next job" },

@@ -5,6 +5,7 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./Messages.module.css";
+import TranslateButton from "../common/TranslateButton";
 
 function Avatar({ user, size = "md" }) {
   const initials =
@@ -387,7 +388,10 @@ export default function Messages() {
                                   📎 Attachment
                                 </a>
                               )}
-                              <p className={styles.bubbleText}>{msg.content}</p>
+                              <p className={styles.bubbleText}>{msg.content}</p>{" "}
+                              {!isMine && (
+                                <TranslateButton text={msg.content} />
+                              )}
                               <span className={styles.bubbleTime}>
                                 {formatMessageTime(msg.createdAt)}
                                 {isMine && (

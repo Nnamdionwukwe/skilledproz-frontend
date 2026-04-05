@@ -1,0 +1,163 @@
+/* Full translator */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.originalText {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.65;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.langSelect {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.translateBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 0.35rem 0.875rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  font-family: var(--font-body);
+}
+.translateBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.translateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hideBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--font-body);
+}
+
+.translation {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--orange);
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+  animation: fadeUp 0.25s ease;
+}
+
+.translationHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.translationFlag {
+  font-size: 0.9rem;
+}
+.translationLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--orange);
+}
+.translatedText {
+  font-size: 0.875rem;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.error {
+  font-size: 0.75rem;
+  color: var(--red);
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* Inline button version */
+.inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.inlineControls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.inlineLangSelect {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.inlineBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.inlineBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.inlineBtn:disabled {
+  opacity: 0.5;
+}
+
+.inlineResult {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.inlineLang {
+  font-weight: 700;
+  color: var(--orange);
+}

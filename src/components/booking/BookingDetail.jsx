@@ -8,6 +8,7 @@ import WorkerLayout from "../layout/WorkerLayout";
 import RaiseDisputeModal from "../disputes/RaiseDisputeModal";
 import BookingInvoice from "./BookingInvoice";
 import GpsCheckIn from "./GpsCheckIn";
+import Translator from "../common/Translator";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -230,7 +231,8 @@ export default function BookingDetail() {
             {/* Description */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Description</h2>
-              <p className={styles.description}>{booking.description}</p>
+              {/* <p className={styles.description}>{booking.description}</p> */}
+              <Translator text={booking.description} />
               {booking.notes && (
                 <div className={styles.notes}>
                   <span className={styles.notesIcon}>📝</span>
