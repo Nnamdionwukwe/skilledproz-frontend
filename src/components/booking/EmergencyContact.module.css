@@ -1,0 +1,130 @@
+.card {
+  background: var(--bg-panel, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cardIcon {
+  font-size: 16px;
+}
+.cardTitle {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #111);
+  margin: 0;
+}
+.editBtn,
+.cancelBtn {
+  font-size: 11px;
+  font-weight: 700;
+  background: none;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  color: var(--text-dim, #555);
+  transition: border-color 0.15s;
+}
+.editBtn:hover {
+  border-color: var(--orange, #f97316);
+  color: var(--orange, #f97316);
+}
+.cancelBtn:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+  margin: 0;
+}
+
+.contactRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.contactLabel {
+  color: var(--text-muted, #888);
+}
+.contactValue {
+  font-weight: 600;
+  color: var(--text, #111);
+}
+.contactPhone {
+  font-weight: 600;
+  color: var(--orange, #f97316);
+  text-decoration: none;
+}
+.contactPhone:hover {
+  text-decoration: underline;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #888);
+}
+.input {
+  padding: 9px 12px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--bg-input, #f9fafb);
+  color: var(--text, #111);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.input:focus {
+  border-color: var(--orange, #f97316);
+}
+.input::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+
+.error {
+  font-size: 12px;
+  color: #dc2626;
+  margin: 0;
+}
+
+.saveBtn {
+  width: 100%;
+  padding: 10px;
+  background: var(--orange, #f97316);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.saveBtn:hover:not(:disabled) {
+  background: #ea6c0a;
+}
+.saveBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
