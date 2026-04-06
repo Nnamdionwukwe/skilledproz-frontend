@@ -13,6 +13,7 @@ import InsuranceAddon from "../hirer/InsuranceAddon";
 import SOSButton from "./SOSButton";
 import EmergencyContact from "./EmergencyContact";
 import PaymentOptions from "../payment/PaymentOptions";
+import VideoCallButton from "./VideoCallButton";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -807,6 +808,16 @@ export default function BookingDetail() {
                     />
                   )}
                 </>
+              )}
+
+              {(isHirer || isWorker) && (
+                <VideoCallButton
+                  bookingId={booking.id}
+                  bookingStatus={booking.status}
+                  userId={userId}
+                  hirerId={booking.hirerId}
+                  workerId={booking.workerId}
+                />
               )}
 
               {/* ── DISPUTE — both roles ── */}

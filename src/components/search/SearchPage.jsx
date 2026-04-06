@@ -1,22 +1,48 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./SearchPage.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import VoiceSearch from "./VoiceSearch";
 
-const CURRENCIES = ["USD", "NGN", "GBP", "EUR", "GHS", "KES", "ZAR", "INR"];
 const RATINGS = [
   { label: "4★ & above", value: 4 },
   { label: "3★ & above", value: 3 },
   { label: "Any rating", value: "" },
 ];
 
+const DISTANCES = [5, 10, 25, 50, 100, 200];
+
+const GENDERS = [
+  { label: "Any", value: "" },
+  { label: "Male", value: "Male" },
+  { label: "Female", value: "Female" },
+  { label: "Non-binary", value: "Non-binary" },
+];
+
+const VERIFICATIONS = [
+  { label: "Any", value: "" },
+  { label: "Verified ✅", value: "VERIFIED" },
+];
+
+const DEFAULT_FILTERS = {
+  category: "",
+  city: "",
+  country: "",
+  minRate: "",
+  maxRate: "",
+  rating: "",
+  available: "true",
+  language: "",
+  gender: "",
+  verification: "",
+  radius: "",
+  lat: "",
+  lng: "",
+};
+
 export default function SearchPage() {
-  // URL params
   const params = new URLSearchParams(window.location.search);
   const initQuery = params.get("q") || "";
-  const initCat = params.get("category") || "";
-  const initCity = params.get("city") || "";
 
   const [query, setQuery] = useState(initQuery);
   const [input, setInput] = useState(initQuery);
@@ -26,19 +52,13 @@ export default function SearchPage() {
     topWorkers: [],
     recentlyJoined: [],
   });
-  const [filters, setFilters] = useState({
-    category: initCat,
-    city: initCity,
-    country: "",
-    minRate: "",
-    maxRate: "",
-    rating: "",
-    available: "true",
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filterMeta, setFilterMeta] = useState({
     categories: [],
     locations: [],
     rateRange: { min: 0, max: 500 },
+    languages: [],
+    distances: DISTANCES,
   });
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -47,12 +67,11 @@ export default function SearchPage() {
   const [total, setTotal] = useState(0);
   const [tab, setTab] = useState(initQuery ? "results" : "trending");
   const [showFilters, setShowFilters] = useState(false);
-  const [locating, setLocating] = useState(false);
   const [nearbyWorkers, setNearbyWorkers] = useState([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const sugRef = useRef(null);
 
-  // Close suggestions on outside click
   useEffect(() => {
     function handler(e) {
       if (sugRef.current && !sugRef.current.contains(e.target))
@@ -62,16 +81,18 @@ export default function SearchPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Load filter metadata + trending on mount
   useEffect(() => {
     api
       .get("/search/filters")
-      .then((res) => setFilterMeta(res.data.data || {}));
-    api.get("/search/trending").then((res) => setTrending(res.data.data || {}));
-    if (initQuery) doSearch(initQuery, filters, 1);
+      .then((r) => setFilterMeta(r.data.data || {}))
+      .catch(() => {});
+    api
+      .get("/search/trending")
+      .then((r) => setTrending(r.data.data || {}))
+      .catch(() => {});
+    if (initQuery) doSearch(initQuery, DEFAULT_FILTERS, 1);
   }, []);
 
-  // Suggestions on keystroke
   useEffect(() => {
     if (input.length < 2) {
       setSuggestions(null);
@@ -80,7 +101,7 @@ export default function SearchPage() {
     const t = setTimeout(() => {
       api
         .get("/search", { params: { q: input, type: "suggest" } })
-        .then((res) => setSuggestions(res.data.data.suggestions))
+        .then((r) => setSuggestions(r.data.data.suggestions))
         .catch(() => {});
     }, 280);
     return () => clearTimeout(t);
@@ -104,6 +125,12 @@ export default function SearchPage() {
           ...(f.maxRate && { maxRate: f.maxRate }),
           ...(f.rating && { rating: f.rating }),
           ...(f.available && { available: f.available }),
+          ...(f.language && { language: f.language }),
+          ...(f.gender && { gender: f.gender }),
+          ...(f.verification && { verification: f.verification }),
+          ...(f.radius && { radius: f.radius }),
+          ...(f.lat && { lat: f.lat }),
+          ...(f.lng && { lng: f.lng }),
         },
       });
       setWorkers(res.data.data.workers?.data || []);
@@ -133,18 +160,9 @@ export default function SearchPage() {
   }
 
   function clearFilters() {
-    const def = {
-      category: "",
-      city: "",
-      country: "",
-      minRate: "",
-      maxRate: "",
-      rating: "",
-      available: "true",
-    };
-    setFilters(def);
+    setFilters(DEFAULT_FILTERS);
     setPage(1);
-    if (query) doSearch(query, def, 1);
+    if (query) doSearch(query, DEFAULT_FILTERS, 1);
   }
 
   function changePage(p) {
@@ -160,13 +178,21 @@ export default function SearchPage() {
     setTab("nearby");
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setFilters((f) => ({ ...f, lat: String(lat), lng: String(lng) }));
         try {
           const res = await api.get("/search/nearby", {
             params: {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              radius: 25,
+              lat,
+              lng,
+              radius: filters.radius || 25,
               ...(filters.category && { category: filters.category }),
+              ...(filters.language && { language: filters.language }),
+              ...(filters.gender && { gender: filters.gender }),
+              ...(filters.verification && {
+                verification: filters.verification,
+              }),
             },
           });
           setNearbyWorkers(res.data.data.workers || []);
@@ -185,13 +211,14 @@ export default function SearchPage() {
   }
 
   const activeFiltersCount = Object.entries(filters).filter(
-    ([k, v]) => v && !(k === "available" && v === "true"),
+    ([k, v]) =>
+      v && !(k === "available" && v === "true") && !["lat", "lng"].includes(k),
   ).length;
 
   return (
     <HirerLayout>
       <div className={styles.page}>
-        {/* ── Search bar ── */}
+        {/* Search bar */}
         <div className={styles.searchWrap} ref={sugRef}>
           <form className={styles.searchBar} onSubmit={handleSearch}>
             <span className={styles.searchIcon}>🔍</span>
@@ -214,11 +241,12 @@ export default function SearchPage() {
                 ×
               </button>
             )}
+            <VoiceSearch onResult={(t) => setInput(t)} onError={() => {}} />
             <button
               type="button"
               className={styles.nearbyBtn}
               onClick={findNearby}
-              title="Find nearby workers"
+              title="Find nearby"
             >
               {locating ? <span className={styles.spinner} /> : "📍"}
             </button>
@@ -227,7 +255,6 @@ export default function SearchPage() {
             </button>
           </form>
 
-          {/* Suggestions dropdown */}
           {suggestions && (
             <div className={styles.suggestions}>
               {suggestions.categories?.length > 0 && (
@@ -301,7 +328,7 @@ export default function SearchPage() {
         </div>
 
         <div className={styles.layout}>
-          {/* ── Filters sidebar ── */}
+          {/* Filter sidebar */}
           <aside
             className={`${styles.filterSidebar} ${showFilters ? styles.filterSidebarOpen : ""}`}
           >
@@ -324,7 +351,7 @@ export default function SearchPage() {
               )}
             </div>
 
-            {/* Availability toggle */}
+            {/* Availability */}
             <FilterSection title="Availability">
               <label className={styles.toggle}>
                 <input
@@ -358,7 +385,7 @@ export default function SearchPage() {
               </select>
             </FilterSection>
 
-            {/* Location */}
+            {/* City */}
             <FilterSection title="City">
               <input
                 className={styles.filterInput}
@@ -374,7 +401,7 @@ export default function SearchPage() {
                 <input
                   className={styles.filterInput}
                   type="number"
-                  placeholder={`Min (${filterMeta.rateRange?.min || 0})`}
+                  placeholder={`Min`}
                   value={filters.minRate}
                   onChange={(e) => applyFilter("minRate", e.target.value)}
                 />
@@ -382,7 +409,7 @@ export default function SearchPage() {
                 <input
                   className={styles.filterInput}
                   type="number"
-                  placeholder={`Max (${filterMeta.rateRange?.max || 500})`}
+                  placeholder={`Max`}
                   value={filters.maxRate}
                   onChange={(e) => applyFilter("maxRate", e.target.value)}
                 />
@@ -403,11 +430,92 @@ export default function SearchPage() {
                 ))}
               </div>
             </FilterSection>
+
+            {/* Distance */}
+            <FilterSection title="Max Distance">
+              <select
+                className={styles.filterSelect}
+                value={filters.radius}
+                onChange={(e) => {
+                  applyFilter("radius", e.target.value);
+                  if (e.target.value && !filters.lat) findNearby();
+                }}
+              >
+                <option value="">Any distance</option>
+                {DISTANCES.map((d) => (
+                  <option key={d} value={d}>
+                    {d} km
+                  </option>
+                ))}
+              </select>
+              {filters.radius && !filters.lat && (
+                <p className={styles.filterHint}>
+                  📍 Allow location for distance filter
+                </p>
+              )}
+            </FilterSection>
+
+            {/* Language */}
+            <FilterSection title="Language">
+              <select
+                className={styles.filterSelect}
+                value={filters.language}
+                onChange={(e) => applyFilter("language", e.target.value)}
+              >
+                <option value="">Any language</option>
+                {(filterMeta.languages?.length
+                  ? filterMeta.languages
+                  : [
+                      "English",
+                      "French",
+                      "Arabic",
+                      "Yoruba",
+                      "Hausa",
+                      "Igbo",
+                      "Swahili",
+                      "Portuguese",
+                    ]
+                ).map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </FilterSection>
+
+            {/* Gender preference */}
+            <FilterSection title="Gender Preference">
+              <div className={styles.ratingOptions}>
+                {GENDERS.map((g) => (
+                  <button
+                    key={g.value}
+                    className={`${styles.ratingOpt} ${filters.gender === g.value ? styles.ratingOptActive : ""}`}
+                    onClick={() => applyFilter("gender", g.value)}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </FilterSection>
+
+            {/* Verification */}
+            <FilterSection title="Verification Level">
+              <div className={styles.ratingOptions}>
+                {VERIFICATIONS.map((v) => (
+                  <button
+                    key={v.value}
+                    className={`${styles.ratingOpt} ${filters.verification === v.value ? styles.ratingOptActive : ""}`}
+                    onClick={() => applyFilter("verification", v.value)}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </FilterSection>
           </aside>
 
-          {/* ── Main content ── */}
+          {/* Main content */}
           <div className={styles.mainContent}>
-            {/* Tab bar */}
             <div className={styles.tabBar}>
               <div className={styles.tabs}>
                 {[
@@ -427,10 +535,6 @@ export default function SearchPage() {
                   </button>
                 ))}
               </div>
-              <VoiceSearch
-                onResult={(text) => setInput(text)} // set your search input state
-                onError={(msg) => console.warn(msg)}
-              />
               <button
                 className={styles.mobileFilterBtn}
                 onClick={() => setShowFilters((s) => !s)}
@@ -444,10 +548,9 @@ export default function SearchPage() {
               </button>
             </div>
 
-            {/* ── TRENDING ── */}
+            {/* Trending */}
             {tab === "trending" && (
               <div className={styles.trendingWrap}>
-                {/* Categories */}
                 {trending.categories?.length > 0 && (
                   <section className={styles.trendSection}>
                     <h2 className={styles.trendTitle}>Popular Categories</h2>
@@ -473,8 +576,6 @@ export default function SearchPage() {
                     </div>
                   </section>
                 )}
-
-                {/* Top rated */}
                 {trending.topWorkers?.length > 0 && (
                   <section className={styles.trendSection}>
                     <h2 className={styles.trendTitle}>Top Rated Workers</h2>
@@ -485,8 +586,6 @@ export default function SearchPage() {
                     </div>
                   </section>
                 )}
-
-                {/* Recently joined */}
                 {trending.recentlyJoined?.length > 0 && (
                   <section className={styles.trendSection}>
                     <h2 className={styles.trendTitle}>New on SkilledProz</h2>
@@ -500,7 +599,7 @@ export default function SearchPage() {
               </div>
             )}
 
-            {/* ── RESULTS ── */}
+            {/* Results */}
             {tab === "results" && (
               <>
                 {!query ? (
@@ -543,6 +642,7 @@ export default function SearchPage() {
                           key={w.user?.id || i}
                           worker={w}
                           delay={i * 0.04}
+                          showDistance={!!w._distanceKm}
                         />
                       ))}
                     </div>
@@ -572,47 +672,44 @@ export default function SearchPage() {
               </>
             )}
 
-            {/* ── NEARBY ── */}
-            {tab === "nearby" && (
-              <>
-                {nearbyLoading ? (
+            {/* Nearby */}
+            {tab === "nearby" &&
+              (nearbyLoading ? (
+                <div className={styles.workerGrid}>
+                  {[...Array(4)].map((_, i) => (
+                    <WorkerSkeleton key={i} />
+                  ))}
+                </div>
+              ) : nearbyWorkers.length === 0 ? (
+                <div className={styles.empty}>
+                  <span className={styles.emptyIcon}>📍</span>
+                  <p className={styles.emptyTitle}>No nearby workers found</p>
+                  <p className={styles.emptyText}>
+                    Allow location access and tap 📍 to find workers near you.
+                  </p>
+                  <button className={styles.emptyBtn} onClick={findNearby}>
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className={styles.resultsMeta}>
+                    {nearbyWorkers.length} worker
+                    {nearbyWorkers.length !== 1 ? "s" : ""} within{" "}
+                    {filters.radius || 25} km
+                  </p>
                   <div className={styles.workerGrid}>
-                    {[...Array(4)].map((_, i) => (
-                      <WorkerSkeleton key={i} />
+                    {nearbyWorkers.map((w, i) => (
+                      <WorkerCard
+                        key={w.user?.id || i}
+                        worker={w}
+                        delay={i * 0.04}
+                        showDistance
+                      />
                     ))}
                   </div>
-                ) : nearbyWorkers.length === 0 ? (
-                  <div className={styles.empty}>
-                    <span className={styles.emptyIcon}>📍</span>
-                    <p className={styles.emptyTitle}>No nearby workers found</p>
-                    <p className={styles.emptyText}>
-                      Allow location access and tap the 📍 button to find
-                      workers near you.
-                    </p>
-                    <button className={styles.emptyBtn} onClick={findNearby}>
-                      Try Again
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <p className={styles.resultsMeta}>
-                      {nearbyWorkers.length} worker
-                      {nearbyWorkers.length !== 1 ? "s" : ""} within 25 km
-                    </p>
-                    <div className={styles.workerGrid}>
-                      {nearbyWorkers.map((w, i) => (
-                        <WorkerCard
-                          key={w.user?.id || i}
-                          worker={w}
-                          delay={i * 0.04}
-                          showDistance
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
+                </>
+              ))}
           </div>
         </div>
       </div>
@@ -620,7 +717,6 @@ export default function SearchPage() {
   );
 }
 
-// ── Worker card ───────────────────────────────────────────────
 function WorkerCard({
   worker,
   delay = 0,
@@ -637,7 +733,10 @@ function WorkerCard({
     completedJobs,
     isAvailable,
     distanceKm,
+    _distanceKm,
+    verificationStatus,
   } = worker;
+  const dist = _distanceKm ?? distanceKm;
   const primaryCat = categories?.find((c) => c.isPrimary) || categories?.[0];
 
   return (
@@ -646,7 +745,6 @@ function WorkerCard({
       className={styles.workerCard}
       style={{ animationDelay: `${delay}s` }}
     >
-      {/* Card top */}
       <div className={styles.wcTop}>
         <div className={styles.wcAvatar}>
           {user?.avatar ? (
@@ -661,13 +759,14 @@ function WorkerCard({
         </div>
         <div className={styles.wcBadges}>
           {isNew && <span className={styles.newBadge}>New</span>}
-          {showDistance && distanceKm !== undefined && (
-            <span className={styles.distBadge}>📍 {distanceKm} km</span>
+          {verificationStatus === "VERIFIED" && (
+            <span className={styles.verifiedBadge}>✅ Verified</span>
+          )}
+          {showDistance && dist != null && (
+            <span className={styles.distBadge}>📍 {dist} km</span>
           )}
         </div>
       </div>
-
-      {/* Info */}
       <div className={styles.wcInfo}>
         <p className={styles.wcName}>
           {user?.firstName} {user?.lastName}
@@ -678,16 +777,15 @@ function WorkerCard({
             {primaryCat.category?.icon} {primaryCat.category?.name}
           </span>
         )}
+        {user?.language && (
+          <span className={styles.wcLang}>🗣 {user.language}</span>
+        )}
       </div>
-
-      {/* Location */}
       {(user?.city || user?.country) && (
         <p className={styles.wcLocation}>
           📍 {[user.city, user.country].filter(Boolean).join(", ")}
         </p>
       )}
-
-      {/* Stats */}
       <div className={styles.wcStats}>
         <span className={styles.wcRating}>
           ★ {avgRating > 0 ? avgRating.toFixed(1) : "New"}
@@ -695,8 +793,6 @@ function WorkerCard({
         </span>
         <span className={styles.wcJobs}>{completedJobs} jobs</span>
       </div>
-
-      {/* Footer */}
       <div className={styles.wcFooter}>
         <span className={styles.wcRate}>
           {currency} {hourlyRate?.toLocaleString()}
