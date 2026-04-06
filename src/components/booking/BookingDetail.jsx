@@ -768,9 +768,8 @@ export default function BookingDetail() {
                   {isHirer && booking.status === "ACCEPTED" && (
                     <InsuranceAddon
                       bookingId={booking.id}
-                      onPurchased={() =>
-                        setSuccess("Insurance activated for this booking.")
-                      }
+                      booking={booking}
+                      onPurchased={() => setSuccess("Insurance activated.")}
                     />
                   )}
 
@@ -810,11 +809,13 @@ export default function BookingDetail() {
                 </>
               )}
 
-              {isHirer && booking.status === "ACCEPTED" && (
-                <InsuranceAddon
+              {(isHirer || isWorker) && (
+                <VideoCallButton
                   bookingId={booking.id}
-                  booking={booking}
-                  onPurchased={() => setSuccess("Insurance activated.")}
+                  bookingStatus={booking.status}
+                  userId={userId}
+                  hirerId={booking.hirerId}
+                  workerId={booking.workerId}
                 />
               )}
 
