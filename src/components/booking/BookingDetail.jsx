@@ -10,6 +10,9 @@ import BookingInvoice from "./BookingInvoice";
 import GpsCheckIn from "./GpsCheckIn";
 import Translator from "../common/Translator";
 import InsuranceAddon from "../hirer/InsuranceAddon";
+import SOSButton from "./SOSButton";
+import EmergencyContact from "./EmergencyContact";
+import PaymentOptions from "../payment/PaymentOptions";
 
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
@@ -53,6 +56,9 @@ export default function BookingDetail() {
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewCheckDone, setReviewCheckDone] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
+  const [emergencyContact, setEmergencyContact] = useState(
+    booking?.emergencyContact ? JSON.parse(booking.emergencyContact) : null,
+  );
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
@@ -618,6 +624,31 @@ export default function BookingDetail() {
               <p className={styles.actionsTitle}>Actions</p>
 
               {/* WORKER ACTIONS */}
+
+              {isWorker && (
+                <>
+                  {/* ... existing worker actions ... */}
+
+                  <EmergencyContact
+                    bookingId={booking.id}
+                    bookingStatus={booking.status}
+                    isWorker={isWorker}
+                    existing={emergencyContact}
+                    onSaved={(contact) => setEmergencyContact(contact)}
+                  />
+
+                  <SOSButton
+                    bookingId={booking.id}
+                    bookingStatus={booking.status}
+                    isWorker={isWorker}
+                    sosActivatedAt={booking.sosActivatedAt}
+                    sosResolvedAt={booking.sosResolvedAt}
+                    onUpdate={(updatedBooking) =>
+                      setBooking((prev) => ({ ...prev, ...updatedBooking }))
+                    }
+                  />
+                </>
+              )}
               {isWorker && (
                 <>
                   {booking.status === "PENDING" && (
@@ -707,12 +738,21 @@ export default function BookingDetail() {
               {isHirer && (
                 <>
                   {booking.status === "ACCEPTED" && !booking.payment && (
-                    <Link
-                      to={`/bookings/${booking.id}/pay`}
-                      className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
-                    >
-                      💳 Pay Now
-                    </Link>
+                    <>
+                      <Link
+                        to={`/bookings/${booking.id}/pay`}
+                        className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
+                      >
+                        Pay Now With 💳
+                      </Link>
+
+                      <PaymentOptions
+                        booking={booking}
+                        onSuccess={() =>
+                          setSuccess("Payment submitted successfully.")
+                        }
+                      />
+                    </>
                   )}
 
                   {booking.payment?.status === "HELD" && (
