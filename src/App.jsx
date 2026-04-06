@@ -85,6 +85,8 @@ import FeaturedBoost from "./components/featured/FeaturedBoost";
 import SubscriptionPlans from "./components/subscription/SubscriptionPlans";
 import SubscriptionSuccess from "./components/subscription/SubscriptionSuccess";
 import FeaturedSuccess from "./components/subscription/FeaturedSuccess";
+import MyPostsPage from "./pages/feed/MyPosts";
+import FeedPage from "./pages/feed/FeedPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -592,6 +594,17 @@ export default function App() {
           element={
             <RequireAuth>
               <FeaturedSuccess />
+            </RequireAuth>
+          }
+        />
+
+        {/* ── Feeds ── */}
+        <Route path="/feed" element={<FeedPage />} />
+        <Route
+          path="/my-posts"
+          element={
+            <RequireAuth>
+              <MyPostsPage />
             </RequireAuth>
           }
         />

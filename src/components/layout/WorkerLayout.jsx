@@ -18,6 +18,8 @@ const NAV = [
         icon: "📝",
       },
       { label: "Disputes", path: "/disputes", icon: "⚖️" },
+      { label: "Community Feed", path: "/feed", icon: "📰" },
+      { label: "My Posts", path: "/my-posts", icon: "✍️" },
     ],
   },
   {
