@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from "../../store/authStore";
 import AuthLayout from "../../components/auth/AuthLayout";
 import s from "../../components/auth/form.module.css";
+import CategorySuggest from "../../components/auth/CategorySuggest";
 
 const CATEGORIES = [
   "Electrician",
@@ -269,6 +270,7 @@ export default function RegisterWorker() {
               <span className={s.errMsg}>{errors.category}</span>
             )}
           </div>
+          <CategorySuggest />
           <div className={s.row}>
             <div
               className={`${s.field} ${errors.hourlyRate ? s.fieldError : ""}`}

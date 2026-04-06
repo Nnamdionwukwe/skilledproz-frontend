@@ -3,6 +3,7 @@ import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import ui from "../../../components/ui/ui.module.css";
+import CategorySuggest from "../../../components/auth/CategorySuggest";
 
 export default function CategoriesPage() {
   const { user } = useAuthStore();
@@ -88,6 +89,7 @@ export default function CategoriesPage() {
           )}
 
           <form onSubmit={handleAdd}>
+            <CategorySuggest />
             <div className={ui.inputGroup}>
               <label className={ui.label}>Category ID</label>
               <input
