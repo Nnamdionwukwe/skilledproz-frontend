@@ -87,6 +87,7 @@ import SubscriptionSuccess from "./components/subscription/SubscriptionSuccess";
 import FeaturedSuccess from "./components/subscription/FeaturedSuccess";
 import MyPostsPage from "./pages/feed/MyPosts";
 import FeedPage from "./pages/feed/FeedPage";
+import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -473,6 +474,14 @@ export default function App() {
           element={
             <RequireAuth>
               <ReleasePayment />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/insurance/success"
+          element={
+            <RequireAuth>
+              <InsuranceSuccess />
             </RequireAuth>
           }
         />

@@ -172,7 +172,7 @@ function FeedSidebar() {
           {user?.firstName} {user?.lastName}
         </p>
         <p className={styles.profileCardRole}>{user?.role}</p>
-        <Link href={`/workers/${user?.id}`} className={styles.profileCardBtn}>
+        <Link to={`/workers/${user?.id}`} className={styles.profileCardBtn}>
           View Profile
         </Link>
       </div>

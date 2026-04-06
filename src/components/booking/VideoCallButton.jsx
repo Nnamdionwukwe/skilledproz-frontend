@@ -14,39 +14,56 @@ export default function VideoCallButton({
   const [inCall, setInCall] = useState(false);
   const [error, setError] = useState("");
   const pollRef = useRef(null);
+  const POLL_MS = 4000;
 
   const isInvolved = userId === hirerId || userId === workerId;
   const canCall =
     isInvolved &&
     ["PENDING", "ACCEPTED", "IN_PROGRESS"].includes(bookingStatus);
 
+  // Initial load
   useEffect(() => {
     if (!canCall) return;
     api
       .get(`/video-calls/${bookingId}`)
-      .then((r) => setCall(r.data.data.call))
+      .then((r) => {
+        if (r.data.data.call) setCall(r.data.data.call);
+      })
       .catch(() => {});
   }, [bookingId, canCall]);
 
-  // Poll for call status changes when call is pending
+  // ── Always poll when canCall — receiver needs to know about incoming calls ──
   useEffect(() => {
-    if (call?.status === "PENDING" && call?.initiatorId !== userId) {
-      pollRef.current = setInterval(() => {
-        api
-          .get(`/video-calls/${bookingId}`)
-          .then((r) => {
-            const updated = r.data.data.call;
-            setCall(updated);
-            if (updated?.status === "ACTIVE") {
-              clearInterval(pollRef.current);
-              setInCall(true);
-            }
-          })
-          .catch(() => {});
-      }, 3000);
-    }
+    if (!canCall) return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const r = await api.get(`/video-calls/${bookingId}`);
+        const updated = r.data.data.call;
+        if (!updated) return;
+
+        setCall((prev) => {
+          // If it was idle and now PENDING from someone else — ring!
+          if (
+            (!prev || prev.status === "ENDED" || prev.status === "DECLINED") &&
+            updated.status === "PENDING" &&
+            updated.receiverId === userId
+          ) {
+            return updated;
+          }
+          if (prev?.status !== updated.status) return updated;
+          return prev;
+        });
+
+        if (updated.status === "ACTIVE" && !inCall) {
+          setInCall(true);
+          clearInterval(pollRef.current);
+        }
+      } catch {}
+    }, POLL_MS);
+
     return () => clearInterval(pollRef.current);
-  }, [call?.status, call?.initiatorId, userId, bookingId]);
+  }, [canCall, bookingId, userId, inCall]);
 
   if (!canCall) return null;
 
@@ -56,7 +73,6 @@ export default function VideoCallButton({
     try {
       const res = await api.post(`/video-calls/${bookingId}/initiate`);
       setCall(res.data.data.call);
-      setInCall(true);
     } catch (e) {
       setError(e.response?.data?.message || "Failed to start call");
     } finally {
@@ -70,6 +86,7 @@ export default function VideoCallButton({
       await api.patch(`/video-calls/${bookingId}/accept`);
       setCall((prev) => ({ ...prev, status: "ACTIVE" }));
       setInCall(true);
+      clearInterval(pollRef.current);
     } catch {
       setError("Failed to accept call");
     } finally {
@@ -96,15 +113,17 @@ export default function VideoCallButton({
     }
   }
 
-  // Incoming call (pending, receiver is current user)
+  // ── INCOMING call — receiver ──
   if (call?.status === "PENDING" && call?.receiverId === userId) {
     return (
       <div className={styles.incomingWrap}>
+        <div className={styles.incomingRing}>
+          <span className={styles.callIcon}>📹</span>
+        </div>
         <div className={styles.incomingPulse} />
         <div className={styles.incomingContent}>
-          <span className={styles.callIcon}>📹</span>
           <div>
-            <p className={styles.incomingTitle}>Incoming Video Call</p>
+            <p className={styles.incomingTitle}>📹 Incoming Video Call</p>
             <p className={styles.incomingHint}>Pre-job consultation</p>
           </div>
         </div>
@@ -125,7 +144,7 @@ export default function VideoCallButton({
     );
   }
 
-  // Waiting for the other party
+  // ── Waiting (initiator side) ──
   if (call?.status === "PENDING" && call?.initiatorId === userId) {
     return (
       <div className={styles.waitingWrap}>
@@ -140,14 +159,14 @@ export default function VideoCallButton({
     );
   }
 
-  // In active call
-  if (inCall && call?.status === "ACTIVE") {
+  // ── Active call ──
+  if ((inCall || call?.status === "ACTIVE") && call) {
     return (
       <VideoCallRoom roomId={call.roomId} userId={userId} onEnd={handleEnd} />
     );
   }
 
-  // Call ended or declined
+  // ── Ended / Declined ──
   if (call?.status === "ENDED" || call?.status === "DECLINED") {
     return (
       <div className={styles.endedWrap}>
@@ -168,7 +187,7 @@ export default function VideoCallButton({
     );
   }
 
-  // Idle — no call yet
+  // ── Idle ──
   return (
     <div className={styles.wrap}>
       <button
@@ -176,43 +195,36 @@ export default function VideoCallButton({
         onClick={handleInitiate}
         disabled={loading}
       >
-        {loading ? <Spinner /> : "📹 Video Call — Pre-job Consultation"}
+        {loading ? <Spinner /> : "📹 Video Call"}
       </button>
-      <p className={styles.hint}>Start a video call before the job begins</p>
+      <p className={styles.hint}>Start a video call before or during the job</p>
       {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 }
 
-// ── In-call room using daily.co free embed (no API key needed) ────────────────
+// Uses Jitsi — free, no account needed, works cross-device
 function VideoCallRoom({ roomId, userId, onEnd }) {
-  const iframeRef = useRef(null);
-
-  // We use whereby.com free embed — no API key required for basic calls
-  // Replace with Daily.co, Jitsi, or Agora in production
-  const callUrl = `https://meet.jit.si/${roomId}#userInfo.displayName="${userId}"`;
-
   return (
     <div className={styles.callRoom}>
       <div className={styles.callRoomHeader}>
         <span className={styles.callLive}>🔴 LIVE</span>
         <span className={styles.callTitle}>Video Consultation</span>
         <button className={styles.endCallBtn} onClick={onEnd}>
-          📵 End Call
+          📵 End
         </button>
       </div>
       <div className={styles.callIframeWrap}>
         <iframe
-          ref={iframeRef}
-          src={callUrl}
+          src={`https://meet.jit.si/${roomId}?userInfo.displayName="${encodeURIComponent(userId)}"`}
           allow="camera; microphone; fullscreen; display-capture; autoplay"
           className={styles.callIframe}
           title="Video Call"
         />
       </div>
       <p className={styles.callHint}>
-        Share the room link with the other party if they're having trouble
-        connecting. Room: <code className={styles.roomCode}>{roomId}</code>
+        Share this room ID with the other party if needed:{" "}
+        <code className={styles.roomCode}>{roomId}</code>
       </p>
     </div>
   );
