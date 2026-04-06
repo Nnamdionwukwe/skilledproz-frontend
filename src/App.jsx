@@ -83,6 +83,8 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import BackgroundCheck from "./pages/worker/verification/BackgroundCheck";
 import FeaturedBoost from "./components/featured/FeaturedBoost";
 import SubscriptionPlans from "./components/subscription/SubscriptionPlans";
+import SubscriptionSuccess from "./components/subscription/SubscriptionSuccess";
+import FeaturedSuccess from "./components/subscription/FeaturedSuccess";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -543,9 +545,18 @@ export default function App() {
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
         <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
         <Route path="/search" element={<SearchPage />} />
+
         {/* ── Subscriptions ── */}
         <Route
           path="/dashboard/worker/subscription"
+          element={
+            <RequireAuth>
+              <SubscriptionPlans />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/subscription"
           element={
             <RequireAuth>
               <SubscriptionPlans />
@@ -560,20 +571,27 @@ export default function App() {
             </RequireAuth>
           }
         />
-
-        <Route
-          path="/dashboard/hirer/subscription"
-          element={
-            <RequireAuth>
-              <SubscriptionPlans />
-            </RequireAuth>
-          }
-        />
         <Route
           path="/dashboard/hirer/featured"
           element={
             <RequireAuth>
               <FeaturedBoost />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/subscription/success"
+          element={
+            <RequireAuth>
+              <SubscriptionSuccess />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/featured/success"
+          element={
+            <RequireAuth>
+              <FeaturedSuccess />
             </RequireAuth>
           }
         />
