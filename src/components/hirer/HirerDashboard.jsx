@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerDashboard.module.css";
 import api from "../../lib/api";
+import FeatureGate from "../subscription/FeatureGate";
 
 export default function HirerDashboard() {
   const [data, setData] = useState(null);
@@ -88,14 +89,16 @@ export default function HirerDashboard() {
                 View all →
               </Link>
             </div>
-            <div className={styles.bookingList}>
-              {recentBookings.length === 0 && (
-                <p className={styles.empty}>No bookings yet.</p>
-              )}
-              {recentBookings.map((b, i) => (
-                <BookingRow key={b.id} booking={b} delay={i * 0.05} />
-              ))}
-            </div>
+            <FeatureGate feature="analytics">
+              <div className={styles.bookingList}>
+                {recentBookings.length === 0 && (
+                  <p className={styles.empty}>No bookings yet.</p>
+                )}
+                {recentBookings.map((b, i) => (
+                  <BookingRow key={b.id} booking={b} delay={i * 0.05} />
+                ))}
+              </div>
+            </FeatureGate>
           </section>
 
           {/* Recent workers */}

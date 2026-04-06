@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
-import { useSubscription } from "../../context/SubscriptionContext";
 import styles from "./FeatureGate.module.css";
+import { useSubscription } from "../context/SubscriptionContext";
 
 export default function FeatureGate({ feature, children, fallback }) {
   const { features, isFreeTier } = useSubscription();
