@@ -56,9 +56,7 @@ export default function BookingDetail() {
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewCheckDone, setReviewCheckDone] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
-  const [emergencyContact, setEmergencyContact] = useState(
-    booking?.emergencyContact ? JSON.parse(booking.emergencyContact) : null,
-  );
+  const [emergencyContact, setEmergencyContact] = useState(null);
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
@@ -82,6 +80,16 @@ export default function BookingDetail() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (booking?.emergencyContact) {
+      try {
+        setEmergencyContact(JSON.parse(booking.emergencyContact));
+      } catch {
+        setEmergencyContact(null);
+      }
+    }
+  }, [booking?.emergencyContact]);
 
   // 1. Add this useEffect for silent auto-refresh (add after your existing useEffect)
   useEffect(() => {
@@ -739,12 +747,12 @@ export default function BookingDetail() {
                 <>
                   {booking.status === "ACCEPTED" && !booking.payment && (
                     <>
-                      {/* <Link
+                      <Link
                         to={`/bookings/${booking.id}/pay`}
                         className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
                       >
                         Pay Now With 💳
-                      </Link> */}
+                      </Link>
 
                       <PaymentOptions
                         booking={booking}
@@ -753,6 +761,16 @@ export default function BookingDetail() {
                         }
                       />
                     </>
+                  )}
+
+                  {/* Inside actionsCard, after hirer pay button */}
+                  {isHirer && booking.status === "ACCEPTED" && (
+                    <InsuranceAddon
+                      bookingId={booking.id}
+                      onPurchased={() =>
+                        setSuccess("Insurance activated for this booking.")
+                      }
+                    />
                   )}
 
                   {booking.payment?.status === "HELD" && (
@@ -830,7 +848,6 @@ export default function BookingDetail() {
           }
         />
       )}
-      {isHirer && <InsuranceAddon />}
     </Layout>
   );
 }

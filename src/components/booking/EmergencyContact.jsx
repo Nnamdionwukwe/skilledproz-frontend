@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../../lib/api";
 import styles from "./EmergencyContact.module.css";
 
@@ -9,12 +9,22 @@ export default function EmergencyContact({
   existing,
   onSaved,
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!existing);
   const [name, setName] = useState(existing?.name || "");
   const [phone, setPhone] = useState(existing?.phone || "");
   const [rel, setRel] = useState(existing?.relationship || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Sync form fields when `existing` prop updates (e.g. after page re-mount)
+  useEffect(() => {
+    if (existing) {
+      setName(existing.name || "");
+      setPhone(existing.phone || "");
+      setRel(existing.relationship || "");
+      setEditing(false);
+    }
+  }, [existing?.name, existing?.phone, existing?.relationship]);
 
   if (!isWorker) return null;
   if (!["ACCEPTED", "IN_PROGRESS"].includes(bookingStatus)) return null;
@@ -27,20 +37,26 @@ export default function EmergencyContact({
     setSaving(true);
     setError("");
     try {
-      await api.patch(`/bookings/${bookingId}/emergency-contact`, {
+      const res = await api.patch(`/bookings/${bookingId}/emergency-contact`, {
         name: name.trim(),
         phone: phone.trim(),
         relationship: rel.trim(),
       });
-      onSaved?.({ name, phone, relationship: rel });
+      const saved = {
+        name: name.trim(),
+        phone: phone.trim(),
+        relationship: rel.trim(),
+      };
+      onSaved?.(saved);
       setEditing(false);
     } catch (e) {
-      setError(e.response?.data?.message || "Save failed");
+      setError(e.response?.data?.message || "Save failed. Try again.");
     } finally {
       setSaving(false);
     }
   }
 
+  // ── Display mode ──
   if (!editing && existing) {
     return (
       <div className={styles.card}>
@@ -71,6 +87,7 @@ export default function EmergencyContact({
     );
   }
 
+  // ── Edit mode ──
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
@@ -86,9 +103,8 @@ export default function EmergencyContact({
         )}
       </div>
       <p className={styles.hint}>
-        Add someone we can contact in case of emergency on this job.
+        Someone we can contact in case of an emergency during this job.
       </p>
-
       <div className={styles.formGroup}>
         <label className={styles.label}>Full Name *</label>
         <input
@@ -98,7 +114,6 @@ export default function EmergencyContact({
           placeholder="e.g. Amaka Johnson"
         />
       </div>
-
       <div className={styles.formGroup}>
         <label className={styles.label}>Phone Number *</label>
         <input
@@ -109,7 +124,6 @@ export default function EmergencyContact({
           placeholder="e.g. +234 801 234 5678"
         />
       </div>
-
       <div className={styles.formGroup}>
         <label className={styles.label}>Relationship</label>
         <input
@@ -119,11 +133,13 @@ export default function EmergencyContact({
           placeholder="e.g. Sister, Friend, Spouse"
         />
       </div>
-
-      {error && <p className={styles.error}>{error}</p>}
-
+      {error && <p className={styles.error}>⚠️ {error}</p>}
       <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-        {saving ? "Saving..." : "Save Emergency Contact"}
+        {saving
+          ? "Saving..."
+          : existing
+            ? "Update Contact"
+            : "Save Emergency Contact"}
       </button>
     </div>
   );

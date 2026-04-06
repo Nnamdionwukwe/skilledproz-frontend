@@ -37,6 +37,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
     setError("");
     try {
       const res = await api.post(`/payments/initiate/${booking.id}`);
+      //   const res = await api.post(`/bookings/${booking.id}/pay`);
       const { authorizationUrl, clientSecret } = res.data.data;
       if (authorizationUrl) {
         window.location.href = authorizationUrl;
@@ -139,7 +140,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
         </p>
         <button
           className={styles.successBtn}
-          onClick={() => navigate(`/bookings/${booking.id}`)}
+          onClick={() => navigate(`/bookings`)}
         >
           Back to Booking
         </button>
@@ -176,12 +177,12 @@ export default function PaymentOptions({ booking, onSuccess }) {
       {step === "select" && (
         <>
           <div className={styles.tabs}>
-            <button
+            {/* <button
               className={`${styles.tab} ${tab === "card" ? styles.tabActive : ""}`}
               onClick={() => setTab("card")}
             >
               💳 Card
-            </button>
+            </button> */}
             <button
               className={`${styles.tab} ${tab === "bank" ? styles.tabActive : ""}`}
               onClick={() => setTab("bank")}
@@ -197,7 +198,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
           </div>
 
           {/* Card tab */}
-          {tab === "card" && (
+          {/* {tab === "card" && (
             <div className={styles.tabContent}>
               <p className={styles.tabDesc}>
                 Pay securely with your debit or credit card via Paystack (NGN)
@@ -217,7 +218,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
                 )}
               </button>
             </div>
-          )}
+          )} */}
 
           {/* Bank transfer tab */}
           {tab === "bank" && (
