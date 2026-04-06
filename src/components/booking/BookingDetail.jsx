@@ -112,7 +112,7 @@ export default function BookingDetail() {
           });
         })
         .catch(() => {});
-    }, 60000); // poll every 30 seconds
+    }, 600000); // poll every 600 seconds
 
     return () => clearInterval(interval);
   }, [id]);
