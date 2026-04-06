@@ -59,7 +59,9 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
       <button className={styles.trigger} onClick={() => setOpen(!open)}>
         <span className={styles.triggerIcon}>🛡️</span>
         <div className={styles.triggerText}>
-          <span className={styles.triggerTitle}>Add Insurance Cover</span>
+          <span className={styles.triggerTitle}>
+            Add Insurance Cover (Optional)
+          </span>
           <span className={styles.triggerSub}>
             Protect your property — charged in USD
           </span>
