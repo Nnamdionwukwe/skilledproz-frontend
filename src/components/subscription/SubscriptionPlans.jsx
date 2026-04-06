@@ -31,15 +31,12 @@ export default function SubscriptionPlans({ onClose }) {
   const handleSubscribe = async (planId) => {
     setSubscribing(planId);
     setError("");
-    setSuccess("");
     try {
-      const res = await api.post("/subscriptions/subscribe", { planId });
-      setSuccess(`${res.data.data.plan.name} activated successfully!`);
-      const myRes = await api.get("/subscriptions/my");
-      setCurrent(myRes.data.data);
+      const res = await api.post("/subscriptions/checkout", { planId });
+      // Redirect to Stripe Checkout
+      window.location.href = res.data.data.url;
     } catch (err) {
-      setError(err.response?.data?.message || "Subscription failed.");
-    } finally {
+      setError(err.response?.data?.message || "Failed to start checkout.");
       setSubscribing(null);
     }
   };

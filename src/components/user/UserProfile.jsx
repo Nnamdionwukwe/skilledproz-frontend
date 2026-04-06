@@ -28,6 +28,7 @@ import EditProfile from "./EditProfile";
 import s from "./UserProfile.module.css";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import { useSubscription } from "../context/SubscriptionContext";
 
 /* ── helpers ─────────────────────────────────────────────── */
 function initials(u) {
@@ -167,6 +168,25 @@ export default function UserProfile() {
     setEditing(false);
   };
 
+  function ProBadge({ userId, isOwn }) {
+    const { features, isProTier } = useSubscription();
+    if (!isOwn || !features.proBadge) return null;
+    return (
+      <span
+        style={{
+          fontSize: "0.7rem",
+          background: "var(--orange)",
+          color: "var(--bg)",
+          padding: "0.15rem 0.5rem",
+          borderRadius: "100px",
+          fontWeight: 800,
+        }}
+      >
+        ⭐ PRO
+      </span>
+    );
+  }
+
   /* ── Loading ── */
   if (loading)
     return (
@@ -243,6 +263,8 @@ export default function UserProfile() {
                     <ShieldCheck size={18} className={s.verifiedIcon} />
                   )}
                 </div>
+
+                <ProBadge />
 
                 <div className={s.rolePill}>
                   {user.role === "WORKER" ? (

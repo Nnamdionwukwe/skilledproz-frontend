@@ -38,14 +38,13 @@ export default function FeaturedBoost({ onClose }) {
     setPurchasing(true);
     setError("");
     try {
-      const res = await api.post("/featured/purchase", {
+      const res = await api.post("/featured/checkout", {
         packageId: selectedPkg,
         categoryId: selectedCat || null,
       });
-      setSuccess(res.data.data);
+      window.location.href = res.data.data.url;
     } catch (err) {
-      setError(err.response?.data?.message || "Purchase failed.");
-    } finally {
+      setError(err.response?.data?.message || "Checkout failed.");
       setPurchasing(false);
     }
   };
