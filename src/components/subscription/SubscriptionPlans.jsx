@@ -180,7 +180,7 @@ export default function SubscriptionPlans({ onClose }) {
         )}
 
         <p className={styles.disclaimer}>
-          Payments processed securely. Cancel anytime. All prices in NGN.
+          Payments processed securely. Cancel anytime. All prices in USD.
         </p>
       </div>
     </Layout>
