@@ -739,12 +739,12 @@ export default function BookingDetail() {
                 <>
                   {booking.status === "ACCEPTED" && !booking.payment && (
                     <>
-                      <Link
+                      {/* <Link
                         to={`/bookings/${booking.id}/pay`}
                         className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
                       >
                         Pay Now With 💳
-                      </Link>
+                      </Link> */}
 
                       <PaymentOptions
                         booking={booking}
