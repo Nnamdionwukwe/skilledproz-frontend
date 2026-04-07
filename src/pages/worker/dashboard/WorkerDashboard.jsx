@@ -5,6 +5,7 @@ import styles from "./WorkerDashboard.module.css";
 import ui from "../../../components/ui/ui.module.css";
 import { useAuthStore } from "../../../store/authStore";
 import api from "../../../lib/api";
+import FeatureGate from "../../../components/subscription/FeatureGate";
 
 function statusBadge(status) {
   const map = {
@@ -227,49 +228,61 @@ export default function WorkerDashboard() {
             </div>
 
             {/* Upcoming */}
-            <div className={ui.card} style={{ flex: 1 }}>
-              <div className={ui.cardHeader}>
-                <span className={ui.cardTitle}>Upcoming jobs</span>
-                <Link to="/bookings" className={ui.cardLink}>
-                  See all →
-                </Link>
-              </div>
-              {!upcomingBookings || upcomingBookings.length === 0 ? (
-                <div className={ui.empty} style={{ padding: "1rem 0" }}>
-                  <div className={ui.emptyDesc}>No upcoming jobs scheduled</div>
-                </div>
-              ) : (
-                upcomingBookings.map((b) => {
-                  const d = b.scheduledAt ? new Date(b.scheduledAt) : null;
-                  return (
-                    <div
-                      onClick={() => navigate(`/bookings/${b.id}`)}
-                      key={b.id}
-                      className={styles.upcomingItem}
-                    >
-                      {d && (
-                        <div className={styles.upcomingDate}>
-                          <span className={styles.upcomingDay}>
-                            {d.getDate()}
-                          </span>
-                          <span className={styles.upcomingMonth}>
-                            {d.toLocaleString("default", { month: "short" })}
-                          </span>
-                        </div>
-                      )}
-                      <div className={styles.upcomingInfo}>
-                        <div className={styles.upcomingTitle}>{b.title}</div>
-                        <div className={styles.upcomingMeta}>
-                          {b.hirer?.firstName} {b.hirer?.lastName} ·{" "}
-                          {b.category?.name}
-                        </div>
+            <>
+              <FeatureGate feature="analytics">
+                <div className={ui.card} style={{ flex: 1 }}>
+                  <div className={ui.cardHeader}>
+                    <span className={ui.cardTitle}>Upcoming jobs</span>
+                    <Link to="/bookings" className={ui.cardLink}>
+                      See all →
+                    </Link>
+                  </div>
+                  {!upcomingBookings || upcomingBookings.length === 0 ? (
+                    <div className={ui.empty} style={{ padding: "1rem 0" }}>
+                      <div className={ui.emptyDesc}>
+                        No upcoming jobs scheduled
                       </div>
-                      <span className={statusBadge(b.status)}>{b.status}</span>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  ) : (
+                    upcomingBookings.map((b) => {
+                      const d = b.scheduledAt ? new Date(b.scheduledAt) : null;
+                      return (
+                        <div
+                          onClick={() => navigate(`/bookings/${b.id}`)}
+                          key={b.id}
+                          className={styles.upcomingItem}
+                        >
+                          {d && (
+                            <div className={styles.upcomingDate}>
+                              <span className={styles.upcomingDay}>
+                                {d.getDate()}
+                              </span>
+                              <span className={styles.upcomingMonth}>
+                                {d.toLocaleString("default", {
+                                  month: "short",
+                                })}
+                              </span>
+                            </div>
+                          )}
+                          <div className={styles.upcomingInfo}>
+                            <div className={styles.upcomingTitle}>
+                              {b.title}
+                            </div>
+                            <div className={styles.upcomingMeta}>
+                              {b.hirer?.firstName} {b.hirer?.lastName} ·{" "}
+                              {b.category?.name}
+                            </div>
+                          </div>
+                          <span className={statusBadge(b.status)}>
+                            {b.status}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </FeatureGate>
+            </>
           </div>
         </div>
 
