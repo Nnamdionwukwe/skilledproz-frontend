@@ -88,6 +88,7 @@ import FeaturedSuccess from "./components/subscription/FeaturedSuccess";
 import MyPostsPage from "./pages/feed/MyPosts";
 import FeedPage from "./pages/feed/FeedPage";
 import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
+import SettingsPage from "./components/settimg/SettingsPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 function GuestOnly({ children }) {
@@ -628,6 +629,7 @@ export default function App() {
           }
         />
         <Route path="landingpage" element={<LandingPage />} />
+
         {/* ── Verification ── */}
         <Route
           path="/dashboard/worker/verification"
@@ -653,6 +655,9 @@ export default function App() {
             </RequireAuth>
           }
         />
+
+        {/* ── Settings ── */}
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
