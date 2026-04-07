@@ -1,3 +1,5 @@
+/* ── Dark theme (default) ── */
+[data-theme="dark"],
 :root {
   --font-display: "Syne", sans-serif;
   --font-body: "DM Sans", sans-serif;
@@ -10,8 +12,8 @@
   --bg-card: rgba(255, 255, 255, 0.03);
   --bg-input: rgba(255, 255, 255, 0.04);
   --text: #ffffff;
-  --text-dim: rgba(255, 255, 255, 0.45);
-  --text-muted: rgba(255, 255, 255, 0.2);
+  --text-dim: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.28);
   --border: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.16);
   --border-focus: #f97316;
@@ -19,6 +21,28 @@
   --red-dim: rgba(239, 68, 68, 0.12);
   --green: #22c55e;
   --green-dim: rgba(34, 197, 94, 0.1);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg: #f8f8fc;
+  --bg-panel: #ffffff;
+  --bg-card: rgba(0, 0, 0, 0.02);
+  --bg-input: rgba(0, 0, 0, 0.03);
+  --text: #0f0f1a;
+  --text-dim: rgba(15, 15, 26, 0.6);
+  --text-muted: rgba(15, 15, 26, 0.35);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.16);
+  --border-focus: #f97316;
+  --red-dim: rgba(239, 68, 68, 0.08);
+  --green-dim: rgba(34, 197, 94, 0.08);
+  --orange-dim: rgba(249, 115, 22, 0.08);
+  --orange-glow: rgba(249, 115, 22, 0.2);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 *,
@@ -38,6 +62,9 @@ body {
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 a {
   color: inherit;
@@ -51,7 +78,7 @@ textarea {
 }
 ::selection {
   background: var(--orange);
-  color: var(--bg);
+  color: #fff;
 }
 ::-webkit-scrollbar {
   width: 5px;
@@ -60,17 +87,17 @@ textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-hover);
 }
 
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
