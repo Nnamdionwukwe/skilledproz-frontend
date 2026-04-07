@@ -294,8 +294,11 @@ export default function UserProfile() {
               </div>
 
               {isOwn && (
-                <button className={s.editBtn} onClick={() => setEditing(true)}>
-                  <Edit3 size={14} /> Edit Profile
+                <button
+                  className={s.editBtn}
+                  onClick={() => navigate("/settings")}
+                >
+                  ⚙️ Settings
                 </button>
               )}
             </div>

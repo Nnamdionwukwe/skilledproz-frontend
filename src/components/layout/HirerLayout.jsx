@@ -82,10 +82,10 @@ const NAV = [
       {
         label: "Subscriptions",
         path: "/dashboard/hirer/subscription",
-        icon: "⭐",
+        icon: "💎",
       },
       { label: "Boost Listing", path: "/dashboard/hirer/featured", icon: "🚀" },
-      { label: "Settings", path: "/settings", icon: "🚀" },
+      { label: "Settings", path: "/settings", icon: "⚙️" },
     ],
   },
 ];
