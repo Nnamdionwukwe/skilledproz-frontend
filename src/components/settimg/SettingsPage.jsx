@@ -1,1439 +1,896 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/authStore";
+import { useTheme } from "../../context/ThemeContext";
 import api from "../../lib/api";
-import HirerLayout from "../layout/HirerLayout";
-import WorkerLayout from "../layout/WorkerLayout";
+import HirerLayout from "../../components/layout/HirerLayout";
+import WorkerLayout from "../../components/layout/WorkerLayout";
 import styles from "./SettingsPage.module.css";
+
+// ── All world languages ──────────────────────────────────────────────────────
+const ALL_LANGUAGES = [
+  { code: "af", name: "Afrikaans" },
+  { code: "sq", name: "Albanian" },
+  { code: "am", name: "Amharic" },
+  { code: "ar", name: "Arabic" },
+  { code: "hy", name: "Armenian" },
+  { code: "az", name: "Azerbaijani" },
+  { code: "eu", name: "Basque" },
+  { code: "be", name: "Belarusian" },
+  { code: "bn", name: "Bengali" },
+  { code: "bs", name: "Bosnian" },
+  { code: "bg", name: "Bulgarian" },
+  { code: "ca", name: "Catalan" },
+  { code: "ceb", name: "Cebuano" },
+  { code: "ny", name: "Chichewa" },
+  { code: "zh", name: "Chinese (Simplified)" },
+  { code: "zh-TW", name: "Chinese (Traditional)" },
+  { code: "co", name: "Corsican" },
+  { code: "hr", name: "Croatian" },
+  { code: "cs", name: "Czech" },
+  { code: "da", name: "Danish" },
+  { code: "nl", name: "Dutch" },
+  { code: "en", name: "English" },
+  { code: "eo", name: "Esperanto" },
+  { code: "et", name: "Estonian" },
+  { code: "tl", name: "Filipino" },
+  { code: "fi", name: "Finnish" },
+  { code: "fr", name: "French" },
+  { code: "fy", name: "Frisian" },
+  { code: "gl", name: "Galician" },
+  { code: "ka", name: "Georgian" },
+  { code: "de", name: "German" },
+  { code: "el", name: "Greek" },
+  { code: "gu", name: "Gujarati" },
+  { code: "ht", name: "Haitian Creole" },
+  { code: "ha", name: "Hausa" },
+  { code: "haw", name: "Hawaiian" },
+  { code: "iw", name: "Hebrew" },
+  { code: "hi", name: "Hindi" },
+  { code: "hmn", name: "Hmong" },
+  { code: "hu", name: "Hungarian" },
+  { code: "is", name: "Icelandic" },
+  { code: "ig", name: "Igbo" },
+  { code: "id", name: "Indonesian" },
+  { code: "ga", name: "Irish" },
+  { code: "it", name: "Italian" },
+  { code: "ja", name: "Japanese" },
+  { code: "jw", name: "Javanese" },
+  { code: "kn", name: "Kannada" },
+  { code: "kk", name: "Kazakh" },
+  { code: "km", name: "Khmer" },
+  { code: "ko", name: "Korean" },
+  { code: "ku", name: "Kurdish" },
+  { code: "ky", name: "Kyrgyz" },
+  { code: "lo", name: "Lao" },
+  { code: "la", name: "Latin" },
+  { code: "lv", name: "Latvian" },
+  { code: "lt", name: "Lithuanian" },
+  { code: "lb", name: "Luxembourgish" },
+  { code: "mk", name: "Macedonian" },
+  { code: "mg", name: "Malagasy" },
+  { code: "ms", name: "Malay" },
+  { code: "ml", name: "Malayalam" },
+  { code: "mt", name: "Maltese" },
+  { code: "mi", name: "Maori" },
+  { code: "mr", name: "Marathi" },
+  { code: "mn", name: "Mongolian" },
+  { code: "my", name: "Myanmar (Burmese)" },
+  { code: "ne", name: "Nepali" },
+  { code: "no", name: "Norwegian" },
+  { code: "ps", name: "Pashto" },
+  { code: "fa", name: "Persian" },
+  { code: "pl", name: "Polish" },
+  { code: "pt", name: "Portuguese" },
+  { code: "pa", name: "Punjabi" },
+  { code: "ro", name: "Romanian" },
+  { code: "ru", name: "Russian" },
+  { code: "sm", name: "Samoan" },
+  { code: "gd", name: "Scots Gaelic" },
+  { code: "sr", name: "Serbian" },
+  { code: "st", name: "Sesotho" },
+  { code: "sn", name: "Shona" },
+  { code: "sd", name: "Sindhi" },
+  { code: "si", name: "Sinhala" },
+  { code: "sk", name: "Slovak" },
+  { code: "sl", name: "Slovenian" },
+  { code: "so", name: "Somali" },
+  { code: "es", name: "Spanish" },
+  { code: "su", name: "Sundanese" },
+  { code: "sw", name: "Swahili" },
+  { code: "sv", name: "Swedish" },
+  { code: "tg", name: "Tajik" },
+  { code: "ta", name: "Tamil" },
+  { code: "te", name: "Telugu" },
+  { code: "th", name: "Thai" },
+  { code: "tr", name: "Turkish" },
+  { code: "uk", name: "Ukrainian" },
+  { code: "ur", name: "Urdu" },
+  { code: "uz", name: "Uzbek" },
+  { code: "vi", name: "Vietnamese" },
+  { code: "cy", name: "Welsh" },
+  { code: "xh", name: "Xhosa" },
+  { code: "yi", name: "Yiddish" },
+  { code: "yo", name: "Yoruba" },
+  { code: "zu", name: "Zulu" },
+];
 
 const CURRENCIES = [
   "USD",
-  "NGN",
-  "GBP",
   "EUR",
+  "GBP",
+  "NGN",
   "GHS",
   "KES",
   "ZAR",
   "INR",
   "CAD",
   "AUD",
-  "SAR",
+  "JPY",
+  "CNY",
+  "BRL",
+  "MXN",
+  "EGP",
+  "TZS",
+  "UGX",
+  "RWF",
+  "XOF",
+  "MAD",
+  "PHP",
+  "IDR",
+  "VND",
+  "THB",
+  "BDT",
+  "PKR",
   "AED",
+  "SAR",
+  "QAR",
+  "MYR",
+  "SGD",
+  "HKD",
 ];
-const LANGUAGES = [
-  "English",
-  "French",
-  "Arabic",
-  "Yoruba",
-  "Hausa",
-  "Igbo",
-  "Swahili",
-  "Portuguese",
-  "Spanish",
-  "Mandarin",
-];
-const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
-const COMPANY_SIZES = ["1–10", "11–50", "51–200", "201–500", "500+"];
 
-const SECTIONS = [
+const TABS = [
   { id: "profile", icon: "👤", label: "Profile" },
-  { id: "role", icon: "🏷️", label: "Role Settings" },
-  { id: "password", icon: "🔑", label: "Password" },
+  { id: "appearance", icon: "🎨", label: "Appearance" },
   { id: "notifications", icon: "🔔", label: "Notifications" },
-  { id: "privacy", icon: "🛡️", label: "Privacy" },
-  { id: "security", icon: "🔒", label: "Security" },
-  { id: "activity", icon: "📊", label: "Activity" },
-  { id: "danger", icon: "⚠️", label: "Danger Zone" },
+  { id: "privacy", icon: "🔒", label: "Privacy" },
+  { id: "security", icon: "🛡️", label: "Security" },
+  { id: "payment", icon: "💳", label: "Payment" },
 ];
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
+  const { theme, language, changeTheme, changeLanguage } = useTheme();
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
-  const [active, setActive] = useState("profile");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  return (
-    <Layout>
-      <div className={styles.page}>
-        {/* ── Mobile header ── */}
-        <div className={styles.mobileHeader}>
-          <button
-            className={styles.menuToggle}
-            onClick={() => setSidebarOpen((s) => !s)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-          <p className={styles.mobileTitle}>Settings</p>
-        </div>
-
-        <div className={styles.shell}>
-          {/* ── Sidebar nav ── */}
-          <nav className={`${styles.nav} ${sidebarOpen ? styles.navOpen : ""}`}>
-            <div className={styles.navHeader}>
-              <div className={styles.navAvatar}>
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="" />
-                ) : (
-                  <span>
-                    {user?.firstName?.[0]}
-                    {user?.lastName?.[0]}
-                  </span>
-                )}
-              </div>
-              <div>
-                <p className={styles.navName}>
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className={styles.navRole}>{user?.role}</p>
-              </div>
-            </div>
-
-            <div className={styles.navLinks}>
-              {SECTIONS.map((s) => (
-                <button
-                  key={s.id}
-                  className={`${styles.navLink} ${active === s.id ? styles.navLinkActive : ""}`}
-                  onClick={() => {
-                    setActive(s.id);
-                    setSidebarOpen(false);
-                  }}
-                >
-                  <span className={styles.navIcon}>{s.icon}</span>
-                  <span>{s.label}</span>
-                  {s.id === "danger" && <span className={styles.dangerDot} />}
-                </button>
-              ))}
-            </div>
-          </nav>
-
-          {sidebarOpen && (
-            <div
-              className={styles.overlay}
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-
-          {/* ── Content panels ── */}
-          <main className={styles.content}>
-            {active === "profile" && (
-              <ProfileSection user={user} setUser={setUser} />
-            )}
-            {active === "role" && <RoleSection user={user} />}
-            {active === "password" && <PasswordSection />}
-            {active === "notifications" && <NotifSection />}
-            {active === "privacy" && <PrivacySection />}
-            {active === "security" && <SecuritySection />}
-            {active === "activity" && <ActivitySection />}
-            {active === "danger" && <DangerSection />}
-          </main>
-        </div>
-      </div>
-    </Layout>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   PROFILE SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function ProfileSection({ user, setUser }) {
-  const [form, setForm] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    phone: user?.phone || "",
-    bio: user?.bio || "",
-    country: user?.country || "",
-    city: user?.city || "",
-    state: user?.state || "",
-    address: user?.address || "",
-    currency: user?.currency || "USD",
-    language: user?.language || "English",
-    gender: user?.gender || "",
-  });
+  const [tab, setTab] = useState("profile");
+  const [profile, setProfile] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
-  const fileRef = useRef();
+  const [savingKey, setSavingKey] = useState("");
+  const [toast, setToast] = useState(null);
 
-  function handleChange(k, v) {
-    setForm((f) => ({ ...f, [k]: v }));
-    setSuccess("");
-    setError("");
-  }
+  // Profile state
+  const [form, setForm] = useState({});
+  // Password
+  const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
+  const [pwError, setPwError] = useState("");
+  // Notifications
+  const [notifs, setNotifs] = useState({});
+  // Privacy
+  const [privacy, setPrivacy] = useState({});
 
-  async function handleSave() {
+  useEffect(() => {
+    api
+      .get("/settings/profile")
+      .then((res) => {
+        const u = res.data.data.user;
+        setProfile(u);
+        setForm({
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          bio: u.bio || "",
+          phone: u.phone || "",
+          country: u.country || "",
+          city: u.city || "",
+          state: u.state || "",
+          address: u.address || "",
+          currency: u.currency || "USD",
+        });
+        setNotifs({
+          notifBookings: u.notifBookings ?? true,
+          notifMessages: u.notifMessages ?? true,
+          notifPayments: u.notifPayments ?? true,
+          notifReviews: u.notifReviews ?? true,
+          notifMarketing: u.notifMarketing ?? false,
+        });
+        setPrivacy({
+          profileVisible: u.profileVisible ?? true,
+          showPhone: u.showPhone ?? false,
+          showLocation: u.showLocation ?? true,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  async function saveProfile() {
     setSaving(true);
-    setError("");
-    setSuccess("");
+    setSavingKey("profile");
     try {
       const res = await api.patch("/settings/profile", form);
-      setUser?.({ ...user, ...res.data.data.user });
-      setSuccess("Profile saved successfully ✓");
-    } catch (e) {
-      setError(e.response?.data?.message || "Save failed");
+      setProfile(res.data.data.user);
+      if (setUser) setUser({ ...user, ...res.data.data.user });
+      showToast("Profile saved successfully");
+    } catch {
+      showToast("Failed to save profile", "error");
     } finally {
       setSaving(false);
+      setSavingKey("");
+    }
+  }
+
+  async function savePassword() {
+    if (pw.next !== pw.confirm) {
+      setPwError("Passwords do not match");
+      return;
+    }
+    if (pw.next.length < 8) {
+      setPwError("Must be at least 8 characters");
+      return;
+    }
+    setPwError("");
+    setSaving(true);
+    setSavingKey("password");
+    try {
+      await api.patch("/settings/password", {
+        currentPassword: pw.current,
+        newPassword: pw.next,
+      });
+      setPw({ current: "", next: "", confirm: "" });
+      showToast("Password changed successfully");
+    } catch (e) {
+      showToast(e.response?.data?.message || "Password change failed", "error");
+    } finally {
+      setSaving(false);
+      setSavingKey("");
+    }
+  }
+
+  async function saveNotifs() {
+    setSaving(true);
+    setSavingKey("notifs");
+    try {
+      await api.patch("/settings/notifications", notifs);
+      showToast("Notification preferences saved");
+    } catch {
+      showToast("Failed to save", "error");
+    } finally {
+      setSaving(false);
+      setSavingKey("");
+    }
+  }
+
+  async function savePrivacy() {
+    setSaving(true);
+    setSavingKey("privacy");
+    try {
+      await api.patch("/settings/privacy", privacy);
+      showToast("Privacy settings saved");
+    } catch {
+      showToast("Failed to save", "error");
+    } finally {
+      setSaving(false);
+      setSavingKey("");
     }
   }
 
   async function handleAvatarChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const preview = URL.createObjectURL(file);
-    setAvatarPreview(preview);
-    setUploading(true);
+    const fd = new FormData();
+    fd.append("avatar", file);
+    setSaving(true);
+    setSavingKey("avatar");
     try {
-      const fd = new FormData();
-      fd.append("avatar", file);
       const res = await api.post("/settings/avatar", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setUser?.({ ...user, avatar: res.data.data.avatar });
-      setSuccess("Avatar updated ✓");
+      setProfile((p) => ({ ...p, avatar: res.data.data.user.avatar }));
+      if (setUser) setUser({ ...user, avatar: res.data.data.user.avatar });
+      showToast("Photo updated");
     } catch {
-      setError("Avatar upload failed");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  return (
-    <Panel
-      title="Profile Information"
-      icon="👤"
-      desc="Manage your public profile and personal details"
-    >
-      {/* Avatar */}
-      <div className={styles.avatarRow}>
-        <div
-          className={styles.avatarWrap}
-          onClick={() => fileRef.current?.click()}
-        >
-          {avatarPreview ? (
-            <img src={avatarPreview} alt="" className={styles.avatarImg} />
-          ) : (
-            <span className={styles.avatarInitials}>
-              {user?.firstName?.[0]}
-              {user?.lastName?.[0]}
-            </span>
-          )}
-          <div className={styles.avatarOverlay}>
-            {uploading ? <span className={styles.spinner} /> : "📷"}
-          </div>
-        </div>
-        <div className={styles.avatarMeta}>
-          <p className={styles.avatarName}>
-            {user?.firstName} {user?.lastName}
-          </p>
-          <p className={styles.avatarHint}>
-            Click avatar to upload a new photo. Max 5 MB.
-          </p>
-          <button
-            className={styles.avatarBtn}
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? "Uploading…" : "Change Photo"}
-          </button>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className={styles.hidden}
-          onChange={handleAvatarChange}
-        />
-      </div>
-
-      <Divider />
-
-      {/* Name */}
-      <FieldRow>
-        <Field
-          label="First Name"
-          value={form.firstName}
-          onChange={(v) => handleChange("firstName", v)}
-          placeholder="John"
-        />
-        <Field
-          label="Last Name"
-          value={form.lastName}
-          onChange={(v) => handleChange("lastName", v)}
-          placeholder="Doe"
-        />
-      </FieldRow>
-
-      <Field
-        label="Phone Number"
-        value={form.phone}
-        onChange={(v) => handleChange("phone", v)}
-        placeholder="+234 801 234 5678"
-        type="tel"
-      />
-
-      <Field
-        label="Bio"
-        value={form.bio}
-        onChange={(v) => handleChange("bio", v)}
-        placeholder="Tell people about yourself..."
-        multiline
-      />
-
-      <Divider label="Location" />
-
-      <FieldRow>
-        <Field
-          label="Country"
-          value={form.country}
-          onChange={(v) => handleChange("country", v)}
-          placeholder="Nigeria"
-        />
-        <Field
-          label="State"
-          value={form.state}
-          onChange={(v) => handleChange("state", v)}
-          placeholder="Lagos State"
-        />
-      </FieldRow>
-      <FieldRow>
-        <Field
-          label="City"
-          value={form.city}
-          onChange={(v) => handleChange("city", v)}
-          placeholder="Ikeja"
-        />
-        <Field
-          label="Address"
-          value={form.address}
-          onChange={(v) => handleChange("address", v)}
-          placeholder="Street address"
-        />
-      </FieldRow>
-
-      <Divider label="Preferences" />
-
-      <FieldRow>
-        <SelectField
-          label="Default Currency"
-          value={form.currency}
-          onChange={(v) => handleChange("currency", v)}
-          options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-        />
-        <SelectField
-          label="Language"
-          value={form.language}
-          onChange={(v) => handleChange("language", v)}
-          options={LANGUAGES.map((l) => ({ value: l, label: l }))}
-        />
-      </FieldRow>
-      <SelectField
-        label="Gender"
-        value={form.gender}
-        onChange={(v) => handleChange("gender", v)}
-        options={[
-          { value: "", label: "Prefer not to say" },
-          ...GENDERS.map((g) => ({ value: g, label: g })),
-        ]}
-      />
-
-      <StatusBar success={success} error={error} />
-
-      <div className={styles.saveRow}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <span className={styles.spinner} /> Saving…
-            </>
-          ) : (
-            "Save Changes"
-          )}
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ROLE SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function RoleSection({ user }) {
-  const isWorker = user?.role === "WORKER";
-  return isWorker ? <WorkerProfileSection /> : <HirerProfileSection />;
-}
-
-function WorkerProfileSection() {
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    hourlyRate: "",
-    currency: "USD",
-    yearsExperience: "",
-    serviceRadius: "25",
-    isAvailable: true,
-  });
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/settings/profile")
-      .then((r) => {
-        const wp = r.data.data.user?.workerProfile;
-        if (wp)
-          setForm({
-            title: wp.title || "",
-            description: wp.description || "",
-            hourlyRate: wp.hourlyRate || "",
-            currency: wp.currency || "USD",
-            yearsExperience: wp.yearsExperience || "",
-            serviceRadius: wp.serviceRadius || "25",
-            isAvailable: wp.isAvailable ?? true,
-          });
-      })
-      .catch(() => {});
-  }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    setError("");
-    setSuccess("");
-    try {
-      await api.patch("/settings/worker-profile", form);
-      setSuccess("Worker profile updated ✓");
-    } catch (e) {
-      setError(e.response?.data?.message || "Save failed");
+      showToast("Photo upload failed", "error");
     } finally {
       setSaving(false);
+      setSavingKey("");
     }
   }
 
-  function set(k, v) {
-    setForm((f) => ({ ...f, [k]: v }));
-    setSuccess("");
-    setError("");
-  }
-
-  return (
-    <Panel
-      title="Worker Profile"
-      icon="👷"
-      desc="Manage your professional profile visible to hirers"
-    >
-      <Field
-        label="Professional Title"
-        value={form.title}
-        onChange={(v) => set("title", v)}
-        placeholder="e.g. Certified Electrician"
-      />
-      <Field
-        label="Professional Description"
-        value={form.description}
-        onChange={(v) => set("description", v)}
-        placeholder="Describe your skills and experience…"
-        multiline
-      />
-
-      <FieldRow>
-        <Field
-          label="Hourly Rate"
-          value={form.hourlyRate}
-          onChange={(v) => set("hourlyRate", v)}
-          type="number"
-          placeholder="0.00"
-        />
-        <SelectField
-          label="Currency"
-          value={form.currency}
-          onChange={(v) => set("currency", v)}
-          options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-        />
-      </FieldRow>
-
-      <FieldRow>
-        <Field
-          label="Years of Experience"
-          value={form.yearsExperience}
-          onChange={(v) => set("yearsExperience", v)}
-          type="number"
-          placeholder="0"
-        />
-        <Field
-          label="Service Radius (km)"
-          value={form.serviceRadius}
-          onChange={(v) => set("serviceRadius", v)}
-          type="number"
-          placeholder="25"
-        />
-      </FieldRow>
-
-      <div className={styles.toggleRow}>
-        <div>
-          <p className={styles.toggleLabel}>Available for Work</p>
-          <p className={styles.toggleDesc}>Toggle off to pause new bookings</p>
-        </div>
-        <button
-          className={`${styles.toggleSwitch} ${form.isAvailable ? styles.toggleOn : styles.toggleOff}`}
-          onClick={() => set("isAvailable", !form.isAvailable)}
-        >
-          <span className={styles.toggleThumb} />
-        </button>
-      </div>
-
-      <StatusBar success={success} error={error} />
-      <div className={styles.saveRow}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <span className={styles.spinner} /> Saving…
-            </>
-          ) : (
-            "Save Worker Profile"
-          )}
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-function HirerProfileSection() {
-  const [form, setForm] = useState({
-    companyName: "",
-    companySize: "",
-    website: "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/settings/profile")
-      .then((r) => {
-        const hp = r.data.data.user?.hirerProfile;
-        if (hp)
-          setForm({
-            companyName: hp.companyName || "",
-            companySize: hp.companySize || "",
-            website: hp.website || "",
-          });
-      })
-      .catch(() => {});
-  }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    setError("");
-    setSuccess("");
-    try {
-      await api.patch("/settings/hirer-profile", form);
-      setSuccess("Company profile updated ✓");
-    } catch (e) {
-      setError(e.response?.data?.message || "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function set(k, v) {
-    setForm((f) => ({ ...f, [k]: v }));
-    setSuccess("");
-    setError("");
-  }
-
-  return (
-    <Panel
-      title="Company Profile"
-      icon="🏢"
-      desc="Manage your company information visible to workers"
-    >
-      <Field
-        label="Company Name"
-        value={form.companyName}
-        onChange={(v) => set("companyName", v)}
-        placeholder="Acme Corp"
-      />
-      <SelectField
-        label="Company Size"
-        value={form.companySize}
-        onChange={(v) => set("companySize", v)}
-        options={[
-          { value: "", label: "Select size" },
-          ...COMPANY_SIZES.map((s) => ({ value: s, label: s + " employees" })),
-        ]}
-      />
-      <Field
-        label="Website"
-        value={form.website}
-        onChange={(v) => set("website", v)}
-        placeholder="https://yourcompany.com"
-        type="url"
-      />
-
-      <StatusBar success={success} error={error} />
-      <div className={styles.saveRow}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <span className={styles.spinner} /> Saving…
-            </>
-          ) : (
-            "Save Company Profile"
-          )}
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   PASSWORD SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function PasswordSection() {
-  const [form, setForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
-  const [show, setShow] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-
-  async function handleSave() {
-    if (form.newPassword !== form.confirmPassword) {
-      setError("New passwords do not match");
+  async function handleDeleteAccount() {
+    if (
+      !window.confirm(
+        "Are you sure? This will deactivate your account immediately.",
+      )
+    )
       return;
-    }
-    if (form.newPassword.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    setSuccess("");
     try {
-      await api.patch("/settings/password", {
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
-      });
-      setSuccess("Password changed successfully ✓");
-      setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (e) {
-      setError(e.response?.data?.message || "Failed to change password");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const strength = getPasswordStrength(form.newPassword);
-
-  return (
-    <Panel
-      title="Change Password"
-      icon="🔑"
-      desc="Use a strong, unique password to protect your account"
-    >
-      <PasswordField
-        label="Current Password"
-        value={form.currentPassword}
-        onChange={(v) => setForm((f) => ({ ...f, currentPassword: v }))}
-        show={show.current}
-        onToggle={() => setShow((s) => ({ ...s, current: !s.current }))}
-      />
-      <PasswordField
-        label="New Password"
-        value={form.newPassword}
-        onChange={(v) => setForm((f) => ({ ...f, newPassword: v }))}
-        show={show.new}
-        onToggle={() => setShow((s) => ({ ...s, new: !s.new }))}
-      />
-
-      {form.newPassword && (
-        <div className={styles.strengthBar}>
-          <div
-            className={`${styles.strengthFill} ${styles[`strength_${strength.level}`]}`}
-            style={{ width: `${strength.pct}%` }}
-          />
-          <span className={styles.strengthLabel}>{strength.label}</span>
-        </div>
-      )}
-
-      <PasswordField
-        label="Confirm New Password"
-        value={form.confirmPassword}
-        onChange={(v) => setForm((f) => ({ ...f, confirmPassword: v }))}
-        show={show.confirm}
-        onToggle={() => setShow((s) => ({ ...s, confirm: !s.confirm }))}
-        error={
-          form.confirmPassword && form.newPassword !== form.confirmPassword
-            ? "Passwords do not match"
-            : ""
-        }
-      />
-
-      <div className={styles.passwordTips}>
-        {[
-          "At least 8 characters",
-          "Mix of letters and numbers",
-          "At least one special character",
-        ].map((tip) => (
-          <div
-            key={tip}
-            className={`${styles.tip} ${form.newPassword.length >= 8 ? styles.tipMet : ""}`}
-          >
-            <span className={styles.tipIcon}>
-              {form.newPassword.length >= 8 ? "✓" : "○"}
-            </span>
-            <span>{tip}</span>
-          </div>
-        ))}
-      </div>
-
-      <StatusBar success={success} error={error} />
-      <div className={styles.saveRow}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving || !form.currentPassword || !form.newPassword}
-        >
-          {saving ? (
-            <>
-              <span className={styles.spinner} /> Updating…
-            </>
-          ) : (
-            "Update Password"
-          )}
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   NOTIFICATIONS SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function NotifSection() {
-  const [prefs, setPrefs] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/settings/notifications")
-      .then((r) => setPrefs(r.data.data.prefs))
-      .catch(() => {});
-  }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await api.patch("/settings/notifications", prefs);
-      setSuccess("Notification preferences saved ✓");
+      await api.delete("/settings/account");
+      window.location.href = "/login";
     } catch {
-    } finally {
-      setSaving(false);
-      setTimeout(() => setSuccess(""), 3000);
-    }
-  }
-
-  function toggle(k) {
-    setPrefs((p) => ({ ...p, [k]: !p[k] }));
-  }
-
-  if (!prefs) return <PanelSkeleton />;
-
-  const emailToggles = [
-    {
-      key: "emailBookingUpdates",
-      label: "Booking updates",
-      desc: "Status changes, confirmations, cancellations",
-    },
-    {
-      key: "emailPaymentReceipts",
-      label: "Payment receipts",
-      desc: "Payment confirmations and escrow releases",
-    },
-    {
-      key: "emailReviewRequests",
-      label: "Review requests",
-      desc: "Reminders to leave reviews after jobs",
-    },
-    {
-      key: "emailMarketing",
-      label: "Marketing emails",
-      desc: "Tips, promotions, and platform news",
-    },
-  ];
-
-  const pushToggles = [
-    {
-      key: "pushBookings",
-      label: "Booking alerts",
-      desc: "New bookings and status changes",
-    },
-    {
-      key: "pushMessages",
-      label: "Messages",
-      desc: "New message notifications",
-    },
-    {
-      key: "pushPayments",
-      label: "Payment alerts",
-      desc: "Escrow updates and releases",
-    },
-    {
-      key: "pushSOS",
-      label: "SOS alerts",
-      desc: "Emergency notifications (always on for safety)",
-    },
-  ];
-
-  return (
-    <Panel
-      title="Notification Preferences"
-      icon="🔔"
-      desc="Choose how and when you receive notifications"
-    >
-      <NotifGroup
-        title="📧 Email Notifications"
-        toggles={emailToggles}
-        prefs={prefs}
-        onToggle={toggle}
-      />
-      <Divider />
-      <NotifGroup
-        title="📱 Push Notifications"
-        toggles={pushToggles}
-        prefs={prefs}
-        onToggle={toggle}
-      />
-
-      {success && <div className={styles.successBar}>{success}</div>}
-      <div className={styles.saveRow}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <span className={styles.spinner} /> Saving…
-            </>
-          ) : (
-            "Save Preferences"
-          )}
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-function NotifGroup({ title, toggles, prefs, onToggle }) {
-  return (
-    <div className={styles.notifGroup}>
-      <p className={styles.notifGroupTitle}>{title}</p>
-      {toggles.map((t) => (
-        <div key={t.key} className={styles.toggleRow}>
-          <div>
-            <p className={styles.toggleLabel}>{t.label}</p>
-            <p className={styles.toggleDesc}>{t.desc}</p>
-          </div>
-          <button
-            className={`${styles.toggleSwitch} ${prefs[t.key] ? styles.toggleOn : styles.toggleOff}`}
-            onClick={() => onToggle(t.key)}
-            disabled={t.key === "pushSOS"}
-          >
-            <span className={styles.toggleThumb} />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   PRIVACY SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function PrivacySection() {
-  const [privacy, setPrivacy] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    api
-      .get("/settings/privacy")
-      .then((r) => setPrivacy(r.data.data.privacy))
-      .catch(() => {});
-  }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await api.patch("/settings/privacy", privacy);
-      setSuccess("Privacy settings saved ✓");
-    } catch {
-    } finally {
-      setSaving(false);
-      setTimeout(() => setSuccess(""), 3000);
-    }
-  }
-
-  function toggle(k) {
-    setPrivacy((p) => ({ ...p, [k]: !p[k] }));
-  }
-  function set(k, v) {
-    setPrivacy((p) => ({ ...p, [k]: v }));
-  }
-
-  if (!privacy) return <PanelSkeleton />;
-
-  return (
-    <Panel
-      title="Privacy Settings"
-      icon="🛡️"
-      desc="Control who can see your information and how you appear"
-    >
-      <p className={styles.privacySection}>Profile Visibility</p>
-      {[
-        {
-          key: "profilePublic",
-          label: "Public profile",
-          desc: "Allow anyone to view your profile",
-        },
-        {
-          key: "showPhone",
-          label: "Show phone number",
-          desc: "Display your phone number on your profile",
-        },
-        {
-          key: "showLocation",
-          label: "Show location",
-          desc: "Display your city and country on your profile",
-        },
-        {
-          key: "showEarnings",
-          label: "Show earnings",
-          desc: "Display earnings stats on worker profile",
-        },
-        {
-          key: "showOnlineStatus",
-          label: "Show online status",
-          desc: "Let others see when you're active",
-        },
-        {
-          key: "indexableBySearch",
-          label: "Appear in search",
-          desc: "Allow your profile to appear in search results",
-        },
-      ].map((t) => (
-        <div key={t.key} className={styles.toggleRow}>
-          <div>
-            <p className={styles.toggleLabel}>{t.label}</p>
-            <p className={styles.toggleDesc}>{t.desc}</p>
-          </div>
-          <button
-            className={`${styles.toggleSwitch} ${privacy[t.key] ? styles.toggleOn : styles.toggleOff}`}
-            onClick={() => toggle(t.key)}
-          >
-            <span className={styles.toggleThumb} />
-          </button>
-        </div>
-      ))}
-
-      <Divider label="Messaging" />
-
-      <div className={styles.radioGroup}>
-        <p className={styles.toggleLabel}>Who can send you messages</p>
-        {[
-          { value: "all", label: "Everyone" },
-          { value: "verified", label: "Verified users only" },
-          { value: "none", label: "Nobody (disable messages)" },
-        ].map((opt) => (
-          <label key={opt.value} className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="allowMessages"
-              value={opt.value}
-              checked={privacy.allowMessagesFrom === opt.value}
-              onChange={() => set("allowMessagesFrom", opt.value)}
-              className={styles.radioInput}
-            />
-            <span className={styles.radioCustom} />
-            <span>{opt.label}</span>
-          </label>
-        ))}
-      </div>
-
-      {success && <div className={styles.successBar}>{success}</div>}
-      <div className={styles.saveRow}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <span className={styles.spinner} /> Saving…
-            </>
-          ) : (
-            "Save Privacy Settings"
-          )}
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   SECURITY SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function SecuritySection() {
-  const [sec, setSec] = useState(null);
-
-  useEffect(() => {
-    api
-      .get("/settings/security")
-      .then((r) => setSec(r.data.data))
-      .catch(() => {});
-  }, []);
-
-  if (!sec) return <PanelSkeleton />;
-
-  return (
-    <Panel
-      title="Security"
-      icon="🔒"
-      desc="Monitor your account security and active sessions"
-    >
-      <div className={styles.securityGrid}>
-        <SecurityItem
-          icon={sec.isEmailVerified ? "✅" : "⚠️"}
-          label="Email Verification"
-          value={sec.isEmailVerified ? "Verified" : "Not verified"}
-          status={sec.isEmailVerified ? "good" : "warn"}
-          sub={sec.email}
-        />
-        <SecurityItem
-          icon={sec.isPhoneVerified ? "✅" : "⚠️"}
-          label="Phone Verification"
-          value={sec.isPhoneVerified ? "Verified" : "Not verified"}
-          status={sec.isPhoneVerified ? "good" : "warn"}
-          sub={sec.phone || "No phone added"}
-        />
-        <SecurityItem
-          icon="🔐"
-          label="Two-Factor Auth"
-          value="Not enabled"
-          status="neutral"
-          sub="Coming soon"
-        />
-        <SecurityItem
-          icon="📅"
-          label="Account Created"
-          value={new Date(sec.accountCreated).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-          status="good"
-        />
-      </div>
-
-      <Divider label="Active Sessions" />
-
-      <div className={styles.sessions}>
-        {sec.sessions.map((s) => (
-          <div key={s.id} className={styles.session}>
-            <div className={styles.sessionIcon}>
-              {s.isCurrent ? "💻" : "📱"}
-            </div>
-            <div className={styles.sessionInfo}>
-              <p className={styles.sessionDevice}>{s.device}</p>
-              <p className={styles.sessionMeta}>
-                Last active: {new Date(s.lastSeen).toLocaleString()}
-                {s.isCurrent && (
-                  <span className={styles.currentBadge}>Current</span>
-                )}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function SecurityItem({ icon, label, value, status, sub }) {
-  return (
-    <div className={`${styles.securityItem} ${styles[`security_${status}`]}`}>
-      <span className={styles.securityIcon}>{icon}</span>
-      <div>
-        <p className={styles.securityLabel}>{label}</p>
-        <p className={styles.securityValue}>{value}</p>
-        {sub && <p className={styles.securitySub}>{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACTIVITY SECTION
-───────────────────────────────────────────────────────────────────────────── */
-function ActivitySection() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    api
-      .get("/settings/activity")
-      .then((r) => setData(r.data.data))
-      .catch(() => {});
-  }, []);
-
-  if (!data) return <PanelSkeleton />;
-
-  const NOTIF_ICONS = {
-    BOOKING_CHECKIN: "🟢",
-    BOOKING_CHECKOUT: "🔴",
-    BOOKING_CANCELLED: "❌",
-    SOS_ACTIVATED: "🚨",
-    SOS_RESOLVED: "✅",
-    VIDEO_CALL_INCOMING: "📹",
-    BANK_TRANSFER_PROOF: "🏦",
-    CRYPTO_TX_SUBMITTED: "₿",
-  };
-
-  return (
-    <Panel
-      title="Account Activity"
-      icon="📊"
-      desc="Your recent account activity and summary"
-    >
-      <div className={styles.activityStats}>
-        <StatCard
-          icon="🔔"
-          label="Unread Notifications"
-          value={data.summary.unreadNotifications}
-        />
-        <StatCard
-          icon="📋"
-          label="Total Bookings"
-          value={data.summary.totalBookings}
-        />
-        <StatCard
-          icon="⭐"
-          label="Reviews Received"
-          value={data.summary.totalReviews}
-        />
-      </div>
-
-      <Divider label="Recent Activity" />
-
-      {data.recentActivity.length === 0 ? (
-        <div className={styles.emptyActivity}>
-          <span>📭</span>
-          <p>No recent activity</p>
-        </div>
-      ) : (
-        <div className={styles.activityList}>
-          {data.recentActivity.map((n) => (
-            <div
-              key={n.id}
-              className={`${styles.activityItem} ${!n.isRead ? styles.activityUnread : ""}`}
-            >
-              <span className={styles.activityIcon}>
-                {NOTIF_ICONS[n.type] || "🔔"}
-              </span>
-              <div className={styles.activityBody}>
-                <p className={styles.activityTitle}>{n.title}</p>
-                <p className={styles.activityDesc}>{n.body}</p>
-                <p className={styles.activityTime}>
-                  {new Date(n.createdAt).toLocaleString()}
-                </p>
-              </div>
-              {!n.isRead && <span className={styles.unreadDot} />}
-            </div>
-          ))}
-        </div>
-      )}
-    </Panel>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   DANGER ZONE
-───────────────────────────────────────────────────────────────────────────── */
-function DangerSection() {
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [password, setPassword] = useState("");
-  const [reason, setReason] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
-  const { logout } = useAuthStore();
-
-  async function handleDelete() {
-    if (!password) {
-      setError("Password is required");
-      return;
-    }
-    setDeleting(true);
-    setError("");
-    try {
-      await api.delete("/settings/account", { data: { password, reason } });
-      logout?.();
-      window.location.href = "/";
-    } catch (e) {
-      setError(e.response?.data?.message || "Failed to delete account");
-    } finally {
-      setDeleting(false);
+      showToast("Failed to deactivate account", "error");
     }
   }
 
   return (
-    <Panel
-      title="Danger Zone"
-      icon="⚠️"
-      desc="Irreversible actions — proceed with caution"
-    >
-      <div className={styles.dangerCard}>
-        <div className={styles.dangerCardHeader}>
-          <span className={styles.dangerCardIcon}>💣</span>
-          <div>
-            <p className={styles.dangerCardTitle}>Delete Account</p>
-            <p className={styles.dangerCardDesc}>
-              Permanently delete your account and all associated data. This
-              action cannot be undone.
-            </p>
-          </div>
-        </div>
-
-        {!showConfirm ? (
-          <button
-            className={styles.dangerBtn}
-            onClick={() => setShowConfirm(true)}
-          >
-            Delete My Account
-          </button>
-        ) : (
-          <div className={styles.dangerConfirm}>
-            <div className={styles.dangerWarning}>
-              ⚠️ This will permanently delete your account, bookings history,
-              and all personal data.
-            </div>
-
-            <Field
-              label="Reason for leaving (optional)"
-              value={reason}
-              onChange={setReason}
-              placeholder="Tell us why you're leaving..."
-              multiline
-            />
-
-            <PasswordField
-              label="Confirm your password to proceed"
-              value={password}
-              onChange={setPassword}
-              show={false}
-              onToggle={() => {}}
-            />
-
-            {error && <div className={styles.errorBar}>{error}</div>}
-
-            <div className={styles.dangerBtns}>
-              <button
-                className={styles.dangerConfirmBtn}
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <>
-                    <span className={styles.spinner} /> Deleting…
-                  </>
-                ) : (
-                  "Yes, Delete My Account"
-                )}
-              </button>
-              <button
-                className={styles.dangerCancelBtn}
-                onClick={() => {
-                  setShowConfirm(false);
-                  setPassword("");
-                  setError("");
-                }}
-              >
-                Cancel
-              </button>
-            </div>
+    <Layout>
+      <div className={styles.page}>
+        {toast && (
+          <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+            {toast.type === "success" ? "✅" : "⚠️"} {toast.msg}
           </div>
         )}
-      </div>
-    </Panel>
-  );
-}
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   SHARED SUB-COMPONENTS
-───────────────────────────────────────────────────────────────────────────── */
-function Panel({ title, icon, desc, children }) {
-  return (
-    <div className={styles.panel}>
-      <div className={styles.panelHeader}>
-        <span className={styles.panelIcon}>{icon}</span>
-        <div>
-          <h2 className={styles.panelTitle}>{title}</h2>
-          {desc && <p className={styles.panelDesc}>{desc}</p>}
+        <div className={styles.header}>
+          <h1 className={styles.pageTitle}>Settings</h1>
+          <p className={styles.pageSub}>
+            Manage your account, appearance, and preferences
+          </p>
+        </div>
+
+        <div className={styles.layout}>
+          {/* ── Tab nav ── */}
+          <nav className={styles.nav}>
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                className={`${styles.navBtn} ${tab === t.id ? styles.navBtnActive : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                <span className={styles.navIcon}>{t.icon}</span>
+                <span className={styles.navLabel}>{t.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          {/* ── Content ── */}
+          <div className={styles.content}>
+            {/* ── PROFILE ── */}
+            {tab === "profile" && (
+              <Card title="Profile" subtitle="Your personal information">
+                {/* Avatar */}
+                <div className={styles.avatarRow}>
+                  <div className={styles.avatarWrap}>
+                    {profile?.avatar ? (
+                      <img
+                        src={profile.avatar}
+                        alt=""
+                        className={styles.avatarImg}
+                      />
+                    ) : (
+                      <span className={styles.avatarInitials}>
+                        {profile?.firstName?.[0]}
+                        {profile?.lastName?.[0]}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className={styles.avatarUploadBtn}>
+                      {savingKey === "avatar"
+                        ? "Uploading..."
+                        : "📷 Change Photo"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleAvatarChange}
+                      />
+                    </label>
+                    <p className={styles.avatarHint}>
+                      JPG, PNG or WebP · max 5MB
+                    </p>
+                  </div>
+                </div>
+
+                <div className={styles.formGrid}>
+                  <Field label="First Name">
+                    <input
+                      className={styles.input}
+                      value={form.firstName || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, firstName: e.target.value }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Last Name">
+                    <input
+                      className={styles.input}
+                      value={form.lastName || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, lastName: e.target.value }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Phone" full>
+                    <input
+                      className={styles.input}
+                      value={form.phone || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, phone: e.target.value }))
+                      }
+                      placeholder="+1 234 567 8900"
+                    />
+                  </Field>
+                  <Field label="Bio" full>
+                    <textarea
+                      className={styles.textarea}
+                      value={form.bio || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, bio: e.target.value }))
+                      }
+                      rows={3}
+                      placeholder="Tell people about yourself..."
+                    />
+                  </Field>
+                  <Field label="Country">
+                    <input
+                      className={styles.input}
+                      value={form.country || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, country: e.target.value }))
+                      }
+                      placeholder="e.g. Nigeria"
+                    />
+                  </Field>
+                  <Field label="City">
+                    <input
+                      className={styles.input}
+                      value={form.city || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, city: e.target.value }))
+                      }
+                      placeholder="e.g. Lagos"
+                    />
+                  </Field>
+                  <Field label="State">
+                    <input
+                      className={styles.input}
+                      value={form.state || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, state: e.target.value }))
+                      }
+                      placeholder="e.g. Lagos State"
+                    />
+                  </Field>
+                  <Field label="Address">
+                    <input
+                      className={styles.input}
+                      value={form.address || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, address: e.target.value }))
+                      }
+                      placeholder="Street address"
+                    />
+                  </Field>
+                  <Field label="Currency">
+                    <select
+                      className={styles.select}
+                      value={form.currency || "USD"}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, currency: e.target.value }))
+                      }
+                    >
+                      {CURRENCIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+
+                <SaveBtn
+                  label="Save Profile"
+                  loading={saving && savingKey === "profile"}
+                  onClick={saveProfile}
+                />
+              </Card>
+            )}
+
+            {/* ── APPEARANCE ── */}
+            {tab === "appearance" && (
+              <Card
+                title="Appearance"
+                subtitle="Theme and language preferences"
+              >
+                <Section label="🌗 Theme">
+                  <p className={styles.sectionHint}>
+                    Choose how SkilledProz looks on your device.
+                  </p>
+                  <div className={styles.themeGrid}>
+                    {[
+                      { id: "light", icon: "☀️", label: "Light" },
+                      { id: "dark", icon: "🌙", label: "Dark" },
+                      { id: "system", icon: "💻", label: "System" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        className={`${styles.themeCard} ${theme === t.id ? styles.themeCardActive : ""}`}
+                        onClick={() => changeTheme(t.id)}
+                      >
+                        <span className={styles.themeCardIcon}>{t.icon}</span>
+                        <span className={styles.themeCardLabel}>{t.label}</span>
+                        {theme === t.id && (
+                          <span className={styles.themeCheck}>✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </Section>
+
+                <Section label="🌐 Language">
+                  <p className={styles.sectionHint}>
+                    Select your preferred language. The platform UI will update
+                    immediately.
+                  </p>
+                  <div className={styles.langSearchWrap}>
+                    <LangSelect value={language} onChange={changeLanguage} />
+                  </div>
+                  <div className={styles.langNote}>
+                    ℹ️ For full translation of user-generated content, use the
+                    Translate button in messages and bookings.
+                  </div>
+                </Section>
+              </Card>
+            )}
+
+            {/* ── NOTIFICATIONS ── */}
+            {tab === "notifications" && (
+              <Card
+                title="Notifications"
+                subtitle="Choose what you want to be notified about"
+              >
+                {[
+                  {
+                    key: "notifBookings",
+                    label: "Bookings",
+                    desc: "New bookings, status updates, confirmations",
+                  },
+                  {
+                    key: "notifMessages",
+                    label: "Messages",
+                    desc: "New messages from hirers or workers",
+                  },
+                  {
+                    key: "notifPayments",
+                    label: "Payments",
+                    desc: "Payment received, escrow releases, refunds",
+                  },
+                  {
+                    key: "notifReviews",
+                    label: "Reviews",
+                    desc: "New reviews on your profile",
+                  },
+                  {
+                    key: "notifMarketing",
+                    label: "Product updates",
+                    desc: "New features, tips, and SkilledProz news",
+                  },
+                ].map((item) => (
+                  <Toggle
+                    key={item.key}
+                    label={item.label}
+                    desc={item.desc}
+                    checked={notifs[item.key] ?? true}
+                    onChange={(v) =>
+                      setNotifs((n) => ({ ...n, [item.key]: v }))
+                    }
+                  />
+                ))}
+                <SaveBtn
+                  label="Save Preferences"
+                  loading={saving && savingKey === "notifs"}
+                  onClick={saveNotifs}
+                />
+              </Card>
+            )}
+
+            {/* ── PRIVACY ── */}
+            {tab === "privacy" && (
+              <Card
+                title="Privacy"
+                subtitle="Control who can see your information"
+              >
+                <Toggle
+                  label="Public Profile"
+                  desc="Allow your profile to appear in search results"
+                  checked={privacy.profileVisible ?? true}
+                  onChange={(v) =>
+                    setPrivacy((p) => ({ ...p, profileVisible: v }))
+                  }
+                />
+                <Toggle
+                  label="Show Phone Number"
+                  desc="Display your phone number to hirers or workers"
+                  checked={privacy.showPhone ?? false}
+                  onChange={(v) => setPrivacy((p) => ({ ...p, showPhone: v }))}
+                />
+                <Toggle
+                  label="Show Location"
+                  desc="Show your city and country on your profile"
+                  checked={privacy.showLocation ?? true}
+                  onChange={(v) =>
+                    setPrivacy((p) => ({ ...p, showLocation: v }))
+                  }
+                />
+                <SaveBtn
+                  label="Save Privacy Settings"
+                  loading={saving && savingKey === "privacy"}
+                  onClick={savePrivacy}
+                />
+              </Card>
+            )}
+
+            {/* ── SECURITY ── */}
+            {tab === "security" && (
+              <>
+                <Card
+                  title="Change Password"
+                  subtitle="Use a strong password you don't use elsewhere"
+                >
+                  <Field label="Current Password" full>
+                    <input
+                      className={styles.input}
+                      type="password"
+                      value={pw.current}
+                      onChange={(e) =>
+                        setPw((p) => ({ ...p, current: e.target.value }))
+                      }
+                      placeholder="••••••••"
+                    />
+                  </Field>
+                  <Field label="New Password" full>
+                    <input
+                      className={styles.input}
+                      type="password"
+                      value={pw.next}
+                      onChange={(e) =>
+                        setPw((p) => ({ ...p, next: e.target.value }))
+                      }
+                      placeholder="Min 8 characters"
+                    />
+                  </Field>
+                  <Field label="Confirm New Password" full>
+                    <input
+                      className={styles.input}
+                      type="password"
+                      value={pw.confirm}
+                      onChange={(e) =>
+                        setPw((p) => ({ ...p, confirm: e.target.value }))
+                      }
+                      placeholder="Repeat new password"
+                    />
+                  </Field>
+                  {pwError && <p className={styles.fieldError}>{pwError}</p>}
+                  <SaveBtn
+                    label="Update Password"
+                    loading={saving && savingKey === "password"}
+                    onClick={savePassword}
+                  />
+                </Card>
+
+                <Card
+                  title="Account Info"
+                  subtitle="Your account status and verification"
+                >
+                  <div className={styles.securityRows}>
+                    <SecRow label="Email" value={profile?.email} />
+                    <SecRow
+                      label="Verified"
+                      value={profile?.isEmailVerified ? "✅ Yes" : "❌ Not yet"}
+                    />
+                    <SecRow
+                      label="Member since"
+                      value={
+                        profile?.createdAt
+                          ? new Date(profile.createdAt).toLocaleDateString(
+                              "en-GB",
+                            )
+                          : "—"
+                      }
+                    />
+                    <SecRow label="Role" value={profile?.role} />
+                  </div>
+                </Card>
+
+                <Card
+                  title="Danger Zone"
+                  subtitle="Permanent actions — proceed carefully"
+                >
+                  <div className={styles.dangerCard}>
+                    <div>
+                      <p className={styles.dangerTitle}>Deactivate Account</p>
+                      <p className={styles.dangerDesc}>
+                        Your profile will be hidden and you will be logged out.
+                        Contact support to reactivate.
+                      </p>
+                    </div>
+                    <button
+                      className={styles.dangerBtn}
+                      onClick={handleDeleteAccount}
+                    >
+                      Deactivate
+                    </button>
+                  </div>
+                </Card>
+              </>
+            )}
+
+            {/* ── PAYMENT ── */}
+            {tab === "payment" && (
+              <Card
+                title="Payment Settings"
+                subtitle="Your preferred currency and payment info"
+              >
+                <Field label="Preferred Currency" full>
+                  <select
+                    className={styles.select}
+                    value={form.currency || "USD"}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, currency: e.target.value }))
+                    }
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <p
+                  className={styles.sectionHint}
+                  style={{ marginTop: "0.5rem" }}
+                >
+                  This currency is used as your default for bookings and
+                  payments.
+                </p>
+                <SaveBtn
+                  label="Save Currency"
+                  loading={saving && savingKey === "profile"}
+                  onClick={saveProfile}
+                />
+
+                <div className={styles.divider} />
+                <Section label="Payment Methods">
+                  <p className={styles.sectionHint}>
+                    Payment methods are added automatically when you make a
+                    payment. Supported: Card (Stripe/Paystack), Bank Transfer,
+                    Crypto.
+                  </p>
+                </Section>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
-      <div className={styles.panelBody}>{children}</div>
+    </Layout>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Card({ title, subtitle, children }) {
+  return (
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <h2 className={styles.cardTitle}>{title}</h2>
+        {subtitle && <p className={styles.cardSub}>{subtitle}</p>}
+      </div>
+      <div className={styles.cardBody}>{children}</div>
     </div>
   );
 }
 
-function Divider({ label }) {
+function Section({ label, children }) {
   return (
-    <div className={styles.divider}>
-      {label && <span className={styles.dividerLabel}>{label}</span>}
+    <div className={styles.section}>
+      <p className={styles.sectionLabel}>{label}</p>
+      {children}
     </div>
   );
 }
 
-function FieldRow({ children }) {
-  return <div className={styles.fieldRow}>{children}</div>;
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  multiline,
-  error,
-}) {
+function Field({ label, children, full }) {
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel}>{label}</label>
-      {multiline ? (
-        <textarea
-          className={`${styles.fieldInput} ${styles.fieldTextarea} ${error ? styles.fieldError : ""}`}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={3}
-        />
-      ) : (
-        <input
-          className={`${styles.fieldInput} ${error ? styles.fieldError : ""}`}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-      )}
-      {error && <p className={styles.fieldErrorMsg}>{error}</p>}
+    <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
+      <label className={styles.label}>{label}</label>
+      {children}
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options }) {
+function Toggle({ label, desc, checked, onChange }) {
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel}>{label}</label>
-      <select
-        className={`${styles.fieldInput} ${styles.fieldSelect}`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+    <div className={styles.toggleRow}>
+      <div>
+        <p className={styles.toggleLabel}>{label}</p>
+        <p className={styles.toggleDesc}>{desc}</p>
+      </div>
+      <button
+        className={`${styles.toggleBtn} ${checked ? styles.toggleBtnOn : ""}`}
+        onClick={() => onChange(!checked)}
+        role="switch"
+        aria-checked={checked}
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+        <span className={styles.toggleThumb} />
+      </button>
+    </div>
+  );
+}
+
+function SaveBtn({ label, loading, onClick }) {
+  return (
+    <button className={styles.saveBtn} onClick={onClick} disabled={loading}>
+      {loading ? (
+        <>
+          <span className={styles.spinner} /> Saving...
+        </>
+      ) : (
+        label
+      )}
+    </button>
+  );
+}
+
+function SecRow({ label, value }) {
+  return (
+    <div className={styles.secRow}>
+      <span className={styles.secLabel}>{label}</span>
+      <span className={styles.secValue}>{value}</span>
+    </div>
+  );
+}
+
+function LangSelect({ value, onChange }) {
+  const [search, setSearch] = useState("");
+  const filtered = ALL_LANGUAGES.filter(
+    (l) =>
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
+      l.code.toLowerCase().includes(search.toLowerCase()),
+  );
+  const current = ALL_LANGUAGES.find((l) => l.code === value);
+
+  return (
+    <div className={styles.langWrap}>
+      <input
+        className={styles.input}
+        placeholder="🔍 Search language..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <select
+        className={styles.select}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setSearch("");
+        }}
+        size={search ? Math.min(filtered.length, 8) : 1}
+      >
+        {(search ? filtered : ALL_LANGUAGES).map((l) => (
+          <option key={l.code} value={l.code}>
+            {l.name}
           </option>
         ))}
       </select>
+      {current && !search && (
+        <p className={styles.langCurrent}>
+          Selected: <strong>{current.name}</strong>
+        </p>
+      )}
     </div>
   );
-}
-
-function PasswordField({ label, value, onChange, show, onToggle, error }) {
-  return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel}>{label}</label>
-      <div className={styles.passwordWrap}>
-        <input
-          className={`${styles.fieldInput} ${styles.passwordInput} ${error ? styles.fieldError : ""}`}
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="••••••••"
-        />
-        <button type="button" className={styles.eyeBtn} onClick={onToggle}>
-          {show ? "🙈" : "👁️"}
-        </button>
-      </div>
-      {error && <p className={styles.fieldErrorMsg}>{error}</p>}
-    </div>
-  );
-}
-
-function StatusBar({ success, error }) {
-  if (!success && !error) return null;
-  return success ? (
-    <div className={styles.successBar}>{success}</div>
-  ) : (
-    <div className={styles.errorBar}>{error}</div>
-  );
-}
-
-function StatCard({ icon, label, value }) {
-  return (
-    <div className={styles.statCard}>
-      <span className={styles.statIcon}>{icon}</span>
-      <p className={styles.statValue}>{value}</p>
-      <p className={styles.statLabel}>{label}</p>
-    </div>
-  );
-}
-
-function PanelSkeleton() {
-  return (
-    <div className={styles.panel}>
-      <div className={styles.skHeader} />
-      <div className={styles.panelBody}>
-        {[1, 2, 3].map((i) => (
-          <div key={i} className={styles.skField} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function getPasswordStrength(pw) {
-  if (!pw) return { level: "empty", pct: 0, label: "" };
-  if (pw.length < 6) return { level: "weak", pct: 25, label: "Weak" };
-  let score = 0;
-  if (pw.length >= 8) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (score <= 1) return { level: "fair", pct: 50, label: "Fair" };
-  if (score === 2) return { level: "good", pct: 75, label: "Good" };
-  return { level: "strong", pct: 100, label: "Strong" };
 }
