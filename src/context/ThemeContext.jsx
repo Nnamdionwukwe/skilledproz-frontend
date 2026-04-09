@@ -11,146 +11,117 @@ import { useAuthStore } from "../store/authStore";
 
 const ThemeContext = createContext(null);
 
-// ── Language code → GT combo value mapping ────────────────────────────────────
-// GT uses slightly different codes from BCP-47 in some cases
-const GT_CODE_MAP = {
-  zh: "zh-CN",
-  "zh-TW": "zh-TW",
-  iw: "iw", // Hebrew (GT uses 'iw' not 'he')
-  jw: "jw", // Javanese
-};
-function toGTCode(code) {
-  return GT_CODE_MAP[code] || code;
-}
-
-// ── Reliable revert to English ────────────────────────────────────────────────
-function revertToEnglish() {
-  // 1. Delete googtrans cookie on all paths/domains
-  const cookieBase =
-    "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-  document.cookie = cookieBase;
-  document.cookie = cookieBase + `; domain=.${window.location.hostname}`;
-  document.cookie = cookieBase + `; domain=${window.location.hostname}`;
-
-  // 2. Try the select element first (no reload needed)
-  const select = document.querySelector("select.goog-te-combo");
-  if (select) {
-    select.value = "";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-
-    // Also try the GT restore function if available
-    setTimeout(() => {
-      try {
-        const teFrame = document.querySelector(".goog-te-menu-frame");
-        if (teFrame) {
-          const teDoc =
-            teFrame.contentDocument || teFrame.contentWindow?.document;
-          const restoreLink = teDoc?.querySelector("a[class*='restore']");
-          if (restoreLink) restoreLink.click();
-        }
-      } catch {}
-    }, 200);
-    return;
-  }
-
-  // 3. Fallback: reload (only if select not available)
-  window.location.reload();
-}
-
-// ── Apply a non-English language ─────────────────────────────────────────────
-function applyLanguage(langCode, attempts = 0) {
-  if (attempts > 30) return; // stop after 15s
-
-  const select = document.querySelector("select.goog-te-combo");
-  if (select) {
-    const gtCode = toGTCode(langCode);
-    // Set cookie first
-    const cookieVal = `/en/${langCode}`;
-    document.cookie = `googtrans=${cookieVal}; path=/`;
-    document.cookie = `googtrans=${cookieVal}; path=/; domain=.${window.location.hostname}`;
-
-    select.value = gtCode;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-
-    // Verify it took effect after a short delay
-    setTimeout(() => {
-      if (select.value !== gtCode) {
-        select.value = gtCode;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    }, 300);
-    return;
-  }
-
-  // GT not loaded yet — retry
-  setTimeout(() => applyLanguage(langCode, attempts + 1), 500);
-}
-
 export function ThemeProvider({ children }) {
   const { user, updateUser } = useAuthStore();
-  const initializedRef = useRef(false);
+  const gtReadyRef = useRef(false);
 
   const [theme, setTheme] = useState(
     () => localStorage.getItem("sp_theme") || user?.theme || "system",
   );
-
-  // Language state: read from localStorage first (persists across page loads)
   const [language, setLanguage] = useState(
     () => localStorage.getItem("sp_lang") || user?.language || "en",
   );
 
-  // ── Apply theme ─────────────────────────────────────────────────────────────
+  // Apply theme
   useEffect(() => {
     const root = document.documentElement;
-    const applyTheme = (t) => {
-      const resolved =
-        t === "system"
-          ? window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light"
-          : t;
-      root.setAttribute("data-theme", resolved);
-    };
-    applyTheme(theme);
+    const resolved =
+      theme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
+        : theme;
+    root.setAttribute("data-theme", resolved);
 
     if (theme === "system") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = () => applyTheme("system");
+      const handler = () =>
+        root.setAttribute("data-theme", mq.matches ? "dark" : "light");
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
     }
   }, [theme]);
 
-  // ── Apply language on mount and when it changes ─────────────────────────────
-  useEffect(() => {
-    document.documentElement.lang = language === "en" ? "en" : language;
+  // Apply language via Google Translate select element
+  const applyTranslation = useCallback((langCode) => {
+    document.documentElement.lang = langCode;
+    localStorage.setItem("sp_lang", langCode);
 
-    if (language === "en") {
-      // Only revert if we were previously translated
-      const existingCookie = document.cookie.includes("googtrans=/en/");
-      if (existingCookie) {
-        revertToEnglish();
-      }
+    // Method 1: Use GT select combo if loaded
+    const select = document.querySelector("select.goog-te-combo");
+    if (select) {
+      select.value = langCode === "en" ? "" : langCode;
+      select.dispatchEvent(new Event("change"));
+      gtReadyRef.current = true;
       return;
     }
 
-    // Apply translation
-    applyLanguage(language);
-  }, [language]);
+    // Method 2: Set cookie and reload if GT hasn't loaded yet
+    if (langCode === "en") {
+      // Remove translation
+      document.cookie =
+        "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = `googtrans=; path=/; domain=.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    } else {
+      document.cookie = `googtrans=/en/${langCode}; path=/`;
+      document.cookie = `googtrans=/en/${langCode}; path=/; domain=.${window.location.hostname}`;
+    }
 
-  // ── On first mount: apply saved language from localStorage ──────────────────
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    const saved = localStorage.getItem("sp_lang");
-    if (saved && saved !== "en") {
-      // GT needs time to load on first mount
-      applyLanguage(saved);
+    // Reload so GT picks up the cookie (only on initial language set)
+    if (!gtReadyRef.current && langCode !== "en") {
+      window.location.reload();
     }
   }, []);
 
-  // ── Sync from user store when user logs in ──────────────────────────────────
+  useEffect(() => {
+    document.documentElement.lang = language;
+    // Wait for GT to load then apply
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      const select = document.querySelector("select.goog-te-combo");
+      if (select) {
+        if (language !== "en") {
+          select.value = language;
+          select.dispatchEvent(new Event("change"));
+        }
+        gtReadyRef.current = true;
+        clearInterval(interval);
+      }
+      if (attempts > 20) clearInterval(interval);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [language]);
+
+  const changeTheme = useCallback(
+    async (t) => {
+      setTheme(t);
+      localStorage.setItem("sp_theme", t);
+      if (user) {
+        try {
+          await api.patch("/settings/profile", { theme: t });
+          updateUser?.({ theme: t });
+        } catch {}
+      }
+    },
+    [user, updateUser],
+  );
+
+  const changeLanguage = useCallback(
+    async (lang) => {
+      setLanguage(lang);
+      applyTranslation(lang);
+      if (user) {
+        try {
+          await api.patch("/settings/profile", { language: lang });
+          updateUser?.({ language: lang });
+        } catch {}
+      }
+    },
+    [user, updateUser, applyTranslation],
+  );
+
+  // Sync from user store on login
   useEffect(() => {
     if (user?.theme && user.theme !== theme) {
       setTheme(user.theme);
@@ -160,38 +131,7 @@ export function ThemeProvider({ children }) {
       setLanguage(user.language);
       localStorage.setItem("sp_lang", user.language);
     }
-  }, [user?.id]); // Only sync on user change (login), not on every render
-
-  const changeTheme = useCallback(
-    async (t) => {
-      setTheme(t);
-      localStorage.setItem("sp_theme", t);
-      try {
-        await api.patch("/settings/profile", { theme: t });
-        updateUser?.({ theme: t });
-      } catch {}
-    },
-    [updateUser],
-  );
-
-  const changeLanguage = useCallback(
-    async (lang) => {
-      setLanguage(lang);
-      localStorage.setItem("sp_lang", lang);
-
-      if (lang === "en") {
-        revertToEnglish();
-      } else {
-        applyLanguage(lang);
-      }
-
-      try {
-        await api.patch("/settings/profile", { language: lang });
-        updateUser?.({ language: lang });
-      } catch {}
-    },
-    [updateUser],
-  );
+  }, [user?.theme, user?.language]);
 
   return (
     <ThemeContext.Provider
