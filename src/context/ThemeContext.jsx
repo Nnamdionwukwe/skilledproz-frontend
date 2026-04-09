@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import api from "../lib/api";
 import { useAuthStore } from "../store/authStore";
@@ -12,6 +13,7 @@ const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const { user, updateUser } = useAuthStore();
+  const gtReadyRef = useRef(false);
 
   const [theme, setTheme] = useState(
     () => localStorage.getItem("sp_theme") || user?.theme || "system",
@@ -20,7 +22,7 @@ export function ThemeProvider({ children }) {
     () => localStorage.getItem("sp_lang") || user?.language || "en",
   );
 
-  // ── Apply theme to <html data-theme=""> ──────────────────────────────────
+  // Apply theme
   useEffect(() => {
     const root = document.documentElement;
     const resolved =
@@ -33,34 +35,62 @@ export function ThemeProvider({ children }) {
 
     if (theme === "system") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = () => {
+      const handler = () =>
         root.setAttribute("data-theme", mq.matches ? "dark" : "light");
-      };
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
     }
   }, [theme]);
 
-  // ── Apply language — sets html lang + triggers Google Translate if available ─
-  useEffect(() => {
-    document.documentElement.lang = language;
-    localStorage.setItem("sp_lang", language);
+  // Apply language via Google Translate select element
+  const applyTranslation = useCallback((langCode) => {
+    document.documentElement.lang = langCode;
+    localStorage.setItem("sp_lang", langCode);
 
-    // Google Translate auto-detection: set googtrans cookie so GT picks it up
-    // This works when GT script is embedded. Without GT, html lang is still set.
-    if (language !== "en") {
-      document.cookie = `googtrans=/en/${language}; path=/`;
-      document.cookie = `googtrans=/en/${language}; path=/; domain=.${window.location.hostname}`;
-    } else {
-      // Remove cookie to go back to English
-      document.cookie =
-        "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    // Method 1: Use GT select combo if loaded
+    const select = document.querySelector("select.goog-te-combo");
+    if (select) {
+      select.value = langCode === "en" ? "" : langCode;
+      select.dispatchEvent(new Event("change"));
+      gtReadyRef.current = true;
+      return;
     }
 
-    // Dispatch custom event so components can react to language change
-    window.dispatchEvent(
-      new CustomEvent("sp:langchange", { detail: { language } }),
-    );
+    // Method 2: Set cookie and reload if GT hasn't loaded yet
+    if (langCode === "en") {
+      // Remove translation
+      document.cookie =
+        "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = `googtrans=; path=/; domain=.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    } else {
+      document.cookie = `googtrans=/en/${langCode}; path=/`;
+      document.cookie = `googtrans=/en/${langCode}; path=/; domain=.${window.location.hostname}`;
+    }
+
+    // Reload so GT picks up the cookie (only on initial language set)
+    if (!gtReadyRef.current && langCode !== "en") {
+      window.location.reload();
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    // Wait for GT to load then apply
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      const select = document.querySelector("select.goog-te-combo");
+      if (select) {
+        if (language !== "en") {
+          select.value = language;
+          select.dispatchEvent(new Event("change"));
+        }
+        gtReadyRef.current = true;
+        clearInterval(interval);
+      }
+      if (attempts > 20) clearInterval(interval);
+    }, 500);
+    return () => clearInterval(interval);
   }, [language]);
 
   const changeTheme = useCallback(
@@ -80,7 +110,7 @@ export function ThemeProvider({ children }) {
   const changeLanguage = useCallback(
     async (lang) => {
       setLanguage(lang);
-      localStorage.setItem("sp_lang", lang);
+      applyTranslation(lang);
       if (user) {
         try {
           await api.patch("/settings/profile", { language: lang });
@@ -88,10 +118,10 @@ export function ThemeProvider({ children }) {
         } catch {}
       }
     },
-    [user, updateUser],
+    [user, updateUser, applyTranslation],
   );
 
-  // Sync from user store when user logs in / changes
+  // Sync from user store on login
   useEffect(() => {
     if (user?.theme && user.theme !== theme) {
       setTheme(user.theme);
