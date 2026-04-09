@@ -1672,12 +1672,13 @@ function LangSelect({ value, onChange }) {
   const current = ALL_LANGUAGES.find((l) => l.code === value);
 
   return (
-    <div className={styles.langWrap}>
+    <div className={styles.langWrap} translate="no">
       <input
         className={styles.input}
         placeholder="🔍 Search language..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        translate="no"
       />
       <select
         className={styles.select}
@@ -1687,17 +1688,42 @@ function LangSelect({ value, onChange }) {
           setSearch("");
         }}
         size={search ? Math.min(filtered.length, 6) : 1}
+        translate="no"
       >
-        {(search ? filtered : ALL_LANGUAGES).map((l) => (
-          <option key={l.code} value={l.code}>
-            {l.name}
+        {/* Always show English as first option for easy revert */}
+        {!search && (
+          <option value="en" style={{ fontWeight: 600 }}>
+            🇬🇧 English (Default)
           </option>
-        ))}
+        )}
+        {(search ? filtered : ALL_LANGUAGES.filter((l) => l.code !== "en")).map(
+          (l) => (
+            <option key={l.code} value={l.code} translate="no">
+              {l.name}
+            </option>
+          ),
+        )}
       </select>
       {current && !search && (
-        <p className={styles.langCurrent}>
-          Selected: <strong>{current.name}</strong>
-        </p>
+        <div className={styles.langCurrentWrap}>
+          <span
+            className={styles.langCurrentDot}
+            style={{
+              background: value === "en" ? "var(--green)" : "var(--orange)",
+            }}
+          />
+          <p className={styles.langCurrent} translate="no">
+            Active: <strong>{current.name}</strong>
+            {value !== "en" && (
+              <button
+                className={styles.langRevertBtn}
+                onClick={() => onChange("en")}
+              >
+                Switch to English
+              </button>
+            )}
+          </p>
+        </div>
       )}
     </div>
   );
