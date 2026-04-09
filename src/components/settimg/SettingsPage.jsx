@@ -1178,16 +1178,13 @@ export default function SettingsPage() {
 
                 <Section label="🌐 Language">
                   <p className={styles.sectionNote} translate="no">
-                    Select your preferred language. The platform will
-                    auto-translate via Google Translate.
+                    Select your preferred language.
                   </p>
-                  {/* translate="no" prevents GT from translating UI chrome */}
-                  <div translate="no">
+                  <div translate="no" className="notranslate">
                     <LangSelect value={language} onChange={changeLanguage} />
                   </div>
                   <div className={styles.infoBox} translate="no">
-                    ℹ️ Select <strong>English</strong> to revert the platform
-                    back to English.
+                    ℹ️ Select <strong>English</strong> to revert back.
                   </div>
                 </Section>
               </Card>
