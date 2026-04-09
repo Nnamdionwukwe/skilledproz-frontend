@@ -127,6 +127,17 @@
     </script>
   </head>
   <body>
+    <script>
+      // Block GT from pushing body down — runs before and after GT loads
+      function fixBodyTop() {
+        if (document.body.style.top && document.body.style.top !== "0px") {
+          document.body.style.removeProperty("top");
+        }
+      }
+      fixBodyTop();
+      setInterval(fixBodyTop, 200);
+    </script>
+
     <!-- GT widget element — hidden, used programmatically only -->
     <div
       id="google_translate_element"

@@ -1,22 +1,3 @@
-/**
- * ThemeContext.jsx — definitive language + theme manager
- *
- * HOW ENGLISH REVERT WORKS:
- * ─────────────────────────
- * Google Translate cannot be undone via its select element — it has already
- * mutated every text node in the DOM. Reloading with cookies cleared also
- * doesn't work reliably because the browser may still send stale cookies on
- * the reload request, causing GT to re-activate before React mounts.
- *
- * The only reliable method:
- *   1. Clear ALL googtrans cookies (JS + document.cookie)
- *   2. Navigate (not reload) to the same page with ?lang=en appended
- *   3. In index.html, an INLINE script (runs before GT loads) checks for
- *      ?lang=en and immediately overwrites any googtrans cookie to nothing,
- *      preventing GT from ever activating on that page load
- *   4. On mount, React detects ?lang=en, removes it from the URL cleanly
- */
-
 import {
   createContext,
   useContext,
@@ -30,196 +11,176 @@ import { useAuthStore } from "../store/authStore";
 
 const ThemeContext = createContext(null);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Remove the GT top bar that causes page twitching ─────────────────────────
+function suppressGTBar() {
+  // Injected style — overrides GT's forced body.top offset
+  const id = "sp-gt-suppress";
+  if (document.getElementById(id)) return;
+  const style = document.createElement("style");
+  style.id = id;
+  style.textContent = `
+    body { top: 0 !important; position: static !important; }
+    .goog-te-banner-frame { display: none !important; }
+    .VIpgJd-ZVi9od-aZ2wEe-wOHMyf, .VIpgJd-ZVi9od-aZ2wEe { display: none !important; }
+    iframe.skiptranslate { display: none !important; }
+  `;
+  document.head.appendChild(style);
 
-function nukeGoogCookies() {
-  const killStr = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
-  const paths = ["/", window.location.pathname];
-  const hosts = [
-    "",
-    `domain=${window.location.hostname}`,
-    `domain=.${window.location.hostname}`,
-  ];
-  for (const path of paths) {
-    for (const host of hosts) {
-      document.cookie = `${killStr}; path=${path}${host ? "; " + host : ""}`;
-    }
-  }
-}
-
-function setGoogCookie(langCode) {
-  const v = `/en/${langCode}`;
-  document.cookie = `googtrans=${v}; path=/`;
-  document.cookie = `googtrans=${v}; path=/; domain=${window.location.hostname}`;
-  document.cookie = `googtrans=${v}; path=/; domain=.${window.location.hostname}`;
-}
-
-const GT_CODES = { zh: "zh-CN", "zh-TW": "zh-TW", iw: "iw", jw: "jw" };
-const toGT = (c) => GT_CODES[c] || c;
-
-function lockBody() {
-  if (!document.body) return;
-  document.body.style.top = "0px";
-  document.body.style.position = "static";
-}
-
-let _bodyObs = null;
-function watchBody() {
-  if (_bodyObs || !window.MutationObserver || !document.body) return;
-  _bodyObs = new MutationObserver(() => {
-    if (!document.body) return;
-    if (document.body.style.top && document.body.style.top !== "0px")
+  // Also observe for GT re-injecting body.style.top
+  const observer = new MutationObserver(() => {
+    if (document.body.style.top && document.body.style.top !== "0px") {
       document.body.style.top = "0px";
-    if (document.body.style.position === "relative")
-      document.body.style.position = "static";
+    }
   });
-  _bodyObs.observe(document.body, {
+  observer.observe(document.body, {
     attributes: true,
     attributeFilter: ["style"],
   });
 }
 
-// ── Apply a non-English language (retries until GT widget is ready) ───────────
-function applyGTLanguage(langCode, attempt = 0) {
-  if (attempt > 50) return; // give up after 25s
+// ── Set googtrans cookie ──────────────────────────────────────────────────────
+function setGTCookie(langCode) {
+  const val = langCode === "en" ? "" : `/en/${langCode}`;
+  // Delete first
+  document.cookie = "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = `googtrans=; path=/; domain=.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  if (val) {
+    document.cookie = `googtrans=${val}; path=/`;
+    document.cookie = `googtrans=${val}; path=/; domain=.${window.location.hostname}`;
+  }
+}
+
+// ── Tell GT's select element to change ───────────────────────────────────────
+function triggerGTSelect(langCode) {
   const select = document.querySelector("select.goog-te-combo");
-  if (select) {
-    const code = toGT(langCode);
-    setGoogCookie(langCode);
-    select.value = code;
+  if (!select) return false;
+
+  if (langCode === "en") {
+    // GT's own way to restore original: set empty + fire change
+    select.value = "";
+    ["change", "input"].forEach((evt) =>
+      select.dispatchEvent(new Event(evt, { bubbles: true })),
+    );
+    // Second approach: find and click the "Original" option if it exists
+    const originalOption = Array.from(select.options).find(
+      (o) => o.value === "" || o.text.toLowerCase().includes("original"),
+    );
+    if (originalOption) {
+      select.value = originalOption.value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  } else {
+    // Map some codes GT uses differently
+    const CODE_MAP = { zh: "zh-CN", iw: "iw" };
+    const gtCode = CODE_MAP[langCode] || langCode;
+    select.value = gtCode;
     select.dispatchEvent(new Event("change", { bubbles: true }));
-    // Verify 400ms later
-    setTimeout(() => {
-      if (select.value !== code) {
-        select.value = code;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      lockBody();
-    }, 400);
-    setTimeout(lockBody, 1200);
+  }
+  return true;
+}
+
+// ── Apply language — retries until GT is ready ────────────────────────────────
+function applyLang(langCode, maxWait = 8000) {
+  // Always set cookie first
+  setGTCookie(langCode);
+
+  if (langCode === "en") {
+    // For English: try select, if fails just reload without googtrans cookie
+    const done = triggerGTSelect("en");
+    if (!done) {
+      // GT not loaded — cookie already cleared, nothing more needed
+      return;
+    }
+    // After triggering revert, suppress any bar re-injection
+    setTimeout(suppressGTBar, 100);
+    setTimeout(suppressGTBar, 500);
     return;
   }
-  setTimeout(() => applyGTLanguage(langCode, attempt + 1), 500);
-}
 
-// ── Switch to English — navigate with ?lang=en param ─────────────────────────
-// index.html has an inline <script> that detects this param BEFORE GT loads
-// and kills the googtrans cookie at the earliest possible moment.
-function switchToEnglish() {
-  // 1. Kill cookies now (belt)
-  nukeGoogCookies();
-  // 2. Save intent to localStorage (suspenders)
-  localStorage.setItem("sp_lang", "en");
-  // 3. Navigate to same page with signal param — GT hasn't loaded yet on arrival
-  const url = new URL(window.location.href);
-  url.searchParams.set("lang", "en");
-  window.location.href = url.toString();
-}
+  // Non-English: try immediately, then poll
+  if (triggerGTSelect(langCode)) return;
 
-// ─────────────────────────────────────────────────────────────────────────────
+  const start = Date.now();
+  const interval = setInterval(() => {
+    if (Date.now() - start > maxWait) {
+      clearInterval(interval);
+      return;
+    }
+    if (triggerGTSelect(langCode)) clearInterval(interval);
+  }, 300);
+}
 
 export function ThemeProvider({ children }) {
   const { user, updateUser } = useAuthStore();
-  const mounted = useRef(false);
+  const didInitRef = useRef(false);
 
-  const [theme, setThemeState] = useState(
+  const [theme, setTheme] = useState(
     () => localStorage.getItem("sp_theme") || user?.theme || "system",
   );
-
-  const [language, setLangState] = useState(
+  const [language, setLanguage] = useState(
     () => localStorage.getItem("sp_lang") || user?.language || "en",
   );
 
-  // Start body lock immediately
+  // ── Suppress GT bar as early as possible ────────────────────────────────────
   useEffect(() => {
-    watchBody();
-    lockBody();
+    suppressGTBar();
+    // Re-run after GT loads
+    const t1 = setTimeout(suppressGTBar, 1000);
+    const t2 = setTimeout(suppressGTBar, 3000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
-  // Theme
+  // ── Apply theme ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const root = document.documentElement;
-    const apply = (t) => {
+    const apply = () => {
       const resolved =
-        t === "system"
+        theme === "system"
           ? window.matchMedia("(prefers-color-scheme: dark)").matches
             ? "dark"
             : "light"
-          : t;
+          : theme;
       root.setAttribute("data-theme", resolved);
     };
-    apply(theme);
+    apply();
     if (theme === "system") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const h = () => apply("system");
-      mq.addEventListener("change", h);
-      return () => mq.removeEventListener("change", h);
+      mq.addEventListener("change", apply);
+      return () => mq.removeEventListener("change", apply);
     }
   }, [theme]);
 
-  // First mount: clean up ?lang=en param if present, apply saved language
+  // ── Apply language on mount (restore saved language) ────────────────────────
   useEffect(() => {
-    if (mounted.current) return;
-    mounted.current = true;
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("lang") === "en") {
-      // We arrived via the English-switch navigation.
-      // GT was blocked by index.html inline script.
-      // Clean up the URL param without triggering a reload.
-      params.delete("lang");
-      const clean = params.toString()
-        ? `${window.location.pathname}?${params.toString()}`
-        : window.location.pathname;
-      window.history.replaceState({}, "", clean);
-
-      // Ensure lang is set to English in state + storage
-      setLangState("en");
-      localStorage.setItem("sp_lang", "en");
-      return; // don't apply any GT language
-    }
-
-    // Normal load — apply saved language if not English
+    if (didInitRef.current) return;
+    didInitRef.current = true;
     const saved = localStorage.getItem("sp_lang") || "en";
-    if (saved && saved !== "en") {
-      setTimeout(() => applyGTLanguage(saved), 800);
+    if (saved !== "en") {
+      // Wait for GT to load, then apply
+      applyLang(saved);
     }
   }, []);
 
-  // Language change (fires when setLangState is called by changeLanguage)
-  const prevLang = useRef(language);
-  useEffect(() => {
-    // Skip on first mount — handled above
-    if (!mounted.current) return;
-    if (prevLang.current === language) return;
-    prevLang.current = language;
-
-    if (language === "en") {
-      switchToEnglish(); // navigate away — this component won't re-render
-    } else {
-      applyGTLanguage(language);
-    }
-  }, [language]);
-
-  // Sync from user store on login
+  // ── Sync user settings on login ─────────────────────────────────────────────
   useEffect(() => {
     if (!user?.id) return;
-    if (user.theme && user.theme !== theme) {
-      setThemeState(user.theme);
+    if (user.theme) {
+      setTheme(user.theme);
       localStorage.setItem("sp_theme", user.theme);
     }
-    if (user.language && user.language !== language) {
-      setLangState(user.language);
+    if (user.language) {
+      setLanguage(user.language);
       localStorage.setItem("sp_lang", user.language);
-      if (user.language !== "en") {
-        setTimeout(() => applyGTLanguage(user.language), 500);
-      }
+      if (user.language !== "en") applyLang(user.language);
     }
   }, [user?.id]);
 
   const changeTheme = useCallback(
     async (t) => {
-      setThemeState(t);
+      setTheme(t);
       localStorage.setItem("sp_theme", t);
       try {
         await api.patch("/settings/profile", { theme: t });
@@ -231,14 +192,13 @@ export function ThemeProvider({ children }) {
 
   const changeLanguage = useCallback(
     async (lang) => {
+      setLanguage(lang);
       localStorage.setItem("sp_lang", lang);
-      // Save to backend (fire and forget — navigation may happen before response)
-      api
-        .patch("/settings/profile", { language: lang })
-        .then(() => updateUser?.({ language: lang }))
-        .catch(() => {});
-      // Trigger the effect above
-      setLangState(lang);
+      applyLang(lang);
+      try {
+        await api.patch("/settings/profile", { language: lang });
+        updateUser?.({ language: lang });
+      } catch {}
     },
     [updateUser],
   );
