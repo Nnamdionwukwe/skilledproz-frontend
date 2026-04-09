@@ -120,10 +120,6 @@ textarea {
 }
 
 /* In global.css */
-.notranslate,
 [translate="no"] {
-  -webkit-user-select: none;
-}
-/* Prevent GT from touching nav items, settings labels */
-.notranslate * {
+  /* intentionally empty */
 }
