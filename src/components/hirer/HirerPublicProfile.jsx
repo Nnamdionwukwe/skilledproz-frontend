@@ -237,7 +237,7 @@ export default function HirerPublicProfile() {
                 className={styles.msgBtn}
                 onClick={() => navigate(`/messages?with=${userId}`)}
               >
-                💬 Send Message
+                💬
               </button>
             </div>
           )}

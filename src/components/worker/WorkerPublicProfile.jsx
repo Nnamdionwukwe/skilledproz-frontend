@@ -263,7 +263,7 @@ export default function WorkerPublicProfile() {
                   className={styles.msgBtn}
                   onClick={() => navigate(`/messages?with=${userId}`)}
                 >
-                  💬 Message
+                  💬
                 </button>
               </>
             )}
