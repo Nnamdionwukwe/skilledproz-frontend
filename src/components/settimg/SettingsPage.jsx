@@ -5,6 +5,11 @@ import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import styles from "./SettingsPage.module.css";
+import {
+  useCurrency,
+  CURRENCY_META,
+  ALL_CURRENCIES,
+} from "../../context/CurrencyContext";
 
 const ALL_LANGUAGES = [
   { code: "af", name: "Afrikaans" },
@@ -167,6 +172,12 @@ export default function SettingsPage() {
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const isWorker = user?.role === "WORKER";
   const TABS = isWorker ? TABS_WORKER : TABS_HIRER;
+  const {
+    dashboardCurrency,
+    paymentCurrency,
+    changeDashboardCurrency,
+    changePaymentCurrency,
+  } = useCurrency();
 
   const [tab, setTab] = useState("profile");
   const [profile, setProfile] = useState(null);
@@ -199,6 +210,8 @@ export default function SettingsPage() {
     profileVisible: user?.profileVisible ?? true,
     showPhone: user?.showPhone ?? false,
     showLocation: user?.showLocation ?? true,
+    showEmail: user?.showEmail ?? false,
+    showGender: user?.showGender ?? false,
   });
 
   // Worker pricing
@@ -282,6 +295,8 @@ export default function SettingsPage() {
           profileVisible: u.profileVisible ?? true,
           showPhone: u.showPhone ?? false,
           showLocation: u.showLocation ?? true,
+          showEmail: u.showEmail ?? false,
+          showGender: u.showGender ?? false,
         });
         if (u.workerProfile) {
           const wp = u.workerProfile;
@@ -334,9 +349,41 @@ export default function SettingsPage() {
     }
   }
 
+  // async function handleAvatarChange(e) {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+  //   const fd = new FormData();
+  //   fd.append("avatar", file);
+  //   setSaving("avatar");
+  //   try {
+  //     const res = await api.post("/settings/avatar", fd, {
+  //       headers: { "Content-Type": "multipart/form-data" },
+  //     });
+  //     const newAvatar = res.data.data.avatar;
+  //     setProfile((p) => ({ ...p, avatar: newAvatar }));
+  //     updateUser?.({ avatar: newAvatar }); // Instant update — shows everywhere
+  //     showToast("Photo updated");
+  //   } catch {
+  //     showToast("Upload failed", "error");
+  //   } finally {
+  //     setSaving("");
+  //   }
+  // }
+
   async function handleAvatarChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // ── Size check — show alert for > 5MB ──
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(
+        "Image is larger than 5MB. Please choose a smaller photo.",
+        "error",
+      );
+      e.target.value = ""; // reset input
+      return;
+    }
+
     const fd = new FormData();
     fd.append("avatar", file);
     setSaving("avatar");
@@ -346,12 +393,13 @@ export default function SettingsPage() {
       });
       const newAvatar = res.data.data.avatar;
       setProfile((p) => ({ ...p, avatar: newAvatar }));
-      updateUser?.({ avatar: newAvatar }); // Instant update — shows everywhere
+      updateUser?.({ avatar: newAvatar });
       showToast("Photo updated");
-    } catch {
-      showToast("Upload failed", "error");
+    } catch (e) {
+      showToast(e.response?.data?.message || "Upload failed", "error");
     } finally {
       setSaving("");
+      e.target.value = "";
     }
   }
 
