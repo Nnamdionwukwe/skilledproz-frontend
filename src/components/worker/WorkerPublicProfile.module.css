@@ -761,3 +761,226 @@
     padding: 40px 32px;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Add these rules to WorkerPublicProfile.module.css
+   They cover: contact row, rate pills, pricing note, edit btn, tab counts,
+   private/not-found error state, and the notFoundSub text.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Contact row — phone, email, gender, language chips */
+.contactRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.contactItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim, #aaa);
+  background: var(--bg-card, #1a1a2e);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 20px;
+  padding: 4px 10px;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+.contactItem:hover {
+  border-color: var(--orange, #f97316);
+  color: var(--orange, #f97316);
+}
+
+/* Rate pills for daily / weekly / monthly / custom */
+.ratePills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ratePill {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  background: var(--bg-card, #1a1a2e);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 8px;
+  padding: 5px 10px;
+}
+.ratePillAmount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #fff);
+}
+.ratePillSuffix {
+  font-size: 10px;
+  color: var(--text-muted, #666);
+}
+
+/* Pricing note */
+.pricingNote {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-top: 6px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Edit profile button (own profile) */
+.editBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--bg-card, #1a1a2e);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 10px;
+  color: var(--text-dim, #aaa);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+  margin-top: 10px;
+}
+.editBtn:hover {
+  border-color: var(--orange, #f97316);
+  color: var(--orange, #f97316);
+}
+
+/* Tab count badges */
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--orange-dim, rgba(249, 115, 22, 0.12));
+  color: var(--orange, #f97316);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+/* Error / private profile state */
+.notFoundSub {
+  font-size: 13px;
+  color: var(--text-muted, #888);
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Add these rules to HirerPublicProfile.module.css
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Contact row on hirer profile */
+.contactRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.contactItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim, #aaa);
+  background: var(--bg-card, #1a1a2e);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 20px;
+  padding: 4px 10px;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+.contactItem:hover {
+  border-color: var(--orange, #f97316);
+  color: var(--orange, #f97316);
+}
+
+/* Company size line */
+.companySize {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+  margin: 3px 0;
+}
+
+/* Stars */
+.stars {
+  display: inline-flex;
+  gap: 2px;
+}
+.starOn {
+  color: var(--orange, #f97316);
+  font-size: 14px;
+}
+.starOff {
+  color: var(--border, #333);
+  font-size: 14px;
+}
+
+/* Edit button */
+.editBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: var(--bg-card, #1a1a2e);
+  border: 1px solid var(--border, #2a2a3e);
+  border-radius: 10px;
+  color: var(--text-dim, #aaa);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.editBtn:hover {
+  border-color: var(--orange, #f97316);
+  color: var(--orange, #f97316);
+}
+
+/* Spinner */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Per-job apply result (success/error keyed by job) */
+.applySuccess {
+  padding: 8px 12px;
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #16a34a;
+  margin-bottom: 8px;
+}
+.applyError {
+  padding: 8px 12px;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #dc2626;
+  margin-bottom: 8px;
+}

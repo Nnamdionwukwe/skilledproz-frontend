@@ -4,6 +4,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import styles from "./HirerPublicProfile.module.css";
 import HirerLayout from "../layout/HirerLayout";
+import WorkerLayout from "../layout/WorkerLayout";
 
 function timeAgo(date) {
   if (!date) return "—";
@@ -18,17 +19,11 @@ function timeAgo(date) {
 
 function Stars({ rating }) {
   return (
-    <span style={{ display: "flex", gap: 1 }}>
+    <span className={styles.stars}>
       {[1, 2, 3, 4, 5].map((s) => (
         <span
           key={s}
-          style={{
-            color:
-              s <= Math.round(rating)
-                ? "var(--orange)"
-                : "rgba(255,255,255,0.12)",
-            fontSize: "0.875rem",
-          }}
+          className={s <= Math.round(rating) ? styles.starOn : styles.starOff}
         >
           ★
         </span>
@@ -40,36 +35,59 @@ function Stars({ rating }) {
 export default function HirerPublicProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+
+  // ── CRITICAL: always read the VIEWER's identity from the auth store ─────────
+  // This never changes based on whose profile we're viewing
+  const { user: viewerUser } = useAuthStore();
+
+  // Layout = whoever is LOGGED IN viewing, not the profile owner
+  const Layout = viewerUser?.role === "HIRER" ? HirerLayout : WorkerLayout;
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [tab, setTab] = useState("jobs");
   const [applying, setApplying] = useState(null);
-  const [applyMessage, setApplyMessage] = useState("");
-  const [applyError, setApplyError] = useState("");
-  const [applySuccess, setApplySuccess] = useState("");
+  const [applyMsg, setApplyMsg] = useState({}); // keyed by jobId
+  const [applyResult, setApplyResult] = useState({}); // keyed by jobId
+
+  const isOwnProfile = viewerUser?.id === userId;
 
   useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    setError("");
+
     api
       .get(`/hirers/${userId}/profile`)
       .then((res) => setData(res.data.data))
-      .catch(() => {})
+      .catch((e) => setError(e.response?.data?.message || "Profile not found"))
       .finally(() => setLoading(false));
   }, [userId]);
 
   async function handleApply(jobId) {
     setApplying(jobId);
-    setApplyError("");
-    setApplySuccess("");
+    setApplyResult((r) => ({ ...r, [jobId]: null }));
     try {
-      await api.post(`/jobs/${jobId}/apply`, { message: applyMessage });
-      setApplySuccess("Application sent! The hirer will be notified.");
-      setApplyMessage("");
-      // Refresh data
-      const res = await api.get(`/jobs/hirers/${userId}/profile`);
-      setData(res.data.data);
+      await api.post(`/jobs/${jobId}/apply`, {
+        message: applyMsg[jobId] || "",
+      });
+      setApplyResult((r) => ({
+        ...r,
+        [jobId]: {
+          success: true,
+          msg: "Application sent! The hirer will be notified.",
+        },
+      }));
+      setApplyMsg((m) => ({ ...m, [jobId]: "" }));
     } catch (e) {
-      setApplyError(e.response?.data?.message || "Failed to apply.");
+      setApplyResult((r) => ({
+        ...r,
+        [jobId]: {
+          success: false,
+          msg: e.response?.data?.message || "Failed to apply.",
+        },
+      }));
     } finally {
       setApplying(null);
     }
@@ -77,31 +95,28 @@ export default function HirerPublicProfile() {
 
   if (loading)
     return (
-      <div className={styles.page}>
-        <div className={styles.skHero} />
-        <div className={styles.skContent} />
-      </div>
+      <Layout>
+        <ProfileSkeleton />
+      </Layout>
     );
-
+  if (error)
+    return (
+      <Layout>
+        <ProfileError msg={error} />
+      </Layout>
+    );
   if (!data)
     return (
-      <div className={styles.page}>
-        <div className={styles.notFound}>
-          <span style={{ fontSize: "2.5rem" }}>🔍</span>
-          <h2>Hirer not found</h2>
-          <Link to="/search" className={styles.backLink}>
-            ← Back to Search
-          </Link>
-        </div>
-      </div>
+      <Layout>
+        <ProfileError msg="Hirer not found" />
+      </Layout>
     );
 
   const { profile, jobPosts, reviews, stats } = data;
   const hirerUser = profile.user;
-  const isOwnProfile = user?.id === userId;
 
   return (
-    <HirerLayout>
+    <Layout>
       <div className={styles.page}>
         {/* ── Hero ── */}
         <div className={styles.hero}>
@@ -125,9 +140,57 @@ export default function HirerPublicProfile() {
               <h1 className={styles.heroName}>
                 {hirerUser.firstName} {hirerUser.lastName}
               </h1>
+
               {profile.companyName && (
                 <p className={styles.companyName}>🏢 {profile.companyName}</p>
               )}
+              {profile.companySize && (
+                <p className={styles.companySize}>
+                  👥 {profile.companySize} employees
+                </p>
+              )}
+
+              {/* Contact + personal info — only shown if privacy allows */}
+              <div className={styles.contactRow}>
+                {hirerUser.phone && (
+                  <a
+                    href={`tel:${hirerUser.phone}`}
+                    className={styles.contactItem}
+                  >
+                    📱 <span>{hirerUser.phone}</span>
+                  </a>
+                )}
+                {hirerUser.email && (
+                  <a
+                    href={`mailto:${hirerUser.email}`}
+                    className={styles.contactItem}
+                  >
+                    ✉️ <span>{hirerUser.email}</span>
+                  </a>
+                )}
+                {hirerUser.gender && (
+                  <span className={styles.contactItem}>
+                    🪪 <span>{hirerUser.gender}</span>
+                  </span>
+                )}
+                {hirerUser.language && (
+                  <span className={styles.contactItem}>
+                    🗣 <span>{hirerUser.language}</span>
+                  </span>
+                )}
+                {profile.website && (
+                  <a
+                    href={profile.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.contactItem}
+                  >
+                    🌐{" "}
+                    <span>{profile.website.replace(/^https?:\/\//, "")}</span>
+                  </a>
+                )}
+              </div>
+
               <div className={styles.metaRow}>
                 {(hirerUser.city || hirerUser.country) && (
                   <span className={styles.metaItem}>
@@ -144,17 +207,6 @@ export default function HirerPublicProfile() {
                     year: "numeric",
                   })}
                 </span>
-                {profile.website && (
-                  <a
-                    href={profile.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={styles.metaItem}
-                    style={{ color: "var(--orange)" }}
-                  >
-                    🌐 Website
-                  </a>
-                )}
               </div>
 
               <div className={styles.statsRow}>
@@ -178,11 +230,22 @@ export default function HirerPublicProfile() {
             </div>
           </div>
 
-          {/* CTA — only for workers */}
-          {!isOwnProfile && user?.role === "WORKER" && (
+          {/* CTA — only for workers viewing, not own profile */}
+          {!isOwnProfile && viewerUser?.role === "WORKER" && (
             <div className={styles.heroCta}>
-              <Link to={`/messages?with=${userId}`} className={styles.msgBtn}>
+              <button
+                className={styles.msgBtn}
+                onClick={() => navigate(`/messages?with=${userId}`)}
+              >
                 💬 Send Message
+              </button>
+            </div>
+          )}
+
+          {isOwnProfile && (
+            <div className={styles.heroCta}>
+              <Link to="/settings" className={styles.editBtn}>
+                ✏️ Edit Profile
               </Link>
             </div>
           )}
@@ -196,16 +259,15 @@ export default function HirerPublicProfile() {
               className={`${styles.tabBtn} ${tab === t ? styles.tabBtnActive : ""}`}
               onClick={() => setTab(t)}
             >
-              {t === "jobs"
-                ? `Open Jobs (${stats.openJobs})`
-                : `Reviews (${stats.totalReviews})`}
+              {t === "jobs" ? `Open Jobs (${stats.openJobs})` : ""}
+              {t === "reviews" ? `Reviews (${stats.totalReviews})` : ""}
             </button>
           ))}
         </div>
 
         {/* ── Tab content ── */}
         <div className={styles.tabContent}>
-          {/* Jobs tab */}
+          {/* Jobs */}
           {tab === "jobs" && (
             <div className={styles.jobsGrid}>
               {jobPosts.length === 0 ? (
@@ -244,37 +306,50 @@ export default function HirerPublicProfile() {
                       )}
                     </div>
 
-                    {/* Apply section */}
-                    {user?.role === "WORKER" && !isOwnProfile && (
+                    {/* Apply section — only workers, not own profile */}
+                    {viewerUser?.role === "WORKER" && !isOwnProfile && (
                       <div className={styles.applySection}>
-                        {applySuccess && applying === null && (
+                        {applyResult[job.id]?.success && (
                           <div className={styles.applySuccess}>
-                            {applySuccess}
+                            {applyResult[job.id].msg}
                           </div>
                         )}
-                        {applyError && (
-                          <div className={styles.applyError}>{applyError}</div>
-                        )}
-                        <textarea
-                          className={styles.applyInput}
-                          placeholder="Add a message to your application (optional)..."
-                          value={applyMessage}
-                          onChange={(e) => setApplyMessage(e.target.value)}
-                          rows={2}
-                        />
-                        <button
-                          className={styles.applyBtn}
-                          onClick={() => handleApply(job.id)}
-                          disabled={applying === job.id}
-                        >
-                          {applying === job.id ? (
-                            <>
-                              <span className={styles.spinner} /> Applying...
-                            </>
-                          ) : (
-                            "✋ Apply Now"
+                        {applyResult[job.id] &&
+                          !applyResult[job.id].success && (
+                            <div className={styles.applyError}>
+                              {applyResult[job.id].msg}
+                            </div>
                           )}
-                        </button>
+                        {!applyResult[job.id]?.success && (
+                          <>
+                            <textarea
+                              className={styles.applyInput}
+                              placeholder="Add a message to your application (optional)..."
+                              value={applyMsg[job.id] || ""}
+                              onChange={(e) =>
+                                setApplyMsg((m) => ({
+                                  ...m,
+                                  [job.id]: e.target.value,
+                                }))
+                              }
+                              rows={2}
+                            />
+                            <button
+                              className={styles.applyBtn}
+                              onClick={() => handleApply(job.id)}
+                              disabled={applying === job.id}
+                            >
+                              {applying === job.id ? (
+                                <>
+                                  <span className={styles.spinner} />{" "}
+                                  Applying...
+                                </>
+                              ) : (
+                                "✋ Apply Now"
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -287,7 +362,7 @@ export default function HirerPublicProfile() {
             </div>
           )}
 
-          {/* Reviews tab */}
+          {/* Reviews */}
           {tab === "reviews" && (
             <div className={styles.reviewsList}>
               {reviews.length === 0 ? (
@@ -333,6 +408,36 @@ export default function HirerPublicProfile() {
           )}
         </div>
       </div>
-    </HirerLayout>
+    </Layout>
+  );
+}
+
+/* ── Sub-components ─────────────────────────────────────────────────────────── */
+
+function ProfileSkeleton() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.skHero} />
+      <div className={styles.skContent} />
+    </div>
+  );
+}
+
+function ProfileError({ msg }) {
+  return (
+    <div className={styles.page}>
+      <div className={styles.notFound}>
+        <span style={{ fontSize: "2.5rem" }}>
+          {msg?.includes("private") ? "🔒" : "🔍"}
+        </span>
+        <h2>
+          {msg?.includes("private") ? "Private Profile" : "Hirer not found"}
+        </h2>
+        <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>{msg}</p>
+        <Link to="/search" className={styles.backLink}>
+          ← Back to Search
+        </Link>
+      </div>
+    </div>
   );
 }

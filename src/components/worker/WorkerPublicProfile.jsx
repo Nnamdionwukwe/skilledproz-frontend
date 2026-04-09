@@ -1,40 +1,38 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import styles from "./WorkerPublicProfile.module.css";
 import api from "../../lib/api";
+import { useAuthStore } from "../../store/authStore";
+import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export default function WorkerPublicProfile({ userId: propUserId }) {
-  const params = useParams();
+export default function WorkerPublicProfile() {
+  const { userId } = useParams();
+  const navigate = useNavigate();
+
+  // ── CRITICAL: always use the *viewer's* identity, never the profile owner ──
+  const { user: viewerUser } = useAuthStore();
+
+  // Layout is driven by WHO IS VIEWING, not whose profile it is
+  const Layout = viewerUser?.role === "HIRER" ? HirerLayout : WorkerLayout;
+
   const [worker, setWorker] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [tab, setTab] = useState("about");
-  const navigate = useNavigate();
 
-  // ── Priority order for resolving userId ──────────────────────────────────
-  // 1. Explicit prop (e.g. <WorkerPublicProfile userId="abc" />)
-  // 2. React Router param  (e.g. route path="/workers/:userId")
-  // 3. Last path segment   (fallback for non-Router contexts only)
-  const userId =
-    propUserId ||
-    params?.userId ||
-    window.location.pathname.split("/").filter(Boolean).pop();
+  const isOwnProfile = viewerUser?.id === userId;
 
   useEffect(() => {
     if (!userId) return;
-
     setLoading(true);
+    setError("");
 
-    // ── Single public endpoint — no auth required ────────────────────────
-    // GET /api/workers/:userId already returns worker + portfolio +
-    // certifications + availability in one call. Reviews come embedded
-    // in the worker profile or we fetch them from the public review route.
     Promise.all([
       api.get(`/workers/${userId}`),
-      // Public reviews endpoint — no auth token needed
       api
         .get(`/reviews/worker/${userId}`, { params: { limit: 10 } })
         .catch(() => ({ data: { data: { reviews: [] } } })),
@@ -43,27 +41,50 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
         setWorker(wRes.data.data.worker);
         setReviews(rRes.data.data.reviews || []);
       })
-      .catch(() => {
-        setWorker(null);
+      .catch((e) => {
+        setError(e.response?.data?.message || "Profile not found");
       })
       .finally(() => setLoading(false));
   }, [userId]);
 
-  if (loading) return <ProfileSkeleton />;
-  if (!worker) return <NotFound />;
+  if (loading)
+    return (
+      <Layout>
+        <ProfileSkeleton />
+      </Layout>
+    );
+  if (error)
+    return (
+      <Layout>
+        <ProfileError msg={error} />
+      </Layout>
+    );
+  if (!worker)
+    return (
+      <Layout>
+        <ProfileError msg="Worker not found" />
+      </Layout>
+    );
 
   const { user, categories, portfolio, certifications, availability } = worker;
 
   const availDay = (day) =>
     availability.find((a) => a.dayOfWeek === day && a.isAvailable);
 
+  // Has any multi-rate pricing?
+  const hasDailyRate = worker.dailyRate > 0;
+  const hasWeeklyRate = worker.weeklyRate > 0;
+  const hasMonthlyRate = worker.monthlyRate > 0;
+  const hasCustomRate = worker.customRate > 0;
+  const hasMultiRate =
+    hasDailyRate || hasWeeklyRate || hasMonthlyRate || hasCustomRate;
+
   return (
-    <WorkerLayout>
+    <Layout>
       <div className={styles.page}>
         {/* ── Hero ── */}
         <div className={styles.hero}>
           <div className={styles.heroInner}>
-            {/* Avatar */}
             <div className={styles.avatarWrap}>
               <div className={styles.avatar}>
                 {user.avatar ? (
@@ -78,7 +99,6 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
               {worker.isAvailable && <div className={styles.onlineDot} />}
             </div>
 
-            {/* Identity */}
             <div className={styles.heroInfo}>
               <div className={styles.heroTop}>
                 <div>
@@ -93,11 +113,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                   <p className={styles.workerTitle}>{worker.title}</p>
                 </div>
                 <span
-                  className={`${styles.availBadge} ${
-                    worker.isAvailable
-                      ? styles.availBadgeOn
-                      : styles.availBadgeOff
-                  }`}
+                  className={`${styles.availBadge} ${worker.isAvailable ? styles.availBadgeOn : styles.availBadgeOff}`}
                 >
                   {worker.isAvailable ? "● Available" : "○ Unavailable"}
                 </span>
@@ -108,9 +124,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                 {categories.slice(0, 4).map((wc) => (
                   <span
                     key={wc.id}
-                    className={`${styles.catChip} ${
-                      wc.isPrimary ? styles.catChipPrimary : ""
-                    }`}
+                    className={`${styles.catChip} ${wc.isPrimary ? styles.catChipPrimary : ""}`}
                   >
                     {wc.category.icon && <span>{wc.category.icon}</span>}
                     {wc.category.name}
@@ -118,7 +132,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                 ))}
               </div>
 
-              {/* Stats row */}
+              {/* Stats */}
               <div className={styles.statsRow}>
                 <Stat
                   icon="⭐"
@@ -133,18 +147,51 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                   value={worker.completedJobs}
                   label="jobs done"
                 />
-                <div className={styles.statDivider} />
-                <Stat
-                  icon="📍"
-                  value={`${user.city || "—"}${user.country ? `, ${user.country}` : ""}`}
-                  label="location"
-                />
+                {user.city || user.country ? (
+                  <>
+                    <div className={styles.statDivider} />
+                    <Stat
+                      icon="📍"
+                      value={[user.city, user.country]
+                        .filter(Boolean)
+                        .join(", ")}
+                      label="location"
+                    />
+                  </>
+                ) : null}
                 <div className={styles.statDivider} />
                 <Stat
                   icon="⚡"
                   value={`${worker.responseRate}%`}
                   label="response"
                 />
+              </div>
+
+              {/* Contact info — only shown if privacy allows */}
+              <div className={styles.contactRow}>
+                {user.phone && (
+                  <a href={`tel:${user.phone}`} className={styles.contactItem}>
+                    📱 <span>{user.phone}</span>
+                  </a>
+                )}
+                {user.email && (
+                  <a
+                    href={`mailto:${user.email}`}
+                    className={styles.contactItem}
+                  >
+                    ✉️ <span>{user.email}</span>
+                  </a>
+                )}
+                {user.gender && (
+                  <span className={styles.contactItem}>
+                    🪪 <span>{user.gender}</span>
+                  </span>
+                )}
+                {user.language && (
+                  <span className={styles.contactItem}>
+                    🗣 <span>{user.language}</span>
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -155,20 +202,77 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
               <span className={styles.rateAmount}>
                 {worker.currency} {worker.hourlyRate?.toLocaleString()}
               </span>
-              <span className={styles.rateLabel}>/ hr</span>
+              <span className={styles.rateLabel}>/hr</span>
             </div>
-            <button
-              className={styles.bookBtn}
-              onClick={() => navigate(`/bookings/create?workerId=${user.id}`)}
-            >
-              Book Now
-            </button>
-            <a
-              onClick={() => navigate(`/messages?with=${user.id}`)}
-              className={styles.msgBtn}
-            >
-              💬 Message
-            </a>
+
+            {/* Multi-rate pricing pills */}
+            {hasMultiRate && (
+              <div className={styles.ratePills}>
+                {hasDailyRate && (
+                  <RatePill
+                    value={worker.dailyRate}
+                    suffix="/day"
+                    currency={worker.currency}
+                  />
+                )}
+                {hasWeeklyRate && (
+                  <RatePill
+                    value={worker.weeklyRate}
+                    suffix="/wk"
+                    currency={worker.currency}
+                  />
+                )}
+                {hasMonthlyRate && (
+                  <RatePill
+                    value={worker.monthlyRate}
+                    suffix="/mo"
+                    currency={worker.currency}
+                  />
+                )}
+                {hasCustomRate && (
+                  <RatePill
+                    value={worker.customRate}
+                    suffix={
+                      worker.customRateLabel
+                        ? `/${worker.customRateLabel}`
+                        : "/custom"
+                    }
+                    currency={worker.currency}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Pricing note */}
+            {worker.pricingNote && (
+              <p className={styles.pricingNote}>{worker.pricingNote}</p>
+            )}
+
+            {/* Don't show Book/Message if viewing own profile */}
+            {!isOwnProfile && (
+              <>
+                <button
+                  className={styles.bookBtn}
+                  onClick={() =>
+                    navigate(`/bookings/create?workerId=${userId}`)
+                  }
+                >
+                  Book Now
+                </button>
+                <button
+                  className={styles.msgBtn}
+                  onClick={() => navigate(`/messages?with=${userId}`)}
+                >
+                  💬 Message
+                </button>
+              </>
+            )}
+
+            {isOwnProfile && (
+              <Link to="/settings" className={styles.editBtn}>
+                ✏️ Edit Profile
+              </Link>
+            )}
           </div>
         </div>
 
@@ -187,6 +291,15 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
               onClick={() => setTab(t)}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === "portfolio" && portfolio.length > 0 && (
+                <span className={styles.tabCount}>{portfolio.length}</span>
+              )}
+              {t === "certifications" && certifications.length > 0 && (
+                <span className={styles.tabCount}>{certifications.length}</span>
+              )}
+              {t === "reviews" && worker.totalReviews > 0 && (
+                <span className={styles.tabCount}>{worker.totalReviews}</span>
+              )}
             </button>
           ))}
         </div>
@@ -217,10 +330,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                     label="Member Since"
                     value={new Date(user.createdAt).toLocaleDateString(
                       "en-GB",
-                      {
-                        month: "long",
-                        year: "numeric",
-                      },
+                      { month: "long", year: "numeric" },
                     )}
                   />
                   {worker.backgroundCheck && (
@@ -242,9 +352,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                     return (
                       <div
                         key={d}
-                        className={`${styles.dayCell} ${
-                          slot ? styles.dayCellOn : styles.dayCellOff
-                        }`}
+                        className={`${styles.dayCell} ${slot ? styles.dayCellOn : styles.dayCellOff}`}
                       >
                         <span className={styles.dayName}>{d}</span>
                         {slot && (
@@ -314,18 +422,10 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                           <p className={styles.certDate}>
                             {new Date(cert.issueDate).toLocaleDateString(
                               "en-GB",
-                              {
-                                month: "short",
-                                year: "numeric",
-                              },
+                              { month: "short", year: "numeric" },
                             )}
                             {cert.expiryDate &&
-                              ` – ${new Date(
-                                cert.expiryDate,
-                              ).toLocaleDateString("en-GB", {
-                                month: "short",
-                                year: "numeric",
-                              })}`}
+                              ` – ${new Date(cert.expiryDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`}
                           </p>
                         )}
                       </div>
@@ -362,11 +462,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                     return (
                       <div
                         key={day}
-                        className={`${styles.availRow} ${
-                          slot?.isAvailable
-                            ? styles.availRowOn
-                            : styles.availRowOff
-                        }`}
+                        className={`${styles.availRow} ${slot?.isAvailable ? styles.availRowOn : styles.availRowOff}`}
                       >
                         <span className={styles.availDay}>{day}</span>
                         {slot?.isAvailable ? (
@@ -378,11 +474,7 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
                           <span className={styles.availOff}>Unavailable</span>
                         )}
                         <span
-                          className={`${styles.availDot} ${
-                            slot?.isAvailable
-                              ? styles.availDotOn
-                              : styles.availDotOff
-                          }`}
+                          className={`${styles.availDot} ${slot?.isAvailable ? styles.availDotOn : styles.availDotOff}`}
                         />
                       </div>
                     );
@@ -433,11 +525,22 @@ export default function WorkerPublicProfile({ userId: propUserId }) {
           )}
         </div>
       </div>
-    </WorkerLayout>
+    </Layout>
   );
 }
 
-// ── Sub-components (unchanged) ────────────────────────────────────────────────
+/* ── Sub-components ─────────────────────────────────────────────────────────── */
+
+function RatePill({ value, suffix, currency }) {
+  return (
+    <div className={styles.ratePill}>
+      <span className={styles.ratePillAmount}>
+        {currency} {Number(value).toLocaleString()}
+      </span>
+      <span className={styles.ratePillSuffix}>{suffix}</span>
+    </div>
+  );
+}
 
 function Stat({ icon, value, label }) {
   return (
@@ -531,15 +634,20 @@ function ProfileSkeleton() {
   );
 }
 
-function NotFound() {
+function ProfileError({ msg }) {
   return (
     <div className={styles.page}>
       <div className={styles.notFound}>
-        <span className={styles.notFoundIcon}>🔍</span>
-        <h2 className={styles.notFoundTitle}>Worker not found</h2>
-        <a href="/search" className={styles.notFoundLink}>
+        <span className={styles.notFoundIcon}>
+          {msg?.includes("private") ? "🔒" : "🔍"}
+        </span>
+        <h2 className={styles.notFoundTitle}>
+          {msg?.includes("private") ? "Private Profile" : "Worker not found"}
+        </h2>
+        <p className={styles.notFoundSub}>{msg}</p>
+        <Link to="/search" className={styles.notFoundLink}>
           ← Back to Search
-        </a>
+        </Link>
       </div>
     </div>
   );

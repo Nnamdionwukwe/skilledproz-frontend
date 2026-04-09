@@ -1254,7 +1254,7 @@ export default function SettingsPage() {
               >
                 <Toggle
                   label="Public Profile"
-                  desc="Allow your profile to appear in search results"
+                  desc="Allow your profile to appear public or private"
                   checked={privacy.profileVisible ?? true}
                   onChange={(v) =>
                     setPrivacy((p) => ({ ...p, profileVisible: v }))
