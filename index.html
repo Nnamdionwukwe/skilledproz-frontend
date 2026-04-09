@@ -10,47 +10,39 @@
       href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Hide GT toolbar completely -->
     <style>
+      /* ── Hide ALL Google Translate UI — every class GT uses ── */
       .goog-te-banner-frame,
+      .goog-te-menu-frame,
+      .goog-te-balloon-frame,
       .goog-te-gadget,
-      #google_translate_element {
+      .goog-te-gadget-icon,
+      .goog-logo-link,
+      #goog-gt-tt,
+      #goog-gt-,
+      .goog-gt-score-img,
+      .goog-te-spinner,
+      /* The floating badge that appears top-left */
+      .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+      .VIpgJd-ZVi9od-aZ2wEe,
+      .VIpgJd-ZVi9od-l4eHX-hSRGPd,
+      /* The "select language" bar that injects at top */
+      .skiptranslate,
+      #google_translate_element,
+      /* Any iframe GT injects */
+      iframe.skiptranslate {
         display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
       }
+      /* Prevent GT from pushing body down */
       body {
         top: 0 !important;
         position: static !important;
+        min-height: 100vh;
       }
-      .skiptranslate {
-        display: none !important;
-      }
-    </style>
-
-    <!-- In public/index.html <head> -->
-    <!-- <script type="text/javascript">
-      function googleTranslateElementInit() {
-        new google.translate.TranslateElement(
-          { pageLanguage: "en", autoDisplay: false },
-          "google_translate_element",
-        );
-      }
-    </script>
-    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-    <style>
-      /* Hide the Google Translate toolbar — we use it programmatically only */
-      .skiptranslate,
-      #google_translate_element {
-        display: none !important;
-      }
-      body {
-        top: 0 !important;
-      }
-    </style> -->
-
-    <style>
-      /* Prevent iOS Safari from zooming the page when any input or textarea
-         is focused. Safari only zooms when font-size is below 16px. */
+      /* Prevent iOS zoom on input focus */
       input,
       textarea,
       select {
@@ -59,15 +51,16 @@
     </style>
   </head>
   <body>
-    <div id="google_translate_element" style="display: none"></div>
+    <!-- GT element — hidden, used programmatically only -->
+    <div
+      id="google_translate_element"
+      style="display: none; visibility: hidden; height: 0; overflow: hidden"
+    ></div>
+
     <script type="text/javascript">
       function googleTranslateElementInit() {
         new google.translate.TranslateElement(
-          {
-            pageLanguage: "en",
-            autoDisplay: false,
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-          },
+          { pageLanguage: "en", autoDisplay: false },
           "google_translate_element",
         );
       }
