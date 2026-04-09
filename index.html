@@ -2,7 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <meta name="theme-color" content="#080810" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <title>SkilledProz</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,7 +21,7 @@
       rel="stylesheet"
     />
     <style>
-      /* ── Hide ALL Google Translate UI — every class GT uses ── */
+      /* Hide all GT injected UI */
       .goog-te-banner-frame,
       .goog-te-menu-frame,
       .goog-te-balloon-frame,
@@ -19,55 +29,136 @@
       .goog-te-gadget-icon,
       .goog-logo-link,
       #goog-gt-tt,
-      #goog-gt-,
       .goog-gt-score-img,
       .goog-te-spinner,
-      /* The floating badge that appears top-left */
       .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
       .VIpgJd-ZVi9od-aZ2wEe,
       .VIpgJd-ZVi9od-l4eHX-hSRGPd,
-      /* The "select language" bar that injects at top */
       .skiptranslate,
       #google_translate_element,
-      /* Any iframe GT injects */
       iframe.skiptranslate {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
+        max-height: 0 !important;
         overflow: hidden !important;
+        pointer-events: none !important;
       }
-      /* Prevent GT from pushing body down */
+      /* Prevent GT body shift */
       body {
         top: 0 !important;
         position: static !important;
-        min-height: 100vh;
+        overflow-x: hidden;
       }
-      /* Prevent iOS zoom on input focus */
-      input,
-      textarea,
-      select {
-        font-size: 16px !important;
+      html {
+        overflow-x: hidden;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      img,
+      video,
+      svg {
+        max-width: 100%;
+        height: auto;
       }
     </style>
+
+    <!--
+      CRITICAL INLINE SCRIPT — runs synchronously BEFORE any external script loads.
+      When the URL contains ?lang=en we know the user wants English.
+      We kill the googtrans cookie here, before Google Translate's JS can read it.
+      This is the ONLY reliable way to prevent GT from re-activating on load.
+    -->
+    <script>
+      (function () {
+        // ── 1. Kill cookie if ?lang=en is in the URL ─────────────────────────
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("lang") === "en") {
+          var killExp = "expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+          var hosts = [
+            "",
+            "domain=" + location.hostname,
+            "domain=." + location.hostname,
+          ];
+          var paths = ["/", location.pathname];
+          for (var p = 0; p < paths.length; p++) {
+            for (var h = 0; h < hosts.length; h++) {
+              document.cookie =
+                "googtrans=; path=" +
+                paths[p] +
+                "; " +
+                killExp +
+                (hosts[h] ? "; " + hosts[h] : "");
+            }
+          }
+          // Also set to /en/en which GT treats as "English = no translation"
+          document.cookie = "googtrans=/en/en; path=/";
+          // Store that we're in English
+          try {
+            localStorage.setItem("sp_lang", "en");
+          } catch (e) {}
+        }
+
+        // ── 2. Always prevent body shift (runs before GT) ────────────────────
+        var obs;
+        function lockBody() {
+          var b = document.body;
+          if (!b) return;
+          if (b.style.top && b.style.top !== "0px") b.style.top = "0px";
+          if (b.style.position === "relative") b.style.position = "static";
+        }
+        if (window.MutationObserver) {
+          obs = new MutationObserver(lockBody);
+          function startObs() {
+            if (document.body) {
+              obs.observe(document.body, {
+                attributes: true,
+                attributeFilter: ["style"],
+              });
+            }
+          }
+          if (document.body) startObs();
+          else document.addEventListener("DOMContentLoaded", startObs);
+        }
+      })();
+    </script>
   </head>
   <body>
-    <!-- GT element — hidden, used programmatically only -->
+    <!-- GT widget element — hidden, used programmatically only -->
     <div
       id="google_translate_element"
-      style="display: none; visibility: hidden; height: 0; overflow: hidden"
+      style="
+        display: none;
+        visibility: hidden;
+        height: 0;
+        overflow: hidden;
+        position: absolute;
+        pointer-events: none;
+      "
     ></div>
 
     <script type="text/javascript">
       function googleTranslateElementInit() {
-        new google.translate.TranslateElement(
-          { pageLanguage: "en", autoDisplay: false },
-          "google_translate_element",
-        );
+        try {
+          new google.translate.TranslateElement(
+            { pageLanguage: "en", autoDisplay: false },
+            "google_translate_element",
+          );
+        } catch (e) {}
       }
     </script>
+
+    <!--
+      Load GT script AFTER the inline script above has already killed the cookie
+      when ?lang=en is present. GT initialises with no cookie = English = no translation.
+    -->
     <script
       src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
       async
+      defer
     ></script>
 
     <div id="root"></div>
