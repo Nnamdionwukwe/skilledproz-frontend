@@ -148,6 +148,7 @@ const TABS_WORKER = [
   { id: "profile", icon: "👤", label: "Profile" },
   { id: "work", icon: "👷", label: "Work Profile" },
   { id: "pricing", icon: "💰", label: "Pricing" },
+  { id: "currencies", icon: "💱", label: "Currencies" },
   { id: "appearance", icon: "🎨", label: "Appearance" },
   { id: "notifications", icon: "🔔", label: "Notifications" },
   { id: "privacy", icon: "🔒", label: "Privacy" },
@@ -159,6 +160,7 @@ const TABS_HIRER = [
   { id: "profile", icon: "👤", label: "Profile" },
   { id: "company", icon: "🏢", label: "Company" },
   { id: "hiring", icon: "📋", label: "Hiring Prefs" },
+  { id: "currencies", icon: "💱", label: "Currencies" },
   { id: "appearance", icon: "🎨", label: "Appearance" },
   { id: "notifications", icon: "🔔", label: "Notifications" },
   { id: "privacy", icon: "🔒", label: "Privacy" },
@@ -244,8 +246,8 @@ export default function SettingsPage() {
 
   // Hirer hiring prefs (default estimated unit)
   const [hiringPrefs, setHiringPrefs] = useState({
-    defaultEstimatedUnit: "hours",
-    defaultEstimatedValue: "",
+    defaultEstimatedUnit: user?.defaultEstUnit || "hours",
+    defaultEstimatedValue: user?.defaultEstValue || "",
   });
 
   // Password
@@ -283,6 +285,10 @@ export default function SettingsPage() {
           address: u.address || "",
           currency: u.currency || "USD",
           gender: u.gender || "",
+        });
+        setHiringPrefs({
+          defaultEstimatedUnit: u.defaultEstUnit || "hours",
+          defaultEstimatedValue: u.defaultEstValue || "",
         });
         setNotifs({
           notifBookings: u.notifBookings ?? true,
@@ -349,26 +355,24 @@ export default function SettingsPage() {
     }
   }
 
-  // async function handleAvatarChange(e) {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-  //   const fd = new FormData();
-  //   fd.append("avatar", file);
-  //   setSaving("avatar");
-  //   try {
-  //     const res = await api.post("/settings/avatar", fd, {
-  //       headers: { "Content-Type": "multipart/form-data" },
-  //     });
-  //     const newAvatar = res.data.data.avatar;
-  //     setProfile((p) => ({ ...p, avatar: newAvatar }));
-  //     updateUser?.({ avatar: newAvatar }); // Instant update — shows everywhere
-  //     showToast("Photo updated");
-  //   } catch {
-  //     showToast("Upload failed", "error");
-  //   } finally {
-  //     setSaving("");
-  //   }
-  // }
+  async function saveHiringPrefs() {
+    setSaving("hiring");
+    try {
+      await api.patch("/settings/profile", {
+        defaultEstUnit: hiringPrefs.defaultEstimatedUnit,
+        defaultEstValue: hiringPrefs.defaultEstimatedValue || null,
+      });
+      updateUser?.({
+        defaultEstUnit: hiringPrefs.defaultEstimatedUnit,
+        defaultEstValue: hiringPrefs.defaultEstimatedValue,
+      });
+      showToast("Hiring preferences saved");
+    } catch {
+      showToast("Save failed", "error");
+    } finally {
+      setSaving("");
+    }
+  }
 
   async function handleAvatarChange(e) {
     const file = e.target.files?.[0];
@@ -843,6 +847,187 @@ export default function SettingsPage() {
               </Card>
             )}
 
+            {/* ── CURRENCIES ── */}
+            {tab === "currencies" && (
+              <>
+                <Card
+                  title="Currency Settings"
+                  icon="💱"
+                  desc="Control how currencies appear across the platform"
+                >
+                  <div className={styles.infoBox}>
+                    💡 SkilledProz supports multi-currency. Each setting serves
+                    a different purpose — set them independently for the best
+                    experience.
+                  </div>
+
+                  {/* ── Dashboard Currency ── */}
+                  <Section label="📊 Dashboard Display Currency">
+                    <p className={styles.sectionNote}>
+                      The currency your dashboard stats, earnings totals, and
+                      summaries are displayed in. This is a display preference
+                      only — it does not change actual transaction amounts.
+                    </p>
+                    <div className={styles.currencyPickerRow}>
+                      <select
+                        className={styles.currencySelect}
+                        value={dashboardCurrency}
+                        onChange={(e) =>
+                          changeDashboardCurrency(e.target.value)
+                        }
+                      >
+                        {ALL_CURRENCIES.map((c) => (
+                          <option key={c} value={c}>
+                            {CURRENCY_META[c]?.symbol} {c} —{" "}
+                            {CURRENCY_META[c]?.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className={styles.currencyPreview}>
+                        <span className={styles.currencyPreviewSymbol}>
+                          {CURRENCY_META[dashboardCurrency]?.symbol}
+                        </span>
+                        <span className={styles.currencyPreviewName}>
+                          {CURRENCY_META[dashboardCurrency]?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </Section>
+
+                  <Divider />
+
+                  {/* ── Payment Currency ── */}
+                  <Section
+                    label={
+                      isWorker ? "💳 Payout Currency" : "💳 Payment Currency"
+                    }
+                  >
+                    <p className={styles.sectionNote}>
+                      {isWorker
+                        ? "The currency you receive payments in. Workers are paid in this currency when a job is completed."
+                        : "The default currency you use to pay for bookings. You can change this per booking at checkout."}
+                    </p>
+                    <div className={styles.currencyPickerRow}>
+                      <select
+                        className={styles.currencySelect}
+                        value={paymentCurrency}
+                        onChange={(e) => changePaymentCurrency(e.target.value)}
+                      >
+                        {ALL_CURRENCIES.filter(
+                          (c) => !["USDC", "USDT"].includes(c) || isWorker,
+                        ).map((c) => (
+                          <option key={c} value={c}>
+                            {CURRENCY_META[c]?.symbol} {c} —{" "}
+                            {CURRENCY_META[c]?.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className={styles.currencyPreview}>
+                        <span className={styles.currencyPreviewSymbol}>
+                          {CURRENCY_META[paymentCurrency]?.symbol}
+                        </span>
+                        <span className={styles.currencyPreviewName}>
+                          {CURRENCY_META[paymentCurrency]?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </Section>
+
+                  {/* ── Profile Currency (Workers only) ── */}
+                  {isWorker && (
+                    <>
+                      <Divider />
+                      <Section label="🏷️ Profile Rate Currency">
+                        <p className={styles.sectionNote}>
+                          The currency displayed on your profile cards and
+                          search results — what hirers see your rates quoted in.
+                          Set this to your local currency to attract local
+                          clients.
+                        </p>
+                        <div className={styles.currencyPickerRow}>
+                          <select
+                            className={styles.currencySelect}
+                            value={pricing.currency || "USD"}
+                            onChange={(e) =>
+                              setPricing((p) => ({
+                                ...p,
+                                currency: e.target.value,
+                              }))
+                            }
+                          >
+                            {ALL_CURRENCIES.filter(
+                              (c) => !["USDC", "USDT"].includes(c),
+                            ).map((c) => (
+                              <option key={c} value={c}>
+                                {CURRENCY_META[c]?.symbol} {c} —{" "}
+                                {CURRENCY_META[c]?.name}
+                              </option>
+                            ))}
+                          </select>
+                          <div className={styles.currencyPreview}>
+                            <span className={styles.currencyPreviewSymbol}>
+                              {CURRENCY_META[pricing.currency || "USD"]?.symbol}
+                            </span>
+                            <span className={styles.currencyPreviewName}>
+                              {CURRENCY_META[pricing.currency || "USD"]?.name}
+                            </span>
+                          </div>
+                        </div>
+                        <SaveBtn
+                          label="Save Profile Currency"
+                          loading={saving === "pricing"}
+                          onClick={async () => {
+                            setSaving("pricing");
+                            try {
+                              await api.patch("/settings/worker-profile", {
+                                currency: pricing.currency,
+                              });
+                              showToast("Profile currency saved");
+                            } catch {
+                              showToast("Save failed", "error");
+                            } finally {
+                              setSaving("");
+                            }
+                          }}
+                        />
+                      </Section>
+                    </>
+                  )}
+                </Card>
+
+                <Card
+                  title="Currency Summary"
+                  icon="📋"
+                  desc="How your currencies are configured"
+                >
+                  <div className={styles.currencySummaryGrid}>
+                    <CurrencySummaryItem
+                      icon="📊"
+                      label="Dashboard shows stats in"
+                      value={`${CURRENCY_META[dashboardCurrency]?.symbol} ${dashboardCurrency}`}
+                      hint="Change anytime — display only"
+                    />
+                    <CurrencySummaryItem
+                      icon="💳"
+                      label={
+                        isWorker ? "You receive payments in" : "You pay in"
+                      }
+                      value={`${CURRENCY_META[paymentCurrency]?.symbol} ${paymentCurrency}`}
+                      hint="Used for actual transactions"
+                    />
+                    {isWorker && (
+                      <CurrencySummaryItem
+                        icon="🏷️"
+                        label="Your profile rates shown in"
+                        value={`${CURRENCY_META[pricing.currency || "USD"]?.symbol} ${pricing.currency || "USD"}`}
+                        hint="Displayed to hirers searching"
+                      />
+                    )}
+                  </div>
+                </Card>
+              </>
+            )}
+
             {/* ── HIRER COMPANY ── */}
             {tab === "company" && !isWorker && (
               <Card
@@ -954,17 +1139,7 @@ export default function SettingsPage() {
                 <SaveBtn
                   label="Save Hiring Preferences"
                   loading={saving === "hiring"}
-                  onClick={async () => {
-                    setSaving("hiring");
-                    try {
-                      await api.patch("/settings/profile", { hiringPrefs });
-                      showToast("Hiring preferences saved");
-                    } catch {
-                      showToast("Save failed", "error");
-                    } finally {
-                      setSaving("");
-                    }
-                  }}
+                  onClick={saveHiringPrefs}
                 />
               </Card>
             )}
@@ -1084,7 +1259,7 @@ export default function SettingsPage() {
                 />
                 <Toggle
                   label="Show Phone Number"
-                  desc="Display your phone to hirers or workers"
+                  desc="Display your phone number to hirers or workers"
                   checked={privacy.showPhone ?? false}
                   onChange={(v) => setPrivacy((p) => ({ ...p, showPhone: v }))}
                 />
@@ -1095,6 +1270,18 @@ export default function SettingsPage() {
                   onChange={(v) =>
                     setPrivacy((p) => ({ ...p, showLocation: v }))
                   }
+                />
+                <Toggle
+                  label="Show Email Address"
+                  desc="Display your email on your public profile"
+                  checked={privacy.showEmail ?? false}
+                  onChange={(v) => setPrivacy((p) => ({ ...p, showEmail: v }))}
+                />
+                <Toggle
+                  label="Show Gender"
+                  desc="Display your gender on your public profile"
+                  checked={privacy.showGender ?? false}
+                  onChange={(v) => setPrivacy((p) => ({ ...p, showGender: v }))}
                 />
                 <SaveBtn
                   label="Save Privacy Settings"
@@ -1296,6 +1483,19 @@ function Card({ title, icon, desc, children }) {
         </div>
       </div>
       <div className={styles.cardBody}>{children}</div>
+    </div>
+  );
+}
+
+function CurrencySummaryItem({ icon, label, value, hint }) {
+  return (
+    <div className={styles.currencySummaryItem}>
+      <span className={styles.currencySummaryIcon}>{icon}</span>
+      <div>
+        <p className={styles.currencySummaryLabel}>{label}</p>
+        <p className={styles.currencySummaryValue}>{value}</p>
+        <p className={styles.currencySummaryHint}>{hint}</p>
+      </div>
     </div>
   );
 }
