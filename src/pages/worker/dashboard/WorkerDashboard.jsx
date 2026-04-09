@@ -6,6 +6,8 @@ import ui from "../../../components/ui/ui.module.css";
 import { useAuthStore } from "../../../store/authStore";
 import api from "../../../lib/api";
 import FeatureGate from "../../../components/subscription/FeatureGate";
+import DashboardCurrencySwitch from "../../../components/common/DashboardCurrencySwitch";
+import { useCurrency } from "../../../context/CurrencyContext";
 
 function statusBadge(status) {
   const map = {
@@ -20,13 +22,13 @@ function statusBadge(status) {
   return `${ui.badge} ${map[status] || ui.badgePending}`;
 }
 
-function fmt(amount, currency = "NGN") {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount || 0);
-}
+// function fmt(amount, currency = "NGN") {
+//   return new Intl.NumberFormat("en-NG", {
+//     style: "currency",
+//     currency,
+//     maximumFractionDigits: 0,
+//   }).format(amount || 0);
+// }
 
 function initials(u) {
   if (!u) return "?";
@@ -51,6 +53,7 @@ export default function WorkerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { fmt, dashboardCurrency } = useCurrency();
 
   useEffect(() => {
     api
@@ -107,6 +110,7 @@ export default function WorkerDashboard() {
   return (
     <WorkerLayout unreadNotifications={engagement.unreadNotifications}>
       <div className={styles.page}>
+        <DashboardCurrencySwitch />
         {/* ── Stats Row ── */}
         <div className={styles.statsRow}>
           {/* Earnings highlight */}
@@ -114,18 +118,18 @@ export default function WorkerDashboard() {
             <div>
               <div className={styles.earningsLabel}>This Month</div>
               <div className={styles.earningsValue}>
-                {fmt(earnings.thisMonth, earnings.currency)}
+                {fmt(earnings.thisMonth, dashboardCurrency)}
               </div>
               <div className={styles.earningsMeta}>
                 <span>
-                  Last month: {fmt(earnings.lastMonth, earnings.currency)}
+                  Last month: {fmt(earnings.lastMonth, dashboardCurrency)}
                 </span>
               </div>
             </div>
             <div className={styles.earningsPending}>
               <div className={styles.pendingLabel}>In Escrow</div>
               <div className={styles.pendingValue}>
-                {fmt(earnings.pendingPayout, earnings.currency)}
+                {fmt(earnings.pendingPayout, dashboardCurrency)}
               </div>
               <div className={styles.pendingSub}>Awaiting release</div>
             </div>
