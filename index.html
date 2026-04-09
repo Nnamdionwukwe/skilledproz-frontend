@@ -10,6 +10,27 @@
       href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
       rel="stylesheet"
     />
+
+    <!-- In public/index.html <head> -->
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement(
+          { pageLanguage: "en", autoDisplay: false },
+          "google_translate_element",
+        );
+      }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <style>
+      /* Hide the Google Translate toolbar — we use it programmatically only */
+      .skiptranslate,
+      #google_translate_element {
+        display: none !important;
+      }
+      body {
+        top: 0 !important;
+      }
+    </style>
     <style>
       /* Prevent iOS Safari from zooming the page when any input or textarea
          is focused. Safari only zooms when font-size is below 16px. */

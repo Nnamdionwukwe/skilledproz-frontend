@@ -117,6 +117,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <div id="google_translate_element" style={{ display: "none" }} />
       <Routes>
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />

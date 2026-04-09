@@ -16,6 +16,14 @@ export const useAuthStore = create(
         set({ user, accessToken, refreshToken });
       },
 
+      // Patch specific user fields without a full re-fetch
+      // Call this after avatar upload, profile save, etc.
+      updateUser: (patch) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...patch } : state.user,
+        }));
+      },
+
       clearAuth: () => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");

@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../../store/authStore";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../lib/api";
-import HirerLayout from "../../components/layout/HirerLayout";
-import WorkerLayout from "../../components/layout/WorkerLayout";
+import HirerLayout from "../layout/HirerLayout";
+import WorkerLayout from "../layout/WorkerLayout";
 import styles from "./SettingsPage.module.css";
 
-// ── All world languages ──────────────────────────────────────────────────────
 const ALL_LANGUAGES = [
   { code: "af", name: "Afrikaans" },
   { code: "sq", name: "Albanian" },
@@ -20,22 +19,17 @@ const ALL_LANGUAGES = [
   { code: "bs", name: "Bosnian" },
   { code: "bg", name: "Bulgarian" },
   { code: "ca", name: "Catalan" },
-  { code: "ceb", name: "Cebuano" },
-  { code: "ny", name: "Chichewa" },
   { code: "zh", name: "Chinese (Simplified)" },
   { code: "zh-TW", name: "Chinese (Traditional)" },
-  { code: "co", name: "Corsican" },
   { code: "hr", name: "Croatian" },
   { code: "cs", name: "Czech" },
   { code: "da", name: "Danish" },
   { code: "nl", name: "Dutch" },
   { code: "en", name: "English" },
-  { code: "eo", name: "Esperanto" },
   { code: "et", name: "Estonian" },
   { code: "tl", name: "Filipino" },
   { code: "fi", name: "Finnish" },
   { code: "fr", name: "French" },
-  { code: "fy", name: "Frisian" },
   { code: "gl", name: "Galician" },
   { code: "ka", name: "Georgian" },
   { code: "de", name: "German" },
@@ -43,10 +37,8 @@ const ALL_LANGUAGES = [
   { code: "gu", name: "Gujarati" },
   { code: "ht", name: "Haitian Creole" },
   { code: "ha", name: "Hausa" },
-  { code: "haw", name: "Hawaiian" },
   { code: "iw", name: "Hebrew" },
   { code: "hi", name: "Hindi" },
-  { code: "hmn", name: "Hmong" },
   { code: "hu", name: "Hungarian" },
   { code: "is", name: "Icelandic" },
   { code: "ig", name: "Igbo" },
@@ -54,20 +46,15 @@ const ALL_LANGUAGES = [
   { code: "ga", name: "Irish" },
   { code: "it", name: "Italian" },
   { code: "ja", name: "Japanese" },
-  { code: "jw", name: "Javanese" },
   { code: "kn", name: "Kannada" },
   { code: "kk", name: "Kazakh" },
   { code: "km", name: "Khmer" },
   { code: "ko", name: "Korean" },
-  { code: "ku", name: "Kurdish" },
   { code: "ky", name: "Kyrgyz" },
   { code: "lo", name: "Lao" },
-  { code: "la", name: "Latin" },
   { code: "lv", name: "Latvian" },
   { code: "lt", name: "Lithuanian" },
-  { code: "lb", name: "Luxembourgish" },
   { code: "mk", name: "Macedonian" },
-  { code: "mg", name: "Malagasy" },
   { code: "ms", name: "Malay" },
   { code: "ml", name: "Malayalam" },
   { code: "mt", name: "Maltese" },
@@ -77,7 +64,6 @@ const ALL_LANGUAGES = [
   { code: "my", name: "Myanmar (Burmese)" },
   { code: "ne", name: "Nepali" },
   { code: "no", name: "Norwegian" },
-  { code: "ps", name: "Pashto" },
   { code: "fa", name: "Persian" },
   { code: "pl", name: "Polish" },
   { code: "pt", name: "Portuguese" },
@@ -85,17 +71,12 @@ const ALL_LANGUAGES = [
   { code: "ro", name: "Romanian" },
   { code: "ru", name: "Russian" },
   { code: "sm", name: "Samoan" },
-  { code: "gd", name: "Scots Gaelic" },
   { code: "sr", name: "Serbian" },
-  { code: "st", name: "Sesotho" },
-  { code: "sn", name: "Shona" },
-  { code: "sd", name: "Sindhi" },
   { code: "si", name: "Sinhala" },
   { code: "sk", name: "Slovak" },
   { code: "sl", name: "Slovenian" },
   { code: "so", name: "Somali" },
   { code: "es", name: "Spanish" },
-  { code: "su", name: "Sundanese" },
   { code: "sw", name: "Swahili" },
   { code: "sv", name: "Swedish" },
   { code: "tg", name: "Tajik" },
@@ -109,7 +90,6 @@ const ALL_LANGUAGES = [
   { code: "vi", name: "Vietnamese" },
   { code: "cy", name: "Welsh" },
   { code: "xh", name: "Xhosa" },
-  { code: "yi", name: "Yiddish" },
   { code: "yo", name: "Yoruba" },
   { code: "zu", name: "Zulu" },
 ];
@@ -149,42 +129,136 @@ const CURRENCIES = [
   "HKD",
 ];
 
-const TABS = [
+const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
+const COMPANY_SIZES = ["1–10", "11–50", "51–200", "201–500", "500+"];
+const DURATION_UNITS = [
+  { value: "hours", label: "Hours" },
+  { value: "days", label: "Days" },
+  { value: "weeks", label: "Weeks" },
+  { value: "months", label: "Months" },
+  { value: "custom", label: "Custom" },
+];
+
+const TABS_WORKER = [
   { id: "profile", icon: "👤", label: "Profile" },
+  { id: "work", icon: "👷", label: "Work Profile" },
+  { id: "pricing", icon: "💰", label: "Pricing" },
   { id: "appearance", icon: "🎨", label: "Appearance" },
   { id: "notifications", icon: "🔔", label: "Notifications" },
   { id: "privacy", icon: "🔒", label: "Privacy" },
   { id: "security", icon: "🛡️", label: "Security" },
-  { id: "payment", icon: "💳", label: "Payment" },
+  { id: "activity", icon: "📊", label: "Activity" },
+];
+
+const TABS_HIRER = [
+  { id: "profile", icon: "👤", label: "Profile" },
+  { id: "company", icon: "🏢", label: "Company" },
+  { id: "hiring", icon: "📋", label: "Hiring Prefs" },
+  { id: "appearance", icon: "🎨", label: "Appearance" },
+  { id: "notifications", icon: "🔔", label: "Notifications" },
+  { id: "privacy", icon: "🔒", label: "Privacy" },
+  { id: "security", icon: "🛡️", label: "Security" },
+  { id: "activity", icon: "📊", label: "Activity" },
 ];
 
 export default function SettingsPage() {
-  const { user, setUser } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { theme, language, changeTheme, changeLanguage } = useTheme();
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
+  const isWorker = user?.role === "WORKER";
+  const TABS = isWorker ? TABS_WORKER : TABS_HIRER;
 
   const [tab, setTab] = useState("profile");
   const [profile, setProfile] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [savingKey, setSavingKey] = useState("");
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
-  // Profile state
-  const [form, setForm] = useState({});
+  // Profile form — pre-populated from user store immediately
+  const [form, setForm] = useState({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    bio: user?.bio || "",
+    phone: user?.phone || "",
+    country: user?.country || "",
+    city: user?.city || "",
+    state: user?.state || "",
+    address: user?.address || "",
+    currency: user?.currency || "USD",
+    gender: user?.gender || "",
+  });
+
+  const [notifs, setNotifs] = useState({
+    notifBookings: user?.notifBookings ?? true,
+    notifMessages: user?.notifMessages ?? true,
+    notifPayments: user?.notifPayments ?? true,
+    notifReviews: user?.notifReviews ?? true,
+    notifMarketing: user?.notifMarketing ?? false,
+  });
+
+  const [privacy, setPrivacy] = useState({
+    profileVisible: user?.profileVisible ?? true,
+    showPhone: user?.showPhone ?? false,
+    showLocation: user?.showLocation ?? true,
+  });
+
+  // Worker pricing
+  const [pricing, setPricing] = useState({
+    hourlyRate: "",
+    dailyRate: "",
+    weeklyRate: "",
+    monthlyRate: "",
+    customRate: "",
+    customRateLabel: "",
+    pricingNote: "",
+    currency: "USD",
+  });
+
+  // Worker work profile
+  const [workForm, setWorkForm] = useState({
+    title: "",
+    description: "",
+    yearsExperience: "",
+    serviceRadius: "25",
+    isAvailable: true,
+  });
+
+  // Hirer company
+  const [companyForm, setCompanyForm] = useState({
+    companyName: "",
+    companySize: "",
+    website: "",
+  });
+
+  // Hirer hiring prefs (default estimated unit)
+  const [hiringPrefs, setHiringPrefs] = useState({
+    defaultEstimatedUnit: "hours",
+    defaultEstimatedValue: "",
+  });
+
   // Password
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
-  // Notifications
-  const [notifs, setNotifs] = useState({});
-  // Privacy
-  const [privacy, setPrivacy] = useState({});
 
+  // Activity
+  const [activity, setActivity] = useState(null);
+  const [security, setSecurity] = useState(null);
+
+  const [saving, setSaving] = useState("");
+  const fileRef = useRef();
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // Load full profile from API on mount
   useEffect(() => {
     api
       .get("/settings/profile")
       .then((res) => {
         const u = res.data.data.user;
         setProfile(u);
+        // Update form states
         setForm({
           firstName: u.firstName || "",
           lastName: u.lastName || "",
@@ -195,6 +269,7 @@ export default function SettingsPage() {
           state: u.state || "",
           address: u.address || "",
           currency: u.currency || "USD",
+          gender: u.gender || "",
         });
         setNotifs({
           notifBookings: u.notifBookings ?? true,
@@ -208,28 +283,111 @@ export default function SettingsPage() {
           showPhone: u.showPhone ?? false,
           showLocation: u.showLocation ?? true,
         });
+        if (u.workerProfile) {
+          const wp = u.workerProfile;
+          setWorkForm({
+            title: wp.title || "",
+            description: wp.description || "",
+            yearsExperience: wp.yearsExperience || "",
+            serviceRadius: wp.serviceRadius || "25",
+            isAvailable: wp.isAvailable ?? true,
+          });
+          setPricing({
+            hourlyRate: wp.hourlyRate || "",
+            dailyRate: wp.dailyRate || "",
+            weeklyRate: wp.weeklyRate || "",
+            monthlyRate: wp.monthlyRate || "",
+            customRate: wp.customRate || "",
+            customRateLabel: wp.customRateLabel || "",
+            pricingNote: wp.pricingNote || "",
+            currency: wp.currency || "USD",
+          });
+        }
+        if (u.hirerProfile) {
+          setCompanyForm({
+            companyName: u.hirerProfile.companyName || "",
+            companySize: u.hirerProfile.companySize || "",
+            website: u.hirerProfile.website || "",
+          });
+        }
+        // Also update Zustand store with latest data
+        updateUser?.(u);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
+  // ── Savers ──────────────────────────────────────────────────────────────────
 
   async function saveProfile() {
-    setSaving(true);
-    setSavingKey("profile");
+    setSaving("profile");
     try {
       const res = await api.patch("/settings/profile", form);
-      setProfile(res.data.data.user);
-      if (setUser) setUser({ ...user, ...res.data.data.user });
-      showToast("Profile saved successfully");
-    } catch {
-      showToast("Failed to save profile", "error");
+      const updated = res.data.data.user;
+      setProfile((p) => ({ ...p, ...updated }));
+      updateUser?.(updated); // Instant update across platform
+      showToast("Profile saved");
+    } catch (e) {
+      showToast(e.response?.data?.message || "Save failed", "error");
     } finally {
-      setSaving(false);
-      setSavingKey("");
+      setSaving("");
+    }
+  }
+
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("avatar", file);
+    setSaving("avatar");
+    try {
+      const res = await api.post("/settings/avatar", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const newAvatar = res.data.data.avatar;
+      setProfile((p) => ({ ...p, avatar: newAvatar }));
+      updateUser?.({ avatar: newAvatar }); // Instant update — shows everywhere
+      showToast("Photo updated");
+    } catch {
+      showToast("Upload failed", "error");
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function saveWorkProfile() {
+    setSaving("work");
+    try {
+      await api.patch("/settings/worker-profile", workForm);
+      showToast("Work profile saved");
+    } catch {
+      showToast("Save failed", "error");
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function savePricing() {
+    setSaving("pricing");
+    try {
+      await api.patch("/settings/worker-profile", pricing);
+      showToast("Pricing saved");
+    } catch {
+      showToast("Save failed", "error");
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function saveCompany() {
+    setSaving("company");
+    try {
+      await api.patch("/settings/hirer-profile", companyForm);
+      showToast("Company profile saved");
+    } catch {
+      showToast("Save failed", "error");
+    } finally {
+      setSaving("");
     }
   }
 
@@ -239,81 +397,55 @@ export default function SettingsPage() {
       return;
     }
     if (pw.next.length < 8) {
-      setPwError("Must be at least 8 characters");
+      setPwError("Min 8 characters");
       return;
     }
     setPwError("");
-    setSaving(true);
-    setSavingKey("password");
+    setSaving("password");
     try {
       await api.patch("/settings/password", {
         currentPassword: pw.current,
         newPassword: pw.next,
       });
       setPw({ current: "", next: "", confirm: "" });
-      showToast("Password changed successfully");
+      showToast("Password updated");
     } catch (e) {
-      showToast(e.response?.data?.message || "Password change failed", "error");
+      showToast(e.response?.data?.message || "Failed", "error");
     } finally {
-      setSaving(false);
-      setSavingKey("");
+      setSaving("");
     }
   }
 
   async function saveNotifs() {
-    setSaving(true);
-    setSavingKey("notifs");
+    setSaving("notifs");
     try {
       await api.patch("/settings/notifications", notifs);
-      showToast("Notification preferences saved");
+      updateUser?.(notifs);
+      showToast("Notifications saved");
     } catch {
-      showToast("Failed to save", "error");
+      showToast("Save failed", "error");
     } finally {
-      setSaving(false);
-      setSavingKey("");
+      setSaving("");
     }
   }
 
   async function savePrivacy() {
-    setSaving(true);
-    setSavingKey("privacy");
+    setSaving("privacy");
     try {
       await api.patch("/settings/privacy", privacy);
-      showToast("Privacy settings saved");
+      updateUser?.(privacy);
+      showToast("Privacy saved");
     } catch {
-      showToast("Failed to save", "error");
+      showToast("Save failed", "error");
     } finally {
-      setSaving(false);
-      setSavingKey("");
-    }
-  }
-
-  async function handleAvatarChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append("avatar", file);
-    setSaving(true);
-    setSavingKey("avatar");
-    try {
-      const res = await api.post("/settings/avatar", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setProfile((p) => ({ ...p, avatar: res.data.data.user.avatar }));
-      if (setUser) setUser({ ...user, avatar: res.data.data.user.avatar });
-      showToast("Photo updated");
-    } catch {
-      showToast("Photo upload failed", "error");
-    } finally {
-      setSaving(false);
-      setSavingKey("");
+      setSaving("");
     }
   }
 
   async function handleDeleteAccount() {
     if (
       !window.confirm(
-        "Are you sure? This will deactivate your account immediately.",
+        "Deactivate your account? You can contact support to reactivate.",
       )
     )
       return;
@@ -321,13 +453,30 @@ export default function SettingsPage() {
       await api.delete("/settings/account");
       window.location.href = "/login";
     } catch {
-      showToast("Failed to deactivate account", "error");
+      showToast("Failed", "error");
     }
   }
+
+  // Load activity/security lazily
+  useEffect(() => {
+    if (tab === "activity" && !activity) {
+      api
+        .get("/settings/activity")
+        .then((r) => setActivity(r.data.data))
+        .catch(() => {});
+    }
+    if (tab === "security" && !security) {
+      api
+        .get("/settings/security")
+        .then((r) => setSecurity(r.data.data))
+        .catch(() => {});
+    }
+  }, [tab]);
 
   return (
     <Layout>
       <div className={styles.page}>
+        {/* Toast */}
         {toast && (
           <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
             {toast.type === "success" ? "✅" : "⚠️"} {toast.msg}
@@ -337,7 +486,7 @@ export default function SettingsPage() {
         <div className={styles.header}>
           <h1 className={styles.pageTitle}>Settings</h1>
           <p className={styles.pageSub}>
-            Manage your account, appearance, and preferences
+            Manage your account, preferences, and platform settings
           </p>
         </div>
 
@@ -356,146 +505,418 @@ export default function SettingsPage() {
             ))}
           </nav>
 
-          {/* ── Content ── */}
           <div className={styles.content}>
             {/* ── PROFILE ── */}
             {tab === "profile" && (
-              <Card title="Profile" subtitle="Your personal information">
+              <Card
+                title="Profile Information"
+                icon="👤"
+                desc="Your personal details visible to others"
+              >
                 {/* Avatar */}
-                <div className={styles.avatarRow}>
-                  <div className={styles.avatarWrap}>
-                    {profile?.avatar ? (
+                <div className={styles.avatarBlock}>
+                  <div
+                    className={styles.avatarCircle}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    {profile?.avatar || user?.avatar ? (
                       <img
-                        src={profile.avatar}
+                        src={profile?.avatar || user?.avatar}
                         alt=""
                         className={styles.avatarImg}
                       />
                     ) : (
                       <span className={styles.avatarInitials}>
-                        {profile?.firstName?.[0]}
-                        {profile?.lastName?.[0]}
+                        {(profile?.firstName || user?.firstName)?.[0]}
+                        {(profile?.lastName || user?.lastName)?.[0]}
                       </span>
                     )}
+                    <div className={styles.avatarOverlay}>
+                      {saving === "avatar" ? (
+                        <span className={styles.spinner} />
+                      ) : (
+                        "📷"
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <label className={styles.avatarUploadBtn}>
-                      {savingKey === "avatar"
-                        ? "Uploading..."
-                        : "📷 Change Photo"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={handleAvatarChange}
-                      />
-                    </label>
+                  <div className={styles.avatarMeta}>
+                    <p className={styles.avatarName}>
+                      {profile?.firstName || user?.firstName}{" "}
+                      {profile?.lastName || user?.lastName}
+                    </p>
+                    <p className={styles.avatarRole}>{user?.role}</p>
+                    <button
+                      className={styles.avatarBtn}
+                      onClick={() => fileRef.current?.click()}
+                      disabled={saving === "avatar"}
+                    >
+                      {saving === "avatar" ? "Uploading..." : "Change Photo"}
+                    </button>
                     <p className={styles.avatarHint}>
                       JPG, PNG or WebP · max 5MB
                     </p>
                   </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleAvatarChange}
+                  />
                 </div>
 
-                <div className={styles.formGrid}>
-                  <Field label="First Name">
-                    <input
-                      className={styles.input}
-                      value={form.firstName || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, firstName: e.target.value }))
-                      }
-                    />
-                  </Field>
-                  <Field label="Last Name">
-                    <input
-                      className={styles.input}
-                      value={form.lastName || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, lastName: e.target.value }))
-                      }
-                    />
-                  </Field>
-                  <Field label="Phone" full>
-                    <input
-                      className={styles.input}
-                      value={form.phone || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, phone: e.target.value }))
-                      }
-                      placeholder="+1 234 567 8900"
-                    />
-                  </Field>
-                  <Field label="Bio" full>
-                    <textarea
-                      className={styles.textarea}
-                      value={form.bio || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, bio: e.target.value }))
-                      }
-                      rows={3}
-                      placeholder="Tell people about yourself..."
-                    />
-                  </Field>
-                  <Field label="Country">
-                    <input
-                      className={styles.input}
-                      value={form.country || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, country: e.target.value }))
-                      }
-                      placeholder="e.g. Nigeria"
-                    />
-                  </Field>
-                  <Field label="City">
-                    <input
-                      className={styles.input}
-                      value={form.city || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, city: e.target.value }))
-                      }
-                      placeholder="e.g. Lagos"
-                    />
-                  </Field>
-                  <Field label="State">
-                    <input
-                      className={styles.input}
-                      value={form.state || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, state: e.target.value }))
-                      }
-                      placeholder="e.g. Lagos State"
-                    />
-                  </Field>
-                  <Field label="Address">
-                    <input
-                      className={styles.input}
-                      value={form.address || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, address: e.target.value }))
-                      }
-                      placeholder="Street address"
-                    />
-                  </Field>
-                  <Field label="Currency">
-                    <select
-                      className={styles.select}
-                      value={form.currency || "USD"}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, currency: e.target.value }))
-                      }
-                    >
-                      {CURRENCIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
+                <Grid>
+                  <FI
+                    label="First Name"
+                    value={form.firstName}
+                    onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
+                  />
+                  <FI
+                    label="Last Name"
+                    value={form.lastName}
+                    onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
+                  />
+                  <FI
+                    label="Phone"
+                    value={form.phone}
+                    onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+                    type="tel"
+                    full
+                  />
+                  <FI
+                    label="Bio"
+                    value={form.bio}
+                    onChange={(v) => setForm((f) => ({ ...f, bio: v }))}
+                    multiline
+                    full
+                  />
+                  <FI
+                    label="Country"
+                    value={form.country}
+                    onChange={(v) => setForm((f) => ({ ...f, country: v }))}
+                    placeholder="e.g. Nigeria"
+                  />
+                  <FI
+                    label="State"
+                    value={form.state}
+                    onChange={(v) => setForm((f) => ({ ...f, state: v }))}
+                    placeholder="e.g. Lagos State"
+                  />
+                  <FI
+                    label="City"
+                    value={form.city}
+                    onChange={(v) => setForm((f) => ({ ...f, city: v }))}
+                    placeholder="e.g. Lagos"
+                  />
+                  <FI
+                    label="Address"
+                    value={form.address}
+                    onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+                    placeholder="Street address"
+                  />
+                </Grid>
+
+                <Row>
+                  <SF
+                    label="Currency"
+                    value={form.currency}
+                    onChange={(v) => setForm((f) => ({ ...f, currency: v }))}
+                    options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                  />
+                  <SF
+                    label="Gender"
+                    value={form.gender}
+                    onChange={(v) => setForm((f) => ({ ...f, gender: v }))}
+                    options={[
+                      { value: "", label: "Prefer not to say" },
+                      ...GENDERS.map((g) => ({ value: g, label: g })),
+                    ]}
+                  />
+                </Row>
 
                 <SaveBtn
                   label="Save Profile"
-                  loading={saving && savingKey === "profile"}
+                  loading={saving === "profile"}
                   onClick={saveProfile}
+                />
+              </Card>
+            )}
+
+            {/* ── WORKER WORK PROFILE ── */}
+            {tab === "work" && isWorker && (
+              <Card
+                title="Work Profile"
+                icon="👷"
+                desc="Professional details hirers see on your profile"
+              >
+                <FI
+                  label="Professional Title"
+                  value={workForm.title}
+                  onChange={(v) => setWorkForm((f) => ({ ...f, title: v }))}
+                  placeholder="e.g. Certified Electrician"
+                />
+                <FI
+                  label="Description"
+                  value={workForm.description}
+                  onChange={(v) =>
+                    setWorkForm((f) => ({ ...f, description: v }))
+                  }
+                  multiline
+                  full
+                  placeholder="Describe your skills, experience, and specializations..."
+                />
+                <Row>
+                  <FI
+                    label="Years of Experience"
+                    value={workForm.yearsExperience}
+                    type="number"
+                    onChange={(v) =>
+                      setWorkForm((f) => ({ ...f, yearsExperience: v }))
+                    }
+                    placeholder="0"
+                  />
+                  <FI
+                    label="Service Radius (km)"
+                    value={workForm.serviceRadius}
+                    type="number"
+                    onChange={(v) =>
+                      setWorkForm((f) => ({ ...f, serviceRadius: v }))
+                    }
+                    placeholder="25"
+                  />
+                </Row>
+                <Toggle
+                  label="Available for Bookings"
+                  desc="Turn off to pause new booking requests"
+                  checked={workForm.isAvailable}
+                  onChange={(v) =>
+                    setWorkForm((f) => ({ ...f, isAvailable: v }))
+                  }
+                />
+                <SaveBtn
+                  label="Save Work Profile"
+                  loading={saving === "work"}
+                  onClick={saveWorkProfile}
+                />
+              </Card>
+            )}
+
+            {/* ── WORKER PRICING ── */}
+            {tab === "pricing" && isWorker && (
+              <Card
+                title="Pricing"
+                icon="💰"
+                desc="Set your rates for different engagement types"
+              >
+                <p className={styles.sectionNote}>
+                  Set rates for each duration type. Leave blank to hide that
+                  option from your profile.
+                </p>
+
+                <SF
+                  label="Pricing Currency"
+                  value={pricing.currency}
+                  onChange={(v) => setPricing((p) => ({ ...p, currency: v }))}
+                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                />
+
+                <div className={styles.pricingGrid}>
+                  <PriceField
+                    label="⏱ Hourly Rate"
+                    suffix="/hr"
+                    value={pricing.hourlyRate}
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, hourlyRate: v }))
+                    }
+                  />
+                  <PriceField
+                    label="📅 Daily Rate"
+                    suffix="/day"
+                    value={pricing.dailyRate}
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, dailyRate: v }))
+                    }
+                  />
+                  <PriceField
+                    label="📆 Weekly Rate"
+                    suffix="/wk"
+                    value={pricing.weeklyRate}
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, weeklyRate: v }))
+                    }
+                  />
+                  <PriceField
+                    label="🗓 Monthly Rate"
+                    suffix="/mo"
+                    value={pricing.monthlyRate}
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, monthlyRate: v }))
+                    }
+                  />
+                </div>
+
+                <Divider label="Custom Rate" />
+                <Row>
+                  <FI
+                    label="Custom Rate Amount"
+                    value={pricing.customRate}
+                    type="number"
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, customRate: v }))
+                    }
+                    placeholder="0.00"
+                  />
+                  <FI
+                    label="Custom Label"
+                    value={pricing.customRateLabel}
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, customRateLabel: v }))
+                    }
+                    placeholder="e.g. per project, per sqm"
+                  />
+                </Row>
+
+                <FI
+                  label="Pricing Notes (optional)"
+                  value={pricing.pricingNote}
+                  multiline
+                  full
+                  onChange={(v) =>
+                    setPricing((p) => ({ ...p, pricingNote: v }))
+                  }
+                  placeholder="Any additional pricing details, discounts, or terms..."
+                />
+
+                <SaveBtn
+                  label="Save Pricing"
+                  loading={saving === "pricing"}
+                  onClick={savePricing}
+                />
+              </Card>
+            )}
+
+            {/* ── HIRER COMPANY ── */}
+            {tab === "company" && !isWorker && (
+              <Card
+                title="Company Profile"
+                icon="🏢"
+                desc="Company information visible to workers you hire"
+              >
+                <FI
+                  label="Company Name"
+                  value={companyForm.companyName}
+                  onChange={(v) =>
+                    setCompanyForm((f) => ({ ...f, companyName: v }))
+                  }
+                  placeholder="Acme Corp"
+                />
+                <SF
+                  label="Company Size"
+                  value={companyForm.companySize}
+                  onChange={(v) =>
+                    setCompanyForm((f) => ({ ...f, companySize: v }))
+                  }
+                  options={[
+                    { value: "", label: "Select size" },
+                    ...COMPANY_SIZES.map((s) => ({
+                      value: s,
+                      label: s + " employees",
+                    })),
+                  ]}
+                />
+                <FI
+                  label="Website"
+                  value={companyForm.website}
+                  type="url"
+                  onChange={(v) =>
+                    setCompanyForm((f) => ({ ...f, website: v }))
+                  }
+                  placeholder="https://yourcompany.com"
+                />
+                <SaveBtn
+                  label="Save Company Profile"
+                  loading={saving === "company"}
+                  onClick={saveCompany}
+                />
+              </Card>
+            )}
+
+            {/* ── HIRER HIRING PREFS ── */}
+            {tab === "hiring" && !isWorker && (
+              <Card
+                title="Hiring Preferences"
+                icon="📋"
+                desc="Default settings when creating bookings"
+              >
+                <p className={styles.sectionNote}>
+                  Choose your default estimated duration format when creating
+                  new bookings.
+                </p>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    Default Estimated Duration Unit
+                  </label>
+                  <div className={styles.unitGrid}>
+                    {DURATION_UNITS.map((u) => (
+                      <button
+                        key={u.value}
+                        className={`${styles.unitBtn} ${hiringPrefs.defaultEstimatedUnit === u.value ? styles.unitBtnActive : ""}`}
+                        onClick={() =>
+                          setHiringPrefs((p) => ({
+                            ...p,
+                            defaultEstimatedUnit: u.value,
+                          }))
+                        }
+                      >
+                        {u.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {hiringPrefs.defaultEstimatedUnit !== "" && (
+                  <FI
+                    label={`Default Estimated Value (${hiringPrefs.defaultEstimatedUnit === "custom" ? "describe" : hiringPrefs.defaultEstimatedUnit})`}
+                    value={hiringPrefs.defaultEstimatedValue}
+                    onChange={(v) =>
+                      setHiringPrefs((p) => ({
+                        ...p,
+                        defaultEstimatedValue: v,
+                      }))
+                    }
+                    placeholder={
+                      hiringPrefs.defaultEstimatedUnit === "custom"
+                        ? "e.g. 2 weeks + weekend"
+                        : "e.g. 8"
+                    }
+                    type={
+                      hiringPrefs.defaultEstimatedUnit === "custom"
+                        ? "text"
+                        : "number"
+                    }
+                  />
+                )}
+
+                <div className={styles.infoBox}>
+                  ℹ️ These are defaults only — you can always change duration
+                  per booking when creating it.
+                </div>
+
+                <SaveBtn
+                  label="Save Hiring Preferences"
+                  loading={saving === "hiring"}
+                  onClick={async () => {
+                    setSaving("hiring");
+                    try {
+                      await api.patch("/settings/profile", { hiringPrefs });
+                      showToast("Hiring preferences saved");
+                    } catch {
+                      showToast("Save failed", "error");
+                    } finally {
+                      setSaving("");
+                    }
+                  }}
                 />
               </Card>
             )}
@@ -504,10 +925,11 @@ export default function SettingsPage() {
             {tab === "appearance" && (
               <Card
                 title="Appearance"
-                subtitle="Theme and language preferences"
+                icon="🎨"
+                desc="Theme and language preferences"
               >
                 <Section label="🌗 Theme">
-                  <p className={styles.sectionHint}>
+                  <p className={styles.sectionNote}>
                     Choose how SkilledProz looks on your device.
                   </p>
                   <div className={styles.themeGrid}>
@@ -521,8 +943,8 @@ export default function SettingsPage() {
                         className={`${styles.themeCard} ${theme === t.id ? styles.themeCardActive : ""}`}
                         onClick={() => changeTheme(t.id)}
                       >
-                        <span className={styles.themeCardIcon}>{t.icon}</span>
-                        <span className={styles.themeCardLabel}>{t.label}</span>
+                        <span className={styles.themeIcon}>{t.icon}</span>
+                        <span className={styles.themeLabel}>{t.label}</span>
                         {theme === t.id && (
                           <span className={styles.themeCheck}>✓</span>
                         )}
@@ -532,16 +954,14 @@ export default function SettingsPage() {
                 </Section>
 
                 <Section label="🌐 Language">
-                  <p className={styles.sectionHint}>
-                    Select your preferred language. The platform UI will update
-                    immediately.
+                  <p className={styles.sectionNote}>
+                    Select your preferred language. The platform will
+                    auto-translate via Google Translate.
                   </p>
-                  <div className={styles.langSearchWrap}>
-                    <LangSelect value={language} onChange={changeLanguage} />
-                  </div>
-                  <div className={styles.langNote}>
-                    ℹ️ For full translation of user-generated content, use the
-                    Translate button in messages and bookings.
+                  <LangSelect value={language} onChange={changeLanguage} />
+                  <div className={styles.infoBox}>
+                    ℹ️ For user-generated content (booking descriptions,
+                    messages), use the translate button next to each text block.
                   </div>
                 </Section>
               </Card>
@@ -551,33 +971,34 @@ export default function SettingsPage() {
             {tab === "notifications" && (
               <Card
                 title="Notifications"
-                subtitle="Choose what you want to be notified about"
+                icon="🔔"
+                desc="Choose what you get notified about"
               >
                 {[
                   {
                     key: "notifBookings",
-                    label: "Bookings",
-                    desc: "New bookings, status updates, confirmations",
+                    label: "📋 Booking updates",
+                    desc: "New bookings, status changes, confirmations",
                   },
                   {
                     key: "notifMessages",
-                    label: "Messages",
+                    label: "💬 Messages",
                     desc: "New messages from hirers or workers",
                   },
                   {
                     key: "notifPayments",
-                    label: "Payments",
-                    desc: "Payment received, escrow releases, refunds",
+                    label: "💳 Payment alerts",
+                    desc: "Escrow releases, payment confirmations",
                   },
                   {
                     key: "notifReviews",
-                    label: "Reviews",
+                    label: "⭐ Reviews",
                     desc: "New reviews on your profile",
                   },
                   {
                     key: "notifMarketing",
-                    label: "Product updates",
-                    desc: "New features, tips, and SkilledProz news",
+                    label: "📣 Product updates",
+                    desc: "New features and platform news",
                   },
                 ].map((item) => (
                   <Toggle
@@ -591,8 +1012,8 @@ export default function SettingsPage() {
                   />
                 ))}
                 <SaveBtn
-                  label="Save Preferences"
-                  loading={saving && savingKey === "notifs"}
+                  label="Save Notification Preferences"
+                  loading={saving === "notifs"}
                   onClick={saveNotifs}
                 />
               </Card>
@@ -602,7 +1023,8 @@ export default function SettingsPage() {
             {tab === "privacy" && (
               <Card
                 title="Privacy"
-                subtitle="Control who can see your information"
+                icon="🔒"
+                desc="Control who sees your information"
               >
                 <Toggle
                   label="Public Profile"
@@ -614,13 +1036,13 @@ export default function SettingsPage() {
                 />
                 <Toggle
                   label="Show Phone Number"
-                  desc="Display your phone number to hirers or workers"
+                  desc="Display your phone to hirers or workers"
                   checked={privacy.showPhone ?? false}
                   onChange={(v) => setPrivacy((p) => ({ ...p, showPhone: v }))}
                 />
                 <Toggle
                   label="Show Location"
-                  desc="Show your city and country on your profile"
+                  desc="Display your city and country on your profile"
                   checked={privacy.showLocation ?? true}
                   onChange={(v) =>
                     setPrivacy((p) => ({ ...p, showLocation: v }))
@@ -628,7 +1050,7 @@ export default function SettingsPage() {
                 />
                 <SaveBtn
                   label="Save Privacy Settings"
-                  loading={saving && savingKey === "privacy"}
+                  loading={saving === "privacy"}
                   onClick={savePrivacy}
                 />
               </Card>
@@ -639,82 +1061,104 @@ export default function SettingsPage() {
               <>
                 <Card
                   title="Change Password"
-                  subtitle="Use a strong password you don't use elsewhere"
+                  icon="🔑"
+                  desc="Keep your account secure"
                 >
-                  <Field label="Current Password" full>
-                    <input
-                      className={styles.input}
-                      type="password"
-                      value={pw.current}
-                      onChange={(e) =>
-                        setPw((p) => ({ ...p, current: e.target.value }))
-                      }
-                      placeholder="••••••••"
-                    />
-                  </Field>
-                  <Field label="New Password" full>
-                    <input
-                      className={styles.input}
-                      type="password"
-                      value={pw.next}
-                      onChange={(e) =>
-                        setPw((p) => ({ ...p, next: e.target.value }))
-                      }
-                      placeholder="Min 8 characters"
-                    />
-                  </Field>
-                  <Field label="Confirm New Password" full>
-                    <input
-                      className={styles.input}
-                      type="password"
-                      value={pw.confirm}
-                      onChange={(e) =>
-                        setPw((p) => ({ ...p, confirm: e.target.value }))
-                      }
-                      placeholder="Repeat new password"
-                    />
-                  </Field>
-                  {pwError && <p className={styles.fieldError}>{pwError}</p>}
+                  <FI
+                    label="Current Password"
+                    value={pw.current}
+                    type="password"
+                    onChange={(v) => setPw((p) => ({ ...p, current: v }))}
+                    full
+                  />
+                  <FI
+                    label="New Password (min 8 chars)"
+                    value={pw.next}
+                    type="password"
+                    onChange={(v) => setPw((p) => ({ ...p, next: v }))}
+                    full
+                  />
+                  <FI
+                    label="Confirm New Password"
+                    value={pw.confirm}
+                    type="password"
+                    onChange={(v) => setPw((p) => ({ ...p, confirm: v }))}
+                    full
+                  />
+                  {pwError && <p className={styles.fieldErr}>{pwError}</p>}
                   <SaveBtn
                     label="Update Password"
-                    loading={saving && savingKey === "password"}
+                    loading={saving === "password"}
                     onClick={savePassword}
                   />
                 </Card>
 
                 <Card
                   title="Account Info"
-                  subtitle="Your account status and verification"
+                  icon="🛡️"
+                  desc="Your verification and account status"
                 >
-                  <div className={styles.securityRows}>
-                    <SecRow label="Email" value={profile?.email} />
-                    <SecRow
-                      label="Verified"
-                      value={profile?.isEmailVerified ? "✅ Yes" : "❌ Not yet"}
-                    />
-                    <SecRow
-                      label="Member since"
-                      value={
-                        profile?.createdAt
-                          ? new Date(profile.createdAt).toLocaleDateString(
-                              "en-GB",
-                            )
-                          : "—"
-                      }
-                    />
-                    <SecRow label="Role" value={profile?.role} />
-                  </div>
+                  {security ? (
+                    <div className={styles.secRows}>
+                      <SecRow label="Email" value={security.email} />
+                      <SecRow
+                        label="Email Verified"
+                        value={
+                          security.isEmailVerified
+                            ? "✅ Verified"
+                            : "❌ Not verified"
+                        }
+                      />
+                      <SecRow
+                        label="Phone Verified"
+                        value={
+                          security.isPhoneVerified
+                            ? "✅ Verified"
+                            : "❌ Not verified"
+                        }
+                      />
+                      <SecRow
+                        label="2FA"
+                        value={
+                          security.twoFactorEnabled
+                            ? "✅ Enabled"
+                            : "⚠️ Not enabled (coming soon)"
+                        }
+                      />
+                      <SecRow
+                        label="Member Since"
+                        value={
+                          security.accountCreated
+                            ? new Date(
+                                security.accountCreated,
+                              ).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })
+                            : "—"
+                        }
+                      />
+                      <SecRow
+                        label="Last Seen"
+                        value={
+                          security.lastSeen
+                            ? new Date(security.lastSeen).toLocaleString()
+                            : "—"
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <Skeleton />
+                  )}
                 </Card>
 
-                <Card
-                  title="Danger Zone"
-                  subtitle="Permanent actions — proceed carefully"
-                >
-                  <div className={styles.dangerCard}>
+                <Card title="Danger Zone" icon="⚠️" desc="Irreversible actions">
+                  <div className={styles.dangerBlock}>
                     <div>
                       <p className={styles.dangerTitle}>Deactivate Account</p>
                       <p className={styles.dangerDesc}>
-                        Your profile will be hidden and you will be logged out.
+                        Your profile will be hidden and you'll be logged out.
                         Contact support to reactivate.
                       </p>
                     </div>
@@ -729,48 +1173,59 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* ── PAYMENT ── */}
-            {tab === "payment" && (
+            {/* ── ACTIVITY ── */}
+            {tab === "activity" && (
               <Card
-                title="Payment Settings"
-                subtitle="Your preferred currency and payment info"
+                title="Account Activity"
+                icon="📊"
+                desc="Your recent platform activity"
               >
-                <Field label="Preferred Currency" full>
-                  <select
-                    className={styles.select}
-                    value={form.currency || "USD"}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, currency: e.target.value }))
-                    }
-                  >
-                    {CURRENCIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <p
-                  className={styles.sectionHint}
-                  style={{ marginTop: "0.5rem" }}
-                >
-                  This currency is used as your default for bookings and
-                  payments.
-                </p>
-                <SaveBtn
-                  label="Save Currency"
-                  loading={saving && savingKey === "profile"}
-                  onClick={saveProfile}
-                />
-
-                <div className={styles.divider} />
-                <Section label="Payment Methods">
-                  <p className={styles.sectionHint}>
-                    Payment methods are added automatically when you make a
-                    payment. Supported: Card (Stripe/Paystack), Bank Transfer,
-                    Crypto.
-                  </p>
-                </Section>
+                {activity ? (
+                  <>
+                    <div className={styles.statsGrid}>
+                      <StatCard
+                        icon="🔔"
+                        label="Unread notifications"
+                        value={activity.summary.unreadNotifications}
+                      />
+                      <StatCard
+                        icon="📋"
+                        label="Total bookings"
+                        value={activity.summary.totalBookings}
+                      />
+                      <StatCard
+                        icon="⭐"
+                        label="Reviews received"
+                        value={activity.summary.totalReviews}
+                      />
+                    </div>
+                    <Divider label="Recent Activity" />
+                    {activity.recentActivity?.length === 0 ? (
+                      <p className={styles.emptyNote}>
+                        No recent activity yet.
+                      </p>
+                    ) : (
+                      activity.recentActivity?.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`${styles.actItem} ${!n.isRead ? styles.actItemUnread : ""}`}
+                        >
+                          <span className={styles.actIcon}>🔔</span>
+                          <div className={styles.actBody}>
+                            <p className={styles.actTitle}>{n.title}</p>
+                            <p className={styles.actDesc}>{n.body}</p>
+                            <p className={styles.actTime}>
+                              {new Date(n.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          {!n.isRead && <span className={styles.actDot} />}
+                        </div>
+                      ))
+                    )}
+                  </>
+                ) : (
+                  <Skeleton />
+                )}
               </Card>
             )}
           </div>
@@ -782,12 +1237,15 @@ export default function SettingsPage() {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function Card({ title, subtitle, children }) {
+function Card({ title, icon, desc, children }) {
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <h2 className={styles.cardTitle}>{title}</h2>
-        {subtitle && <p className={styles.cardSub}>{subtitle}</p>}
+        <span className={styles.cardIcon}>{icon}</span>
+        <div>
+          <h2 className={styles.cardTitle}>{title}</h2>
+          {desc && <p className={styles.cardDesc}>{desc}</p>}
+        </div>
       </div>
       <div className={styles.cardBody}>{children}</div>
     </div>
@@ -803,11 +1261,92 @@ function Section({ label, children }) {
   );
 }
 
-function Field({ label, children, full }) {
+function Divider({ label }) {
+  return (
+    <div className={styles.divider}>
+      {label && <span className={styles.dividerLabel}>{label}</span>}
+    </div>
+  );
+}
+
+function Grid({ children }) {
+  return <div className={styles.grid}>{children}</div>;
+}
+
+function Row({ children }) {
+  return <div className={styles.row}>{children}</div>;
+}
+
+// Field Input
+function FI({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  multiline,
+  full,
+}) {
   return (
     <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
       <label className={styles.label}>{label}</label>
-      {children}
+      {multiline ? (
+        <textarea
+          className={styles.textarea}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+        />
+      ) : (
+        <input
+          className={styles.input}
+          type={type}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  );
+}
+
+// Select Field
+function SF({ label, value, onChange, options }) {
+  return (
+    <div className={styles.field}>
+      <label className={styles.label}>{label}</label>
+      <select
+        className={styles.select}
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function PriceField({ label, suffix, value, onChange }) {
+  return (
+    <div className={styles.priceField}>
+      <label className={styles.label}>{label}</label>
+      <div className={styles.priceInputWrap}>
+        <input
+          className={styles.input}
+          type="number"
+          min="0"
+          step="0.01"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="0.00"
+        />
+        <span className={styles.priceSuffix}>{suffix}</span>
+      </div>
     </div>
   );
 }
@@ -820,10 +1359,8 @@ function Toggle({ label, desc, checked, onChange }) {
         <p className={styles.toggleDesc}>{desc}</p>
       </div>
       <button
-        className={`${styles.toggleBtn} ${checked ? styles.toggleBtnOn : ""}`}
+        className={`${styles.toggleBtn} ${checked ? styles.toggleOn : ""}`}
         onClick={() => onChange(!checked)}
-        role="switch"
-        aria-checked={checked}
       >
         <span className={styles.toggleThumb} />
       </button>
@@ -833,7 +1370,7 @@ function Toggle({ label, desc, checked, onChange }) {
 
 function SaveBtn({ label, loading, onClick }) {
   return (
-    <button className={styles.saveBtn} onClick={onClick} disabled={loading}>
+    <button className={styles.saveBtn} onClick={onClick} disabled={!!loading}>
       {loading ? (
         <>
           <span className={styles.spinner} /> Saving...
@@ -850,6 +1387,26 @@ function SecRow({ label, value }) {
     <div className={styles.secRow}>
       <span className={styles.secLabel}>{label}</span>
       <span className={styles.secValue}>{value}</span>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value }) {
+  return (
+    <div className={styles.statCard}>
+      <span className={styles.statIcon}>{icon}</span>
+      <p className={styles.statVal}>{value}</p>
+      <p className={styles.statLbl}>{label}</p>
+    </div>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div className={styles.skWrap}>
+      {[1, 2, 3].map((i) => (
+        <div key={i} className={styles.skLine} />
+      ))}
     </div>
   );
 }
@@ -878,7 +1435,7 @@ function LangSelect({ value, onChange }) {
           onChange(e.target.value);
           setSearch("");
         }}
-        size={search ? Math.min(filtered.length, 8) : 1}
+        size={search ? Math.min(filtered.length, 6) : 1}
       >
         {(search ? filtered : ALL_LANGUAGES).map((l) => (
           <option key={l.code} value={l.code}>
