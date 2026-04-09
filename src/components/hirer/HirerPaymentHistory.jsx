@@ -347,7 +347,7 @@ export default function HirerPaymentHistory() {
   const [releasing, setReleasing] = useState(null); // bookingId being released
   const [currencyFilter, setCurrency] = useState("ALL");
   const [availableCurrencies, setAvailableCurrencies] = useState([]);
-  const { dashboardCurrency, fmt: fmtCurrency } = useCurrency();
+  const { dashboardCurrency, fmt: ctxFmt } = useCurrency();
 
   const LIMIT = 10;
 
@@ -355,10 +355,9 @@ export default function HirerPaymentHistory() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-
     const params = { page, limit: LIMIT };
     if (statusFilter !== "ALL") params.status = statusFilter;
-    if (currencyFilter !== "ALL") params.currency = currencyFilter; // ← ADD
+    if (currencyFilter !== "ALL") params.currency = currencyFilter;
 
     api
       .get("/payments/hirer", { params })
@@ -368,11 +367,11 @@ export default function HirerPaymentHistory() {
         setTotal(d.total ?? 0);
         setTotalPages(d.pages ?? 1);
         setSummary(d.summary ?? null);
-        setAvailableCurrencies(d.availableCurrencies ?? []); // ← ADD
+        setAvailableCurrencies(d.availableCurrencies ?? []);
       })
       .catch(() => setError("Failed to load payment history."))
       .finally(() => setLoading(false));
-  }, [page, statusFilter]);
+  }, [page, statusFilter, currencyFilter]); // ← currencyFilter added
 
   // ── Release escrow ──────────────────────────────────────────────────────────
   async function handleRelease(bookingId) {
@@ -404,7 +403,7 @@ export default function HirerPaymentHistory() {
   }
 
   function fmt(amount, currency) {
-    return fmtCurrency(amount, currency || dashboardCurrency);
+    return ctxFmt(amount, currency || dashboardCurrency);
   }
 
   // ── Filtered payments (client-side search on top of server filter) ──────────
@@ -468,7 +467,7 @@ export default function HirerPaymentHistory() {
           />
         </div>
         {/* ── Filters ── */}
-        <div className={styles.filters}>
+        {/* <div className={styles.filters}>
           <div className={styles.searchWrap}>
             <svg
               className={styles.searchIcon}
@@ -517,40 +516,103 @@ export default function HirerPaymentHistory() {
               </button>
             ))}
           </div>
+        </div> */}
+
+        <div className={styles.filters}>
+          <div className={styles.searchWrap}>
+            <svg
+              className={styles.searchIcon}
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <circle
+                cx="7"
+                cy="7"
+                r="5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="11"
+                y1="11"
+                x2="14"
+                y2="14"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="Search by job, worker, or ID…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Status tabs */}
+          <div className={styles.statusTabs}>
+            {["ALL", "HELD", "RELEASED", "REFUNDED", "FAILED"].map((s) => (
+              <button
+                key={s}
+                className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ""}`}
+                onClick={() => {
+                  setStatus(s);
+                  setPage(1);
+                }}
+              >
+                {s === "ALL" ? "All" : (STATUS_META[s]?.label ?? s)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={styles.statusTabs} style={{ marginTop: "0.5rem" }}>
-          <span
-            style={{
-              fontSize: "0.72rem",
-              color: "var(--text-muted)",
-              fontWeight: 600,
-              alignSelf: "center",
-            }}
-          >
-            Currency:
-          </span>
-          <button
-            className={`${styles.statusTab} ${currencyFilter === "ALL" ? styles.statusTabActive : ""}`}
-            onClick={() => {
-              setCurrency("ALL");
-              setPage(1);
-            }}
-          >
-            All
-          </button>
-          {availableCurrencies.map((c) => (
-            <button
-              key={c}
-              className={`${styles.statusTab} ${currencyFilter === c ? styles.statusTabActive : ""}`}
-              onClick={() => {
-                setCurrency(c);
-                setPage(1);
+          {availableCurrencies.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                flexWrap: "wrap",
               }}
             >
-              {CURRENCY_META[c]?.symbol || ""} {c}
-            </button>
-          ))}
+              <span
+                style={{
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Currency:
+              </span>
+              <button
+                className={`${styles.statusTab} ${currencyFilter === "ALL" ? styles.statusTabActive : ""}`}
+                onClick={() => {
+                  setCurrency("ALL");
+                  setPage(1);
+                }}
+              >
+                All
+              </button>
+              {availableCurrencies.map((c) => (
+                <button
+                  key={c}
+                  className={`${styles.statusTab} ${currencyFilter === c ? styles.statusTabActive : ""}`}
+                  onClick={() => {
+                    setCurrency(c);
+                    setPage(1);
+                  }}
+                >
+                  {CURRENCY_META[c]?.symbol || ""} {c}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Table ── */}

@@ -54,22 +54,28 @@ function CurrencyPill({ currency }) {
 }
 
 export default function WorkerEarningsPage() {
+  const { dashboardCurrency, fmt: ctxFmt } = useCurrency();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [currency, setCurrency] = useState("ALL");
+  const [activeCurrency, setActiveCurrency] = useState("ALL");
   const [page, setPage] = useState(1);
-  const { dashboardCurrency, fmt } = useCurrency();
 
-  function load(params = {}) {
+  // Local fmt — uses filter currency if set, else dashboard currency
+  function fmt(amount, currency) {
+    const display =
+      activeCurrency !== "ALL" ? activeCurrency : currency || dashboardCurrency;
+    return ctxFmt(amount, display);
+  }
+
+  function load() {
     setLoading(true);
     const q = new URLSearchParams({ page, limit: 20 });
     if (from) q.set("from", from);
     if (to) q.set("to", to);
-    if (currency !== "ALL") q.set("currency", currency);
-    Object.entries(params).forEach(([k, v]) => q.set(k, v));
+    if (activeCurrency !== "ALL") q.set("currency", activeCurrency);
 
     api
       .get(`/workers/dashboard/earnings?${q}`)
@@ -82,7 +88,7 @@ export default function WorkerEarningsPage() {
 
   useEffect(() => {
     load();
-  }, [from, to, currency, page]);
+  }, [from, to, activeCurrency, page]);
 
   const {
     payments = [],
@@ -95,6 +101,7 @@ export default function WorkerEarningsPage() {
   return (
     <WorkerLayout>
       <div className={styles.page}>
+        {/* ── Page header with dashboard currency switch ── */}
         <div
           style={{
             display: "flex",
@@ -112,40 +119,53 @@ export default function WorkerEarningsPage() {
                 fontSize: "1.5rem",
                 fontWeight: 800,
                 color: "var(--text)",
+                margin: 0,
               }}
             >
               Earnings
             </h1>
-            <p style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>
-              All your released payments
+            <p
+              style={{
+                fontSize: "0.82rem",
+                color: "var(--text-dim)",
+                marginTop: 2,
+              }}
+            >
+              Your completed payment history
             </p>
           </div>
           <DashboardCurrencySwitch />
         </div>
 
-        {/* Summary strip */}
+        {/* ── Summary strip ── */}
         <div className={styles.summaryStrip}>
           <div className={styles.sumItem}>
             <div className={styles.sumLabel}>Total Earned</div>
             <div className={`${styles.sumValue} ${styles.orange}`}>
-              {fmt(
+              {ctxFmt(
                 summary.totalEarned,
-                currency !== "ALL" ? currency : dashboardCurrency,
+                activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency,
               )}
             </div>
-            <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
-              {currency !== "ALL"
-                ? `in ${currency}`
+            <span
+              style={{
+                fontSize: "0.68rem",
+                color: "var(--text-muted)",
+                marginTop: 2,
+              }}
+            >
+              {activeCurrency !== "ALL"
+                ? `filtered to ${activeCurrency}`
                 : `displayed in ${dashboardCurrency}`}
             </span>
           </div>
           <div className={styles.sumDivider} />
           <div className={styles.sumItem}>
-            <div className={styles.sumLabel}>Total Job Value</div>
+            <div className={styles.sumLabel}>Job Value</div>
             <div className={styles.sumValue}>
-              {fmt(
+              {ctxFmt(
                 summary.totalJobValue,
-                currency !== "ALL" ? currency : "USD",
+                activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency,
               )}
             </div>
           </div>
@@ -153,7 +173,10 @@ export default function WorkerEarningsPage() {
           <div className={styles.sumItem}>
             <div className={styles.sumLabel}>Platform Fees</div>
             <div className={styles.sumValue}>
-              {fmt(summary.totalFees, currency !== "ALL" ? currency : "USD")}
+              {ctxFmt(
+                summary.totalFees,
+                activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency,
+              )}
             </div>
           </div>
           <div className={styles.sumDivider} />
@@ -163,44 +186,50 @@ export default function WorkerEarningsPage() {
           </div>
         </div>
 
-        {/* Currency filter — now more prominent */}
+        {/* ── Filters ── */}
         <div className={styles.filtersRow}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {/* Currency tabs — show actual currencies transacted in */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              flexWrap: "wrap",
+            }}
+          >
             <span
               style={{
-                fontSize: "0.75rem",
-                color: "var(--text-dim)",
+                fontSize: "0.72rem",
+                color: "var(--text-muted)",
                 fontWeight: 600,
+                whiteSpace: "nowrap",
               }}
             >
-              Filter by currency:
+              Currency:
             </span>
-            <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
-              {/* Currency filter */}
-
+            {/* ALL tab */}
+            <button
+              className={`${styles.currencyTab} ${activeCurrency === "ALL" ? styles.currencyTabActive : ""}`}
+              onClick={() => {
+                setActiveCurrency("ALL");
+                setPage(1);
+              }}
+            >
+              All
+            </button>
+            {/* One tab per currency the worker has earned in */}
+            {availableCurrencies.map((c) => (
               <button
-                className={`${styles.currencyTab} ${currency === "ALL" ? styles.currencyTabActive : ""}`}
+                key={c}
+                className={`${styles.currencyTab} ${activeCurrency === c ? styles.currencyTabActive : ""}`}
                 onClick={() => {
-                  setCurrency("ALL");
+                  setActiveCurrency(c);
                   setPage(1);
                 }}
               >
-                All
+                {CURRENCY_META[c]?.symbol || ""} {c}
               </button>
-
-              {availableCurrencies.map((c) => (
-                <button
-                  key={c}
-                  className={`${styles.currencyTab} ${currency === c ? styles.currencyTabActive : ""}`}
-                  onClick={() => {
-                    setCurrency(c);
-                    setPage(1);
-                  }}
-                >
-                  {CURRENCY_META[c]?.symbol} {c}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
 
           {/* Date range */}
@@ -228,9 +257,22 @@ export default function WorkerEarningsPage() {
               }}
             />
           </div>
+          {(from || to || activeCurrency !== "ALL") && (
+            <button
+              className={styles.clearBtn}
+              onClick={() => {
+                setFrom("");
+                setTo("");
+                setActiveCurrency("ALL");
+                setPage(1);
+              }}
+            >
+              Clear
+            </button>
+          )}
         </div>
 
-        {/* Table */}
+        {/* ── Table (rest is unchanged) ── */}
         <div className={styles.tableCard}>
           {loading ? (
             <div className={styles.skeletonWrap}>
@@ -245,8 +287,8 @@ export default function WorkerEarningsPage() {
               <div className={styles.emptyIcon}>₦</div>
               <p className={styles.emptyTitle}>No payments found</p>
               <p className={styles.emptyText}>
-                {currency !== "ALL"
-                  ? `No ${currency} transactions yet.`
+                {activeCurrency !== "ALL"
+                  ? `No ${activeCurrency} transactions.`
                   : "Complete jobs to start earning."}
               </p>
             </div>
@@ -292,16 +334,32 @@ export default function WorkerEarningsPage() {
                   </div>
                   <div className={styles.dateCell}>{fmtDate(p.createdAt)}</div>
                   <div className={styles.currencyCell}>
-                    <CurrencyPill currency={p.currency} />
+                    <span
+                      style={{
+                        background: ["USDC", "USDT"].includes(p.currency)
+                          ? "rgba(139,92,246,0.12)"
+                          : "var(--orange-dim)",
+                        border: `1px solid ${["USDC", "USDT"].includes(p.currency) ? "rgba(139,92,246,0.25)" : "var(--orange-glow)"}`,
+                        color: ["USDC", "USDT"].includes(p.currency)
+                          ? "#a78bfa"
+                          : "var(--orange)",
+                        borderRadius: 999,
+                        padding: "2px 8px",
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {CURRENCY_META[p.currency]?.symbol || ""} {p.currency}
+                    </span>
                   </div>
                   <div className={styles.amountTotal}>
-                    {fmt(p.amount, p.currency)}
+                    {ctxFmt(p.amount, p.currency)}
                   </div>
                   <div className={styles.amountEarned}>
-                    {fmt(p.workerPayout, p.currency)}
+                    {ctxFmt(p.workerPayout, p.currency)}
                   </div>
                   <div className={styles.amountFee}>
-                    {fmt(p.platformFee, p.currency)}
+                    {ctxFmt(p.platformFee, p.currency)}
                   </div>
                 </div>
               ))}
