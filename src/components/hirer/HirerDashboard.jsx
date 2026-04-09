@@ -4,10 +4,13 @@ import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerDashboard.module.css";
 import api from "../../lib/api";
 import FeatureGate from "../subscription/FeatureGate";
+import { useCurrency } from "../../context/CurrencyContext";
+import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
 
 export default function HirerDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { fmt, dashboardCurrency } = useCurrency();
 
   useEffect(() => {
     api
@@ -44,10 +47,15 @@ export default function HirerDashboard() {
             <p className={styles.eyebrow}>Overview</p>
             <h1 className={styles.title}>Your Dashboard</h1>
           </div>
-          <Link to="/dashboard/hirer/post-job" className={styles.ctaBtn}>
-            <span className={styles.ctaBtnIcon}>+</span>
-            Post a Job
-          </Link>
+          <div
+            style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}
+          >
+            <DashboardCurrencySwitch />
+            <Link to="/dashboard/hirer/post-job" className={styles.ctaBtn}>
+              <span className={styles.ctaBtnIcon}>+</span>
+              Post a Job
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}

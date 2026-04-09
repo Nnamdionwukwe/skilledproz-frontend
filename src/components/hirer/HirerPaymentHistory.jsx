@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./HirerPaymentHistory.module.css";
 import HirerLayout from "../layout/HirerLayout";
+import { useCurrency, CURRENCY_META } from "../../context/CurrencyContext";
+import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -345,6 +347,7 @@ export default function HirerPaymentHistory() {
   const [releasing, setReleasing] = useState(null); // bookingId being released
   const [currencyFilter, setCurrency] = useState("ALL");
   const [availableCurrencies, setAvailableCurrencies] = useState([]);
+  const { dashboardCurrency, fmt: fmtCurrency } = useCurrency();
 
   const LIMIT = 10;
 
@@ -400,6 +403,10 @@ export default function HirerPaymentHistory() {
     }
   }
 
+  function fmt(amount, currency) {
+    return fmtCurrency(amount, currency || dashboardCurrency);
+  }
+
   // ── Filtered payments (client-side search on top of server filter) ──────────
   const visible = payments.filter((p) => {
     if (!search.trim()) return true;
@@ -438,6 +445,7 @@ export default function HirerPaymentHistory() {
             <h1 className={styles.pageTitle}>Payment History</h1>
             <p className={styles.pageSubtitle}>All transactions and receipts</p>
           </div>
+          <DashboardCurrencySwitch />
         </div>
 
         {/* ── Summary row ── */}
@@ -459,7 +467,6 @@ export default function HirerPaymentHistory() {
             sub="Returned to you"
           />
         </div>
-
         {/* ── Filters ── */}
         <div className={styles.filters}>
           <div className={styles.searchWrap}>
@@ -512,33 +519,46 @@ export default function HirerPaymentHistory() {
           </div>
         </div>
 
+        <div className={styles.statusTabs} style={{ marginTop: "0.5rem" }}>
+          <span
+            style={{
+              fontSize: "0.72rem",
+              color: "var(--text-muted)",
+              fontWeight: 600,
+              alignSelf: "center",
+            }}
+          >
+            Currency:
+          </span>
+          <button
+            className={`${styles.statusTab} ${currencyFilter === "ALL" ? styles.statusTabActive : ""}`}
+            onClick={() => {
+              setCurrency("ALL");
+              setPage(1);
+            }}
+          >
+            All
+          </button>
+          {availableCurrencies.map((c) => (
+            <button
+              key={c}
+              className={`${styles.statusTab} ${currencyFilter === c ? styles.statusTabActive : ""}`}
+              onClick={() => {
+                setCurrency(c);
+                setPage(1);
+              }}
+            >
+              {CURRENCY_META[c]?.symbol || ""} {c}
+            </button>
+          ))}
+        </div>
+
         {/* ── Table ── */}
         <div className={styles.tableWrap}>
           {error ? (
             <div className={styles.errorState}>{error}</div>
           ) : (
             <>
-              <select
-                className={styles.statusTab}
-                style={{
-                  borderRadius: 8,
-                  padding: "0.375rem 0.875rem",
-                  cursor: "pointer",
-                }}
-                value={currencyFilter}
-                onChange={(e) => {
-                  setCurrency(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="ALL">All Currencies</option>
-                {availableCurrencies.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-
               {/* Table header */}
               <div className={styles.tableHead}>
                 <span>Job</span>
@@ -661,7 +681,6 @@ export default function HirerPaymentHistory() {
             </>
           )}
         </div>
-
         {/* ── Pagination ── */}
         {!loading && totalPages > 1 && (
           <div className={styles.pagination}>
@@ -684,7 +703,6 @@ export default function HirerPaymentHistory() {
             </button>
           </div>
         )}
-
         {/* ── Receipt modal ── */}
         {receipt && (
           <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />

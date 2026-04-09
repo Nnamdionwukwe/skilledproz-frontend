@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import styles from "./Earnings.module.css";
 import api from "../../../../lib/api";
+import {
+  useCurrency,
+  CURRENCY_META,
+} from "../../../../context/CurrencyContext";
+import DashboardCurrencySwitch from "../../../../components/common/DashboardCurrencySwitch";
 
 const CRYPTO = ["USDC", "USDT"];
 
@@ -56,6 +61,7 @@ export default function WorkerEarningsPage() {
   const [to, setTo] = useState("");
   const [currency, setCurrency] = useState("ALL");
   const [page, setPage] = useState(1);
+  const { dashboardCurrency, fmt } = useCurrency();
 
   function load(params = {}) {
     setLoading(true);
@@ -89,14 +95,49 @@ export default function WorkerEarningsPage() {
   return (
     <WorkerLayout>
       <div className={styles.page}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "1.5rem",
+                fontWeight: 800,
+                color: "var(--text)",
+              }}
+            >
+              Earnings
+            </h1>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>
+              All your released payments
+            </p>
+          </div>
+          <DashboardCurrencySwitch />
+        </div>
+
         {/* Summary strip */}
         <div className={styles.summaryStrip}>
           <div className={styles.sumItem}>
             <div className={styles.sumLabel}>Total Earned</div>
             <div className={`${styles.sumValue} ${styles.orange}`}>
-              {fmt(summary.totalEarned, currency !== "ALL" ? currency : "USD")}
+              {fmt(
+                summary.totalEarned,
+                currency !== "ALL" ? currency : dashboardCurrency,
+              )}
             </div>
-            {currency !== "ALL" && <CurrencyPill currency={currency} />}
+            <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+              {currency !== "ALL"
+                ? `in ${currency}`
+                : `displayed in ${dashboardCurrency}`}
+            </span>
           </div>
           <div className={styles.sumDivider} />
           <div className={styles.sumItem}>
@@ -122,25 +163,45 @@ export default function WorkerEarningsPage() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Currency filter — now more prominent */}
         <div className={styles.filtersRow}>
-          {/* Currency filter */}
-          <select
-            className={styles.filterSelect}
-            value={currency}
-            onChange={(e) => {
-              setCurrency(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="ALL">All Currencies</option>
-            {availableCurrencies.map((c) => (
-              <option key={c} value={c}>
-                {CRYPTO.includes(c) ? "₿ " : "💱 "}
-                {c}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--text-dim)",
+                fontWeight: 600,
+              }}
+            >
+              Filter by currency:
+            </span>
+            <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+              {/* Currency filter */}
+
+              <button
+                className={`${styles.currencyTab} ${currency === "ALL" ? styles.currencyTabActive : ""}`}
+                onClick={() => {
+                  setCurrency("ALL");
+                  setPage(1);
+                }}
+              >
+                All
+              </button>
+
+              {availableCurrencies.map((c) => (
+                <button
+                  key={c}
+                  className={`${styles.currencyTab} ${currency === c ? styles.currencyTabActive : ""}`}
+                  onClick={() => {
+                    setCurrency(c);
+                    setPage(1);
+                  }}
+                >
+                  {CURRENCY_META[c]?.symbol} {c}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Date range */}
           <div className={styles.filterGroup}>
@@ -167,19 +228,6 @@ export default function WorkerEarningsPage() {
               }}
             />
           </div>
-          {(from || to || currency !== "ALL") && (
-            <button
-              className={styles.clearBtn}
-              onClick={() => {
-                setFrom("");
-                setTo("");
-                setCurrency("ALL");
-                setPage(1);
-              }}
-            >
-              Clear
-            </button>
-          )}
         </div>
 
         {/* Table */}

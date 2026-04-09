@@ -325,3 +325,25 @@
     display: none;
   }
 }
+
+.currencyTab {
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.currencyTab:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.currencyTabActive {
+  background: var(--orange-dim);
+  border-color: var(--orange);
+  color: var(--orange);
+}
