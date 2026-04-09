@@ -11,8 +11,24 @@
       rel="stylesheet"
     />
 
+    <!-- Hide GT toolbar completely -->
+    <style>
+      .goog-te-banner-frame,
+      .goog-te-gadget,
+      #google_translate_element {
+        display: none !important;
+      }
+      body {
+        top: 0 !important;
+        position: static !important;
+      }
+      .skiptranslate {
+        display: none !important;
+      }
+    </style>
+
     <!-- In public/index.html <head> -->
-    <script type="text/javascript">
+    <!-- <script type="text/javascript">
       function googleTranslateElementInit() {
         new google.translate.TranslateElement(
           { pageLanguage: "en", autoDisplay: false },
@@ -30,7 +46,8 @@
       body {
         top: 0 !important;
       }
-    </style>
+    </style> -->
+
     <style>
       /* Prevent iOS Safari from zooming the page when any input or textarea
          is focused. Safari only zooms when font-size is below 16px. */
@@ -42,6 +59,24 @@
     </style>
   </head>
   <body>
+    <div id="google_translate_element" style="display: none"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            autoDisplay: false,
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          },
+          "google_translate_element",
+        );
+      }
+    </script>
+    <script
+      src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+      async
+    ></script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
