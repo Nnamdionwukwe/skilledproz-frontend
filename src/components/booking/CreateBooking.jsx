@@ -1,40 +1,77 @@
+// src/components/booking/CreateBooking.jsx
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import styles from "./CreateBooking.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 
+const DURATION_OPTIONS = [
+  {
+    unit: "hours",
+    label: "Hourly",
+    rateKey: "hourlyRate",
+    suffix: "/hr",
+    inputLabel: "Hours",
+    inputType: "number",
+    step: "0.5",
+  },
+  {
+    unit: "days",
+    label: "Daily",
+    rateKey: "dailyRate",
+    suffix: "/day",
+    inputLabel: "Days",
+    inputType: "number",
+    step: "1",
+  },
+  {
+    unit: "weeks",
+    label: "Weekly",
+    rateKey: "weeklyRate",
+    suffix: "/wk",
+    inputLabel: "Weeks",
+    inputType: "number",
+    step: "1",
+  },
+  {
+    unit: "months",
+    label: "Monthly",
+    rateKey: "monthlyRate",
+    suffix: "/mo",
+    inputLabel: "Months",
+    inputType: "number",
+    step: "1",
+  },
+  {
+    unit: "custom",
+    label: "Custom",
+    rateKey: "customRate",
+    suffix: "",
+    inputLabel: "Description",
+    inputType: "text",
+    step: null,
+  },
+];
+
 export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [fetchingCategories, setFetchingCategories] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
 
-  // ✅ Only HIRERS can create bookings
-  if (user?.role !== "HIRER") {
-    return (
-      <div className={styles.page}>
-        <div className={styles.restrictedMsg}>
-          <h2>📋 Only Hirers Can Post Jobs</h2>
-          <p>
-            Workers can accept and complete jobs, but only Hirers can post them.
-          </p>
-          <button
-            onClick={() => navigate("/bookings")}
-            className={styles.submitBtn}
-          >
-            Back to Bookings
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const initialWorkerId = propWorkerId || searchParams.get("workerId") || "";
 
+  // ── Worker data fetched from API ─────────────────────────────────────────
+  const [worker, setWorker] = useState(null);
+  const [workerLoading, setWorkerLoading] = useState(false);
+  const [workerError, setWorkerError] = useState("");
+
+  // ── Selected pricing unit ────────────────────────────────────────────────
+  const [selectedUnit, setSelectedUnit] = useState(null); // null until worker loaded
+
+  // ── Form state ───────────────────────────────────────────────────────────
   const [form, setForm] = useState({
-    workerId: propWorkerId || "",
+    workerId: initialWorkerId,
     categoryId: "",
     title: "",
     description: "",
@@ -42,45 +79,93 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     latitude: "",
     longitude: "",
     scheduledAt: "",
-    estimatedHours: "",
-    agreedRate: "",
-    currency: "USD",
+    estimatedValue: "", // hours/days/weeks/months or custom text
     notes: "",
   });
 
-  // Min datetime = now
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const minDate = new Date(Date.now() + 60 * 60 * 1000)
     .toISOString()
     .slice(0, 16);
 
+  // ── Hirer guard ──────────────────────────────────────────────────────────
+  if (user?.role !== "HIRER") {
+    return (
+      <HirerLayout>
+        <div className={styles.page}>
+          <div className={styles.restrictedMsg}>
+            <h2>📋 Only Hirers Can Post Jobs</h2>
+            <p>
+              Workers can accept and complete jobs, but only Hirers can post
+              them.
+            </p>
+            <button
+              onClick={() => navigate("/bookings")}
+              className={styles.submitBtn}
+            >
+              Back to Bookings
+            </button>
+          </div>
+        </div>
+      </HirerLayout>
+    );
+  }
+
+  // ── Fetch worker when workerId is known ──────────────────────────────────
   useEffect(() => {
-    // ✅ Try to fetch categories, but handle gracefully if endpoint doesn't exist
+    const id = form.workerId?.trim();
+    if (!id) {
+      setWorker(null);
+      return;
+    }
+
+    setWorkerLoading(true);
+    setWorkerError("");
+
     api
-      .get("/categories")
+      .get(`/workers/${id}`)
       .then((res) => {
-        // Handle different response structures
-        const cats = Array.isArray(res.data.data)
-          ? res.data.data
-          : res.data.data?.categories || [];
-        setCategories(cats);
-        setFetchingCategories(false);
+        const w = res.data.data.worker;
+        setWorker(w);
+
+        // Auto-select the first available pricing unit
+        const available = DURATION_OPTIONS.filter((o) => {
+          if (o.rateKey === "customRate") return w.customRate > 0;
+          return w[o.rateKey] > 0;
+        });
+        const first = available[0] || DURATION_OPTIONS[0];
+        setSelectedUnit(first.unit);
+
+        // Lock category to worker's primary (or first) category
+        const primaryCat =
+          w.categories?.find((c) => c.isPrimary) || w.categories?.[0];
+        if (primaryCat) {
+          setForm((f) => ({ ...f, categoryId: primaryCat.category.id }));
+        }
       })
-      .catch((err) => {
-        console.warn("Categories endpoint not available, using defaults", err);
-        // ✅ Use default categories as fallback
-        setCategories([
-          { id: "1", name: "Plumbing" },
-          { id: "2", name: "Electrical" },
-          { id: "3", name: "Carpentry" },
-          { id: "4", name: "Painting" },
-          { id: "5", name: "Cleaning" },
-          { id: "6", name: "Landscaping" },
-          { id: "7", name: "Home Repair" },
-          { id: "8", name: "Other Services" },
-        ]);
-        setFetchingCategories(false);
-      });
-  }, []);
+      .catch(() =>
+        setWorkerError("Worker not found. Check the ID and try again."),
+      )
+      .finally(() => setWorkerLoading(false));
+  }, [form.workerId]);
+
+  // ── Derived values from worker + selected unit ───────────────────────────
+  const currentOption = DURATION_OPTIONS.find((o) => o.unit === selectedUnit);
+  const lockedRate =
+    worker && currentOption ? worker[currentOption.rateKey] || 0 : 0;
+  const lockedCurrency = worker?.currency || "USD";
+  const availableUnits = worker
+    ? DURATION_OPTIONS.filter((o) => {
+        if (o.rateKey === "customRate") return worker.customRate > 0;
+        return worker[o.rateKey] > 0;
+      })
+    : [];
+
+  // If worker has no set pricing for an option show hourly as fallback
+  const displayUnits =
+    availableUnits.length > 0 ? availableUnits : [DURATION_OPTIONS[0]];
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
@@ -89,6 +174,12 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!worker) {
+      setError("Please enter a valid Worker ID first.");
+      return;
+    }
+
     const required = [
       "workerId",
       "categoryId",
@@ -96,7 +187,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       "description",
       "address",
       "scheduledAt",
-      "agreedRate",
     ];
     for (const k of required) {
       if (!form[k]) {
@@ -106,21 +196,44 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         return;
       }
     }
+    if (lockedRate <= 0 && currentOption?.unit !== "custom") {
+      setError(
+        "This worker has not set a rate for the selected duration. Please choose another option.",
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.post("/bookings", {
-        ...form,
-        agreedRate: parseFloat(form.agreedRate),
-        estimatedHours: form.estimatedHours
-          ? parseFloat(form.estimatedHours)
-          : undefined,
+      // Build estimatedHours from the selected unit + value
+      let estimatedHours = null;
+      const val = parseFloat(form.estimatedValue) || 1;
+      if (currentOption?.unit === "hours") estimatedHours = val;
+      if (currentOption?.unit === "days") estimatedHours = val * 8;
+      if (currentOption?.unit === "weeks") estimatedHours = val * 40;
+      if (currentOption?.unit === "months") estimatedHours = val * 160;
+      // custom → no numeric conversion
+
+      const payload = {
+        workerId: form.workerId,
+        categoryId: form.categoryId,
+        title: form.title,
+        description: form.description,
+        address: form.address,
         latitude: form.latitude ? parseFloat(form.latitude) : undefined,
         longitude: form.longitude ? parseFloat(form.longitude) : undefined,
-      });
+        scheduledAt: form.scheduledAt,
+        estimatedHours: estimatedHours || undefined,
+        estimatedUnit: currentOption?.unit || "hours",
+        agreedRate: lockedRate,
+        currency: lockedCurrency,
+        notes: form.notes,
+      };
+
+      const res = await api.post("/bookings", payload);
       if (onSuccess) {
         onSuccess(res.data.data.booking);
       } else {
-        // ✅ Use navigate() instead of window.location.href
         navigate(`/bookings/${res.data.data.booking.id}`);
       }
     } catch (e) {
@@ -133,22 +246,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     }
   }
 
-  if (fetchingCategories) {
-    return (
-      <HirerLayout>
-        <div className={styles.page}>
-          <div className={styles.header}>
-            <p className={styles.eyebrow}>New Job</p>
-            <h1 className={styles.title}>Loading...</h1>
-          </div>
-        </div>
-      </HirerLayout>
-    );
-  }
-
   return (
     <HirerLayout>
-      {/* ✅ Use Link instead of <a> */}
       <Link to="/bookings" className={styles.back}>
         ← Back to Bookings
       </Link>
@@ -162,27 +261,273 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* Section: Job Info */}
+          {/* ── Worker Selection ── */}
+          {!propWorkerId && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Worker</legend>
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Worker ID <span className={styles.req}>*</span>
+                </label>
+                <input
+                  className={styles.input}
+                  placeholder="Paste the worker's user ID"
+                  value={form.workerId}
+                  onChange={(e) => set("workerId", e.target.value)}
+                />
+                <p className={styles.hint}>
+                  Browse workers on the{" "}
+                  <Link to="/search" className={styles.hintLink}>
+                    search page
+                  </Link>{" "}
+                  and copy their ID.
+                </p>
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Worker Profile Card (auto-loaded) ── */}
+          {workerLoading && (
+            <div className={styles.workerCardSkeleton}>
+              <div className={styles.skAvatar} />
+              <div style={{ flex: 1 }}>
+                <div className={styles.skLine} style={{ width: "60%" }} />
+                <div
+                  className={styles.skLine}
+                  style={{ width: "40%", marginTop: 6 }}
+                />
+              </div>
+            </div>
+          )}
+
+          {workerError && (
+            <div className={styles.workerError}>⚠️ {workerError}</div>
+          )}
+
+          {worker && !workerLoading && (
+            <div className={styles.workerCard}>
+              <div className={styles.workerCardAvatar}>
+                {worker.user?.avatar ? (
+                  <img src={worker.user.avatar} alt="" />
+                ) : (
+                  <span>
+                    {worker.user?.firstName?.[0]}
+                    {worker.user?.lastName?.[0]}
+                  </span>
+                )}
+                {worker.isAvailable && (
+                  <div className={styles.workerOnlineDot} />
+                )}
+              </div>
+              <div className={styles.workerCardInfo}>
+                <p className={styles.workerCardName}>
+                  {worker.user?.firstName} {worker.user?.lastName}
+                  {worker.verificationStatus === "VERIFIED" && (
+                    <span className={styles.verifiedBadge} title="Verified">
+                      ✓
+                    </span>
+                  )}
+                </p>
+                <p className={styles.workerCardTitle}>{worker.title}</p>
+                <div className={styles.workerCardMeta}>
+                  {worker.avgRating > 0 && (
+                    <span>
+                      ⭐ {worker.avgRating.toFixed(1)} ({worker.totalReviews}{" "}
+                      reviews)
+                    </span>
+                  )}
+                  {(worker.user?.city || worker.user?.country) && (
+                    <span>
+                      📍{" "}
+                      {[worker.user.city, worker.user.country]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </span>
+                  )}
+                  <span>✅ {worker.completedJobs} jobs done</span>
+                </div>
+                {worker.categories?.length > 0 && (
+                  <div className={styles.workerCardCats}>
+                    {worker.categories.slice(0, 3).map((wc) => (
+                      <span key={wc.id} className={styles.catChip}>
+                        {wc.category.icon} {wc.category.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className={styles.workerCardLock}>
+                <span className={styles.lockIcon}>🔒</span>
+                <span className={styles.lockText}>
+                  Details locked from worker's profile
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Pricing / Duration Selection ── */}
+          {worker && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Pricing & Duration</legend>
+
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Engagement Type <span className={styles.req}>*</span>
+                </label>
+                <p className={styles.fieldHint}>
+                  Select how you want to engage this worker. The rate is set by
+                  the worker and cannot be modified.
+                </p>
+                <div className={styles.unitGrid}>
+                  {displayUnits.map((opt) => {
+                    const rate = worker[opt.rateKey];
+                    const hasRate = rate > 0;
+                    return (
+                      <button
+                        type="button"
+                        key={opt.unit}
+                        className={`${styles.unitCard} ${selectedUnit === opt.unit ? styles.unitCardActive : ""} ${!hasRate ? styles.unitCardDisabled : ""}`}
+                        onClick={() => hasRate && setSelectedUnit(opt.unit)}
+                        disabled={!hasRate}
+                        title={!hasRate ? "Worker has not set this rate" : ""}
+                      >
+                        <span className={styles.unitCardLabel}>
+                          {opt.label}
+                        </span>
+                        {hasRate ? (
+                          <span className={styles.unitCardRate}>
+                            {lockedCurrency} {Number(rate).toLocaleString()}
+                            {opt.suffix}
+                          </span>
+                        ) : (
+                          <span className={styles.unitCardNoRate}>
+                            Not offered
+                          </span>
+                        )}
+                        {opt.unit === "custom" && worker.customRateLabel && (
+                          <span className={styles.unitCardSuffix}>
+                            {worker.customRateLabel}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Agreed Rate — locked, read-only */}
+              <div className={styles.rateLockedRow}>
+                <div className={styles.rateLockedBox}>
+                  <span className={styles.rateLockedLabel}>Agreed Rate</span>
+                  <span className={styles.rateLockedValue}>
+                    {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                    {currentOption?.suffix}
+                  </span>
+                  <span className={styles.rateLockedNote}>
+                    🔒 Set by worker — cannot be changed
+                  </span>
+                </div>
+                <div className={styles.rateLockedBox}>
+                  <span className={styles.rateLockedLabel}>Currency</span>
+                  <span className={styles.rateLockedValue}>
+                    {lockedCurrency}
+                  </span>
+                  <span className={styles.rateLockedNote}>
+                    🔒 Worker's currency
+                  </span>
+                </div>
+              </div>
+
+              {/* Duration value input */}
+              {currentOption && (
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    {currentOption.inputLabel === "Description"
+                      ? "Describe the engagement"
+                      : `Number of ${currentOption.inputLabel}`}
+                  </label>
+                  <input
+                    className={styles.input}
+                    type={currentOption.inputType}
+                    step={currentOption.step || undefined}
+                    min={currentOption.inputType === "number" ? "1" : undefined}
+                    placeholder={
+                      currentOption.inputType === "text"
+                        ? "e.g. Full website build, 3 phases"
+                        : `e.g. ${currentOption.unit === "hours" ? "4" : currentOption.unit === "days" ? "3" : "2"}`
+                    }
+                    value={form.estimatedValue}
+                    onChange={(e) => set("estimatedValue", e.target.value)}
+                  />
+                  {form.estimatedValue &&
+                    currentOption.inputType === "number" &&
+                    lockedRate > 0 && (
+                      <p className={styles.totalEstimate}>
+                        Estimated total:{" "}
+                        <strong>
+                          {lockedCurrency}{" "}
+                          {(
+                            Number(form.estimatedValue) * lockedRate
+                          ).toLocaleString()}
+                        </strong>
+                        <span className={styles.totalNote}>
+                          {" "}
+                          (for {form.estimatedValue}{" "}
+                          {currentOption.inputLabel.toLowerCase()})
+                        </span>
+                      </p>
+                    )}
+                </div>
+              )}
+
+              {/* Pricing note from worker */}
+              {worker.pricingNote && (
+                <div className={styles.pricingNoteBox}>
+                  💬 Worker's pricing note: <em>{worker.pricingNote}</em>
+                </div>
+              )}
+            </fieldset>
+          )}
+
+          {/* ── Category — locked from worker ── */}
+          {worker && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Category</legend>
+              <div className={styles.field}>
+                <label className={styles.label}>Service Category</label>
+                <p className={styles.fieldHint}>
+                  Auto-filled from the worker's registered categories. Select if
+                  multiple are available.
+                </p>
+                {worker.categories?.length === 1 ? (
+                  <div className={styles.lockedField}>
+                    <span>
+                      {worker.categories[0].category.icon}{" "}
+                      {worker.categories[0].category.name}
+                    </span>
+                    <span className={styles.lockedBadge}>🔒 Locked</span>
+                  </div>
+                ) : (
+                  <select
+                    className={styles.select}
+                    value={form.categoryId}
+                    onChange={(e) => set("categoryId", e.target.value)}
+                  >
+                    {worker.categories?.map((wc) => (
+                      <option key={wc.id} value={wc.category.id}>
+                        {wc.category.icon} {wc.category.name}
+                        {wc.isPrimary ? " (Primary)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Job Information ── */}
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Job Information</legend>
-
-            <div className={styles.field}>
-              <label className={styles.label}>
-                Category <span className={styles.req}>*</span>
-              </label>
-              <select
-                className={styles.select}
-                value={form.categoryId}
-                onChange={(e) => set("categoryId", e.target.value)}
-              >
-                <option value="">Select a category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <div className={styles.field}>
               <label className={styles.label}>
@@ -203,7 +548,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
               </label>
               <textarea
                 className={styles.textarea}
-                placeholder="Describe exactly what needs to be done, any relevant background..."
+                placeholder="Describe exactly what needs to be done..."
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
                 rows={4}
@@ -222,10 +567,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             </div>
           </fieldset>
 
-          {/* Section: Location */}
+          {/* ── Location ── */}
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Location</legend>
-
             <div className={styles.field}>
               <label className={styles.label}>
                 Service Address <span className={styles.req}>*</span>
@@ -237,10 +581,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 onChange={(e) => set("address", e.target.value)}
               />
             </div>
-
             <div className={styles.row2}>
               <div className={styles.field}>
-                <label className={styles.label}>Latitude</label>
+                <label className={styles.label}>Latitude (optional)</label>
                 <input
                   className={styles.input}
                   type="number"
@@ -251,7 +594,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 />
               </div>
               <div className={styles.field}>
-                <label className={styles.label}>Longitude</label>
+                <label className={styles.label}>Longitude (optional)</label>
                 <input
                   className={styles.input}
                   type="number"
@@ -264,112 +607,30 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             </div>
           </fieldset>
 
-          {/* Section: Schedule & Rate */}
+          {/* ── Schedule ── */}
           <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Schedule & Rate</legend>
-
-            <div className={styles.row2}>
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  Date & Time <span className={styles.req}>*</span>
-                </label>
-                <input
-                  className={styles.input}
-                  type="datetime-local"
-                  min={minDate}
-                  value={form.scheduledAt}
-                  onChange={(e) => set("scheduledAt", e.target.value)}
-                />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Estimated Hours</label>
-                <input
-                  className={styles.input}
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  max="24"
-                  placeholder="e.g. 3"
-                  value={form.estimatedHours}
-                  onChange={(e) => set("estimatedHours", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className={styles.row2}>
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  Agreed Rate <span className={styles.req}>*</span>
-                </label>
-                <div className={styles.rateWrap}>
-                  <span className={styles.rateCurrency}>{form.currency}</span>
-                  <input
-                    className={`${styles.input} ${styles.rateInput}`}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={form.agreedRate}
-                    onChange={(e) => set("agreedRate", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Currency</label>
-                <select
-                  className={styles.select}
-                  value={form.currency}
-                  onChange={(e) => set("currency", e.target.value)}
-                >
-                  {[
-                    "USD",
-                    "NGN",
-                    "GBP",
-                    "EUR",
-                    "GHS",
-                    "KES",
-                    "ZAR",
-                    "INR",
-                    "CAD",
-                    "AUD",
-                  ].map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <legend className={styles.legend}>Schedule</legend>
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Date & Time <span className={styles.req}>*</span>
+              </label>
+              <input
+                className={styles.input}
+                type="datetime-local"
+                min={minDate}
+                value={form.scheduledAt}
+                onChange={(e) => set("scheduledAt", e.target.value)}
+              />
             </div>
           </fieldset>
 
-          {/* Worker ID (hidden if pre-set) */}
-          {!propWorkerId && (
-            <fieldset className={styles.fieldset}>
-              <legend className={styles.legend}>Worker</legend>
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  Worker ID <span className={styles.req}>*</span>
-                </label>
-                <input
-                  className={styles.input}
-                  placeholder="Worker's user ID"
-                  value={form.workerId}
-                  onChange={(e) => set("workerId", e.target.value)}
-                />
-                <p className={styles.hint}>
-                  Browse workers on the{" "}
-                  <a href="/search" className={styles.hintLink}>
-                    search page
-                  </a>{" "}
-                  to find the right person.
-                </p>
-              </div>
-            </fieldset>
-          )}
-
           {error && <p className={styles.error}>⚠️ {error}</p>}
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading || !worker}
+          >
             {loading ? (
               <>
                 <span className={styles.spinner} /> Creating booking...
@@ -380,8 +641,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
           </button>
 
           <p className={styles.disclaimer}>
-            The worker will be notified by email immediately. Funds are not
-            charged until you pay after the worker accepts.
+            The worker will be notified immediately. Payment is only charged
+            after the worker accepts and you approve it.
           </p>
         </form>
       </div>
