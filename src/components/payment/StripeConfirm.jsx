@@ -71,6 +71,40 @@ function CheckoutForm({ bookingId, booking }) {
   const [error, setError] = useState("");
 
   // Guard: never call confirmPayment before the PaymentElement is mounted+ready
+  // async function handleSubmit(e) {
+  //   e.preventDefault();
+  //   if (!stripe || !elements || !ready) return;
+
+  //   setPaying(true);
+  //   setError("");
+
+  //   // Submit the elements form first (required since Stripe Elements v3)
+  //   const { error: submitError } = await elements.submit();
+  //   if (submitError) {
+  //     setError(submitError.message || "Please check your card details.");
+  //     setPaying(false);
+  //     return;
+  //   }
+
+  //   const { error: stripeError } = await stripe.confirmPayment({
+  //     elements,
+  //     confirmParams: {
+  //       return_url: `${window.location.origin}/bookings/${bookingId}?payment=success`,
+  //     },
+  //     redirect: "if_required",
+  //   });
+
+  //   if (stripeError) {
+  //     setError(stripeError.message || "Payment failed. Please try again.");
+  //     setPaying(false);
+  //     return;
+  //   }
+
+  //   sessionStorage.removeItem("stripe_client_secret");
+  //   navigate(`/bookings/${bookingId}?payment=success`);
+  // }
+
+  // In StripeConfirm.jsx — add this to CheckoutForm
   async function handleSubmit(e) {
     e.preventDefault();
     if (!stripe || !elements || !ready) return;
@@ -78,7 +112,6 @@ function CheckoutForm({ bookingId, booking }) {
     setPaying(true);
     setError("");
 
-    // Submit the elements form first (required since Stripe Elements v3)
     const { error: submitError } = await elements.submit();
     if (submitError) {
       setError(submitError.message || "Please check your card details.");
@@ -86,7 +119,7 @@ function CheckoutForm({ bookingId, booking }) {
       return;
     }
 
-    const { error: stripeError } = await stripe.confirmPayment({
+    const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/bookings/${bookingId}?payment=success`,
@@ -95,11 +128,32 @@ function CheckoutForm({ bookingId, booking }) {
     });
 
     if (stripeError) {
-      setError(stripeError.message || "Payment failed. Please try again.");
+      // Clear the stored secret so next attempt gets a fresh intent
+      if (
+        stripeError.type === "card_error" ||
+        stripeError.type === "validation_error"
+      ) {
+        // Card errors — keep the same intent, user can fix and retry
+        setError(
+          stripeError.message ||
+            "Payment failed. Please check your card details.",
+        );
+      } else {
+        // Other errors (expired intent etc.) — force fresh intent on retry
+        sessionStorage.removeItem("stripe_client_secret");
+        setError(stripeError.message + " Please go back and try again.");
+      }
       setPaying(false);
       return;
     }
 
+    if (paymentIntent?.status === "succeeded") {
+      sessionStorage.removeItem("stripe_client_secret");
+      navigate(`/bookings/${bookingId}?payment=success`);
+      return;
+    }
+
+    // Payment requires redirect (3DS etc.)
     sessionStorage.removeItem("stripe_client_secret");
     navigate(`/bookings/${bookingId}?payment=success`);
   }
