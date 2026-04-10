@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// StripeConfirm.jsx — complete rewrite fixing all three Stripe errors
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -11,10 +12,9 @@ import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
 
-// ── Load Stripe once outside component to avoid re-initialisation ─────────────
+// ── Load Stripe ONCE — must be outside any component ─────────────────────────
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
-// ── Stripe appearance config — matches dark theme ────────────────────────────
 const stripeAppearance = {
   theme: "night",
   variables: {
@@ -52,40 +52,44 @@ const stripeAppearance = {
       backgroundColor: "rgba(255,255,255,0.03)",
       border: "1px solid rgba(255,255,255,0.08)",
     },
-    ".Tab:hover": {
-      backgroundColor: "rgba(255,255,255,0.06)",
-    },
+    ".Tab:hover": { backgroundColor: "rgba(255,255,255,0.06)" },
     ".Tab--selected": {
       backgroundColor: "rgba(249,115,22,0.12)",
       border: "1px solid rgba(249,115,22,0.25)",
     },
-    ".Error": {
-      color: "#ef4444",
-    },
+    ".Error": { color: "#ef4444" },
   },
 };
 
-// ── Inner form — must be inside <Elements> ────────────────────────────────────
+// ── Inner checkout form — only rendered once Elements is ready ────────────────
 function CheckoutForm({ bookingId, booking }) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
   const [paying, setPaying] = useState(false);
-  const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
 
+  // Guard: never call confirmPayment before the PaymentElement is mounted+ready
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !ready) return;
 
     setPaying(true);
     setError("");
 
+    // Submit the elements form first (required since Stripe Elements v3)
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      setError(submitError.message || "Please check your card details.");
+      setPaying(false);
+      return;
+    }
+
     const { error: stripeError } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        // Stripe will redirect here after 3DS or additional auth
-        return_url: `${window.location.origin}/bookings/${bookingId}`,
+        return_url: `${window.location.origin}/bookings/${bookingId}?payment=success`,
       },
       redirect: "if_required",
     });
@@ -96,34 +100,36 @@ function CheckoutForm({ bookingId, booking }) {
       return;
     }
 
-    // Payment succeeded — clean up session storage
     sessionStorage.removeItem("stripe_client_secret");
-    sessionStorage.removeItem("stripe_booking_id");
-
     navigate(`/bookings/${bookingId}?payment=success`);
   }
 
-  const total = booking?.payment?.amount
-    ? Number(booking.payment.amount)
-    : null;
-
   return (
     <form onSubmit={handleSubmit} className={styles.stripeForm}>
-      {/* Card element */}
       <div className={styles.stripeElementWrap}>
         <p className={styles.breakdownTitle}>Card Details</p>
-        <PaymentElement
-          onReady={() => setReady(true)}
-          options={{
-            layout: "tabs",
-            fields: {
-              billingDetails: { address: { country: "auto" } },
-            },
-          }}
-        />
+        {/* translate="no" prevents Google Translate from wrapping text nodes
+            inside the Stripe iframe and crashing React reconciliation */}
+        <div translate="no">
+          <PaymentElement
+            onReady={() => setReady(true)}
+            options={{
+              layout: "tabs",
+              // Only show card — hides unactivated Amazon Pay / Link
+              paymentMethodOrder: ["card"],
+              fields: {
+                billingDetails: { address: { country: "auto" } },
+              },
+              wallets: {
+                // Suppress Apple Pay warning (domain not registered)
+                applePay: "never",
+                googlePay: "auto",
+              },
+            }}
+          />
+        </div>
       </div>
 
-      {/* Amount summary */}
       {booking && (
         <div className={styles.stripeSummary}>
           <div className={styles.breakdownRow}>
@@ -131,35 +137,34 @@ function CheckoutForm({ bookingId, booking }) {
             <span
               className={styles.breakdownVal}
               style={{
-                maxWidth: 220,
-                textAlign: "right",
-                overflow: "hidden",
+                maxWidth: 200,
                 textOverflow: "ellipsis",
+                overflow: "hidden",
                 whiteSpace: "nowrap",
+                textAlign: "right",
               }}
             >
               {booking.title}
             </span>
           </div>
           <div className={styles.breakdownRow}>
-            <span className={styles.breakdownLabel}>Worker Payout</span>
+            <span className={styles.breakdownLabel}>Agreed Rate</span>
             <span className={styles.breakdownVal}>
-              {booking.currency}{" "}
-              {Number(booking.agreedRate * 0.85).toLocaleString()}
+              {booking.currency} {Number(booking.agreedRate).toLocaleString()}
             </span>
           </div>
           <div className={styles.breakdownRow}>
             <span className={styles.breakdownLabel}>Platform Fee (10%)</span>
             <span className={styles.breakdownVal}>
-              {booking.currency}{" "}
-              {Number(booking.agreedRate * 0.1).toLocaleString()}
+              {booking.currency} {Number(booking.agreedRate * 0.1).toFixed(2)}
             </span>
           </div>
           <div className={styles.breakdownDivider} />
           <div className={styles.breakdownRow}>
             <span className={styles.breakdownLabelTotal}>Total Charged</span>
             <span className={styles.breakdownValTotal}>
-              {booking.currency} {Number(booking.agreedRate).toLocaleString()}
+              {booking.currency}{" "}
+              {Number(booking.agreedRate * 1.1).toLocaleString()}
             </span>
           </div>
         </div>
@@ -180,10 +185,14 @@ function CheckoutForm({ bookingId, booking }) {
           <>
             <span className={styles.spinner} /> Processing...
           </>
+        ) : !ready ? (
+          <>
+            <span className={styles.spinner} /> Loading payment form...
+          </>
         ) : (
           <>
-            🔒 Confirm & Pay {booking?.currency}{" "}
-            {Number(booking?.agreedRate).toLocaleString()}
+            🔒 Confirm &amp; Pay {booking?.currency}{" "}
+            {Number(booking?.agreedRate * 1.1).toLocaleString()}
           </>
         )}
       </button>
@@ -196,7 +205,7 @@ function CheckoutForm({ bookingId, booking }) {
   );
 }
 
-// ── Outer wrapper — loads booking + provides Elements context ─────────────────
+// ── Outer wrapper ─────────────────────────────────────────────────────────────
 export default function StripeConfirm() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
@@ -206,37 +215,42 @@ export default function StripeConfirm() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Try sessionStorage first (set by InitiatePayment)
     const stored = sessionStorage.getItem("stripe_client_secret");
+
+    const loadBooking = api
+      .get(`/bookings/${bookingId}`)
+      .then((res) => setBooking(res.data.data.booking))
+      .catch(() => {});
 
     if (stored) {
       setClientSecret(stored);
+      loadBooking.finally(() => setLoading(false));
     } else {
-      // If page refreshed or navigated directly, re-initiate
-      api
-        .post(`/payments/initiate/${bookingId}`)
-        .then((res) => {
-          const { clientSecret: cs } = res.data.data;
-          if (!cs) {
-            setError("This booking uses Paystack. Please go back and pay.");
-            return;
-          }
-          setClientSecret(cs);
-          sessionStorage.setItem("stripe_client_secret", cs);
-        })
-        .catch((e) => {
-          setError(
-            e.response?.data?.message || "Could not load payment details.",
-          );
-        });
+      Promise.all([
+        api
+          .post(`/payments/initiate/${bookingId}`)
+          .then((res) => {
+            const { clientSecret: cs, authorizationUrl } = res.data.data;
+            if (authorizationUrl) {
+              // Paystack booking — redirect instead
+              window.location.href = authorizationUrl;
+              return;
+            }
+            if (!cs) {
+              setError("Could not load payment details.");
+              return;
+            }
+            setClientSecret(cs);
+            sessionStorage.setItem("stripe_client_secret", cs);
+          })
+          .catch((e) =>
+            setError(
+              e.response?.data?.message || "Could not load payment details.",
+            ),
+          ),
+        loadBooking,
+      ]).finally(() => setLoading(false));
     }
-
-    // Also load booking details
-    api
-      .get(`/bookings/${bookingId}`)
-      .then((res) => setBooking(res.data.data.booking))
-      .catch(() => {})
-      .finally(() => setLoading(false));
   }, [bookingId]);
 
   if (loading)
@@ -269,8 +283,7 @@ export default function StripeConfirm() {
         <div className={styles.page}>
           <div className={styles.verifyWrap}>
             <div className={styles.verifySpinner} />
-            <h2 className={styles.verifyTitle}>Loading Payment</h2>
-            <p className={styles.verifyText}>Setting up secure checkout...</p>
+            <h2 className={styles.verifyTitle}>Setting up secure payment...</h2>
           </div>
         </div>
       </HirerLayout>
@@ -280,7 +293,6 @@ export default function StripeConfirm() {
     <HirerLayout>
       <div className={styles.page}>
         <div className={styles.payWrap}>
-          {/* Header */}
           <div className={styles.payHeader}>
             <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
               ← Back to Booking
@@ -288,7 +300,6 @@ export default function StripeConfirm() {
             <div className={styles.payBadge}>🔒 Stripe Secure</div>
           </div>
 
-          {/* Booking summary */}
           <div className={styles.summaryCard}>
             <div className={styles.summaryTop}>
               <div className={styles.summaryIconWrap}>
@@ -305,9 +316,11 @@ export default function StripeConfirm() {
             </div>
           </div>
 
-          {/* Stripe Elements */}
-          {/* <div className={styles.breakdownCard}>
+          <div className={styles.breakdownCard}>
+            {/* KEY on Elements forces full remount when clientSecret changes,
+                preventing the insertBefore/removeChild reconciliation crash */}
             <Elements
+              key={clientSecret}
               stripe={stripePromise}
               options={{
                 clientSecret,
@@ -322,31 +335,8 @@ export default function StripeConfirm() {
             >
               <CheckoutForm bookingId={bookingId} booking={booking} />
             </Elements>
-          </div> */}
-
-          {/* After — key forces full remount when clientSecret changes */}
-          <div className={styles.breakdownCard}>
-            {clientSecret && (
-              <Elements
-                key={clientSecret}
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: stripeAppearance,
-                  fonts: [
-                    {
-                      cssSrc:
-                        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap",
-                    },
-                  ],
-                }}
-              >
-                <CheckoutForm bookingId={bookingId} booking={booking} />
-              </Elements>
-            )}
           </div>
 
-          {/* Trust signals */}
           <div className={styles.trustRow}>
             <span className={styles.trustItem}>🔐 256-bit SSL</span>
             <span className={styles.trustItem}>🛡️ Escrow protected</span>
