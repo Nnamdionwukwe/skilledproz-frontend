@@ -3,6 +3,7 @@ import styles from "./PostJob.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import AIJobAssistant from "./AIJobAssistant";
+import { Link } from "react-router-dom";
 
 export default function PostJob() {
   const [categories, setCategories] = useState([]);
@@ -149,8 +150,8 @@ export default function PostJob() {
                 justifyContent: "center",
               }}
             >
-              <a
-                href="/dashboard/hirer/jobs"
+              <Link
+                to="/dashboard/hirer/jobs-management"
                 style={{
                   padding: "0.75rem 1.5rem",
                   background: "var(--orange)",
@@ -162,7 +163,7 @@ export default function PostJob() {
                 }}
               >
                 View My Jobs
-              </a>
+              </Link>
               <button className={styles.resetBtn} onClick={resetForm}>
                 Post Another Job
               </button>
