@@ -306,7 +306,7 @@ export default function StripeConfirm() {
           </div>
 
           {/* Stripe Elements */}
-          <div className={styles.breakdownCard}>
+          {/* <div className={styles.breakdownCard}>
             <Elements
               stripe={stripePromise}
               options={{
@@ -322,6 +322,28 @@ export default function StripeConfirm() {
             >
               <CheckoutForm bookingId={bookingId} booking={booking} />
             </Elements>
+          </div> */}
+
+          {/* After — key forces full remount when clientSecret changes */}
+          <div className={styles.breakdownCard}>
+            {clientSecret && (
+              <Elements
+                key={clientSecret}
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: stripeAppearance,
+                  fonts: [
+                    {
+                      cssSrc:
+                        "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap",
+                    },
+                  ],
+                }}
+              >
+                <CheckoutForm bookingId={bookingId} booking={booking} />
+              </Elements>
+            )}
           </div>
 
           {/* Trust signals */}
