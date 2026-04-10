@@ -11,35 +11,16 @@ import { useAuthStore } from "../store/authStore";
 
 const ThemeContext = createContext(null);
 
-const COOKIE_PATHS = ["/"];
-const COOKIE_DOMAINS = [
-  "",
-  `domain=.${location.hostname}`,
-  `domain=${location.hostname}`,
-];
-
-function writeGTCookie(langCode) {
-  // Wipe all variants first
-  COOKIE_PATHS.forEach((path) => {
-    COOKIE_DOMAINS.forEach((domain) => {
-      const base = `googtrans=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 UTC`;
-      document.cookie = domain ? `${base}; ${domain}` : base;
-    });
+// ── The one function that controls Google Translate ───────────────────────────
+// Setting /en/en = "translate English to English" = GT shows original content.
+// This is MORE reliable than deleting the cookie because setting always works.
+function setGTCookie(langCode) {
+  const value = !langCode || langCode === "en" ? "/en/en" : `/en/${langCode}`;
+  const domains = ["", `.${location.hostname}`, location.hostname];
+  domains.forEach((domain) => {
+    const d = domain ? `; domain=${domain}` : "";
+    document.cookie = `googtrans=${value}; path=/${d}`;
   });
-
-  if (langCode && langCode !== "en") {
-    COOKIE_PATHS.forEach((path) => {
-      COOKIE_DOMAINS.forEach((domain) => {
-        const base = `googtrans=/en/${langCode}; path=${path}`;
-        document.cookie = domain ? `${base}; ${domain}` : base;
-      });
-    });
-  }
-}
-
-function hardReload() {
-  // Replace — not push — so back button doesn't re-translate
-  window.location.replace(window.location.href.split("?")[0]);
 }
 
 export function ThemeProvider({ children }) {
@@ -49,13 +30,11 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(
     () => localStorage.getItem("sp_theme") || user?.theme || "system",
   );
-
-  // Language is always read from localStorage — the single source of truth
   const [language, setLanguage] = useState(
     () => localStorage.getItem("sp_lang") || user?.language || "en",
   );
 
-  // ── Theme → data-theme attribute ─────────────────────────────────────────
+  // ── Theme ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     const root = document.documentElement;
     const apply = () => {
@@ -74,35 +53,27 @@ export function ThemeProvider({ children }) {
     return () => mq.removeEventListener("change", apply);
   }, [theme]);
 
-  // ── On first mount: apply saved language ─────────────────────────────────
-  // We DON'T reload here — the cookie was already set the last time the user
-  // changed the language, so GT picks it up automatically on page load.
+  // ── On mount: make sure cookie matches stored preference ──────────────────
   useEffect(() => {
     if (bootDone.current) return;
     bootDone.current = true;
-    // Just make sure the cookie matches the stored preference
     const saved = localStorage.getItem("sp_lang") || "en";
-    writeGTCookie(saved); // harmless no-op if already correct
+    setGTCookie(saved);
   }, []);
 
-  // ── Sync from auth store on login ─────────────────────────────────────────
+  // ── Sync from auth on login ───────────────────────────────────────────────
   useEffect(() => {
     if (!user?.id) return;
     if (user.theme) {
       setTheme(user.theme);
       localStorage.setItem("sp_theme", user.theme);
     }
-    // Only sync language if user has one set and it differs from current
-    if (user.language) {
-      const stored = localStorage.getItem("sp_lang");
-      if (!stored) {
-        localStorage.setItem("sp_lang", user.language);
-        setLanguage(user.language);
-      }
+    if (user.language && !localStorage.getItem("sp_lang")) {
+      localStorage.setItem("sp_lang", user.language);
+      setLanguage(user.language);
     }
   }, [user?.id]);
 
-  // ── changeTheme ───────────────────────────────────────────────────────────
   const changeTheme = useCallback(
     async (t) => {
       setTheme(t);
@@ -115,25 +86,24 @@ export function ThemeProvider({ children }) {
     [updateUser],
   );
 
-  // ── changeLanguage ────────────────────────────────────────────────────────
-  // This is the ENTIRE language implementation. Cookie + reload. Nothing else.
+  // ── changeLanguage: set cookie → reload. That's it. ──────────────────────
   const changeLanguage = useCallback(
-    async (lang) => {
-      // 1. Persist to DB first (don't await — we're about to reload anyway)
+    (lang) => {
+      // Save preference
+      localStorage.setItem("sp_lang", lang);
+      setLanguage(lang);
+
+      // Set GT cookie (/en/en = English, /en/fr = French, etc.)
+      setGTCookie(lang);
+
+      // Fire-and-forget DB save
       api
         .patch("/settings/profile", { language: lang })
         .then(() => updateUser?.({ language: lang }))
         .catch(() => {});
 
-      // 2. Save to localStorage so we know what language to show after reload
-      localStorage.setItem("sp_lang", lang);
-      setLanguage(lang);
-
-      // 3. Write / clear the googtrans cookie
-      writeGTCookie(lang);
-
-      // 4. Hard reload — GT reads the cookie on page load and translates/untranslates
-      hardReload();
+      // Reload — GT reads cookie fresh on every page load
+      window.location.replace(window.location.pathname);
     },
     [updateUser],
   );
