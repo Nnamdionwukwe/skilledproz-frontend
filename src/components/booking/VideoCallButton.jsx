@@ -1,6 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../lib/api";
 import styles from "./VideoCallButton.module.css";
+
+// Poll interval in ms — 5 seconds is enough for real-time feel without hammering
+const POLL_MS = 5000;
 
 export default function VideoCallButton({
   bookingId,
@@ -13,15 +16,17 @@ export default function VideoCallButton({
   const [loading, setLoading] = useState(false);
   const [inCall, setInCall] = useState(false);
   const [error, setError] = useState("");
-  const pollRef = useRef(null);
-  const POLL_MS = 4000;
+
+  // Use a ref for inCall inside the interval so it doesn't cause re-subscription
+  const inCallRef = useRef(false);
+  inCallRef.current = inCall;
 
   const isInvolved = userId === hirerId || userId === workerId;
   const canCall =
     isInvolved &&
     ["PENDING", "ACCEPTED", "IN_PROGRESS"].includes(bookingStatus);
 
-  // Initial load
+  // Initial load — runs once
   useEffect(() => {
     if (!canCall) return;
     api
@@ -32,38 +37,47 @@ export default function VideoCallButton({
       .catch(() => {});
   }, [bookingId, canCall]);
 
-  // ── Always poll when canCall — receiver needs to know about incoming calls ──
+  // Polling — only depends on stable values, never on inCall state directly
   useEffect(() => {
     if (!canCall) return;
 
-    pollRef.current = setInterval(async () => {
+    const id = setInterval(async () => {
+      // Don't poll if we're already in a call — avoid redundant requests
+      if (inCallRef.current) return;
+
       try {
         const r = await api.get(`/video-calls/${bookingId}`);
         const updated = r.data.data.call;
         if (!updated) return;
 
         setCall((prev) => {
-          // If it was idle and now PENDING from someone else — ring!
-          if (
-            (!prev || prev.status === "ENDED" || prev.status === "DECLINED") &&
-            updated.status === "PENDING" &&
-            updated.receiverId === userId
-          ) {
-            return updated;
-          }
-          if (prev?.status !== updated.status) return updated;
-          return prev;
+          if (!prev) return updated;
+          if (prev.status === updated.status) return prev; // no change — skip re-render
+          return updated;
         });
 
-        if (updated.status === "ACTIVE" && !inCall) {
+        // Stop polling once call reaches a terminal or active state
+        if (updated.status === "ACTIVE") {
+          inCallRef.current = true;
           setInCall(true);
-          clearInterval(pollRef.current);
+          clearInterval(id);
+        } else if (
+          updated.status === "ENDED" ||
+          updated.status === "DECLINED"
+        ) {
+          // Keep polling after ended/declined so both sides see the state
+          // but at a slower rate — clear and restart would be overkill, just let it run
         }
-      } catch {}
+      } catch {
+        // Network error — don't clear interval, just wait for next tick
+      }
     }, POLL_MS);
 
-    return () => clearInterval(pollRef.current);
-  }, [canCall, bookingId, userId, inCall]);
+    return () => clearInterval(id);
+
+    // ── Key: ONLY depend on canCall and bookingId — NOT on call or inCall ────
+    // inCall is read via inCallRef.current inside the interval
+  }, [canCall, bookingId]);
 
   if (!canCall) return null;
 
@@ -85,8 +99,8 @@ export default function VideoCallButton({
     try {
       await api.patch(`/video-calls/${bookingId}/accept`);
       setCall((prev) => ({ ...prev, status: "ACTIVE" }));
+      inCallRef.current = true;
       setInCall(true);
-      clearInterval(pollRef.current);
     } catch {
       setError("Failed to accept call");
     } finally {
@@ -107,23 +121,22 @@ export default function VideoCallButton({
     try {
       await api.patch(`/video-calls/${bookingId}/end`);
       setCall((prev) => ({ ...prev, status: "ENDED" }));
+      inCallRef.current = false;
       setInCall(false);
     } catch {
       setError("Failed to end call");
     }
   }
 
-  // ── INCOMING call — receiver ──
+  // Incoming call — receiver
   if (call?.status === "PENDING" && call?.receiverId === userId) {
     return (
       <div className={styles.incomingWrap}>
-        <div className={styles.incomingRing}>
-          <span className={styles.callIcon}>📹</span>
-        </div>
         <div className={styles.incomingPulse} />
         <div className={styles.incomingContent}>
+          <span className={styles.callIcon}>📹</span>
           <div>
-            <p className={styles.incomingTitle}>📹 Incoming Video Call</p>
+            <p className={styles.incomingTitle}>Incoming Video Call</p>
             <p className={styles.incomingHint}>Pre-job consultation</p>
           </div>
         </div>
@@ -144,7 +157,7 @@ export default function VideoCallButton({
     );
   }
 
-  // ── Waiting (initiator side) ──
+  // Waiting (initiator)
   if (call?.status === "PENDING" && call?.initiatorId === userId) {
     return (
       <div className={styles.waitingWrap}>
@@ -159,14 +172,14 @@ export default function VideoCallButton({
     );
   }
 
-  // ── Active call ──
-  if ((inCall || call?.status === "ACTIVE") && call) {
+  // Active call
+  if (inCall || call?.status === "ACTIVE") {
     return (
-      <VideoCallRoom roomId={call.roomId} userId={userId} onEnd={handleEnd} />
+      <VideoCallRoom roomId={call?.roomId} userId={userId} onEnd={handleEnd} />
     );
   }
 
-  // ── Ended / Declined ──
+  // Ended / Declined
   if (call?.status === "ENDED" || call?.status === "DECLINED") {
     return (
       <div className={styles.endedWrap}>
@@ -187,7 +200,7 @@ export default function VideoCallButton({
     );
   }
 
-  // ── Idle ──
+  // Idle
   return (
     <div className={styles.wrap}>
       <button
@@ -203,7 +216,6 @@ export default function VideoCallButton({
   );
 }
 
-// Uses Jitsi — free, no account needed, works cross-device
 function VideoCallRoom({ roomId, userId, onEnd }) {
   return (
     <div className={styles.callRoom}>
@@ -223,8 +235,7 @@ function VideoCallRoom({ roomId, userId, onEnd }) {
         />
       </div>
       <p className={styles.callHint}>
-        Share this room ID with the other party if needed:{" "}
-        <code className={styles.roomCode}>{roomId}</code>
+        Room ID: <code className={styles.roomCode}>{roomId}</code>
       </p>
     </div>
   );
