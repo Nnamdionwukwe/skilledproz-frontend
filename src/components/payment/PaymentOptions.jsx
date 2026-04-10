@@ -135,7 +135,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
         <h3 className={styles.successTitle}>Payment Submitted</h3>
         <p className={styles.successText}>
           {tab === "bank"
-            ? "Your bank transfer details have been submitted. We'll confirm within 1–2 hours."
+            ? "Your bank transfer details have been submitted. We'll confirm within 20–30 minutes."
             : "Your crypto transaction has been submitted. We'll verify on-chain within 30 minutes."}
         </p>
         <button
