@@ -213,7 +213,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       if (currentOption?.unit === "weeks") estimatedHours = val * 40;
       if (currentOption?.unit === "months") estimatedHours = val * 160;
       // custom → no numeric conversion
-
       const payload = {
         workerId: form.workerId,
         categoryId: form.categoryId,
@@ -225,6 +224,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         scheduledAt: form.scheduledAt,
         estimatedHours: estimatedHours || undefined,
         estimatedUnit: currentOption?.unit || "hours",
+        estimatedValue: form.estimatedValue
+          ? form.estimatedValue.toString()
+          : undefined,
         agreedRate: lockedRate,
         currency: lockedCurrency,
         notes: form.notes,

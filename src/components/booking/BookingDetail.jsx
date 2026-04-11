@@ -42,6 +42,34 @@ function mapsUrl(lat, lng) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
+// ── Guard: only call when booking is non-null ─────────────────────────────────
+function formatDuration(booking) {
+  if (!booking) return null; // ← THIS was the crash
+
+  const unit = booking.estimatedUnit || "hours";
+  const value = booking.estimatedValue || null;
+  const hours = booking.estimatedHours || null;
+
+  if (!value && !hours) return null;
+
+  if (value) {
+    if (unit === "custom") return { main: value, sub: null };
+
+    const unitLabel = {
+      hours: "hour",
+      days: "day",
+      weeks: "week",
+      months: "month",
+    }[unit];
+    const num = parseFloat(value);
+    const label = unitLabel + (num !== 1 ? "s" : "");
+    const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
+    return { main: `${num} ${label}`, sub: eqv };
+  }
+
+  return hours ? { main: `${hours} hours`, sub: null } : null;
+}
+
 export default function BookingDetail() {
   const { id } = useParams();
   const { user } = useAuthStore();
@@ -62,12 +90,21 @@ export default function BookingDetail() {
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
 
+  // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {
     api
       .get(`/bookings/${id}`)
       .then((res) => {
         const b = res.data.data.booking;
         setBooking(b);
+
+        // Parse emergency contact if present
+        if (b.emergencyContact) {
+          try {
+            setEmergencyContact(JSON.parse(b.emergencyContact));
+          } catch {}
+        }
+
         if (b.status === "COMPLETED") {
           api
             .get(`/reviews/check/${id}`)
@@ -82,17 +119,7 @@ export default function BookingDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  useEffect(() => {
-    if (booking?.emergencyContact) {
-      try {
-        setEmergencyContact(JSON.parse(booking.emergencyContact));
-      } catch {
-        setEmergencyContact(null);
-      }
-    }
-  }, [booking?.emergencyContact]);
-
-  // 1. Add this useEffect for silent auto-refresh (add after your existing useEffect)
+  // ── Silent auto-refresh every 10 minutes ────────────────────────────────────
   useEffect(() => {
     if (!id) return;
     const interval = setInterval(() => {
@@ -100,21 +127,18 @@ export default function BookingDetail() {
         .get(`/bookings/${id}`)
         .then((res) => {
           const updated = res.data.data.booking;
-          // Only update state if something actually changed — avoids flicker
           setBooking((prev) => {
             if (!prev) return updated;
             if (
               prev.status !== updated.status ||
               prev.payment?.status !== updated.payment?.status
-            ) {
+            )
               return updated;
-            }
             return prev;
           });
         })
         .catch(() => {});
-    }, 600000); // poll every 600 seconds
-
+    }, 600_000);
     return () => clearInterval(interval);
   }, [id]);
 
@@ -149,9 +173,11 @@ export default function BookingDetail() {
     updateStatus("CANCELLED", { cancelReason: cancelReason.trim() });
   }
 
+  // ── Guard renders ────────────────────────────────────────────────────────────
   if (loading) return <DetailSkeleton Layout={Layout} />;
   if (!booking) return <NotFound />;
 
+  // ── All booking-derived values BELOW the null guard ─────────────────────────
   const meta = STATUS_META[booking.status] || {};
   const step = meta.step ?? 0;
   const isHirer = userId === booking.hirerId;
@@ -159,7 +185,28 @@ export default function BookingDetail() {
   const other = isHirer ? booking.worker : booking.hirer;
   const scheduled = new Date(booking.scheduledAt);
 
-  // ── Derived GPS data ────────────────────────────────────────────────────────
+  // formatDuration is now safe — booking is guaranteed non-null here
+  const dur = formatDuration(booking);
+
+  // Estimated total calc
+  const estTotal = (() => {
+    const rate = booking.agreedRate;
+    const unit = booking.estimatedUnit;
+    const value = booking.estimatedValue;
+    if (!rate || !value || !unit || unit === "custom") return null;
+    const num = parseFloat(value);
+    return {
+      num,
+      unit,
+      rate,
+      currency: booking.currency,
+      total: num * rate,
+      suffix:
+        { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "",
+    };
+  })();
+
+  // GPS derived values
   const hasCheckInGps =
     booking.checkInLat != null && booking.checkInLng != null;
   const hasCheckOutGps =
@@ -202,7 +249,7 @@ export default function BookingDetail() {
         <div className={styles.layout}>
           {/* ══ MAIN COLUMN ══ */}
           <div className={styles.main}>
-            {/* Title */}
+            {/* Title block */}
             <div className={styles.titleBlock}>
               <div className={styles.titleRow}>
                 <h1 className={styles.title}>{booking.title}</h1>
@@ -247,7 +294,6 @@ export default function BookingDetail() {
             {/* Description */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Description</h2>
-              {/* <p className={styles.description}>{booking.description}</p> */}
               <Translator text={booking.description} />
               {booking.notes && (
                 <div className={styles.notes}>
@@ -264,7 +310,12 @@ export default function BookingDetail() {
                 <DetailItem
                   icon="📅"
                   label="Scheduled"
-                  value={`${scheduled.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })} at ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+                  value={`${scheduled.toLocaleDateString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })} at ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                 />
                 <DetailItem
                   icon="📍"
@@ -277,13 +328,38 @@ export default function BookingDetail() {
                   value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
                   accent
                 />
-                {booking.estimatedHours && (
+
+                {/* Duration — show only when available, deduped */}
+                {dur && (
                   <DetailItem
                     icon="⏱️"
                     label="Est. Duration"
-                    value={`${booking.estimatedHours}h`}
+                    value={
+                      <span>
+                        {dur.main}
+                        {dur.sub && (
+                          <span className={styles.durationSub}> {dur.sub}</span>
+                        )}
+                      </span>
+                    }
                   />
                 )}
+
+                {/* Estimated total row */}
+                {estTotal && (
+                  <div className={styles.totalEstimateRow}>
+                    <span className={styles.totalEstimateLabel}>
+                      Est. Total ({estTotal.num} {estTotal.unit} ×{" "}
+                      {estTotal.currency} {estTotal.rate.toLocaleString()}
+                      {estTotal.suffix})
+                    </span>
+                    <span className={styles.totalEstimateValue}>
+                      {estTotal.currency} {estTotal.total.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Job site GPS */}
                 {booking.latitude && booking.longitude && (
                   <DetailItem
                     icon="🗺️"
@@ -304,17 +380,15 @@ export default function BookingDetail() {
               </div>
             </section>
 
-            {/* ══ WORKER GPS LOCATION — visible to BOTH parties ══ */}
+            {/* Worker GPS location — both parties */}
             {(hasCheckInGps || hasCheckOutGps) && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Worker Location</h2>
                 <p className={styles.gpsNote}>
-                  GPS coordinates recorded when the worker checked in and out.
-                  Visible to both the worker and hirer.
+                  GPS recorded at check-in and check-out. Visible to both
+                  parties.
                 </p>
-
                 <div className={styles.gpsCards}>
-                  {/* Check-in location */}
                   {hasCheckInGps && (
                     <div className={`${styles.gpsCard} ${styles.gpsCardIn}`}>
                       <div className={styles.gpsCardHeader}>
@@ -326,18 +400,15 @@ export default function BookingDetail() {
                           Check-in Location
                         </span>
                         <span className={styles.gpsCardTime}>
-                          {booking.checkInAt
-                            ? new Date(booking.checkInAt).toLocaleTimeString(
-                                [],
-                                { hour: "2-digit", minute: "2-digit" },
-                              )
-                            : ""}
-                          {booking.checkInAt
-                            ? ` · ${new Date(booking.checkInAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
-                            : ""}
+                          {booking.checkInAt &&
+                            new Date(booking.checkInAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          {booking.checkInAt &&
+                            ` · ${new Date(booking.checkInAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
                         </span>
                       </div>
-
                       <div className={styles.gpsCoordRow}>
                         <span className={styles.gpsCoordLabel}>
                           Coordinates
@@ -347,7 +418,6 @@ export default function BookingDetail() {
                           {booking.checkInLng.toFixed(5)}
                         </span>
                       </div>
-
                       {checkInDistKm !== null && (
                         <div
                           className={`${styles.gpsDistRow} ${checkInDistKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
@@ -366,7 +436,6 @@ export default function BookingDetail() {
                           </span>
                         </div>
                       )}
-
                       <a
                         href={mapsUrl(booking.checkInLat, booking.checkInLng)}
                         target="_blank"
@@ -378,7 +447,6 @@ export default function BookingDetail() {
                     </div>
                   )}
 
-                  {/* Check-out location */}
                   {hasCheckOutGps && (
                     <div className={`${styles.gpsCard} ${styles.gpsCardOut}`}>
                       <div className={styles.gpsCardHeader}>
@@ -390,18 +458,15 @@ export default function BookingDetail() {
                           Check-out Location
                         </span>
                         <span className={styles.gpsCardTime}>
-                          {booking.checkOutAt
-                            ? new Date(booking.checkOutAt).toLocaleTimeString(
-                                [],
-                                { hour: "2-digit", minute: "2-digit" },
-                              )
-                            : ""}
-                          {booking.checkOutAt
-                            ? ` · ${new Date(booking.checkOutAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
-                            : ""}
+                          {booking.checkOutAt &&
+                            new Date(booking.checkOutAt).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" },
+                            )}
+                          {booking.checkOutAt &&
+                            ` · ${new Date(booking.checkOutAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
                         </span>
                       </div>
-
                       <div className={styles.gpsCoordRow}>
                         <span className={styles.gpsCoordLabel}>
                           Coordinates
@@ -411,7 +476,6 @@ export default function BookingDetail() {
                           {booking.checkOutLng.toFixed(5)}
                         </span>
                       </div>
-
                       {checkOutDistKm !== null && (
                         <div
                           className={`${styles.gpsDistRow} ${checkOutDistKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
@@ -430,7 +494,6 @@ export default function BookingDetail() {
                           </span>
                         </div>
                       )}
-
                       <a
                         href={mapsUrl(booking.checkOutLat, booking.checkOutLng)}
                         target="_blank"
@@ -445,7 +508,7 @@ export default function BookingDetail() {
               </section>
             )}
 
-            {/* Payment */}
+            {/* Payment details */}
             {booking.payment && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Payment</h2>
@@ -472,7 +535,6 @@ export default function BookingDetail() {
                   />
                   <PayRow
                     label="Status"
-                    value={booking.payment.status}
                     extra={
                       <span
                         className={`${styles.payStatus} ${styles[`payStatus_${booking.payment.status?.toLowerCase()}`]}`}
@@ -496,7 +558,6 @@ export default function BookingDetail() {
             {booking.status === "COMPLETED" && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Reviews</h2>
-
                 {booking.reviews?.length > 0 && (
                   <div className={styles.reviewsList}>
                     {booking.reviews.map((review) => (
@@ -561,7 +622,6 @@ export default function BookingDetail() {
                     ))}
                   </div>
                 )}
-
                 {reviewCheckDone && !hasReviewed && (
                   <Link
                     to={`/bookings/${booking.id}/review`}
@@ -632,12 +692,10 @@ export default function BookingDetail() {
             <div className={styles.actionsCard}>
               <p className={styles.actionsTitle}>Actions</p>
 
-              {/* WORKER ACTIONS */}
-
+              {/* ── WORKER ACTIONS ── */}
               {isWorker && (
                 <>
-                  {/* ... existing worker actions ... */}
-
+                  {/* Emergency contact + SOS — always first for safety */}
                   <EmergencyContact
                     bookingId={booking.id}
                     bookingStatus={booking.status}
@@ -656,10 +714,8 @@ export default function BookingDetail() {
                       setBooking((prev) => ({ ...prev, ...updatedBooking }))
                     }
                   />
-                </>
-              )}
-              {isWorker && (
-                <>
+
+                  {/* Accept when PENDING */}
                   {booking.status === "PENDING" && (
                     <ActionBtn
                       label="Accept Booking"
@@ -669,7 +725,7 @@ export default function BookingDetail() {
                     />
                   )}
 
-                  {/* ✅ Only show GPS check-in when booking is ACCEPTED AND payment is HELD */}
+                  {/* GPS check-in — only when ACCEPTED and payment is HELD */}
                   {booking.status === "ACCEPTED" &&
                     booking.payment?.status === "HELD" && (
                       <GpsCheckIn
@@ -692,7 +748,7 @@ export default function BookingDetail() {
                       />
                     )}
 
-                  {/* Show this message when accepted but payment not yet received */}
+                  {/* Waiting for payment notice */}
                   {booking.status === "ACCEPTED" &&
                     (!booking.payment ||
                       booking.payment.status === "PENDING") && (
@@ -702,7 +758,7 @@ export default function BookingDetail() {
                       </div>
                     )}
 
-                  {/* Check-out is available once IN_PROGRESS */}
+                  {/* GPS check-out — once IN_PROGRESS */}
                   {booking.status === "IN_PROGRESS" && (
                     <GpsCheckIn
                       bookingId={booking.id}
@@ -717,6 +773,7 @@ export default function BookingDetail() {
                     />
                   )}
 
+                  {/* Cancel */}
                   {["PENDING", "ACCEPTED"].includes(booking.status) && (
                     <CancelBox
                       label="Cancel Booking"
@@ -746,15 +803,15 @@ export default function BookingDetail() {
               {/* ── HIRER ACTIONS ── */}
               {isHirer && (
                 <>
+                  {/* Payment — show options when ACCEPTED and no payment yet */}
                   {booking.status === "ACCEPTED" && !booking.payment && (
                     <>
                       <Link
                         to={`/bookings/${booking.id}/pay`}
                         className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
                       >
-                        Pay Now With 💳
+                        💳 Pay with Card
                       </Link>
-
                       <PaymentOptions
                         booking={booking}
                         onSuccess={() =>
@@ -764,8 +821,8 @@ export default function BookingDetail() {
                     </>
                   )}
 
-                  {/* Inside actionsCard, after hirer pay button */}
-                  {isHirer && booking.status === "ACCEPTED" && (
+                  {/* Insurance */}
+                  {booking.status === "ACCEPTED" && (
                     <InsuranceAddon
                       bookingId={booking.id}
                       booking={booking}
@@ -773,6 +830,7 @@ export default function BookingDetail() {
                     />
                   )}
 
+                  {/* Release payment */}
                   {booking.payment?.status === "HELD" && (
                     <Link
                       to={`/bookings/${booking.id}/release`}
@@ -782,7 +840,7 @@ export default function BookingDetail() {
                     </Link>
                   )}
 
-                  {/* Hirer can cancel PENDING or ACCEPTED */}
+                  {/* Cancel */}
                   {["PENDING", "ACCEPTED"].includes(booking.status) && (
                     <CancelBox
                       label="Cancel Booking"
@@ -809,6 +867,7 @@ export default function BookingDetail() {
                 </>
               )}
 
+              {/* ── VIDEO CALL — both roles ── */}
               {(isHirer || isWorker) && (
                 <VideoCallButton
                   bookingId={booking.id}
@@ -862,7 +921,7 @@ export default function BookingDetail() {
   );
 }
 
-/* ── Sub-components ──────────────────────────────────────────────────────────*/
+/* ── Sub-components ─────────────────────────────────────────────────────────── */
 
 function DetailItem({ icon, label, value, accent }) {
   return (
@@ -917,7 +976,6 @@ function CancelBox({
       </button>
     );
   }
-
   return (
     <div className={styles.cancelBox}>
       <p className={styles.cancelBoxTitle}>

@@ -942,3 +942,50 @@
   text-align: center;
   line-height: 1.5;
 }
+
+/* ── PASTE AT BOTTOM OF BookingDetail.module.css ─────────────────────── */
+
+/* Duration value display */
+.durationBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.durationMain {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.durationSub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Estimated total row below the detail grid */
+.totalEstimateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--orange-dim);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 10px;
+}
+.totalEstimateLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.totalEstimateValue {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--orange);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
