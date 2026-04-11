@@ -646,6 +646,76 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
           {error && <p className={styles.error}>⚠️ {error}</p>}
 
+          {/* ── Booking Summary ── */}
+          {worker && form.title && form.address && form.scheduledAt && (
+            <div className={styles.bookingSummary}>
+              <p className={styles.summaryTitle}>📋 Booking Summary</p>
+              <div className={styles.summaryGrid}>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Worker</span>
+                  <span className={styles.summaryValue}>
+                    {worker.user?.firstName} {worker.user?.lastName}
+                  </span>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Category</span>
+                  <span className={styles.summaryValue}>
+                    {worker.categories?.find(
+                      (c) => c.category.id === form.categoryId,
+                    )?.category.name || "—"}
+                  </span>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Rate</span>
+                  <span
+                    className={styles.summaryValue}
+                    style={{ color: "var(--orange)", fontWeight: 700 }}
+                  >
+                    {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                    {currentOption?.suffix}
+                  </span>
+                </div>
+                <div className={styles.summaryItem}>
+                  <span className={styles.summaryLabel}>Duration</span>
+                  <span className={styles.summaryValue}>
+                    {form.estimatedValue
+                      ? `${form.estimatedValue} ${currentOption?.inputLabel?.toLowerCase() || currentOption?.unit}`
+                      : "—"}
+                  </span>
+                </div>
+                {form.estimatedValue &&
+                  currentOption?.inputType === "number" &&
+                  lockedRate > 0 && (
+                    <div
+                      className={styles.summaryItem}
+                      style={{ gridColumn: "1/-1" }}
+                    >
+                      <span className={styles.summaryLabel}>
+                        Estimated Total
+                      </span>
+                      <span
+                        className={styles.summaryValue}
+                        style={{
+                          color: "var(--green)",
+                          fontWeight: 800,
+                          fontSize: "1.1rem",
+                        }}
+                      >
+                        {lockedCurrency}{" "}
+                        {(
+                          Number(form.estimatedValue) * lockedRate
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+              </div>
+              <p className={styles.summaryNote}>
+                ⚠️ Final amount depends on actual time. Payment is only charged
+                after the worker accepts.
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             className={styles.submitBtn}
