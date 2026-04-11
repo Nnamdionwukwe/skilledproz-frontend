@@ -442,23 +442,48 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
               {currentOption && (
                 <div className={styles.field}>
                   <label className={styles.label}>
-                    {currentOption.inputLabel === "Description"
+                    {currentOption.unit === "custom"
                       ? "Describe the engagement"
                       : `Number of ${currentOption.inputLabel}`}
+                    <span className={styles.req}> *</span>
                   </label>
                   <input
                     className={styles.input}
                     type={currentOption.inputType}
                     step={currentOption.step || undefined}
-                    min={currentOption.inputType === "number" ? "1" : undefined}
+                    min={
+                      currentOption.inputType === "number" ? "0.5" : undefined
+                    }
+                    required
                     placeholder={
                       currentOption.inputType === "text"
-                        ? "e.g. Full website build, 3 phases"
+                        ? "e.g. Full website build"
                         : `e.g. ${currentOption.unit === "hours" ? "4" : currentOption.unit === "days" ? "3" : "2"}`
                     }
                     value={form.estimatedValue}
                     onChange={(e) => set("estimatedValue", e.target.value)}
                   />
+                  {/* Duration label */}
+                  {form.estimatedValue &&
+                    currentOption.inputType === "number" && (
+                      <p className={styles.durationLabel}>
+                        📅 {form.estimatedValue}{" "}
+                        {currentOption.inputLabel.toLowerCase()}
+                        {currentOption.unit !== "hours" && (
+                          <span className={styles.durationEqv}>
+                            {" "}
+                            ≈{" "}
+                            {currentOption.unit === "days"
+                              ? `${parseFloat(form.estimatedValue) * 8}h`
+                              : currentOption.unit === "weeks"
+                                ? `${parseFloat(form.estimatedValue) * 40}h`
+                                : currentOption.unit === "months"
+                                  ? `${parseFloat(form.estimatedValue) * 160}h`
+                                  : ""}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   {form.estimatedValue &&
                     currentOption.inputType === "number" &&
                     lockedRate > 0 && (
@@ -470,11 +495,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                             Number(form.estimatedValue) * lockedRate
                           ).toLocaleString()}
                         </strong>
-                        <span className={styles.totalNote}>
-                          {" "}
-                          (for {form.estimatedValue}{" "}
-                          {currentOption.inputLabel.toLowerCase()})
-                        </span>
                       </p>
                     )}
                 </div>
