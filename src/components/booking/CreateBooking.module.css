@@ -533,3 +533,54 @@
   background: var(--bg-card);
   animation: pulse 1.4s ease infinite;
 }
+
+.durationLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.durationEqv {
+  color: var(--text-muted);
+}
+
+.bookingSummary {
+  background: var(--bg-card);
+  border: 1.5px solid var(--orange-glow);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 0.5rem;
+}
+.summaryTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--orange);
+  margin: 0 0 0.875rem;
+}
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.summaryLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.summaryValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.summaryNote {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
