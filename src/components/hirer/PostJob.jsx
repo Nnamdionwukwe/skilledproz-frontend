@@ -421,7 +421,7 @@ export default function PostJob() {
               <input
                 className={styles.input}
                 type={form.durationUnit === "custom" ? "text" : "number"}
-                min={form.durationUnit !== "custom" ? "0.5" : undefined}
+                min={form.durationUnit !== "custom" ? "" : undefined}
                 step={
                   form.durationUnit === "hours"
                     ? "0.5"
