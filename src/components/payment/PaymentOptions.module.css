@@ -1,52 +1,75 @@
+/* PaymentOptions.module.css */
+
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 14px;
 }
 
+/* ── Pricing summary ─────────────────────────────────────────── */
 .summary {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
-
+.summaryTitle {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
 .summaryRow {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  font-size: 0.82rem;
+  font-size: 13px;
   color: var(--text-dim);
 }
 .summaryDivider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 0.25rem 0;
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
 }
 .summaryTotal {
-  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
+  font-size: 14px;
+}
+.summaryTotalAmt {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--orange);
+}
+.summaryNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 4px;
 }
 
+/* ── Tabs ────────────────────────────────────────────────────── */
 .tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.375rem;
+  display: flex;
+  gap: 6px;
 }
 .tab {
-  background: var(--bg-card);
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 9px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem;
-  font-size: 0.78rem;
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  color: var(--text-dim);
-  transition: all 0.15s;
   font-family: var(--font-body);
+  transition: all 0.15s;
 }
 .tab:hover {
   border-color: var(--border-hover);
@@ -54,64 +77,40 @@
 }
 .tabActive {
   background: var(--orange-dim);
-  border-color: var(--orange-glow);
+  border-color: var(--orange);
   color: var(--orange);
 }
 
+/* ── Tab content ─────────────────────────────────────────────── */
 .tabContent {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
 }
 .tabDesc {
-  font-size: 0.78rem;
+  font-size: 12px;
   color: var(--text-dim);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-.payBtn {
-  background: var(--orange);
-  color: var(--bg);
-  border: none;
-  border-radius: 9px;
-  padding: 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  cursor: pointer;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  transition: background 0.2s;
-  font-family: var(--font-body);
-}
-.payBtn:hover:not(:disabled) {
-  background: var(--orange-hover);
-}
-.payBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Crypto grid */
+/* ── Crypto chips ────────────────────────────────────────────── */
 .cryptoGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
+  gap: 8px;
 }
 .cryptoChip {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.625rem 0.75rem;
-  cursor: pointer;
-  text-align: left;
-  font-family: var(--font-body);
-  transition: all 0.15s;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
 }
 .cryptoChip:hover {
   border-color: var(--border-hover);
@@ -121,86 +120,121 @@
   background: var(--orange-dim);
 }
 .cryptoChipIcon {
-  font-size: 1.1rem;
+  font-size: 20px;
 }
 .cryptoChipLabel {
-  font-size: 0.82rem;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
 }
 .cryptoChipNetwork {
-  font-size: 0.65rem;
+  font-size: 10px;
   color: var(--text-muted);
 }
+.cryptoChipActive .cryptoChipLabel {
+  color: var(--orange);
+}
 
-/* Bank / Crypto details */
+/* ── Pay button ──────────────────────────────────────────────── */
+.payBtn {
+  width: 100%;
+  padding: 12px;
+  background: var(--orange);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.payBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.payBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Bank details ────────────────────────────────────────────── */
 .bankDetails,
 .cryptoDetails {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
 }
 .bankTitle {
-  font-size: 0.85rem;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
 }
 .bankSubtitle {
-  font-size: 0.82rem;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
-  margin-top: 0.25rem;
+  margin-top: 4px;
 }
 
 .bankCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 0.875rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+  overflow: hidden;
 }
-
 .bankRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 0.8rem;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.bankRow:last-child {
+  border-bottom: none;
 }
 .bankLabel {
+  font-size: 11px;
   color: var(--text-muted);
+  font-weight: 500;
   flex-shrink: 0;
 }
 .bankValWrap {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  text-align: right;
+  gap: 6px;
+  min-width: 0;
 }
 .bankVal {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
-  font-weight: 500;
+  word-break: break-all;
 }
 .bankMono {
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 .bankAccent {
   color: var(--orange);
+  font-size: 14px;
   font-weight: 700;
-  font-size: 0.85rem;
 }
+
 .copyBtn {
-  background: var(--bg-input);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
+  border-radius: 5px;
   color: var(--text-dim);
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem;
-  font-size: 0.72rem;
+  font-size: 13px;
   cursor: pointer;
+  padding: 2px 7px;
   flex-shrink: 0;
-  font-family: var(--font-body);
+  transition: all 0.15s;
 }
 .copyBtn:hover {
   border-color: var(--orange);
@@ -208,32 +242,35 @@
 }
 
 .bankWarn {
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  font-size: 12px;
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.75rem;
-  color: #fbbf24;
-  line-height: 1.4;
+  padding: 10px 13px;
+  line-height: 1.5;
 }
 
+/* ── Form ────────────────────────────────────────────────────── */
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 5px;
 }
 .label {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 11px;
   color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 .input {
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  padding: 10px 13px;
   color: var(--text);
-  font-size: 0.83rem;
+  font-size: 13px;
   outline: none;
   font-family: var(--font-body);
   transition: border-color 0.15s;
@@ -242,79 +279,101 @@
 .input:focus {
   border-color: var(--border-focus);
 }
+.input::placeholder {
+  color: var(--text-muted);
+}
 
 .bankBtns {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 .backBtn {
-  background: none;
+  padding: 10px 16px;
+  background: transparent;
   border: 1px solid var(--border);
+  border-radius: 9px;
   color: var(--text-dim);
-  border-radius: 8px;
-  padding: 0.65rem 1rem;
-  font-size: 0.83rem;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.backBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
 }
 
-/* Success */
+/* ── Success ─────────────────────────────────────────────────── */
 .successWrap {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
   text-align: center;
-  gap: 0.625rem;
-  padding: 1.5rem 0;
 }
 .successRing {
-  font-size: 2.5rem;
+  font-size: 40px;
 }
 .successTitle {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 17px;
   font-weight: 800;
   color: var(--text);
+  margin: 0;
 }
 .successText {
-  font-size: 0.83rem;
+  font-size: 13px;
   color: var(--text-dim);
-  line-height: 1.5;
-  max-width: 280px;
+  line-height: 1.6;
+  max-width: 300px;
 }
 .successBtn {
+  margin-top: 6px;
+  padding: 10px 24px;
   background: var(--orange);
-  color: var(--bg);
+  color: #000;
   border: none;
-  border-radius: 8px;
-  padding: 0.65rem 1.5rem;
-  font-size: 0.875rem;
+  border-radius: 9px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 0.5rem;
-  transition: background 0.2s;
   font-family: var(--font-body);
+  transition: background 0.15s;
 }
 .successBtn:hover {
   background: var(--orange-hover);
 }
 
+/* ── Error / disclaimer ──────────────────────────────────────── */
 .error {
-  font-size: 0.78rem;
+  font-size: 12px;
   color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 9px 13px;
 }
 .disclaimer {
-  font-size: 0.7rem;
+  font-size: 11px;
   color: var(--text-muted);
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.5;
 }
+
+/* ── Spinner ─────────────────────────────────────────────────── */
 .spinner {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: var(--bg);
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

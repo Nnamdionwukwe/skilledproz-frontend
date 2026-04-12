@@ -10,9 +10,61 @@ const CRYPTO_OPTIONS = [
   { value: "ETH", label: "Ethereum", network: "Ethereum", icon: "⟠" },
 ];
 
+// ── Pricing helper — matches BookingDetail sidebar exactly ────────────────────
+// agreedRate = rate per unit (hr / day / week / month)
+// estimatedUnit + estimatedHours → qty
+// platformFeeRate = 0.1 (10%) matching payment.service.js
+function calcPricing(booking) {
+  const rate = booking.agreedRate || 0;
+  const unit = booking.estimatedUnit || "hours";
+  const hours = booking.estimatedHours;
+  const value = booking.estimatedValue
+    ? parseFloat(booking.estimatedValue)
+    : null;
+  const currency = booking.currency || "USD";
+  const PLATFORM_FEE_RATE = 0.1; // must match payment.service.js PLATFORM_FEE_PERCENT
+
+  // Quantity of units
+  let qty = 1;
+  if (value && unit !== "custom") {
+    qty = value;
+  } else if (hours) {
+    // Fall back: derive qty from estimatedHours
+    if (unit === "hours") qty = hours;
+    if (unit === "days") qty = Math.round(hours / 8);
+    if (unit === "weeks") qty = Math.round(hours / 40);
+    if (unit === "months") qty = Math.round(hours / 160);
+  }
+
+  const unitSuffix =
+    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
+  const unitLabel =
+    { hours: "hour", days: "day", weeks: "week", months: "month" }[unit] ||
+    unit;
+
+  const subtotal = rate * qty;
+  const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
+  const workerPayout = parseFloat((subtotal - platformFee).toFixed(2));
+  const totalCharged = subtotal + platformFee; // hirer pays subtotal; fee is taken from worker payout
+
+  return {
+    rate,
+    qty,
+    unit,
+    unitSuffix,
+    unitLabel,
+    currency,
+    subtotal,
+    platformFee,
+    workerPayout,
+    totalCharged,
+    hasQty: (value || hours) && unit !== "custom",
+  };
+}
+
 export default function PaymentOptions({ booking, onSuccess }) {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("card"); // card | bank | crypto
+  const [tab, setTab] = useState("crypto");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState("select"); // select | details | confirm
@@ -29,29 +81,10 @@ export default function PaymentOptions({ booking, onSuccess }) {
   const [cryptoAmount, setCryptoAmount] = useState("");
   const [cryptoDetails, setCryptoDetails] = useState(null);
 
-  const platformFee = (booking.agreedRate * 0.1).toFixed(2);
-  const total = (booking.agreedRate * 1.1).toFixed(2);
+  // ── Pricing ───────────────────────────────────────────────────────────────
+  const p = calcPricing(booking);
 
-  async function handleCard() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await api.post(`/payments/initiate/${booking.id}`);
-      //   const res = await api.post(`/bookings/${booking.id}/pay`);
-      const { authorizationUrl, clientSecret } = res.data.data;
-      if (authorizationUrl) {
-        window.location.href = authorizationUrl;
-      } else if (clientSecret) {
-        sessionStorage.setItem("stripe_client_secret", clientSecret);
-        navigate(`/bookings/${booking.id}/stripe-confirm`);
-      }
-    } catch (e) {
-      setError(e.response?.data?.message || "Payment failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // ── Handlers ──────────────────────────────────────────────────────────────
   async function handleBankInitiate() {
     setLoading(true);
     setError("");
@@ -67,8 +100,8 @@ export default function PaymentOptions({ booking, onSuccess }) {
   }
 
   async function handleBankConfirm() {
-    if (!bankProof.trim() && !senderName.trim()) {
-      setError("Please provide proof of payment or your name");
+    if (!senderName.trim()) {
+      setError("Please enter your name");
       return;
     }
     setLoading(true);
@@ -128,6 +161,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
     }
   }
 
+  // ── Success screen ────────────────────────────────────────────────────────
   if (step === "confirm") {
     return (
       <div className={styles.successWrap}>
@@ -135,14 +169,14 @@ export default function PaymentOptions({ booking, onSuccess }) {
         <h3 className={styles.successTitle}>Payment Submitted</h3>
         <p className={styles.successText}>
           {tab === "bank"
-            ? "Your bank transfer details have been submitted. We'll confirm within 20–30 minutes."
-            : "Your crypto transaction has been submitted. We'll verify on-chain within 30 minutes."}
+            ? "Bank transfer details submitted. We'll confirm within 1–2 hours."
+            : "Crypto transaction submitted. We'll verify on-chain within 30 minutes."}
         </p>
         <button
           className={styles.successBtn}
-          onClick={() => navigate(`/bookings`)}
+          onClick={() => navigate("/bookings")}
         >
-          Back to Booking
+          Back to Bookings
         </button>
       </div>
     );
@@ -150,25 +184,71 @@ export default function PaymentOptions({ booking, onSuccess }) {
 
   return (
     <div className={styles.wrap}>
-      {/* ── Booking summary ── */}
+      {/* ── Pricing breakdown — matches BookingDetail sidebar exactly ── */}
       <div className={styles.summary}>
+        <p className={styles.summaryTitle}>💰 Payment Breakdown</p>
+
         <div className={styles.summaryRow}>
           <span>Agreed Rate</span>
           <span>
-            {booking.currency} {Number(booking.agreedRate).toLocaleString()}
+            {p.currency} {p.rate.toLocaleString()}
+            {p.unitSuffix}
           </span>
         </div>
+
+        {p.hasQty && (
+          <div className={styles.summaryRow}>
+            <span>Duration</span>
+            <span>
+              {p.qty} {p.unitLabel}
+              {p.qty !== 1 ? "s" : ""}
+            </span>
+          </div>
+        )}
+
+        {p.hasQty && (
+          <div className={styles.summaryRow}>
+            <span>
+              Subtotal ({p.qty} × {p.currency} {p.rate.toLocaleString()})
+            </span>
+            <span>
+              {p.currency} {p.subtotal.toLocaleString()}
+            </span>
+          </div>
+        )}
+
         <div className={styles.summaryRow}>
-          <span>Platform Fee (10%)</span>
-          <span>
-            {booking.currency} {platformFee}
+          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            Platform Fee (10%)
+          </span>
+          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            − {p.currency}{" "}
+            {p.platformFee.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
           </span>
         </div>
+
+        <div className={styles.summaryRow}>
+          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            Worker Receives
+          </span>
+          <span
+            style={{ color: "var(--green)", fontSize: 12, fontWeight: 600 }}
+          >
+            {p.currency}{" "}
+            {p.workerPayout.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        </div>
+
         <div className={styles.summaryDivider} />
+
         <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
-          <span>Total</span>
-          <span>
-            {booking.currency} {Number(total).toLocaleString()}
+          <span>You Pay</span>
+          <span className={styles.summaryTotalAmt}>
+            {p.currency} {p.totalCharged.toLocaleString()}
           </span>
         </div>
       </div>
@@ -177,12 +257,6 @@ export default function PaymentOptions({ booking, onSuccess }) {
       {step === "select" && (
         <>
           <div className={styles.tabs}>
-            {/* <button
-              className={`${styles.tab} ${tab === "card" ? styles.tabActive : ""}`}
-              onClick={() => setTab("card")}
-            >
-              💳 Card
-            </button> */}
             <button
               className={`${styles.tab} ${tab === "bank" ? styles.tabActive : ""}`}
               onClick={() => setTab("bank")}
@@ -197,35 +271,12 @@ export default function PaymentOptions({ booking, onSuccess }) {
             </button>
           </div>
 
-          {/* Card tab */}
-          {/* {tab === "card" && (
-            <div className={styles.tabContent}>
-              <p className={styles.tabDesc}>
-                Pay securely with your debit or credit card via Paystack (NGN)
-                or Stripe (international).
-              </p>
-              <button
-                className={styles.payBtn}
-                onClick={handleCard}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className={styles.spinner} /> Processing…
-                  </>
-                ) : (
-                  `💳 Pay ${booking.currency} ${Number(total).toLocaleString()} Now`
-                )}
-              </button>
-            </div>
-          )} */}
-
           {/* Bank transfer tab */}
           {tab === "bank" && (
             <div className={styles.tabContent}>
               <p className={styles.tabDesc}>
-                Transfer directly to our bank account and upload your proof of
-                payment. Funds are held in escrow until the job is complete.
+                Transfer directly to our escrow account. We'll confirm receipt
+                within 1–2 hours and notify the worker.
               </p>
               <button
                 className={styles.payBtn}
@@ -234,7 +285,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
               >
                 {loading ? (
                   <>
-                    <span className={styles.spinner} /> Loading bank details…
+                    <span className={styles.spinner} /> Loading…
                   </>
                 ) : (
                   "🏦 Get Bank Details"
@@ -247,8 +298,8 @@ export default function PaymentOptions({ booking, onSuccess }) {
           {tab === "crypto" && (
             <div className={styles.tabContent}>
               <p className={styles.tabDesc}>
-                Pay with cryptocurrency. Select your preferred asset and send to
-                the wallet address provided.
+                Pay with cryptocurrency. Send to our wallet and submit your
+                transaction hash.
               </p>
               <div className={styles.cryptoGrid}>
                 {CRYPTO_OPTIONS.map((c) => (
@@ -287,7 +338,6 @@ export default function PaymentOptions({ booking, onSuccess }) {
       {step === "details" && tab === "bank" && bankDetails && (
         <div className={styles.bankDetails}>
           <p className={styles.bankTitle}>Transfer to this account</p>
-
           <div className={styles.bankCard}>
             <BankRow label="Bank" value={bankDetails.bankName} />
             <BankRow
@@ -303,12 +353,10 @@ export default function PaymentOptions({ booking, onSuccess }) {
             />
             <BankRow label="Narration" value={bankDetails.narration} mono />
           </div>
-
           <div className={styles.bankWarn}>
-            ⚠️ Include the exact narration in your transfer. Payments without
-            the reference may be delayed.
+            ⚠️ Include the exact narration. Payments without the reference may
+            be delayed.
           </div>
-
           <p className={styles.bankSubtitle}>Confirm your transfer</p>
           <div className={styles.formGroup}>
             <label className={styles.label}>Your Name *</label>
@@ -316,7 +364,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
               className={styles.input}
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
-              placeholder="Name on the sending account"
+              placeholder="Name on sending account"
             />
           </div>
           <div className={styles.formGroup}>
@@ -367,7 +415,6 @@ export default function PaymentOptions({ booking, onSuccess }) {
       {step === "details" && tab === "crypto" && cryptoDetails && (
         <div className={styles.cryptoDetails}>
           <p className={styles.bankTitle}>Send to this wallet</p>
-
           <div className={styles.bankCard}>
             <BankRow label="Asset" value={cryptoDetails.currency} />
             <BankRow label="Network" value={cryptoDetails.network} />
@@ -384,12 +431,10 @@ export default function PaymentOptions({ booking, onSuccess }) {
             />
             <BankRow label="Memo" value={cryptoDetails.note} mono />
           </div>
-
           <div className={styles.bankWarn}>
             ⚠️ Only send {cryptoDetails.currency} on the {cryptoDetails.network}{" "}
-            network. Sending on the wrong network may result in loss of funds.
+            network. Wrong network may result in permanent loss of funds.
           </div>
-
           <p className={styles.bankSubtitle}>Confirm your transaction</p>
           <div className={styles.formGroup}>
             <label className={styles.label}>Transaction Hash / TX ID *</label>
@@ -438,8 +483,8 @@ export default function PaymentOptions({ booking, onSuccess }) {
       {error && <p className={styles.error}>⚠️ {error}</p>}
 
       <p className={styles.disclaimer}>
-        All payments are held in escrow and only released after you confirm the
-        job is complete.
+        All payments are held in escrow and only released after you confirm job
+        completion.
       </p>
     </div>
   );
@@ -447,13 +492,11 @@ export default function PaymentOptions({ booking, onSuccess }) {
 
 function BankRow({ label, value, copyable, mono, accent }) {
   const [copied, setCopied] = useState(false);
-
   function handleCopy() {
     navigator.clipboard.writeText(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
-
   return (
     <div className={styles.bankRow}>
       <span className={styles.bankLabel}>{label}</span>

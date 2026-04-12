@@ -834,62 +834,6 @@ export default function BookingDetail() {
                 </div>
               )}
 
-              {/* ── Pricing breakdown ── */}
-              {booking.agreedRate && (
-                <div className={styles.pricingCard}>
-                  <p className={styles.pricingTitle}>💰 Pricing</p>
-                  <div className={styles.pricingRow}>
-                    <span>Agreed Rate</span>
-                    <span className={styles.pricingAmount}>
-                      {booking.currency} {booking.agreedRate?.toLocaleString()}
-                    </span>
-                  </div>
-                  {booking.estimatedHours && (
-                    <div className={styles.pricingRow}>
-                      <span>Est. Duration</span>
-                      <span>
-                        {booking.estimatedUnit === "hours"
-                          ? `${booking.estimatedHours}h`
-                          : booking.estimatedUnit === "days"
-                            ? `${Math.round(booking.estimatedHours / 8)} day${Math.round(booking.estimatedHours / 8) !== 1 ? "s" : ""}`
-                            : booking.estimatedUnit === "weeks"
-                              ? `${Math.round(booking.estimatedHours / 40)} week${Math.round(booking.estimatedHours / 40) !== 1 ? "s" : ""}`
-                              : booking.estimatedUnit === "months"
-                                ? `${Math.round(booking.estimatedHours / 160)} month${Math.round(booking.estimatedHours / 160) !== 1 ? "s" : ""}`
-                                : `${booking.estimatedHours}h`}
-                      </span>
-                    </div>
-                  )}
-                  {booking.estimatedHours && booking.agreedRate && (
-                    <div
-                      className={styles.pricingRow}
-                      style={{
-                        borderTop: "1px solid var(--border)",
-                        paddingTop: 8,
-                        marginTop: 4,
-                      }}
-                    >
-                      <span style={{ fontWeight: 700 }}>Est. Total</span>
-                      <span className={styles.pricingTotal}>
-                        {booking.currency}{" "}
-                        {(
-                          booking.agreedRate *
-                          (booking.estimatedUnit === "hours"
-                            ? booking.estimatedHours
-                            : booking.estimatedUnit === "days"
-                              ? Math.round(booking.estimatedHours / 8)
-                              : booking.estimatedUnit === "weeks"
-                                ? Math.round(booking.estimatedHours / 40)
-                                : booking.estimatedUnit === "months"
-                                  ? Math.round(booking.estimatedHours / 160)
-                                  : 1)
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* ── HIRER ACTIONS ── */}
               {isHirer && (
                 <>
@@ -902,6 +846,7 @@ export default function BookingDetail() {
                       >
                         💳 Pay with Card
                       </Link>
+
                       <PaymentOptions
                         booking={booking}
                         onSuccess={() =>
