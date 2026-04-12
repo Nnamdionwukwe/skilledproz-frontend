@@ -66,6 +66,12 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
   const [workerLoading, setWorkerLoading] = useState(false);
   const [workerError, setWorkerError] = useState("");
 
+  // ── Job-sourced values (locked when fromJob is set) ──────────────────────
+  const [jobPost, setJobPost] = useState(null);
+  const [jobLoading, setJobLoading] = useState(false);
+
+  const fromJobId = searchParams.get("fromJob") || null; // ← new
+
   // ── Selected pricing unit ────────────────────────────────────────────────
   const [selectedUnit, setSelectedUnit] = useState(null); // null until worker loaded
 
@@ -151,11 +157,53 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       .finally(() => setWorkerLoading(false));
   }, [form.workerId]);
 
+  // ── Fetch job post when fromJob is present ───────────────────────────────────
+  useEffect(() => {
+    if (!fromJobId) return;
+    setJobLoading(true);
+    api
+      .get(`/jobs/${fromJobId}`)
+      .then((res) => {
+        const jp = res.data.data.jobPost;
+        setJobPost(jp);
+        // Pre-fill form fields from the job post
+        setForm((f) => ({
+          ...f,
+          categoryId: jp.categoryId || f.categoryId,
+          title: jp.title || f.title,
+          description: jp.description || f.description,
+          address: jp.address || f.address,
+          estimatedValue:
+            jp.estimatedValue ||
+            (jp.estimatedHours ? String(jp.estimatedHours) : f.estimatedValue),
+        }));
+        // Set duration unit from the job post
+        if (jp.estimatedUnit) setSelectedUnit(jp.estimatedUnit);
+      })
+      .catch(() => {}) // silently fail — form still usable
+      .finally(() => setJobLoading(false));
+  }, [fromJobId]);
+
+  const isFromJob = !!fromJobId && !!jobPost;
+
   // ── Derived values from worker + selected unit ───────────────────────────
   const currentOption = DURATION_OPTIONS.find((o) => o.unit === selectedUnit);
-  const lockedRate =
-    worker && currentOption ? worker[currentOption.rateKey] || 0 : 0;
-  const lockedCurrency = worker?.currency || "USD";
+
+  const lockedRate = isFromJob
+    ? jobPost?.budget || 0
+    : worker && currentOption
+      ? worker[currentOption.rateKey] || 0
+      : 0;
+
+  // const lockedRate =
+  //   worker && currentOption ? worker[currentOption.rateKey] || 0 : 0;
+
+  // const lockedCurrency = worker?.currency || "USD";
+
+  const lockedCurrency = isFromJob
+    ? jobPost?.currency || "USD"
+    : worker?.currency || "USD";
+
   const availableUnits = worker
     ? DURATION_OPTIONS.filter((o) => {
         if (o.rateKey === "customRate") return worker.customRate > 0;
@@ -372,141 +420,189 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             <fieldset className={styles.fieldset}>
               <legend className={styles.legend}>Pricing & Duration</legend>
 
-              <div className={styles.field}>
-                <label className={styles.label}>
-                  Engagement Type <span className={styles.req}>*</span>
-                </label>
-                <p className={styles.fieldHint}>
-                  Select how you want to engage this worker. The rate is set by
-                  the worker and cannot be modified.
-                </p>
-                <div className={styles.unitGrid}>
-                  {displayUnits.map((opt) => {
-                    const rate = worker[opt.rateKey];
-                    const hasRate = rate > 0;
-                    return (
-                      <button
-                        type="button"
-                        key={opt.unit}
-                        className={`${styles.unitCard} ${selectedUnit === opt.unit ? styles.unitCardActive : ""} ${!hasRate ? styles.unitCardDisabled : ""}`}
-                        onClick={() => hasRate && setSelectedUnit(opt.unit)}
-                        disabled={!hasRate}
-                        title={!hasRate ? "Worker has not set this rate" : ""}
-                      >
-                        <span className={styles.unitCardLabel}>
-                          {opt.label}
-                        </span>
-                        {hasRate ? (
-                          <span className={styles.unitCardRate}>
-                            {lockedCurrency} {Number(rate).toLocaleString()}
-                            {opt.suffix}
-                          </span>
-                        ) : (
-                          <span className={styles.unitCardNoRate}>
-                            Not offered
-                          </span>
-                        )}
-                        {opt.unit === "custom" && worker.customRateLabel && (
-                          <span className={styles.unitCardSuffix}>
-                            {worker.customRateLabel}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* If from job — show locked budget, don't show unit picker */}
+              {isFromJob ? (
+                <>
+                  <div className={styles.rateLockedRow}>
+                    <div className={styles.rateLockedBox}>
+                      <span className={styles.rateLockedLabel}>
+                        Agreed Budget (from job)
+                      </span>
+                      <span className={styles.rateLockedValue}>
+                        {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                      </span>
+                      <span className={styles.rateLockedNote}>
+                        🔒 Set from the job post budget
+                      </span>
+                    </div>
+                    <div className={styles.rateLockedBox}>
+                      <span className={styles.rateLockedLabel}>Currency</span>
+                      <span className={styles.rateLockedValue}>
+                        {lockedCurrency}
+                      </span>
+                      <span className={styles.rateLockedNote}>
+                        🔒 Job's currency
+                      </span>
+                    </div>
+                  </div>
+                  {/* Duration from job — locked */}
+                  <div
+                    className={styles.rateLockedBox}
+                    style={{ marginTop: 8 }}
+                  >
+                    <span className={styles.rateLockedLabel}>
+                      Duration (from job)
+                    </span>
+                    <span className={styles.rateLockedValue}>
+                      {jobPost?.estimatedValue
+                        ? `${jobPost.estimatedValue} ${jobPost.estimatedUnit || "hours"}`
+                        : jobPost?.estimatedHours
+                          ? `${jobPost.estimatedHours} hours`
+                          : "Not specified"}
+                    </span>
+                    <span className={styles.rateLockedNote}>
+                      🔒 From job post
+                    </span>
+                  </div>
+                </>
+              ) : (
+                // Normal worker-based pricing
+                <>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      Engagement Type <span className={styles.req}>*</span>
+                    </label>
 
-              {/* Agreed Rate — locked, read-only */}
-              <div className={styles.rateLockedRow}>
-                <div className={styles.rateLockedBox}>
-                  <span className={styles.rateLockedLabel}>Agreed Rate</span>
-                  <span className={styles.rateLockedValue}>
-                    {lockedCurrency} {Number(lockedRate).toLocaleString()}
-                    {currentOption?.suffix}
-                  </span>
-                  <span className={styles.rateLockedNote}>
-                    🔒 Set by worker — cannot be changed
-                  </span>
-                </div>
-                <div className={styles.rateLockedBox}>
-                  <span className={styles.rateLockedLabel}>Currency</span>
-                  <span className={styles.rateLockedValue}>
-                    {lockedCurrency}
-                  </span>
-                  <span className={styles.rateLockedNote}>
-                    🔒 Worker's currency
-                  </span>
-                </div>
-              </div>
-
-              {/* Duration value input */}
-              {currentOption && (
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {currentOption.unit === "custom"
-                      ? "Describe the engagement"
-                      : `Number of ${currentOption.inputLabel}`}
-                    <span className={styles.req}> *</span>
-                  </label>
-                  <input
-                    className={styles.input}
-                    type={currentOption.inputType}
-                    step={currentOption.step || undefined}
-                    min={
-                      currentOption.inputType === "number" ? "0.5" : undefined
-                    }
-                    required
-                    placeholder={
-                      currentOption.inputType === "text"
-                        ? "e.g. Full website build"
-                        : `e.g. ${currentOption.unit === "hours" ? "4" : currentOption.unit === "days" ? "3" : "2"}`
-                    }
-                    value={form.estimatedValue}
-                    onChange={(e) => set("estimatedValue", e.target.value)}
-                  />
-                  {/* Duration label */}
-                  {form.estimatedValue &&
-                    currentOption.inputType === "number" && (
-                      <p className={styles.durationLabel}>
-                        📅 {form.estimatedValue}{" "}
-                        {currentOption.inputLabel.toLowerCase()}
-                        {currentOption.unit !== "hours" && (
-                          <span className={styles.durationEqv}>
-                            {" "}
-                            ≈{" "}
-                            {currentOption.unit === "days"
-                              ? `${parseFloat(form.estimatedValue) * 8}h`
-                              : currentOption.unit === "weeks"
-                                ? `${parseFloat(form.estimatedValue) * 40}h`
-                                : currentOption.unit === "months"
-                                  ? `${parseFloat(form.estimatedValue) * 160}h`
-                                  : ""}
-                          </span>
+                    <p className={styles.fieldHint}>
+                      Select how you want to engage this worker. The rate is set
+                      by the worker and cannot be modified.
+                    </p>
+                    <div className={styles.unitGrid}>
+                      {(availableUnits.length > 0
+                        ? availableUnits
+                        : [DURATION_OPTIONS[0]]
+                      ).map((opt) => {
+                        const rate = worker[opt.rateKey];
+                        const hasRate = rate > 0;
+                        return (
+                          <button
+                            type="button"
+                            key={opt.unit}
+                            className={`${styles.unitCard} ${selectedUnit === opt.unit ? styles.unitCardActive : ""} ${!hasRate ? styles.unitCardDisabled : ""}`}
+                            onClick={() => hasRate && setSelectedUnit(opt.unit)}
+                            disabled={!hasRate}
+                          >
+                            <span className={styles.unitCardLabel}>
+                              {opt.label}
+                            </span>
+                            {hasRate ? (
+                              <span className={styles.unitCardRate}>
+                                {lockedCurrency} {Number(rate).toLocaleString()}
+                                {opt.suffix}
+                              </span>
+                            ) : (
+                              <span className={styles.unitCardNoRate}>
+                                Not offered
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className={styles.rateLockedRow}>
+                    <div className={styles.rateLockedBox}>
+                      <span className={styles.rateLockedLabel}>
+                        Agreed Rate
+                      </span>
+                      <span className={styles.rateLockedValue}>
+                        {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                        {currentOption?.suffix}
+                      </span>
+                      <span className={styles.rateLockedNote}>
+                        🔒 Worker's rate
+                      </span>
+                    </div>
+                    <div className={styles.rateLockedBox}>
+                      <span className={styles.rateLockedLabel}>Currency</span>
+                      <span className={styles.rateLockedValue}>
+                        {lockedCurrency}
+                      </span>
+                      <span className={styles.rateLockedNote}>
+                        🔒 Worker's currency
+                      </span>
+                    </div>
+                  </div>
+                  {currentOption && (
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        {currentOption.unit === "custom"
+                          ? "Describe the engagement"
+                          : `Number of ${currentOption.inputLabel}`}
+                        <span className={styles.req}> *</span>
+                      </label>
+                      <input
+                        className={styles.input}
+                        type={currentOption.inputType}
+                        step={currentOption.step || undefined}
+                        min={
+                          currentOption.inputType === "number"
+                            ? "0.5"
+                            : undefined
+                        }
+                        placeholder={
+                          currentOption.inputType === "text"
+                            ? "e.g. Full build"
+                            : "e.g. 4"
+                        }
+                        value={form.estimatedValue}
+                        onChange={(e) => set("estimatedValue", e.target.value)}
+                      />
+                      {/* Duration label */}
+                      {form.estimatedValue &&
+                        currentOption.inputType === "number" && (
+                          <p className={styles.durationLabel}>
+                            📅 {form.estimatedValue}{" "}
+                            {currentOption.inputLabel.toLowerCase()}
+                            {currentOption.unit !== "hours" && (
+                              <span className={styles.durationEqv}>
+                                {" "}
+                                ≈{" "}
+                                {currentOption.unit === "days"
+                                  ? `${parseFloat(form.estimatedValue) * 8}h`
+                                  : currentOption.unit === "weeks"
+                                    ? `${parseFloat(form.estimatedValue) * 40}h`
+                                    : currentOption.unit === "months"
+                                      ? `${parseFloat(form.estimatedValue) * 160}h`
+                                      : ""}
+                              </span>
+                            )}
+                          </p>
                         )}
-                      </p>
-                    )}
-                  {form.estimatedValue &&
-                    currentOption.inputType === "number" &&
-                    lockedRate > 0 && (
-                      <p className={styles.totalEstimate}>
-                        Estimated total:{" "}
-                        <strong>
-                          {lockedCurrency}{" "}
-                          {(
-                            Number(form.estimatedValue) * lockedRate
-                          ).toLocaleString()}
-                        </strong>
-                      </p>
-                    )}
-                </div>
-              )}
+                      {form.estimatedValue &&
+                        currentOption.inputType === "number" &&
+                        lockedRate > 0 && (
+                          <p className={styles.totalEstimate}>
+                            Estimated total:{" "}
+                            <strong>
+                              {lockedCurrency}{" "}
+                              {(
+                                Number(form.estimatedValue) * lockedRate
+                              ).toLocaleString()}
+                            </strong>
+                          </p>
+                        )}
 
-              {/* Pricing note from worker */}
-              {worker.pricingNote && (
-                <div className={styles.pricingNoteBox}>
-                  💬 Worker's pricing note: <em>{worker.pricingNote}</em>
-                </div>
+                      {/* Pricing note from worker */}
+                      {worker.pricingNote && (
+                        <div className={styles.pricingNoteBox}>
+                          💬 Worker's pricing note:{" "}
+                          <em>{worker.pricingNote}</em>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </fieldset>
           )}
