@@ -3,6 +3,8 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import styles from "./JobDetail.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import DurationBadge from "../common/DurationBadge";
+import { formatJobDurationParts } from "../utils/formatDuration";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -129,9 +131,7 @@ export default function JobDetail() {
                 text={`${scheduled.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })} at ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
               />
               <MetaItem icon="📍" text={jobPost.address} />
-              {jobPost.estimatedHours && (
-                <MetaItem icon="⏱️" text={`Est. ${jobPost.estimatedHours}h`} />
-              )}
+              <DurationBadge job={jobPost} size="sm" />
               <MetaItem
                 icon="🗓️"
                 text={`Posted ${timeAgo(new Date(jobPost.createdAt))}`}
@@ -187,11 +187,31 @@ export default function JobDetail() {
                   year: "numeric",
                 })}
               />
-              {jobPost.estimatedHours && (
+              {formatJobDurationParts(jobPost) && (
                 <DetailCard
-                  icon="⏱️"
+                  icon={formatJobDurationParts(jobPost).icon}
                   label="Est. Duration"
-                  value={`${jobPost.estimatedHours} hours`}
+                  value={
+                    <span>
+                      {formatJobDurationParts(jobPost).primary}
+                      {formatJobDurationParts(jobPost).equivalents.length >
+                        0 && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginLeft: 5,
+                          }}
+                        >
+                          (
+                          {formatJobDurationParts(jobPost)
+                            .equivalents.map((e) => e.label)
+                            .join(", ")}
+                          )
+                        </span>
+                      )}
+                    </span>
+                  }
                 />
               )}
               <DetailCard icon="📍" label="Location" value={jobPost.address} />
@@ -375,11 +395,22 @@ export default function JobDetail() {
                 {sm.label}
               </span>
             </div>
-            {jobPost.estimatedHours && (
+            {formatJobDurationParts(jobPost) && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Duration</span>
                 <span className={styles.factValue}>
-                  {jobPost.estimatedHours}h
+                  {formatJobDurationParts(jobPost).primary}
+                  {formatJobDurationParts(jobPost).equivalents[0] && (
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: 11,
+                        marginLeft: 4,
+                      }}
+                    >
+                      ({formatJobDurationParts(jobPost).equivalents[0].label})
+                    </span>
+                  )}
                 </span>
               </div>
             )}

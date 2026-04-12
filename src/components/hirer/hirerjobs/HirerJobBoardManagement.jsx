@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import styles from "./HirerJobBoardManagement.module.css";
 import api from "../../../lib/api";
 import HirerLayout from "../../layout/HirerLayout";
+import { formatJobDuration } from "../../utils/formatDuration";
+import DurationBadge from "../../common/DurationBadge";
 
 const STATUS_TABS = ["ALL", "OPEN", "FILLED", "CANCELLED"];
 
@@ -204,9 +206,8 @@ function JobCard({ job, delay, acting, onStatusChange }) {
           })}
         </span>
         <span className={styles.metaItem}>📍 {job.address}</span>
-        {job.estimatedHours && (
-          <span className={styles.metaItem}>⏱ {job.estimatedHours}h</span>
-        )}
+
+        <DurationBadge job={job} size="sm" />
       </div>
 
       {/* Budget + applicants */}

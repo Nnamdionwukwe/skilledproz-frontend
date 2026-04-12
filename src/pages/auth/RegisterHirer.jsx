@@ -87,7 +87,7 @@ export default function RegisterHirer() {
           <h1 className={s.title}>
             Find your next
             <br />
-            skilled pro
+            skilled proz
           </h1>
         </div>
         {errors.api && (

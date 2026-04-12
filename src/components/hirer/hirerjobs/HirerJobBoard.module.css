@@ -321,3 +321,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.durPill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 2px 8px;
+}

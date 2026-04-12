@@ -4,6 +4,7 @@ import styles from "./HirerJobBoard.module.css";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
 import WorkerLayout from "../../layout/WorkerLayout";
+import { formatJobDuration } from "../../utils/formatDuration";
 
 function timeAgo(date) {
   const diff = Date.now() - new Date(date).getTime();
@@ -203,7 +204,13 @@ function JobCard({ job, isWorker }) {
         <span className={styles.budget}>
           {job.currency} {Number(job.budget).toLocaleString()}
         </span>
-        <span className={styles.apps}>{job._count.applications} applied</span>
+        <div className={styles.footerRight}>
+          {(() => {
+            const dur = formatJobDuration(job);
+            return dur ? <span className={styles.durPill}>⏱ {dur}</span> : null;
+          })()}
+          <span className={styles.apps}>{job._count.applications} applied</span>
+        </div>
       </div>
 
       <div className={styles.cardActions}>

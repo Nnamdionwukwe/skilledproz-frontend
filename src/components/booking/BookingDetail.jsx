@@ -800,6 +800,96 @@ export default function BookingDetail() {
                 </>
               )}
 
+              {/* ── Emergency Contact — show to HIRER if worker filled it ── */}
+              {isHirer && emergencyContact && (
+                <div className={styles.emergencyCard}>
+                  <p className={styles.emergencyTitle}>
+                    🚨 Worker's Emergency Contact
+                  </p>
+                  <div className={styles.emergencyRow}>
+                    <span className={styles.emergencyLabel}>Name</span>
+                    <span className={styles.emergencyValue}>
+                      {emergencyContact.name}
+                    </span>
+                  </div>
+                  <div className={styles.emergencyRow}>
+                    <span className={styles.emergencyLabel}>Phone</span>
+                    <a
+                      href={`tel:${emergencyContact.phone}`}
+                      className={styles.emergencyPhone}
+                    >
+                      📱 {emergencyContact.phone}
+                    </a>
+                  </div>
+                  {emergencyContact.relationship && (
+                    <div className={styles.emergencyRow}>
+                      <span className={styles.emergencyLabel}>
+                        Relationship
+                      </span>
+                      <span className={styles.emergencyValue}>
+                        {emergencyContact.relationship}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Pricing breakdown ── */}
+              {booking.agreedRate && (
+                <div className={styles.pricingCard}>
+                  <p className={styles.pricingTitle}>💰 Pricing</p>
+                  <div className={styles.pricingRow}>
+                    <span>Agreed Rate</span>
+                    <span className={styles.pricingAmount}>
+                      {booking.currency} {booking.agreedRate?.toLocaleString()}
+                    </span>
+                  </div>
+                  {booking.estimatedHours && (
+                    <div className={styles.pricingRow}>
+                      <span>Est. Duration</span>
+                      <span>
+                        {booking.estimatedUnit === "hours"
+                          ? `${booking.estimatedHours}h`
+                          : booking.estimatedUnit === "days"
+                            ? `${Math.round(booking.estimatedHours / 8)} day${Math.round(booking.estimatedHours / 8) !== 1 ? "s" : ""}`
+                            : booking.estimatedUnit === "weeks"
+                              ? `${Math.round(booking.estimatedHours / 40)} week${Math.round(booking.estimatedHours / 40) !== 1 ? "s" : ""}`
+                              : booking.estimatedUnit === "months"
+                                ? `${Math.round(booking.estimatedHours / 160)} month${Math.round(booking.estimatedHours / 160) !== 1 ? "s" : ""}`
+                                : `${booking.estimatedHours}h`}
+                      </span>
+                    </div>
+                  )}
+                  {booking.estimatedHours && booking.agreedRate && (
+                    <div
+                      className={styles.pricingRow}
+                      style={{
+                        borderTop: "1px solid var(--border)",
+                        paddingTop: 8,
+                        marginTop: 4,
+                      }}
+                    >
+                      <span style={{ fontWeight: 700 }}>Est. Total</span>
+                      <span className={styles.pricingTotal}>
+                        {booking.currency}{" "}
+                        {(
+                          booking.agreedRate *
+                          (booking.estimatedUnit === "hours"
+                            ? booking.estimatedHours
+                            : booking.estimatedUnit === "days"
+                              ? Math.round(booking.estimatedHours / 8)
+                              : booking.estimatedUnit === "weeks"
+                                ? Math.round(booking.estimatedHours / 40)
+                                : booking.estimatedUnit === "months"
+                                  ? Math.round(booking.estimatedHours / 160)
+                                  : 1)
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* ── HIRER ACTIONS ── */}
               {isHirer && (
                 <>

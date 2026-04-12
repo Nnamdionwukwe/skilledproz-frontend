@@ -989,3 +989,76 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+.emergencyCard {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.emergencyTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+.emergencyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.1);
+}
+.emergencyRow:last-child {
+  border-bottom: none;
+}
+.emergencyLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.emergencyValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.emergencyPhone {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+  text-decoration: none;
+}
+
+.pricingCard {
+  background: var(--bg-card);
+  border: 1px solid var(--orange-glow);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.pricingTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+.pricingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 4px 0;
+}
+.pricingAmount {
+  font-weight: 700;
+  color: var(--orange);
+}
+.pricingTotal {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--green);
+}
