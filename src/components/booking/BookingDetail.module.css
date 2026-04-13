@@ -1062,3 +1062,18 @@
   font-weight: 800;
   color: var(--green);
 }
+
+.page {
+  padding: 24px;
+  max-width: 960px; /* was 1100px — tighter feels more centered */
+  margin: 0 auto; /* centers on wide screens */
+  animation: fadeUp 0.4s ease both;
+}
+
+/* On large screens give it more breathing room */
+@media (min-width: 900px) {
+  .page {
+    padding: 40px 32px;
+    max-width: 1000px;
+  }
+}
