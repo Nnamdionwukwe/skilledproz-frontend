@@ -6,7 +6,7 @@ const stats = [
   { value: "500+", label: "Skill Categories" },
   { value: "50+", label: "Countries Supported" },
   { value: "100+", label: "Skilled Workers" },
-  { value: "98%", label: "Satisfaction Rate" },
+  { value: "100%", label: "Escrow Safe" },
 ];
 
 const values = [
