@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import api from "../../../lib/api";
 import styles from "./Verification.module.css";
+import { Shield, ShieldCheck } from "lucide-react";
 
 const ID_TYPES = [
   { value: "NATIONAL_ID", label: "National ID Card" },
@@ -148,13 +149,15 @@ export default function WorkerVerification() {
           <div className={styles.statusCard}>
             <div className={styles.statusLeft}>
               <div className={styles.statusIcon}>
-                {status.verificationStatus === "VERIFIED"
-                  ? "✅"
-                  : status.verificationStatus === "PENDING"
-                    ? "⏳"
-                    : status.verificationStatus === "REJECTED"
-                      ? "❌"
-                      : "🔓"}
+                {status.verificationStatus === "VERIFIED" ? (
+                  <ShieldCheck />
+                ) : status.verificationStatus === "PENDING" ? (
+                  "⏳"
+                ) : status.verificationStatus === "REJECTED" ? (
+                  "❌"
+                ) : (
+                  "🔓"
+                )}
               </div>
               <div>
                 <div className={styles.statusRow}>
@@ -223,7 +226,9 @@ export default function WorkerVerification() {
           <div className={styles.tabContent}>
             {status?.verificationStatus === "VERIFIED" ? (
               <div className={styles.alreadyVerified}>
-                <span className={styles.bigIcon}>✅</span>
+                <span className={styles.bigIcon}>
+                  <ShieldCheck size={50} />
+                </span>
                 <h3>Your identity is verified</h3>
                 <p>Your profile shows the Verified badge to hirers.</p>
               </div>
