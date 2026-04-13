@@ -751,7 +751,6 @@ function WorkerCard({
           {user?.avatar ? (
             <>
               <img src={user.avatar} alt="" />
-              <ShieldCheck size={18} />
             </>
           ) : (
             <span>
