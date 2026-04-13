@@ -196,7 +196,7 @@ export default function WorkerLayout({ children }) {
           <div className={styles.logoRole}>Worker Portal</div>
         </div>
 
-        <div className={styles.sidebarWorker}>
+        <div className={styles.sidebarUser}>
           <div
             onClick={() => navigate("/profile/me")}
             className={styles.sidebarAvatar}
@@ -217,10 +217,10 @@ export default function WorkerLayout({ children }) {
             )}
           </div>
           <div>
-            <div className={styles.sidebarWorkerName}>
+            <div className={styles.sidebarUserName}>
               {user?.firstName} {user?.lastName}
             </div>
-            <div className={styles.sidebarWorkerBadge}>● Active Worker</div>
+            <div className={styles.sidebarUserBadge}>● Active Worker</div>
           </div>
         </div>
 
