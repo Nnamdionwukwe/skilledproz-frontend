@@ -1,9 +1,7 @@
-/* ── HirerPublicProfile.module.css ── */
-
 .page {
   max-width: 900px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 16px;
   animation: fadeUp 0.3s ease;
 }
 
@@ -12,12 +10,11 @@
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
+  padding: 20px;
+  margin-bottom: 14px;
   position: relative;
   overflow: hidden;
 }
-
 .hero::before {
   content: "";
   position: absolute;
@@ -31,60 +28,101 @@
 .heroInner {
   display: flex;
   align-items: flex-start;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .avatarWrap {
   flex-shrink: 0;
 }
-
 .avatarImg {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--orange-glow);
+  border: 2px solid var(--orange-glow);
+  display: block;
 }
-
 .avatarFallback {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: var(--orange-dim);
-  border: 3px solid var(--orange-glow);
+  border: 2px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--orange);
 }
 
+.heroInfo {
+  flex: 1;
+  min-width: 0;
+}
+
 .heroName {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 900;
+  font-size: 18px;
+  font-weight: 800;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  word-break: break-word;
+  /* Prevent all-caps */
+  text-transform: none;
 }
 
 .companyName {
-  font-size: 0.9375rem;
+  font-size: 13px;
   color: var(--text-dim);
-  margin-bottom: 0.75rem;
+  margin-bottom: 2px;
+}
+.companySize {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.contactRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.contactItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 8px;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contactItem:hover {
+  border-color: var(--orange);
+  color: var(--orange);
 }
 
 .metaRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 8px;
+  margin-bottom: 10px;
 }
-
 .metaItem {
-  font-size: 0.8125rem;
+  font-size: 12px;
   color: var(--text-dim);
   text-decoration: none;
 }
@@ -92,550 +130,78 @@
 .statsRow {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 12px;
   flex-wrap: wrap;
+  row-gap: 8px;
 }
-
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
-
 .statNum {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 18px;
   font-weight: 800;
   color: var(--orange);
+  line-height: 1;
 }
-
 .statLabel {
-  font-size: 0.6875rem;
+  font-size: 10px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-
 .statDivider {
   width: 1px;
-  height: 32px;
+  height: 28px;
   background: var(--border);
 }
 
 .heroCta {
   display: flex;
-  gap: 0.75rem;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
-
 .msgBtn {
-  padding: 0.625rem 1.5rem;
+  padding: 9px 20px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  font-size: 0.875rem;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-body);
   text-decoration: none;
   transition:
     border-color 0.15s,
     background 0.15s;
 }
-
 .msgBtn:hover {
   border-color: var(--border-hover);
   background: rgba(255, 255, 255, 0.05);
 }
-
-/* ── Tabs ── */
-.tabBar {
-  display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.5rem;
-}
-
-.tabBtn {
-  padding: 0.625rem 1.25rem;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-dim);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-  font-family: var(--font-body);
-  margin-bottom: -1px;
-}
-
-.tabBtn:hover {
-  color: var(--text);
-}
-.tabBtnActive {
-  color: var(--orange);
-  border-bottom-color: var(--orange);
-}
-
-/* ── Jobs grid ── */
-.jobsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-}
-
-.jobCard {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  transition: border-color 0.15s;
-}
-
-.jobCard:hover {
-  border-color: var(--border-hover);
-}
-
-.jobCardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.jobCat {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--orange);
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-glow);
-  padding: 3px 10px;
-  border-radius: 999px;
-}
-
-.jobTime {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.jobTitle {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.jobDesc {
-  font-size: 0.8125rem;
-  color: var(--text-dim);
-  line-height: 1.6;
-}
-
-.jobMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.625rem;
-  align-items: center;
-}
-
-.jobBudget {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--orange);
-}
-
-.jobApps,
-.jobLocation {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.applySection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-}
-
-.applyInput {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  resize: none;
-  outline: none;
-}
-
-.applyInput::placeholder {
-  color: var(--text-muted);
-}
-.applyInput:focus {
-  border-color: var(--border-focus);
-}
-
-.applyBtn {
-  width: 100%;
-  padding: 0.5625rem;
-  background: var(--orange);
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 0.875rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: background 0.15s;
-}
-
-.applyBtn:hover:not(:disabled) {
-  background: var(--orange-hover);
-}
-.applyBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.applySuccess {
-  padding: 0.5rem 0.875rem;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  color: var(--green);
-}
-
-.applyError {
-  padding: 0.5rem 0.875rem;
-  background: var(--red-dim);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  color: var(--red);
-}
-
-.jobViewLink {
-  font-size: 0.8125rem;
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.jobViewLink:hover {
-  color: var(--orange);
-}
-
-/* ── Reviews ── */
-.reviewsList {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.reviewCard {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.125rem 1.5rem;
-}
-
-.reviewTop {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  margin-bottom: 0.75rem;
-}
-
-.reviewAvatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-dim);
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.reviewAvatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.reviewerName {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text);
-}
-.reviewDate {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.reviewComment {
-  font-size: 0.875rem;
-  color: var(--text-dim);
-  font-style: italic;
-  border-left: 2px solid var(--orange-glow);
-  padding-left: 0.875rem;
-  line-height: 1.65;
-}
-
-/* ── Empty ── */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 3rem;
-  text-align: center;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}
-
-.empty span {
-  font-size: 2rem;
-  opacity: 0.5;
-}
-
-/* ── Skeleton ── */
-.skHero {
-  height: 220px;
-  background: var(--bg-panel);
-  border-radius: 18px;
-  margin-bottom: 1.5rem;
-  animation: pulse 1.5s infinite;
-}
-
-.skContent {
-  height: 400px;
-  background: var(--bg-panel);
-  border-radius: 14px;
-  animation: pulse 1.5s infinite;
-}
-
-/* ── Not found ── */
-.notFound {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 4rem;
-  text-align: center;
-}
-
-.notFound h2 {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-}
-.backLink {
-  font-size: 0.875rem;
-  color: var(--text-dim);
-  text-decoration: none;
-}
-.backLink:hover {
-  color: var(--orange);
-}
-
-.spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #000;
-  border-radius: 50%;
-  display: inline-block;
-  animation: spin 0.7s linear infinite;
-}
-
-@media (max-width: 640px) {
-  .page {
-    padding: 1.25rem 1rem;
-  }
-  .heroInner {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .metaRow {
-    justify-content: center;
-  }
-  .statsRow {
-    justify-content: center;
-  }
-  .jobsGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   Add these rules to WorkerPublicProfile.module.css
-   They cover: contact row, rate pills, pricing note, edit btn, tab counts,
-   private/not-found error state, and the notFoundSub text.
-───────────────────────────────────────────────────────────────────────────── */
-
-/* Contact row — phone, email, gender, language chips */
-.contactRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-.contactItem {
+.editBtn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--text-dim, #aaa);
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 20px;
-  padding: 4px 10px;
-  text-decoration: none;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-  white-space: nowrap;
-}
-.contactItem:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Rate pills for daily / weekly / monthly / custom */
-.ratePills {
-  display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  margin-top: 8px;
-}
-.ratePill {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 8px;
-  padding: 5px 10px;
-}
-.ratePillAmount {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text, #fff);
-}
-.ratePillSuffix {
-  font-size: 10px;
-  color: var(--text-muted, #666);
-}
-
-/* Pricing note */
-.pricingNote {
-  font-size: 11px;
-  color: var(--text-muted, #888);
-  margin-top: 6px;
-  line-height: 1.5;
-  font-style: italic;
-}
-
-/* Edit profile button (own profile) */
-.editBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
+  padding: 9px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  color: var(--text-dim, #aaa);
+  color: var(--text-dim);
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
   transition: all 0.15s;
-  margin-top: 10px;
 }
 .editBtn:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Tab count badges */
-.tabCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: var(--orange-dim, rgba(249, 115, 22, 0.12));
-  color: var(--orange, #f97316);
-  border-radius: 50%;
-  font-size: 9px;
-  font-weight: 800;
-  margin-left: 4px;
-}
-
-/* Error / private profile state */
-.notFoundSub {
-  font-size: 13px;
-  color: var(--text-muted, #888);
-  margin-top: 6px;
-  text-align: center;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   Add these rules to HirerPublicProfile.module.css
-───────────────────────────────────────────────────────────────────────────── */
-
-/* Contact row on hirer profile */
-.contactRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0 4px;
-}
-.contactItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--text-dim, #aaa);
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 20px;
-  padding: 4px 10px;
-  text-decoration: none;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-  white-space: nowrap;
-}
-.contactItem:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Company size line */
-.companySize {
-  font-size: 12px;
-  color: var(--text-muted, #888);
-  margin: 3px 0;
+  border-color: var(--orange);
+  color: var(--orange);
 }
 
 /* Stars */
@@ -644,40 +210,329 @@
   gap: 2px;
 }
 .starOn {
-  color: var(--orange, #f97316);
+  color: #f97316;
   font-size: 14px;
 }
 .starOff {
-  color: var(--border, #333);
+  color: var(--border);
   font-size: 14px;
 }
 
-/* Edit button */
-.editBtn {
-  display: inline-flex;
+/* ── Tabs ── */
+.tabBar {
+  display: flex;
+  gap: 3px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabBtn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+  font-family: var(--font-body);
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+.tabBtn:hover {
+  color: var(--text);
+}
+.tabBtnActive {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+/* ── Jobs ── */
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jobsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.jobCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+.jobCard:hover {
+  border-color: var(--border-hover);
+}
+.jobCardTop {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.jobCat {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.jobTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.jobTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  word-break: break-word;
+}
+.jobDesc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.jobMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.jobBudget {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--orange);
+}
+.jobApps,
+.jobLocation {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.applySection {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  padding: 9px 18px;
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.applyInput {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  resize: none;
+  outline: none;
+}
+.applyInput::placeholder {
+  color: var(--text-muted);
+}
+.applyInput:focus {
+  border-color: var(--border-focus);
+}
+.applyBtn {
+  width: 100%;
+  padding: 9px;
+  background: var(--orange);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+.applyBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.applyBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.applySuccess {
+  padding: 7px 10px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--green);
+}
+.applyError {
+  padding: 7px 10px;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--red);
+}
+.jobViewLink {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.jobViewLink:hover {
+  color: var(--orange);
+}
+
+/* ── Reviews ── */
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reviewCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  color: var(--text-dim, #aaa);
+  padding: 14px 16px;
+}
+.reviewTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.reviewAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.reviewAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reviewerName {
   font-size: 13px;
   font-weight: 700;
-  text-decoration: none;
-  transition: all 0.15s;
+  color: var(--text);
 }
-.editBtn:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
+.reviewDate {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.reviewComment {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+  border-left: 2px solid var(--orange-glow);
+  padding-left: 10px;
+  line-height: 1.65;
+}
+
+/* ── Empty ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.empty span {
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+/* ── Skeleton ── */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.skHero {
+  height: 200px;
+  background: var(--bg-panel);
+  border-radius: 18px;
+  margin-bottom: 14px;
+  animation: pulse 1.5s infinite;
+}
+.skContent {
+  height: 350px;
+  background: var(--bg-panel);
+  border-radius: 12px;
+  animation: pulse 1.5s infinite;
+}
+
+/* ── Not found ── */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 20px;
+  text-align: center;
+}
+.notFound h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+.backLink {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.backLink:hover {
+  color: var(--orange);
 }
 
 /* Spinner */
 .spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
   border-radius: 50%;
   display: inline-block;
   animation: spin 0.7s linear infinite;
@@ -688,22 +543,37 @@
   }
 }
 
-/* Per-job apply result (success/error keyed by job) */
-.applySuccess {
-  padding: 8px 12px;
-  background: rgba(22, 163, 74, 0.08);
-  border: 1px solid rgba(22, 163, 74, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #16a34a;
-  margin-bottom: 8px;
+/* ── Responsive ── */
+@media (min-width: 480px) {
+  .jobsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .avatarImg,
+  .avatarFallback {
+    width: 72px;
+    height: 72px;
+  }
 }
-.applyError {
-  padding: 8px 12px;
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #dc2626;
-  margin-bottom: 8px;
+
+@media (min-width: 640px) {
+  .page {
+    padding: 20px;
+  }
+  .heroName {
+    font-size: 20px;
+  }
+  .avatarImg,
+  .avatarFallback {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 28px;
+  }
+  .heroName {
+    font-size: 22px;
+  }
 }

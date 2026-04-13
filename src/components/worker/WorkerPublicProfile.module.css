@@ -687,7 +687,8 @@
   gap: 2px;
 }
 .starOn {
-  color: #fbbf24;
+  /* color: #fbbf24; */
+  color: #f97316;
   font-size: 14px;
 }
 .starOff {
