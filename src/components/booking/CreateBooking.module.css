@@ -4,7 +4,6 @@
   margin: 0 auto;
   animation: fadeUp 0.4s ease both;
 }
-
 .back {
   display: inline-flex;
   align-items: center;
@@ -361,10 +360,10 @@
   margin-bottom: 0.5rem;
 }
 .verifiedBadge {
-  background: var(--orange);
+  background: var(--green);
   color: #fff;
   border-radius: 50%;
-  width: 16px;
+  width: 17px;
   height: 16px;
   display: inline-flex;
   align-items: center;

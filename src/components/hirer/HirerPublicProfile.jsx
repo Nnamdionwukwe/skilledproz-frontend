@@ -136,6 +136,14 @@ export default function HirerPublicProfile() {
               )}
             </div>
 
+            <h1 className={styles.name}>
+              {hirerUser.verificationStatus === "VERIFIED" && (
+                <span className={styles.verifiedBadge} title="Verified">
+                  ✓
+                </span>
+              )}
+            </h1>
+
             <div className={styles.heroInfo}>
               <h1 className={styles.heroName}>
                 {hirerUser.firstName} {hirerUser.lastName}
