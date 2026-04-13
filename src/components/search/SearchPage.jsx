@@ -3,6 +3,7 @@ import styles from "./SearchPage.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import VoiceSearch from "./VoiceSearch";
+import { ShieldCheck } from "lucide-react";
 
 const RATINGS = [
   { label: "4★ & above", value: 4 },
@@ -748,7 +749,10 @@ function WorkerCard({
       <div className={styles.wcTop}>
         <div className={styles.wcAvatar}>
           {user?.avatar ? (
-            <img src={user.avatar} alt="" />
+            <>
+              <img src={user.avatar} alt="" />
+              <ShieldCheck size={18} />
+            </>
           ) : (
             <span>
               {user?.firstName?.[0]}
@@ -759,9 +763,7 @@ function WorkerCard({
         </div>
         <div className={styles.wcBadges}>
           {isNew && <span className={styles.newBadge}>New</span>}
-          {verificationStatus === "VERIFIED" && (
-            <span className={styles.verifiedBadge}>✅ Verified</span>
-          )}
+          {verificationStatus === "VERIFIED" && <ShieldCheck size={18} />}
           {showDistance && dist != null && (
             <span className={styles.distBadge}>📍 {dist} km</span>
           )}

@@ -5,6 +5,7 @@ import styles from "./CreateBooking.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
+import { ShieldCheck } from "lucide-react";
 
 const DURATION_OPTIONS = [
   {
@@ -373,9 +374,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 <p className={styles.workerCardName}>
                   {worker.user?.firstName} {worker.user?.lastName}
                   {worker.verificationStatus === "VERIFIED" && (
-                    <span className={styles.verifiedBadge} title="Verified">
-                      ✓
-                    </span>
+                    <ShieldCheck size={18} />
                   )}
                 </p>
                 <p className={styles.workerCardTitle}>{worker.title}</p>

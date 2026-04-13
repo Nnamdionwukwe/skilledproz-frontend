@@ -5,6 +5,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import { ShieldCheck } from "lucide-react";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -105,9 +106,10 @@ export default function WorkerPublicProfile() {
                   <h1 className={styles.name}>
                     {user.firstName} {user.lastName}
                     {worker.verificationStatus === "VERIFIED" && (
-                      <span className={styles.verifiedBadge} title="Verified">
-                        ✓
-                      </span>
+                      // <span className={styles.verifiedBadge} title="Verified">
+                      //   ✓
+                      // </span>
+                      <ShieldCheck size={18} className={styles.verifiedIcon} />
                     )}
                   </h1>
                   <p className={styles.workerTitle}>{worker.title}</p>

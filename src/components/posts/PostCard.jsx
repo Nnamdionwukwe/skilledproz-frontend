@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./PostCard.module.css";
+import { ShieldCheck } from "lucide-react";
 
 const REACTIONS = [
   { type: "LIKE", emoji: "👍", label: "Like" },
@@ -179,9 +180,10 @@ export default function PostCard({ post: initialPost, onDelete }) {
             </div>
           )}
           {author?.workerProfile?.verificationStatus === "VERIFIED" && (
-            <span className={styles.verifiedDot} title="Verified">
-              ✓
-            </span>
+            // <span className={styles.verifiedDot} title="Verified">
+            //   ✓
+            // </span>
+            <ShieldCheck className={styles.verifiedDot} size={18} />
           )}
         </Link>
 
