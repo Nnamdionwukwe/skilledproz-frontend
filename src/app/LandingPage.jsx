@@ -249,7 +249,6 @@ export default function LandingPage() {
             ["Find Workers", "/search"],
             ["Browse Jobs", "/jobs"],
             ["Become a Worker", "/register/worker"],
-            ["How it Works", "#how-it-works"],
           ].map(([label, href]) => (
             <li key={label}>
               <Link to={href}>{label}</Link>
@@ -305,7 +304,7 @@ export default function LandingPage() {
           <h1 className={styles.heroTitle}>
             The global platform
             <br />
-            for <em>skilled work</em>
+            for <em>skilled and office proz</em>
           </h1>
 
           <p className={styles.heroSub}>
@@ -700,8 +699,8 @@ export default function LandingPage() {
                 "Post a Job",
                 "Browse Jobs",
                 "All Categories",
-                "How it Works",
               ],
+              href: ["/search", "/post-job", "/jobs", "/categories"],
             },
             {
               title: "Workers",
@@ -727,9 +726,9 @@ export default function LandingPage() {
             <div key={col.title}>
               <p className={styles.footerColTitle}>{col.title}</p>
               <ul className={styles.footerLinks}>
-                {col.links.map((l) => (
+                {col.links.map((l, href) => (
                   <li key={l}>
-                    <Link to="#">{l}</Link>
+                    <Link to={href}>{l}</Link>
                   </li>
                 ))}
               </ul>

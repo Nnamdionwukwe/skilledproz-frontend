@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import styles from "./About.module.css";
 
 const stats = [
-  { value: "200+", label: "Skill Categories" },
-  { value: "190+", label: "Countries Supported" },
-  { value: "50K+", label: "Skilled Workers" },
+  { value: "500+", label: "Skill Categories" },
+  { value: "29+", label: "Countries Supported" },
+  { value: "100+", label: "Skilled Workers" },
   { value: "98%", label: "Satisfaction Rate" },
 ];
 
@@ -64,14 +64,15 @@ export default function About() {
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroBadge}>Our Story</div>
         <h1 className={styles.heroTitle}>
-          The world's skills,
+          The world's skills and professionals
           <br />
           <span className={styles.accent}>one platform.</span>
         </h1>
         <p className={styles.heroSub}>
-          SkilledPro was built to solve a simple but massive Problem — skilled
-          workers exist everywhere, but hirers can never find them fast enough.
-          We're changing that, globally, one booking at a time.
+          SkilledProz was built to solve a simple but massive Problem — skilled
+          workers and professionals exist everywhere, but hirers can never find
+          them fast enough. We're changing that, globally, one booking at a
+          time.
         </p>
         <div className={styles.heroDivider} />
       </section>
@@ -110,9 +111,10 @@ export default function About() {
             São Paulo.
           </p>
           <p>
-            We believe skilled work deserves a world-class marketplace. One that
-            treats every trade as valuable, every worker as a Professional, and
-            every hirer as someone who deserves fast, reliable service.
+            We believe skilled workers and all professionals deserves a
+            world-class marketplace. One that treats every trade and profession
+            as valuable, every worker as a Professional, and every hirer as
+            someone who deserves fast, reliable service.
           </p>
           <p>
             That's why we built AI-powered matching, multi-currency payments,
