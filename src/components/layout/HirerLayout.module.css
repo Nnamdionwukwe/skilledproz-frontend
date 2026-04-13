@@ -27,6 +27,8 @@
   height: 100vh;
   z-index: 50;
   transition: transform 0.25s ease;
+  /* Prevent sidebar itself from scrolling the page */
+  overflow: hidden;
 }
 
 /* ── Logo ── */
@@ -35,19 +37,18 @@
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-
 .logoText {
   font-family: var(--font-display);
   font-size: 1.375rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--text);
+  text-decoration: none;
+  display: block;
 }
-
 .logoText span {
   color: var(--orange);
 }
-
 .logoRole {
   font-size: 0.5625rem;
   font-weight: 700;
@@ -66,7 +67,6 @@
   gap: 0.75rem;
   flex-shrink: 0;
 }
-
 .sidebarAvatar {
   width: 40px;
   height: 40px;
@@ -82,8 +82,8 @@
   color: var(--orange);
   flex-shrink: 0;
   cursor: pointer;
+  overflow: hidden;
 }
-
 .sidebarUserName {
   font-size: 0.875rem;
   font-weight: 600;
@@ -93,7 +93,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .sidebarUserBadge {
   font-size: 0.5625rem;
   font-weight: 700;
@@ -105,17 +104,31 @@
   display: inline-block;
 }
 
-/* ── Nav ── */
+/* ── Nav — scrollable middle section ── */
 .sidebarNav {
   flex: 1;
   padding: 1rem 0.75rem;
   overflow-y: auto;
+  /* Always show scrollbar track so content doesn't shift */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  /* Critical: min-height 0 lets flex children shrink below content size */
+  min-height: 0;
+}
+.sidebarNav::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebarNav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebarNav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .navGroup {
   margin-bottom: 1.75rem;
 }
-
 .navGroupLabel {
   font-size: 0.5625rem;
   font-weight: 700;
@@ -126,7 +139,6 @@
   margin-bottom: 0.375rem;
   display: block;
 }
-
 .navItem {
   display: flex;
   align-items: center;
@@ -146,18 +158,15 @@
   position: relative;
   font-family: var(--font-body);
 }
-
 .navItem:hover {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
 }
-
 .navItem.active {
   background: var(--orange-dim);
   color: var(--orange);
   font-weight: 600;
 }
-
 .navItem.active::before {
   content: "";
   position: absolute;
@@ -168,14 +177,12 @@
   background: var(--orange);
   border-radius: 0 2px 2px 0;
 }
-
 .navIcon {
   font-size: 0.9375rem;
   flex-shrink: 0;
   width: 18px;
   text-align: center;
 }
-
 .navBadge {
   margin-left: auto;
   background: var(--orange);
@@ -188,16 +195,17 @@
   text-align: center;
 }
 
-/* ── Footer ── */
+/* ── Footer — always visible at bottom ── */
 .sidebarFooter {
   padding: 0.875rem 0.75rem;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  /* Never shrink — logout must always be visible */
   flex-shrink: 0;
+  background: var(--bg-panel);
 }
-
 .logoutBtn {
   display: flex;
   align-items: center;
@@ -215,24 +223,24 @@
   text-align: left;
   font-family: var(--font-body);
 }
-
 .logoutBtn:hover {
   color: var(--red);
   background: var(--red-dim);
 }
 
-/* ── Main ── */
+/* ── Main area ── */
 .main {
   margin-left: 260px;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh; /* ← ADD: constrain to viewport height */
-  overflow-y: auto; /* ← ADD: main scrolls, not the window */
+  /* Main column is the scroll container */
+  height: 100vh;
+  overflow-y: auto;
 }
 
-/* ── Header ── */
+/* ── Header — sticky within the scrolling .main ── */
 .header {
   height: 60px;
   background: var(--bg-panel);
@@ -241,21 +249,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 2rem;
-  position: sticky; /* already sticky — now works because parent scrolls */
+  /* sticky works because .main is the scroll container */
+  position: sticky;
   top: 0;
   z-index: 40;
   gap: 1rem;
-  flex-shrink: 0; /* ← ADD: prevents header from shrinking */
+  flex-shrink: 0;
 }
-
-@media (max-width: 960px) {
-  .main {
-    margin-left: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
-}
-
 .headerLeft {
   display: flex;
   flex-direction: row;
@@ -263,14 +263,12 @@
   gap: 0.75rem;
   min-width: 0;
 }
-
 .headerTitleWrap {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
-
 .headerTitle {
   font-family: var(--font-display);
   font-size: 1rem;
@@ -281,20 +279,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .headerSub {
   font-size: 0.6875rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
-
 .headerRight {
   display: flex;
   align-items: center;
   gap: 0.625rem;
   flex-shrink: 0;
 }
-
 .headerIconBtn {
   width: 34px;
   height: 34px;
@@ -311,36 +306,41 @@
   font-size: 0.875rem;
   color: var(--text-dim);
 }
-
 .headerIconBtn:hover {
   border-color: var(--border-hover);
   color: var(--text);
 }
-
-.headerBellDot {
-  width: 7px;
-  height: 7px;
-  background: var(--orange);
-  border-radius: 50%;
+.bellBadge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  border: 1.5px solid var(--bg-panel);
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--orange);
+  color: #000;
+  font-size: 0.625rem;
+  font-weight: 800;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border: 2px solid var(--bg);
 }
-
 .headerAvatar {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--orange-dim);
   border: 1.5px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--orange);
+  overflow: hidden;
 }
 
 /* ── Hamburger ── */
@@ -362,13 +362,12 @@
     border-color 0.15s,
     color 0.15s;
 }
-
 .menuBtn:hover {
   border-color: var(--border-hover);
   color: var(--text);
 }
 
-/* ── Content ── */
+/* ── Page content ── */
 .content {
   padding: 2rem;
   flex: 1;
@@ -381,15 +380,12 @@
     transform: translateX(-100%);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
   }
-
   .sidebar.open {
     transform: translateX(0);
   }
-
   .main {
     margin-left: 0;
   }
-
   .menuBtn {
     display: flex;
   }
@@ -399,66 +395,10 @@
   .headerSub {
     display: none;
   }
-
   .content {
     padding: 1.25rem;
   }
-
   .header {
     padding: 0 1.25rem;
   }
-}
-
-/* ── ADD THIS to WorkerLayout.module.css and HirerLayout.module.css ── */
-
-.bellBadge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  background: var(--orange);
-  color: #000;
-  font-size: 0.625rem;
-  font-weight: 800;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  border: 2px solid var(--bg);
-}
-
-/* ── Also update .headerAvatar to allow img inside ── */
-.headerAvatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--orange-dim);
-  border: 1.5px solid var(--orange-glow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--orange);
-  overflow: hidden; /* ← ensures img stays within circle */
-}
-
-/* ── Also update .sidebarAvatar to allow img inside ── */
-.sidebarAvatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--orange-dim);
-  border: 1.5px solid var(--orange-glow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--orange);
-  flex-shrink: 0;
-  overflow: hidden; /* ← ensures img stays within circle */
 }
