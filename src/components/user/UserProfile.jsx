@@ -165,6 +165,13 @@ export default function UserProfile() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("About");
   const [editing, setEditing] = useState(false);
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+
+  const [lightbox, setLightbox] = useState(null);
+
   const Layout = me?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   const isOwn = me?.id === id || (!id && !!me);
@@ -180,6 +187,24 @@ export default function UserProfile() {
       .catch(() => setError("User not found"))
       .finally(() => setLoading(false));
   }, [profileId]);
+
+  // Fetch reviews when Reviews tab is opened
+  useEffect(() => {
+    if (tab !== "Reviews" || !profileId) return;
+    setReviewsLoading(true);
+    const endpoint =
+      user?.role === "WORKER"
+        ? `/reviews/worker/${profileId}`
+        : `/reviews/hirer/${profileId}`;
+    api
+      .get(endpoint, { params: { limit: 20 } })
+      .then((res) => {
+        setReviews(res.data.data.reviews || []);
+        setReviewsTotal(res.data.data.total || 0);
+      })
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
+  }, [tab, profileId, user?.role]);
 
   const handleAvatarChange = (url) => setUser((u) => ({ ...u, avatar: url }));
 
@@ -254,53 +279,11 @@ export default function UserProfile() {
                 isOwn={isOwn}
                 onAvatarChange={handleAvatarChange}
               />
-
-              {/* <div className={s.heroInfo}>
-                <div className={s.heroNameRow}>
-                  <h1 className={s.heroName}>
-                    {user.firstName} {user.lastName}
-                  </h1>
-                  {wp?.isVerified && (
-                    <ShieldCheck size={18} className={s.verifiedIcon} />
-                  )}
-                </div>
-
-                <ProBadge />
-
-                <div className={s.rolePill}>
-                  {user.role === "WORKER" ? (
-                    <>
-                      <HardHat size={12} /> Worker
-                    </>
-                  ) : (
-                    <>
-                      <Briefcase size={12} /> Hirer
-                    </>
-                  )}
-                </div>
-
-                {wp?.title && <p className={s.heroTitle}>{wp.title}</p>}
-
-                {wp?.rating != null && (
-                  <div className={s.ratingRow}>
-                    <Stars rating={wp.rating} />
-                    <span className={s.ratingNum}>
-                      {Number(wp.rating).toFixed(1)}
-                    </span>
-                    <span className={s.ratingCount}>
-                      ({wp.totalReviews ?? 0} reviews)
-                    </span>
-                  </div>
-                )}
-              </div> */}
-
-              {/* Replace the heroInfo block inside .heroCard: */}
               <div className={s.heroInfo}>
                 <div className={s.heroNameRow}>
                   <h1 className={s.heroName}>
                     {user.firstName} {user.lastName}
                   </h1>
-                  {/* Fix: check verificationStatus, not isVerified */}
                   {(wp?.verificationStatus === "VERIFIED" ||
                     user.workerProfile?.verificationStatus === "VERIFIED") && (
                     <ShieldCheck
@@ -549,13 +532,18 @@ export default function UserProfile() {
               </div>
             )}
 
-            {/* ── PORTFOLIO ── */}
+            {/* ── PORTFOLIO — clickable for full-page view ── */}
             {tab === "Portfolio" && (
               <div className={s.tabContent}>
                 {wp?.portfolio?.length > 0 ? (
                   <div className={s.portfolioGrid}>
                     {wp.portfolio.map((item) => (
-                      <div key={item.id} className={s.portfolioCard}>
+                      <div
+                        key={item.id}
+                        className={`${s.portfolioCard} ${s.portfolioCardClickable}`}
+                        onClick={() => setLightbox({ type: "portfolio", item })}
+                        title="Click to view full size"
+                      >
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -570,16 +558,15 @@ export default function UserProfile() {
                             />
                           </div>
                         )}
-                        {item.title && (
-                          <div className={s.portfolioInfo}>
-                            <p className={s.portfolioTitle}>{item.title}</p>
-                            {item.description && (
-                              <p className={s.portfolioDesc}>
-                                {item.description}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                        <div className={s.portfolioInfo}>
+                          <p className={s.portfolioTitle}>{item.title}</p>
+                          {item.description && (
+                            <p className={s.portfolioDesc}>
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className={s.portfolioExpand}>⛶ View full</div>
                       </div>
                     ))}
                   </div>
@@ -607,42 +594,57 @@ export default function UserProfile() {
               </div>
             )}
 
-            {/* ── CERTIFICATIONS ── */}
+            {/* ── CERTIFICATIONS — clickable for full-page view ── */}
             {tab === "Certifications" && (
               <div className={s.tabContent}>
                 {wp?.certifications?.length > 0 ? (
                   <div className={s.certList}>
                     {wp.certifications.map((cert) => (
-                      <div key={cert.id} className={s.certCard}>
+                      <div
+                        key={cert.id}
+                        className={`${s.certCard} ${s.certCardClickable}`}
+                        onClick={() =>
+                          setLightbox({ type: "cert", item: cert })
+                        }
+                        title="Click to view full details"
+                      >
                         <div className={s.certIcon}>
                           <Award size={18} />
                         </div>
                         <div className={s.certInfo}>
                           <p className={s.certName}>{cert.name}</p>
                           {cert.issuer && (
-                            <p className={s.certIssuer}>{cert.issuer}</p>
+                            <p className={s.certIssuer}>
+                              Issued by {cert.issuer}
+                            </p>
                           )}
                           {cert.issuedAt && (
                             <p className={s.certDate}>
-                              Issued{" "}
                               {new Date(cert.issuedAt).toLocaleDateString(
                                 "en",
-                                {
-                                  month: "short",
-                                  year: "numeric",
-                                },
+                                { month: "short", year: "numeric" },
                               )}
+                              {cert.expiryDate &&
+                                ` – ${new Date(cert.expiryDate).toLocaleDateString("en", { month: "short", year: "numeric" })}`}
                             </p>
                           )}
                         </div>
-                        {cert.isVerified && (
-                          <div
-                            className={`${s.badge} ${s.badgeGreen}`}
-                            style={{ marginLeft: "auto" }}
-                          >
-                            <CheckCircle2 size={12} /> Verified
-                          </div>
-                        )}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: 6,
+                            marginLeft: "auto",
+                          }}
+                        >
+                          {cert.isVerified && (
+                            <div className={`${s.badge} ${s.badgeGreen}`}>
+                              <CheckCircle2 size={12} /> Verified
+                            </div>
+                          )}
+                          <span className={s.certViewHint}>View →</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -659,18 +661,204 @@ export default function UserProfile() {
               </div>
             )}
 
-            {/* ── REVIEWS ── */}
+            {/* ── REVIEWS — live from API ── */}
             {tab === "Reviews" && (
               <div className={s.tabContent}>
-                <div className={s.emptyCard}>
-                  <Star size={28} style={{ color: "var(--text-muted)" }} />
-                  <p>Reviews coming in Phase 5.</p>
-                </div>
+                {reviewsLoading ? (
+                  <div className={s.reviewsLoading}>
+                    <Loader2
+                      size={22}
+                      className={s.spin}
+                      style={{ color: "var(--orange)" }}
+                    />
+                    <span>Loading reviews…</span>
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className={s.emptyCard}>
+                    <Star size={28} style={{ color: "var(--text-muted)" }} />
+                    <p>No reviews yet.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary bar */}
+                    {reviewsTotal > 0 && (
+                      <div className={s.reviewSummary}>
+                        <div className={s.reviewSummaryLeft}>
+                          <span className={s.reviewSummaryScore}>
+                            {reviews.length > 0
+                              ? (
+                                  reviews.reduce((a, r) => a + r.rating, 0) /
+                                  reviews.length
+                                ).toFixed(1)
+                              : "—"}
+                          </span>
+                          <Stars
+                            rating={
+                              reviews.length > 0
+                                ? reviews.reduce((a, r) => a + r.rating, 0) /
+                                  reviews.length
+                                : 0
+                            }
+                          />
+                        </div>
+                        <span className={s.reviewSummaryCount}>
+                          {reviewsTotal} review{reviewsTotal !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    )}
+                    <div className={s.reviewsList}>
+                      {reviews.map((r) => (
+                        <div key={r.id} className={s.reviewCard}>
+                          <div className={s.reviewTop}>
+                            <div className={s.reviewAvatar}>
+                              {r.giver?.avatar ? (
+                                <img src={r.giver.avatar} alt="" />
+                              ) : (
+                                <span>
+                                  {r.giver?.firstName?.[0]}
+                                  {r.giver?.lastName?.[0]}
+                                </span>
+                              )}
+                            </div>
+                            <div className={s.reviewMeta}>
+                              <p className={s.reviewerName}>
+                                {r.giver?.firstName} {r.giver?.lastName}
+                                <span className={s.reviewerRole}>
+                                  {" "}
+                                  ·{" "}
+                                  {r.giver?.role === "HIRER"
+                                    ? "Hirer"
+                                    : "Worker"}
+                                </span>
+                              </p>
+                              {r.booking?.title && (
+                                <p className={s.reviewBooking}>
+                                  {r.booking.category?.icon} {r.booking.title}
+                                </p>
+                              )}
+                              <p className={s.reviewDate}>
+                                {new Date(r.createdAt).toLocaleDateString(
+                                  "en-GB",
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  },
+                                )}
+                              </p>
+                            </div>
+                            <div className={s.reviewStars}>
+                              <Stars rating={r.rating} />
+                              <span className={s.reviewRatingNum}>
+                                {r.rating}/5
+                              </span>
+                            </div>
+                          </div>
+                          {r.comment && (
+                            <p className={s.reviewComment}>"{r.comment}"</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </section>
         </div>
       </div>
+
+      {/* ── LIGHTBOX ── */}
+      {lightbox && (
+        <div className={s.lightboxOverlay} onClick={() => setLightbox(null)}>
+          <div className={s.lightboxBox} onClick={(e) => e.stopPropagation()}>
+            <button
+              className={s.lightboxClose}
+              onClick={() => setLightbox(null)}
+            >
+              ✕
+            </button>
+
+            {/* Portfolio lightbox */}
+            {lightbox.type === "portfolio" && (
+              <>
+                {lightbox.item.imageUrl && (
+                  <img
+                    src={lightbox.item.imageUrl}
+                    alt={lightbox.item.title}
+                    className={s.lightboxImg}
+                  />
+                )}
+                <div className={s.lightboxInfo}>
+                  <h2 className={s.lightboxTitle}>{lightbox.item.title}</h2>
+                  {lightbox.item.description && (
+                    <p className={s.lightboxDesc}>
+                      {lightbox.item.description}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Certification lightbox */}
+            {lightbox.type === "cert" && (
+              <div className={s.lightboxCert}>
+                <div className={s.lightboxCertIcon}>
+                  <Award size={40} />
+                </div>
+                <h2 className={s.lightboxTitle}>{lightbox.item.name}</h2>
+                {lightbox.item.issuer && (
+                  <p className={s.lightboxCertMeta}>
+                    Issued by <strong>{lightbox.item.issuer}</strong>
+                  </p>
+                )}
+                <div className={s.lightboxCertDates}>
+                  {lightbox.item.issueDate && (
+                    <div className={s.lightboxCertDate}>
+                      <span>Issue date</span>
+                      <strong>
+                        {new Date(lightbox.item.issueDate).toLocaleDateString(
+                          "en-GB",
+                          { day: "numeric", month: "long", year: "numeric" },
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                  {lightbox.item.expiryDate && (
+                    <div className={s.lightboxCertDate}>
+                      <span>Expiry date</span>
+                      <strong>
+                        {new Date(lightbox.item.expiryDate).toLocaleDateString(
+                          "en-GB",
+                          { day: "numeric", month: "long", year: "numeric" },
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+                {lightbox.item.isVerified && (
+                  <div
+                    className={`${s.badge} ${s.badgeGreen}`}
+                    style={{ margin: "1rem auto 0" }}
+                  >
+                    <CheckCircle2 size={13} /> Verified by SkilledProz
+                  </div>
+                )}
+                {lightbox.item.documentUrl && (
+                  <a
+                    href={lightbox.item.documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={s.lightboxDocLink}
+                  >
+                    📄 View Certificate Document →
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
