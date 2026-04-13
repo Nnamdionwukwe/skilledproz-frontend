@@ -115,6 +115,17 @@ export default function App() {
     return children;
   }
 
+  function RoleRedirect() {
+    const { user } = useAuthStore();
+    if (!user) return <Navigate to="/login" replace />;
+    if (user.role === "WORKER")
+      return <Navigate to="/dashboard/worker" replace />;
+    if (user.role === "HIRER")
+      return <Navigate to="/dashboard/hirer" replace />;
+    if (user.role === "ADMIN") return <Navigate to="/admin" replace />;
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <BrowserRouter>
       <div id="google_translate_element" style={{ display: "none" }} />

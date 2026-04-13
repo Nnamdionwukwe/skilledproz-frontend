@@ -14,24 +14,6 @@
   backdrop-filter: blur(2px);
 }
 
-/* ── Header — sticky, always on top ── */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1rem;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
 /* ── Sidebar ── */
 .sidebar {
   width: 260px;
@@ -251,6 +233,20 @@
 }
 
 /* ── Header ── */
+.header {
+  height: 60px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  position: sticky; /* already sticky — now works because parent scrolls */
+  top: 0;
+  z-index: 40;
+  gap: 1rem;
+  flex-shrink: 0; /* ← ADD: prevents header from shrinking */
+}
 
 @media (max-width: 960px) {
   .main {

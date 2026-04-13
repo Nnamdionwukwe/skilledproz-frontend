@@ -691,38 +691,79 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
+          // Replace the footer columns array:
           {[
             {
               title: "Platform",
               links: [
-                "Find Workers",
-                "Post a Job",
-                "Browse Jobs",
-                "All Categories",
+                ["Find Workers", "/search"],
+                ["Browse Jobs", "/jobs"],
+                ["Post a Job", "/dashboard/hirer/post-job"],
+                ["How it Works", "/#how-it-works"],
+                ["All Categories", "/search"],
               ],
-              href: ["/search", "/post-job", "/jobs", "/categories"],
             },
             {
               title: "Workers",
               links: [
-                "Register as Worker",
-                "Earnings",
-                "Verification",
-                "Featured Listings",
-                "Subscriptions",
+                ["Register as Worker", "/register/worker"],
+                ["Worker Dashboard", "/dashboard/worker"],
+                ["Browse Jobs", "/jobs"],
+                ["Earnings", "/dashboard/worker/earnings"],
+                ["Subscriptions", "/settings?tab=subscription"],
               ],
             },
             {
               title: "Company",
-              links: ["About Us", "Privacy Policy", "Terms of Service"],
+              links: [
+                ["About Us", "/about"],
+                ["Contact", "/contact"],
+                ["Privacy Policy", "/privacy"],
+                ["Terms of Service", "/terms"],
+                ["Sign In", "/login"],
+              ],
             },
           ].map((col) => (
             <div key={col.title}>
-              <p className={styles.footerColTitle}>{col.title}</p>
-              <ul className={styles.footerLinks}>
-                {col.links.map((l, href) => (
-                  <li key={l}>
-                    <Link to={href}>{l}</Link>
+              <p
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "#F5F0EB",
+                  marginBottom: "1.25rem",
+                }}
+              >
+                {col.title}
+              </p>
+              <ul
+                style={{
+                  listStyle: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.625rem",
+                }}
+              >
+                {col.links.map(([label, href]) => (
+                  <li key={label}>
+                    <Link
+                      to={href}
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "rgba(245,240,235,0.4)",
+                        textDecoration: "none",
+                        transition: "color 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = "#F59E0B")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = "rgba(245,240,235,0.4)")
+                      }
+                    >
+                      {label}
+                    </Link>
                   </li>
                 ))}
               </ul>
