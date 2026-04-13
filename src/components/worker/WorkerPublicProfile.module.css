@@ -1,7 +1,7 @@
 .page {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px;
   animation: fadeUp 0.4s ease both;
 }
 
@@ -10,18 +10,14 @@
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 28px;
-  margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  padding: 20px;
+  margin-bottom: 14px;
 }
 
 .heroInner {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: flex-start;
-  flex-wrap: wrap;
 }
 
 /* Avatar */
@@ -30,8 +26,8 @@
   flex-shrink: 0;
 }
 .avatar {
-  width: 88px;
-  height: 88px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: var(--orange-dim);
   border: 2px solid var(--orange);
@@ -39,10 +35,11 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--orange);
   overflow: hidden;
+  flex-shrink: 0;
 }
 .avatar img {
   width: 100%;
@@ -51,14 +48,13 @@
 }
 .onlineDot {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
+  bottom: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
   background: var(--green);
   border: 2px solid var(--bg-panel);
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
 }
 
 /* Hero info */
@@ -70,41 +66,46 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 .name {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  /* Prevent all-caps rendering */
+  text-transform: none;
+  line-height: 1.3;
+  word-break: break-word;
 }
 .verifiedBadge {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   background: var(--green);
   color: var(--bg);
   border-radius: 50%;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .workerTitle {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
   margin-top: 2px;
+  word-break: break-word;
 }
 
 .availBadge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 20px;
   white-space: nowrap;
   flex-shrink: 0;
@@ -122,8 +123,9 @@
 .catRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 14px;
+  gap: 5px;
+  margin-bottom: 10px;
+  margin-top: 6px;
 }
 .catChip {
   display: flex;
@@ -131,7 +133,7 @@
   gap: 4px;
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 10px;
+  padding: 3px 8px;
   border-radius: 12px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -147,19 +149,20 @@
 .statsRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+  row-gap: 6px;
 }
 .stat {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 .statIcon {
-  font-size: 13px;
+  font-size: 12px;
 }
 .statValue {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
 }
@@ -169,65 +172,158 @@
 }
 .statDivider {
   width: 1px;
-  height: 16px;
+  height: 14px;
   background: var(--border);
 }
 
-/* Hero action */
-.heroAction {
+/* Contact row */
+.contactRow {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.contactItem {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 8px;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contactItem:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* Hero action — rate + buttons */
+.heroAction {
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .rateBlock {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-right: auto;
 }
 .rateAmount {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--orange);
 }
 .rateLabel {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
 }
 
+/* Rate pills */
+.ratePills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ratePill {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+}
+.ratePillAmount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ratePillSuffix {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Pricing note */
+.pricingNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Action buttons row */
+.actionBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .bookBtn {
-  padding: 10px 24px;
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 20px;
   background: var(--orange);
   color: var(--bg);
+  border: none;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
-  text-decoration: none;
-  transition:
-    background 0.15s,
-    transform 0.1s;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.15s;
+  text-align: center;
 }
 .bookBtn:hover {
   background: var(--orange-hover);
-  transform: translateY(-1px);
 }
 
 .msgBtn {
-  padding: 10px 18px;
+  padding: 10px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-dim);
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--font-body);
   transition: all 0.15s;
 }
 .msgBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.editBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.editBtn:hover {
   border-color: var(--orange);
   color: var(--orange);
 }
@@ -238,7 +334,7 @@
   gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding-bottom: 2px;
 }
 .tabBar::-webkit-scrollbar {
@@ -247,7 +343,7 @@
 
 .tabBtn {
   flex-shrink: 0;
-  padding: 8px 18px;
+  padding: 7px 14px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: transparent;
@@ -257,6 +353,7 @@
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
+  font-family: var(--font-body);
 }
 .tabBtn:hover {
   border-color: var(--border-hover);
@@ -267,39 +364,52 @@
   border-color: var(--orange);
   color: var(--orange);
 }
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  margin-left: 4px;
+}
 
-/* ── Section ───────────────────────────────────────────────── */
+/* ── Tab content ───────────────────────────────────────────── */
 .tabContent {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
-
 .section {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 22px;
-  animation: fadeUp 0.35s ease both;
+  border-radius: 14px;
+  padding: 18px;
+  animation: fadeUp 0.3s ease both;
 }
 .sectionTitle {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .count {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-dim);
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 1px 10px;
+  padding: 1px 8px;
   font-family: var(--font-body);
 }
 
@@ -307,24 +417,24 @@
 .aboutGrid {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 .bio {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
   line-height: 1.8;
 }
 .infoCards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
 }
 .infoCard {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -334,7 +444,7 @@
   background: var(--green-dim);
 }
 .infoIcon {
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 .infoLabel {
@@ -345,7 +455,7 @@
   font-weight: 500;
 }
 .infoValue {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
 }
@@ -356,7 +466,7 @@
 /* Week row */
 .weekRow {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 4px;
@@ -369,10 +479,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 52px;
-  padding: 10px 6px;
-  border-radius: 10px;
+  gap: 3px;
+  width: 44px;
+  padding: 8px 4px;
+  border-radius: 8px;
   border: 1px solid var(--border);
 }
 .dayCellOn {
@@ -384,12 +494,12 @@
   opacity: 0.4;
 }
 .dayName {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--text-dim);
 }
 .dayTime {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--orange);
   font-weight: 600;
 }
@@ -397,12 +507,12 @@
 /* Portfolio */
 .portfolioGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
 }
 .portfolioCard {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   transition:
     border-color 0.15s,
@@ -414,7 +524,7 @@
 }
 .portfolioImg {
   width: 100%;
-  height: 160px;
+  height: 130px;
   overflow: hidden;
   background: var(--bg-card);
 }
@@ -424,16 +534,16 @@
   object-fit: cover;
 }
 .portfolioBody {
-  padding: 12px;
+  padding: 10px;
 }
 .portfolioTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .portfolioDesc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
   line-height: 1.5;
 }
@@ -442,19 +552,19 @@
 .certList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .certCard {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 .certIcon {
-  font-size: 22px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 .certInfo {
@@ -462,7 +572,7 @@
   min-width: 0;
 }
 .certName {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 2px;
@@ -481,6 +591,7 @@
   font-weight: 700;
   color: var(--green);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .certLink {
   font-size: 12px;
@@ -488,6 +599,7 @@
   color: var(--orange);
   text-decoration: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .certLink:hover {
   text-decoration: underline;
@@ -497,14 +609,14 @@
 .availList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 .availRow {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 10px;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
   border: 1px solid var(--border);
 }
 .availRowOn {
@@ -516,30 +628,31 @@
   opacity: 0.5;
 }
 .availDay {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
-  width: 36px;
+  width: 32px;
+  flex-shrink: 0;
 }
 .availTime {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
   flex: 1;
 }
 .availOff {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   flex: 1;
 }
 .availDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 .availDotOn {
   background: var(--green);
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
 }
 .availDotOff {
   background: var(--border);
@@ -550,8 +663,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 .reviewHeader .sectionTitle {
@@ -560,11 +673,11 @@
 .ratingOverall {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .ratingBig {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--orange);
   line-height: 1;
@@ -575,40 +688,40 @@
 }
 .starOn {
   color: #fbbf24;
-  font-size: 16px;
+  font-size: 14px;
 }
 .starOff {
   color: var(--border);
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .reviewList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .reviewCard {
-  padding: 16px;
+  padding: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 .reviewTop {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 .reviewAvatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--orange);
   overflow: hidden;
@@ -624,14 +737,14 @@
   min-width: 0;
 }
 .reviewName {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
 }
 .reviewJob {
   font-size: 11px;
   color: var(--text-dim);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .reviewStars {
   display: flex;
@@ -639,13 +752,13 @@
   flex-shrink: 0;
 }
 .reviewComment {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
   font-style: italic;
   line-height: 1.7;
   border-left: 2px solid var(--orange);
-  padding-left: 12px;
-  margin-bottom: 8px;
+  padding-left: 10px;
+  margin-bottom: 6px;
 }
 .reviewDate {
   font-size: 11px;
@@ -657,15 +770,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48px 20px;
+  padding: 40px 20px;
   text-align: center;
 }
 .emptyIcon {
-  font-size: 40px;
-  margin-bottom: 12px;
+  font-size: 36px;
+  margin-bottom: 10px;
 }
 .emptyText {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
@@ -690,21 +803,21 @@
 }
 .skHero {
   composes: sk;
-  height: 220px;
+  height: 200px;
   border-radius: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 .skTabBar {
   composes: sk;
-  height: 40px;
+  height: 36px;
   border-radius: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   width: 60%;
 }
 .skContent {
   composes: sk;
-  height: 400px;
-  border-radius: 16px;
+  height: 350px;
+  border-radius: 14px;
 }
 
 /* Not found */
@@ -712,18 +825,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 80px 20px;
+  padding: 60px 20px;
   text-align: center;
 }
 .notFoundIcon {
-  font-size: 52px;
-  margin-bottom: 16px;
+  font-size: 48px;
+  margin-bottom: 14px;
 }
 .notFoundTitle {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
+  margin-bottom: 12px;
+}
+.notFoundSub {
+  font-size: 13px;
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 .notFoundLink {
@@ -733,341 +851,83 @@
   text-decoration: none;
 }
 
-/* Responsive */
-@media (min-width: 640px) {
-  .aboutGrid {
-    grid-template-columns: 1fr 1fr;
+/* ── Responsive ────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .heroAction {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .rateBlock {
+    margin-right: auto;
   }
 }
+
+@media (min-width: 640px) {
+  .page {
+    padding: 24px;
+  }
+  .avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 28px;
+  }
+  .name {
+    font-size: 20px;
+  }
+  .aboutGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .portfolioGrid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
 @media (min-width: 768px) {
   .page {
-    padding: 32px;
+    padding: 28px;
   }
   .hero {
+    display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .heroInner {
+    flex: 1;
   }
   .heroAction {
     flex-direction: column;
     align-items: stretch;
-    padding: 0 0 0 24px;
+    padding: 0 0 0 20px;
     border-top: none;
     border-left: 1px solid var(--border);
-    min-width: 180px;
+    margin-top: 0;
+    min-width: 170px;
+    max-width: 200px;
+  }
+  .rateBlock {
+    margin-right: 0;
+  }
+  .actionBtns {
+    flex-direction: column;
+  }
+  .bookBtn {
+    min-width: unset;
+  }
+  .avatar {
+    width: 88px;
+    height: 88px;
+  }
+  .name {
+    font-size: 22px;
   }
 }
+
 @media (min-width: 1024px) {
   .page {
-    padding: 40px 32px;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   Add these rules to WorkerPublicProfile.module.css
-   They cover: contact row, rate pills, pricing note, edit btn, tab counts,
-   private/not-found error state, and the notFoundSub text.
-───────────────────────────────────────────────────────────────────────────── */
-
-/* Contact row — phone, email, gender, language chips */
-.contactRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-.contactItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--text-dim, #aaa);
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 20px;
-  padding: 4px 10px;
-  text-decoration: none;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-  white-space: nowrap;
-}
-.contactItem:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Rate pills for daily / weekly / monthly / custom */
-.ratePills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-.ratePill {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 8px;
-  padding: 5px 10px;
-}
-.ratePillAmount {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text, #fff);
-}
-.ratePillSuffix {
-  font-size: 10px;
-  color: var(--text-muted, #666);
-}
-
-/* Pricing note */
-.pricingNote {
-  font-size: 11px;
-  color: var(--text-muted, #888);
-  margin-top: 6px;
-  line-height: 1.5;
-  font-style: italic;
-}
-
-/* Edit profile button (own profile) */
-.editBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 10px;
-  color: var(--text-dim, #aaa);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.15s;
-  margin-top: 10px;
-}
-.editBtn:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Tab count badges */
-.tabCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: var(--orange-dim, rgba(249, 115, 22, 0.12));
-  color: var(--orange, #f97316);
-  border-radius: 50%;
-  font-size: 9px;
-  font-weight: 800;
-  margin-left: 4px;
-}
-
-/* Error / private profile state */
-.notFoundSub {
-  font-size: 13px;
-  color: var(--text-muted, #888);
-  margin-top: 6px;
-  text-align: center;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   Add these rules to HirerPublicProfile.module.css
-───────────────────────────────────────────────────────────────────────────── */
-
-/* Contact row on hirer profile */
-.contactRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0 4px;
-}
-.contactItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--text-dim, #aaa);
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 20px;
-  padding: 4px 10px;
-  text-decoration: none;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-  white-space: nowrap;
-}
-.contactItem:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Company size line */
-.companySize {
-  font-size: 12px;
-  color: var(--text-muted, #888);
-  margin: 3px 0;
-}
-
-/* Stars */
-.stars {
-  display: inline-flex;
-  gap: 2px;
-}
-.starOn {
-  color: var(--orange, #f97316);
-  font-size: 14px;
-}
-.starOff {
-  color: var(--border, #333);
-  font-size: 14px;
-}
-
-/* Edit button */
-.editBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
-  background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border, #2a2a3e);
-  border-radius: 10px;
-  color: var(--text-dim, #aaa);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-.editBtn:hover {
-  border-color: var(--orange, #f97316);
-  color: var(--orange, #f97316);
-}
-
-/* Spinner */
-.spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
-  border-radius: 50%;
-  display: inline-block;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Per-job apply result (success/error keyed by job) */
-.applySuccess {
-  padding: 8px 12px;
-  background: rgba(22, 163, 74, 0.08);
-  border: 1px solid rgba(22, 163, 74, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #16a34a;
-  margin-bottom: 8px;
-}
-.applyError {
-  padding: 8px 12px;
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #dc2626;
-  margin-bottom: 8px;
-}
-
-/* ── Mobile fixes for worker public profile ── */
-@media (max-width: 768px) {
-  /* Force single column on mobile */
-  .layout,
-  .profileLayout,
-  .workerLayout {
-    grid-template-columns: 1fr !important;
-    flex-direction: column !important;
-  }
-
-  /* Profile header — stack vertically */
-  .profileHeader,
-  .workerHeader {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0.875rem !important;
-    padding: 1rem !important;
-  }
-
-  /* Avatar — smaller on mobile */
-  .profileAvatar,
-  .workerAvatar {
-    width: 72px !important;
-    height: 72px !important;
-    font-size: 1.5rem !important;
-  }
-
-  /* Stats row — wrap */
-  .statsRow,
-  .workerStats {
-    flex-wrap: wrap !important;
-    gap: 0.5rem !important;
-  }
-
-  /* Rate badges — stack */
-  .rateGrid,
-  .pricingGrid,
-  .ratesRow {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 0.5rem !important;
-  }
-
-  /* Categories — wrap tighter */
-  .categoriesRow,
-  .catsList {
-    flex-wrap: wrap !important;
-    gap: 0.375rem !important;
-  }
-
-  /* Action buttons — full width on mobile */
-  .bookBtn,
-  .contactBtn,
-  .actionBtn {
-    width: 100% !important;
-    justify-content: center !important;
-  }
-
-  /* Portfolio grid — 2 col on mobile */
-  .portfolioGrid {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  /* Text overflow protection */
-  .workerTitle,
-  .workerName,
-  .profileName {
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-  }
-
-  /* Sidebar goes below main on mobile */
-  .sidebar {
-    width: 100% !important;
-    position: static !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .rateGrid,
-  .pricingGrid {
-    grid-template-columns: 1fr !important;
-  }
-  .portfolioGrid {
-    grid-template-columns: 1fr !important;
+    padding: 36px 28px;
   }
 }
