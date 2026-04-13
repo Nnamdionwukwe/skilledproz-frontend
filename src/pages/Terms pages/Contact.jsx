@@ -57,7 +57,7 @@ export default function Contact() {
         <div className={styles.navLinks}>
           <Link to="/about">About</Link>
           <Link to="/login" className={styles.navCta}>
-            Get Started
+            Login
           </Link>
         </div>
       </nav>

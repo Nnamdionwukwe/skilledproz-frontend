@@ -55,7 +55,7 @@ export default function About() {
         <div className={styles.navLinks}>
           <Link to="/contact">Contact</Link>
           <Link to="/login" className={styles.navCta}>
-            Get Started
+            Login
           </Link>
         </div>
       </nav>
