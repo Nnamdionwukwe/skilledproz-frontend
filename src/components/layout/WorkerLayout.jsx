@@ -36,7 +36,7 @@ const NAV = [
   {
     group: "Profile",
     items: [
-      { label: "Edit Profile", path: "/dashboard/worker/profile", icon: "👤" },
+      // { label: "Edit Profile", path: "/dashboard/worker/profile", icon: "👤" },
       { label: "Portfolio", path: "/dashboard/worker/portfolio", icon: "🖼" },
       {
         label: "Certifications",
@@ -96,10 +96,10 @@ const PAGE_TITLES = {
     title: "Cashouts",
     sub: "Withdraw your earnings",
   },
-  "/dashboard/worker/profile": {
-    title: "Edit Profile",
-    sub: "Update your information",
-  },
+  // "/dashboard/worker/profile": {
+  //   title: "Edit Profile",
+  //   sub: "Update your information",
+  // },
   "/dashboard/worker/portfolio": {
     title: "Portfolio",
     sub: "Showcase your work",
