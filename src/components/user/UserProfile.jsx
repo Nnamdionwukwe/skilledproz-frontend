@@ -36,6 +36,26 @@ function initials(u) {
   return `${u.firstName?.[0] ?? ""}${u.lastName?.[0] ?? ""}`.toUpperCase();
 }
 
+function ProBadge({ isOwn }) {
+  const { features } = useSubscription();
+  if (!isOwn || !features?.proBadge) return null;
+  return (
+    <span
+      style={{
+        fontSize: "0.65rem",
+        background: "var(--orange)",
+        color: "var(--bg)",
+        padding: "0.15rem 0.5rem",
+        borderRadius: "100px",
+        fontWeight: 800,
+        letterSpacing: "0.04em",
+      }}
+    >
+      ⭐ PRO
+    </span>
+  );
+}
+
 function timeAgo(date) {
   if (!date) return "Never";
   const diff = Date.now() - new Date(date).getTime();
@@ -168,25 +188,6 @@ export default function UserProfile() {
     setEditing(false);
   };
 
-  function ProBadge({ userId, isOwn }) {
-    const { features, isProTier } = useSubscription();
-    if (!isOwn || !features.proBadge) return null;
-    return (
-      <span
-        style={{
-          fontSize: "0.7rem",
-          background: "var(--orange)",
-          color: "var(--bg)",
-          padding: "0.15rem 0.5rem",
-          borderRadius: "100px",
-          fontWeight: 800,
-        }}
-      >
-        ⭐ PRO
-      </span>
-    );
-  }
-
   /* ── Loading ── */
   if (loading)
     return (
@@ -254,7 +255,7 @@ export default function UserProfile() {
                 onAvatarChange={handleAvatarChange}
               />
 
-              <div className={s.heroInfo}>
+              {/* <div className={s.heroInfo}>
                 <div className={s.heroNameRow}>
                   <h1 className={s.heroName}>
                     {user.firstName} {user.lastName}
@@ -285,6 +286,63 @@ export default function UserProfile() {
                     <Stars rating={wp.rating} />
                     <span className={s.ratingNum}>
                       {Number(wp.rating).toFixed(1)}
+                    </span>
+                    <span className={s.ratingCount}>
+                      ({wp.totalReviews ?? 0} reviews)
+                    </span>
+                  </div>
+                )}
+              </div> */}
+
+              {/* Replace the heroInfo block inside .heroCard: */}
+              <div className={s.heroInfo}>
+                <div className={s.heroNameRow}>
+                  <h1 className={s.heroName}>
+                    {user.firstName} {user.lastName}
+                  </h1>
+                  {/* Fix: check verificationStatus, not isVerified */}
+                  {(wp?.verificationStatus === "VERIFIED" ||
+                    user.workerProfile?.verificationStatus === "VERIFIED") && (
+                    <ShieldCheck
+                      size={16}
+                      className={s.verifiedIcon}
+                      title="Identity Verified"
+                    />
+                  )}
+                </div>
+
+                {/* Pro badge */}
+                <ProBadge isOwn={isOwn} />
+
+                {/* Verified text badge under name */}
+                {wp?.verificationStatus === "VERIFIED" && (
+                  <div
+                    className={`${s.badge} ${s.badgeGreen}`}
+                    style={{ fontSize: "0.65rem", padding: "2px 8px" }}
+                  >
+                    <ShieldCheck size={10} /> Verified Worker
+                  </div>
+                )}
+
+                <div className={s.rolePill}>
+                  {user.role === "WORKER" ? (
+                    <>
+                      <HardHat size={12} /> Worker
+                    </>
+                  ) : (
+                    <>
+                      <Briefcase size={12} /> Hirer
+                    </>
+                  )}
+                </div>
+
+                {wp?.title && <p className={s.heroTitle}>{wp.title}</p>}
+
+                {wp?.avgRating > 0 && (
+                  <div className={s.ratingRow}>
+                    <Stars rating={wp.avgRating} />
+                    <span className={s.ratingNum}>
+                      {Number(wp.avgRating).toFixed(1)}
                     </span>
                     <span className={s.ratingCount}>
                       ({wp.totalReviews ?? 0} reviews)
@@ -477,12 +535,12 @@ export default function UserProfile() {
                     <CheckCircle2 size={13} />
                     Email {user.isEmailVerified ? "Verified" : "Unverified"}
                   </div>
-                  {wp?.isVerified && (
+                  {wp?.verificationStatus === "VERIFIED" && (
                     <div className={`${s.badge} ${s.badgeOrange}`}>
                       <ShieldCheck size={13} /> ID Verified
                     </div>
                   )}
-                  {wp?.isBackgroundChecked && (
+                  {wp?.backgroundCheck === true && (
                     <div className={`${s.badge} ${s.badgeBlue}`}>
                       <Award size={13} /> Background Checked
                     </div>

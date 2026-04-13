@@ -914,3 +914,231 @@
     padding: 1.25rem;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — mobile-first fixes
+══════════════════════════════════════════════════ */
+
+@media (max-width: 860px) {
+  .page {
+    padding: 16px 12px 80px;
+  }
+
+  /* Stack sidebar above main on mobile */
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* Sidebar becomes a horizontal card row on mobile */
+  .sidebar {
+    position: static;
+    gap: 10px;
+  }
+
+  /* Hero card — tighter on mobile */
+  .heroCard {
+    padding: 20px 16px 16px;
+    border-radius: 14px;
+  }
+
+  .heroBg {
+    height: 60px;
+  }
+
+  .avatarWrap {
+    width: 72px;
+    height: 72px;
+  }
+
+  .avatarFallback {
+    font-size: 20px;
+  }
+
+  .heroName {
+    font-size: 18px;
+  }
+
+  /* Stats — horizontal scroll strip on mobile */
+  .statsCard {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0;
+    gap: 0;
+    scrollbar-width: none;
+    border-radius: 12px;
+  }
+  .statsCard::-webkit-scrollbar {
+    display: none;
+  }
+
+  .statItem {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 12px 14px;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    min-width: 80px;
+    gap: 4px;
+  }
+  .statItem:last-child {
+    border-right: none;
+  }
+
+  .statVal {
+    font-size: 13px;
+  }
+  .statLabel {
+    margin-left: 0;
+    font-size: 10px;
+  }
+
+  /* Info + cat cards — horizontal on mobile */
+  .infoCard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .infoRow {
+    font-size: 12px;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+  }
+  .infoIcon {
+    display: none;
+  }
+
+  .catCard {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* Main content — no top padding needed */
+  .main {
+    gap: 0;
+  }
+
+  /* Tab bar */
+  .tabBar {
+    margin-bottom: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabBtn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* Content cards */
+  .bioCard,
+  .availCard,
+  .certCard {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .bioText {
+    font-size: 13.5px;
+  }
+
+  /* Portfolio — 2 cols on mobile */
+  .portfolioGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .portfolioImg {
+    height: 120px;
+  }
+
+  /* Badge row — wraps */
+  .badgeRow {
+    gap: 6px;
+  }
+  .badge {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  /* Book btn */
+  .bookBtn {
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  /* Edit btn */
+  .editBtn {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 12px 10px 80px;
+  }
+
+  .heroCard {
+    padding: 16px 12px;
+  }
+
+  .avatarWrap {
+    width: 64px;
+    height: 64px;
+  }
+  .avatarFallback {
+    font-size: 18px;
+  }
+  .heroName {
+    font-size: 16px;
+  }
+
+  .portfolioGrid {
+    grid-template-columns: 1fr;
+  }
+  .portfolioImg {
+    height: 160px;
+  }
+
+  /* Stats strip tighter */
+  .statItem {
+    min-width: 68px;
+    padding: 10px 10px;
+  }
+  .statVal {
+    font-size: 12px;
+  }
+
+  /* Availability days — smaller */
+  .dayPill {
+    width: 36px;
+    height: 32px;
+    font-size: 10px;
+  }
+
+  /* Cert cards */
+  .certCard {
+    padding: 12px;
+  }
+  .certIcon {
+    width: 32px;
+    height: 32px;
+  }
+  .certName {
+    font-size: 13px;
+  }
+
+  /* Tab bar */
+  .tabBtn {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+}
