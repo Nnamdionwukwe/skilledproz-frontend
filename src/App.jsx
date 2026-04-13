@@ -120,7 +120,7 @@ export default function App() {
       <div id="google_translate_element" style={{ display: "none" }} />
       <Routes>
         {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/landingpage" replace />} />
         {/* ── Auth (guest only) ── */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
