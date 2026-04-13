@@ -561,9 +561,9 @@ export default function LandingPage() {
           <span className={styles.sectionEyebrow}>Global Payments</span>
           <h2 className={styles.sectionTitle}>Pay and earn in your currency</h2>
           <p className={styles.sectionSub}>
-            From Naira to Yen, Pound to Dirham — and crypto (USDC, USDT). Three
-            independent currency settings per account: dashboard display,
-            payment, and profile rate.
+            From Naira to Yen, Pound to Dirham — and crypto (USDC, USDT, BTC,
+            ETH). Three independent currency settings per account: dashboard
+            display, payment, and profile rate.
           </p>
 
           <div className={styles.currenciesGrid}>
