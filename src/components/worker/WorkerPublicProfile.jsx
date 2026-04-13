@@ -197,6 +197,7 @@ export default function WorkerPublicProfile() {
           </div>
 
           {/* Rate + CTA */}
+          {/* Hero action — find this section and replace */}
           <div className={styles.heroAction}>
             <div className={styles.rateBlock}>
               <span className={styles.rateAmount}>
@@ -205,7 +206,6 @@ export default function WorkerPublicProfile() {
               <span className={styles.rateLabel}>/hr</span>
             </div>
 
-            {/* Multi-rate pricing pills */}
             {hasMultiRate && (
               <div className={styles.ratePills}>
                 {hasDailyRate && (
@@ -243,14 +243,13 @@ export default function WorkerPublicProfile() {
               </div>
             )}
 
-            {/* Pricing note */}
             {worker.pricingNote && (
               <p className={styles.pricingNote}>{worker.pricingNote}</p>
             )}
 
-            {/* Don't show Book/Message if viewing own profile */}
+            {/* Wrap buttons in actionBtns div */}
             {!isOwnProfile && (
-              <>
+              <div className={styles.actionBtns}>
                 <button
                   className={styles.bookBtn}
                   onClick={() =>
@@ -265,7 +264,7 @@ export default function WorkerPublicProfile() {
                 >
                   💬
                 </button>
-              </>
+              </div>
             )}
 
             {isOwnProfile && (
