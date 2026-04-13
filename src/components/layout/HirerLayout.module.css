@@ -228,6 +228,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  height: 100vh; /* ← ADD: constrain to viewport height */
+  overflow-y: auto; /* ← ADD: main scrolls, not the window */
 }
 
 /* ── Header ── */
