@@ -57,6 +57,7 @@
   margin: 0 auto;
   padding: 6rem 2rem 3rem;
   animation: fadeUp 0.7s ease both;
+  margin-top: 1.5rem;
 }
 .heroBadge {
   display: inline-block;
@@ -69,7 +70,7 @@
   padding: 0.35rem 0.9rem;
   border-radius: 100px;
   margin-bottom: 1.5rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   border: 1px solid var(--orange-glow);
 }
 .heroTitle {
