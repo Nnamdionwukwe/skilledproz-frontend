@@ -192,9 +192,9 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
       {/* ── Sidebar ── */}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ""}`}>
         <div className={styles.sidebarLogo}>
-          <div className={styles.logoText}>
+          <Link to={"/"} className={styles.logoText}>
             Skilled<span>Proz</span>
-          </div>
+          </Link>
           <div className={styles.logoRole}>Hirer Portal</div>
         </div>
 
