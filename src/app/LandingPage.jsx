@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import styles from "./LandingPage.module.css";
 
-// ── All platform currencies ───────────────────────────────────────
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar", flag: "🇺🇸" },
   { code: "EUR", symbol: "€", name: "Euro", flag: "🇪🇺" },
@@ -98,50 +98,88 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: "50+", label: "Countries Supported" },
-  { value: "29", label: "Currencies Accepted" },
-  { value: "500+", label: "Trade Categories" },
-  { value: "100%", label: "Escrow Protected" },
+  { value: "50+", label: "Countries" },
+  { value: "29", label: "Currencies" },
+  { value: "500+", label: "Categories" },
+  { value: "100%", label: "Escrow Safe" },
 ];
 
-// ── Ticker component ──────────────────────────────────────────────
-function Ticker({ items, speed = 40 }) {
-  const doubled = [...items, ...items];
-  return (
-    <div style={{ overflow: "hidden", width: "100%" }}>
-      <div
-        style={{
-          display: "flex",
-          gap: "0px",
-          animation: `tickerScroll ${speed}s linear infinite`,
-          width: "max-content",
-        }}
-      >
-        {doubled.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0 1.5rem",
-              borderRight: "1px solid rgba(255,255,255,0.08)",
-              whiteSpace: "nowrap",
-              fontSize: "0.8125rem",
-              fontWeight: 600,
-              color: "rgba(255,255,255,0.5)",
-              fontFamily: "inherit",
-            }}
-          >
-            <span style={{ fontSize: "1rem" }}>{item.flag}</span>
-            <span style={{ color: "#F59E0B" }}>{item.symbol}</span>
-            <span>{item.code}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const HIRER_STEPS = [
+  {
+    num: "01",
+    title: "Post a job or search workers",
+    desc: "Describe what you need or browse 500+ categories. Filter by location, rating, rate, and availability.",
+  },
+  {
+    num: "02",
+    title: "Book & lock the rate",
+    desc: "Send a booking request. The worker's rate is locked in — no surprises. Fund escrow with your preferred currency.",
+  },
+  {
+    num: "03",
+    title: "Track in real time",
+    desc: "GPS check-in when the worker arrives. Chat, video call, monitor progress. SOS alerts if anything goes wrong.",
+  },
+  {
+    num: "04",
+    title: "Confirm & release payment",
+    desc: "Satisfied? Release payment with one tap. Escrow protects you until you're happy with the work.",
+  },
+];
+
+const WORKER_STEPS = [
+  {
+    num: "01",
+    title: "Create your worker profile",
+    desc: "Set up your trade categories, bio, portfolio, certifications, availability, and multi-rate pricing in minutes.",
+  },
+  {
+    num: "02",
+    title: "Get verified",
+    desc: "Submit ID and certifications. Background check available. Verified badge boosts your bookings significantly.",
+  },
+  {
+    num: "03",
+    title: "Accept bookings & jobs",
+    desc: "Get notified of booking requests or apply to posted jobs. Chat with hirers before accepting.",
+  },
+  {
+    num: "04",
+    title: "Complete & get paid",
+    desc: "Check in with GPS, complete the job, check out. Payment releases to your chosen currency automatically.",
+  },
+];
+
+const PANEL_ITEMS = [
+  {
+    icon: "🔐",
+    label: "Escrow Released",
+    val: "NGN 240,000",
+    sub: "Plumbing · Lagos",
+    color: "#22c55e",
+  },
+  {
+    icon: "📍",
+    label: "GPS Check-In",
+    val: "Worker Arrived",
+    sub: "Electrician · Dubai",
+    color: "#3B82F6",
+  },
+  {
+    icon: "📋",
+    label: "New Job Posted",
+    val: "Carpentry Work",
+    sub: "USD 800 · New York",
+    color: "#f97316",
+  },
+  {
+    icon: "✅",
+    label: "Worker Verified",
+    val: "Background Cleared",
+    sub: "AC Tech · Nairobi",
+    color: "#a78bfa",
+  },
+];
 
 export default function LandingPage() {
   const [categories, setCategories] = useState([]);
@@ -151,7 +189,7 @@ export default function LandingPage() {
   const [addingCat, setAddingCat] = useState(false);
   const [addedCat, setAddedCat] = useState(null);
   const [activeTab, setActiveTab] = useState("hirer");
-  const catRef = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch(
@@ -169,7 +207,7 @@ export default function LandingPage() {
     (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
   );
 
-  async function handleAddCustomCategory() {
+  async function handleAddCategory() {
     if (!customCatName.trim()) return;
     setAddingCat(true);
     try {
@@ -196,510 +234,136 @@ export default function LandingPage() {
     setAddingCat(false);
   }
 
-  return (
-    <div
-      style={{
-        fontFamily: "'Instrument Sans', 'Helvetica Neue', sans-serif",
-        background: "#09090B",
-        color: "#F5F0EB",
-        overflowX: "hidden",
-      }}
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
-        @keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        a { text-decoration: none; color: inherit; }
-        ::selection { background: #F59E0B; color: #09090B; }
-        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #09090B; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-      `}</style>
+  const doubled = [...CURRENCIES, ...CURRENCIES];
 
-      {/* ── NAVBAR ── */}
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 5%",
-          height: 64,
-          background: "rgba(9,9,11,0.92)",
-          backdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-        }}
-      >
-        <Link
-          to="/"
-          style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: "1.4rem",
-            fontWeight: 400,
-            letterSpacing: "-0.02em",
-            color: "#F5F0EB",
-          }}
-        >
-          Skilled<span style={{ color: "#F59E0B" }}>Proz</span>
+  return (
+    <div className={styles.page}>
+      {/* ── Navbar ── */}
+      <nav className={styles.navbar}>
+        <Link to="/" className={styles.navLogo}>
+          Skilled<span>Proz</span>
         </Link>
-        <div
-          style={{
-            display: "flex",
-            gap: "2rem",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            color: "rgba(245,240,235,0.6)",
-          }}
-        >
+
+        <ul className={styles.navLinks}>
           {[
             ["Find Workers", "/search"],
             ["Browse Jobs", "/jobs"],
             ["Become a Worker", "/register/worker"],
             ["How it Works", "#how-it-works"],
           ].map(([label, href]) => (
-            <Link
-              key={label}
-              to={href}
-              style={{ transition: "color 0.2s" }}
-              onMouseEnter={(e) => (e.target.style.color = "#F59E0B")}
-              onMouseLeave={(e) =>
-                (e.target.style.color = "rgba(245,240,235,0.6)")
-              }
-            >
-              {label}
-            </Link>
+            <li key={label}>
+              <Link to={href}>{label}</Link>
+            </li>
           ))}
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <Link
-            to="/login"
-            style={{
-              padding: "0.5rem 1.25rem",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 6,
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "#F5F0EB",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.borderColor = "#F59E0B")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")
-            }
-          >
+        </ul>
+
+        <div className={styles.navCta}>
+          <Link to="/login" className={styles.btnOutline}>
             Sign in
           </Link>
-          <Link
-            to="/register"
-            style={{
-              padding: "0.5rem 1.25rem",
-              background: "#F59E0B",
-              borderRadius: 6,
-              fontSize: "0.875rem",
-              fontWeight: 700,
-              color: "#09090B",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#D97706")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#F59E0B")}
-          >
-            Get Started Free
+          <Link to="/register" className={styles.btnPrimary}>
+            Get Started
           </Link>
         </div>
+
+        <button
+          className={styles.menuToggle}
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Menu"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
       </nav>
 
-      {/* ── HERO ── */}
-      <section
-        style={{
-          minHeight: "100vh",
-          paddingTop: 120,
-          paddingBottom: 80,
-          padding: "120px 5% 80px",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "4rem",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        {/* BG mesh */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse 60% 60% at 60% 40%, rgba(245,158,11,0.06) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 10% 80%, rgba(59,130,246,0.04) 0%, transparent 60%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 100,
-            right: "5%",
-            width: 1,
-            height: "70%",
-            background:
-              "linear-gradient(to bottom, transparent, rgba(245,158,11,0.2), transparent)",
-          }}
-        />
+      {/* Mobile nav */}
+      <div className={`${styles.mobileNav} ${mobileOpen ? styles.open : ""}`}>
+        {[
+          ["Find Workers", "/search"],
+          ["Browse Jobs", "/jobs"],
+          ["Become a Worker", "/register/worker"],
+          ["Sign in", "/login"],
+          ["Get Started Free", "/register"],
+        ].map(([label, href]) => (
+          <Link key={label} to={href} onClick={() => setMobileOpen(false)}>
+            {label}
+          </Link>
+        ))}
+      </div>
 
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            animation: "fadeUp 0.6s ease both",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.375rem 1rem",
-              background: "rgba(245,158,11,0.1)",
-              border: "1px solid rgba(245,158,11,0.25)",
-              borderRadius: 999,
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              color: "#F59E0B",
-              marginBottom: "1.75rem",
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                background: "#F59E0B",
-                borderRadius: "50%",
-                animation: "pulse 2s ease infinite",
-              }}
-            />
+      {/* ── Hero ── */}
+      <section className={styles.hero}>
+        <div className={styles.heroBg} />
+
+        <div className={styles.heroContent}>
+          <div className={styles.heroBadge}>
+            <span className={styles.heroBadgeDot} />
             Live in 50+ countries · 29 currencies · 500+ trades
           </div>
 
-          <h1
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontSize: "clamp(2.8rem,5.5vw,4.5rem)",
-              fontWeight: 400,
-              lineHeight: 1.05,
-              letterSpacing: "-0.03em",
-              color: "#F5F0EB",
-              marginBottom: "1.5rem",
-            }}
-          >
+          <h1 className={styles.heroTitle}>
             The global platform
             <br />
-            for{" "}
-            <em style={{ color: "#F59E0B", fontStyle: "italic" }}>
-              skilled work
-            </em>
+            for <em>skilled work</em>
           </h1>
 
-          <p
-            style={{
-              fontSize: "1.125rem",
-              lineHeight: 1.75,
-              color: "rgba(245,240,235,0.6)",
-              maxWidth: 480,
-              marginBottom: "2.5rem",
-            }}
-          >
+          <p className={styles.heroSub}>
             SkilledProz connects hirers with verified tradespeople across every
             profession, every country, every currency — with escrow protection,
             GPS tracking, video calls, and dispute resolution built in.
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-              marginBottom: "3rem",
-            }}
-          >
-            <Link
-              to="/register/hirer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.875rem 2rem",
-                background: "#F59E0B",
-                borderRadius: 8,
-                fontSize: "1rem",
-                fontWeight: 700,
-                color: "#09090B",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#D97706";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#F59E0B";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
+          <div className={styles.heroActions}>
+            <Link to="/register/hirer" className={styles.btnHeroPrimary}>
               Hire a Worker →
             </Link>
-            <Link
-              to="/register/worker"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.875rem 2rem",
-                background: "transparent",
-                border: "1.5px solid rgba(255,255,255,0.2)",
-                borderRadius: 8,
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: "#F5F0EB",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#F59E0B";
-                e.currentTarget.style.color = "#F59E0B";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                e.currentTarget.style.color = "#F5F0EB";
-              }}
-            >
+            <Link to="/register/worker" className={styles.btnHeroSecondary}>
               Start Earning
             </Link>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4,1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className={styles.heroStats}>
             {STATS.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  textAlign: "center",
-                  padding: "1rem",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 10,
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "'DM Serif Display', serif",
-                    fontSize: "1.75rem",
-                    color: "#F59E0B",
-                    lineHeight: 1,
-                  }}
-                >
-                  {s.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "rgba(245,240,235,0.45)",
-                    marginTop: "0.25rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  {s.label}
-                </div>
+              <div key={s.label} className={styles.statCard}>
+                <span className={styles.statValue}>{s.value}</span>
+                <span className={styles.statLabel}>{s.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Hero panel */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            animation: "fadeUp 0.8s ease both",
-          }}
-        >
-          <div
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 20,
-              padding: "2rem",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: "rgba(245,240,235,0.4)",
-                }}
-              >
+        {/* Hero panel — hidden on mobile via CSS */}
+        <div className={styles.heroPanel}>
+          <div className={styles.heroPanelInner}>
+            <div className={styles.panelHeader}>
+              <span className={styles.panelHeaderLabel}>
                 Live Platform Activity
               </span>
-              <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  fontSize: "0.75rem",
-                  color: "#22c55e",
-                  fontWeight: 600,
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    background: "#22c55e",
-                    borderRadius: "50%",
-                    animation: "pulse 1.5s ease infinite",
-                  }}
-                />
-                Active
+              <span className={styles.panelLive}>
+                <span className={styles.panelLiveDot} /> Active
               </span>
             </div>
-
-            {[
-              {
-                icon: "🔐",
-                label: "Escrow Released",
-                val: "NGN 240,000",
-                sub: "Plumbing job · Lagos",
-                color: "#22c55e",
-              },
-              {
-                icon: "📍",
-                label: "GPS Check-In",
-                val: "Worker Arrived",
-                sub: "Electrician · Dubai",
-                color: "#3B82F6",
-              },
-              {
-                icon: "📋",
-                label: "New Job Posted",
-                val: "Carpentry Work",
-                sub: "USD 800 budget · New York",
-                color: "#F59E0B",
-              },
-              {
-                icon: "✅",
-                label: "Worker Verified",
-                val: "Background Cleared",
-                sub: "AC Technician · Nairobi",
-                color: "#a78bfa",
-              },
-            ].map((item, i) => (
-              <div
-                key={item.label}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.875rem",
-                  padding: "0.875rem",
-                  background: "rgba(255,255,255,0.03)",
-                  borderRadius: 10,
-                  marginBottom: "0.625rem",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  animation: `fadeUp 0.5s ease ${i * 0.1}s both`,
-                }}
-              >
-                <span style={{ fontSize: "1.25rem" }}>{item.icon}</span>
+            {PANEL_ITEMS.map((item, i) => (
+              <div key={item.label} className={styles.panelItem}>
+                <span className={styles.panelItemIcon}>{item.icon}</span>
                 <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "rgba(245,240,235,0.45)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {item.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.9rem",
-                      fontWeight: 700,
-                      color: "#F5F0EB",
-                    }}
-                  >
-                    {item.val}
-                  </div>
+                  <div className={styles.panelItemLabel}>{item.label}</div>
+                  <div className={styles.panelItemVal}>{item.val}</div>
                 </div>
-                <div
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "rgba(245,240,235,0.35)",
-                    textAlign: "right",
-                  }}
-                >
-                  {item.sub}
-                </div>
+                <div className={styles.panelItemSub}>{item.sub}</div>
                 <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    background: item.color,
-                    borderRadius: "50%",
-                    flexShrink: 0,
-                  }}
+                  className={styles.panelItemDot}
+                  style={{ background: item.color }}
                 />
               </div>
             ))}
-
-            <div
-              style={{
-                marginTop: "1.25rem",
-                padding: "1rem",
-                background: "rgba(245,158,11,0.08)",
-                border: "1px solid rgba(245,158,11,0.2)",
-                borderRadius: 12,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
+            <div className={styles.panelFooter}>
               <div>
-                <div
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "#F59E0B",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
+                <div className={styles.panelFooterTitle}>
                   Platform Protection
                 </div>
-                <div
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: "#F5F0EB",
-                    marginTop: 2,
-                  }}
-                >
+                <div className={styles.panelFooterVal}>
                   Every booking is escrow-protected
                 </div>
               </div>
@@ -709,493 +373,117 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CURRENCY TICKER ── */}
-      <div
-        style={{
-          background: "#111113",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          padding: "0.875rem 0",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1.5rem",
-            paddingLeft: "2rem",
-            marginBottom: "0.625rem",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.7rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              color: "#F59E0B",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            29 Currencies
-          </span>
-          <Ticker items={CURRENCIES} speed={60} />
+      {/* ── Currency Ticker ── */}
+      <div className={styles.ticker}>
+        <div className={styles.tickerInner}>
+          <span className={styles.tickerLabel}>29 Currencies</span>
+          <div className={styles.tickerTrack}>
+            <div className={styles.tickerScroll}>
+              {doubled.map((c, i) => (
+                <div key={i} className={styles.tickerItem}>
+                  <span>{c.flag}</span>
+                  <span className={styles.tickerItemSymbol}>{c.symbol}</span>
+                  <span>{c.code}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── FEATURES GRID ── */}
-      <section style={{ padding: "6rem 5%", background: "#09090B" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ marginBottom: "3.5rem" }}>
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-                color: "#F59E0B",
-                display: "block",
-                marginBottom: "0.75rem",
-              }}
-            >
-              Everything Built In
-            </span>
-            <h2
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: "clamp(2rem,3.5vw,2.75rem)",
-                fontWeight: 400,
-                color: "#F5F0EB",
-                letterSpacing: "-0.03em",
-                maxWidth: 560,
-                marginBottom: "0.75rem",
-              }}
-            >
-              Not just a marketplace. A complete work platform.
-            </h2>
-            <p
-              style={{
-                color: "rgba(245,240,235,0.5)",
-                fontSize: "1.0625rem",
-                maxWidth: 480,
-              }}
-            >
-              Every feature you need to hire safely, work confidently, and get
-              paid — all in one place.
-            </p>
-          </div>
+      {/* ── Features ── */}
+      <section className={`${styles.section} ${styles.featuresSection}`}>
+        <div className={styles.sectionInner}>
+          <span className={styles.sectionEyebrow}>Everything Built In</span>
+          <h2 className={styles.sectionTitle}>
+            Not just a marketplace. A complete work platform.
+          </h2>
+          <p className={styles.sectionSub}>
+            Every feature you need to hire safely, work confidently, and get
+            paid — all in one place.
+          </p>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "1px",
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 16,
-              overflow: "hidden",
-            }}
-          >
-            {FEATURES.map((f, i) => (
-              <div
-                key={f.title}
-                style={{
-                  padding: "1.75rem",
-                  background: "#09090B",
-                  transition: "background 0.2s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(245,158,11,0.05)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "#09090B")
-                }
-              >
-                <span
-                  style={{
-                    fontSize: "1.75rem",
-                    display: "block",
-                    marginBottom: "0.875rem",
-                  }}
-                >
-                  {f.icon}
-                </span>
-                <h3
-                  style={{
-                    fontSize: "0.9375rem",
-                    fontWeight: 700,
-                    color: "#F5F0EB",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  {f.title}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "0.8125rem",
-                    color: "rgba(245,240,235,0.45)",
-                    lineHeight: 1.65,
-                  }}
-                >
-                  {f.desc}
-                </p>
+          <div className={styles.featuresGrid}>
+            {FEATURES.map((f) => (
+              <div key={f.title} className={styles.featureCard}>
+                <span className={styles.featureIcon}>{f.icon}</span>
+                <h3 className={styles.featureTitle}>{f.title}</h3>
+                <p className={styles.featureDesc}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
+      {/* ── How it works ── */}
       <section
         id="how-it-works"
-        style={{ padding: "6rem 5%", background: "#F5F0EB" }}
+        className={`${styles.section} ${styles.howSection}`}
       >
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "#D97706",
-              display: "block",
-              marginBottom: "0.75rem",
-            }}
-          >
-            How It Works
-          </span>
-          <h2
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontSize: "clamp(2rem,3.5vw,2.75rem)",
-              fontWeight: 400,
-              color: "#0A0A0B",
-              letterSpacing: "-0.03em",
-              marginBottom: "0.75rem",
-            }}
-          >
-            Two sides. One platform.
-          </h2>
+        <div className={styles.sectionInner}>
+          <span className={styles.sectionEyebrow}>How It Works</span>
+          <h2 className={styles.sectionTitle}>Two sides. One platform.</h2>
 
-          {/* Tab toggle */}
-          <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              marginBottom: "3rem",
-              background: "#E5DDD5",
-              padding: "0.375rem",
-              borderRadius: 10,
-              width: "fit-content",
-            }}
-          >
-            {[
-              ["hirer", "I want to hire"],
-              ["worker", "I want to earn"],
-            ].map(([tab, label]) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: "0.625rem 1.5rem",
-                  borderRadius: 7,
-                  border: "none",
-                  fontSize: "0.9rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  background: activeTab === tab ? "#0A0A0B" : "transparent",
-                  color: activeTab === tab ? "#F5F0EB" : "#666",
-                  transition: "all 0.2s",
-                  fontFamily: "inherit",
-                }}
-              >
-                {label}
-              </button>
-            ))}
+          <div className={styles.tabToggle}>
+            <button
+              className={`${styles.tabBtn} ${activeTab === "hirer" ? styles.tabBtnActive : ""}`}
+              onClick={() => setActiveTab("hirer")}
+            >
+              I want to hire
+            </button>
+            <button
+              className={`${styles.tabBtn} ${activeTab === "worker" ? styles.tabBtnActive : ""}`}
+              onClick={() => setActiveTab("worker")}
+            >
+              I want to earn
+            </button>
           </div>
 
-          {activeTab === "hirer" ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4,1fr)",
-                gap: "1.5rem",
-              }}
-            >
-              {[
-                {
-                  num: "01",
-                  title: "Post a job or search workers",
-                  desc: "Describe what you need or browse 500+ categories. Filter by location, rating, rate, and availability.",
-                },
-                {
-                  num: "02",
-                  title: "Book & lock the rate",
-                  desc: "Send a booking request. The worker's rate is locked in — no surprises. Fund escrow with your preferred currency.",
-                },
-                {
-                  num: "03",
-                  title: "Track in real time",
-                  desc: "GPS check-in when the worker arrives. Chat, video call, monitor progress. SOS alerts if anything goes wrong.",
-                },
-                {
-                  num: "04",
-                  title: "Confirm & release payment",
-                  desc: "Satisfied? Release payment with one tap. Escrow protects you until you're happy with the work.",
-                },
-              ].map((step, i) => (
-                <div
-                  key={step.num}
-                  style={{
-                    padding: "1.75rem",
-                    background: "#fff",
-                    borderRadius: 14,
-                    border: "1px solid rgba(0,0,0,0.07)",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "'DM Serif Display', serif",
-                      fontSize: "2rem",
-                      color: "#F59E0B",
-                      marginBottom: "1rem",
-                      opacity: 0.6,
-                    }}
-                  >
-                    {step.num}
-                  </div>
-                  <h3
-                    style={{
-                      fontSize: "0.9375rem",
-                      fontWeight: 700,
-                      color: "#0A0A0B",
-                      marginBottom: "0.625rem",
-                    }}
-                  >
-                    {step.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: "0.8125rem",
-                      color: "#666",
-                      lineHeight: 1.65,
-                    }}
-                  >
-                    {step.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4,1fr)",
-                gap: "1.5rem",
-              }}
-            >
-              {[
-                {
-                  num: "01",
-                  title: "Create your worker profile",
-                  desc: "Set up your trade categories, bio, portfolio, certifications, availability, and multi-rate pricing in minutes.",
-                },
-                {
-                  num: "02",
-                  title: "Get verified",
-                  desc: "Submit ID and certifications. Background check available. Verified badge boosts your bookings significantly.",
-                },
-                {
-                  num: "03",
-                  title: "Accept bookings & jobs",
-                  desc: "Get notified of booking requests or apply to posted jobs. Chat with hirers before accepting.",
-                },
-                {
-                  num: "04",
-                  title: "Complete & get paid",
-                  desc: "Check in with GPS, complete the job, check out. Payment releases to your chosen currency automatically.",
-                },
-              ].map((step, i) => (
-                <div
-                  key={step.num}
-                  style={{
-                    padding: "1.75rem",
-                    background: "#fff",
-                    borderRadius: 14,
-                    border: "1px solid rgba(0,0,0,0.07)",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "'DM Serif Display', serif",
-                      fontSize: "2rem",
-                      color: "#F59E0B",
-                      marginBottom: "1rem",
-                      opacity: 0.6,
-                    }}
-                  >
-                    {step.num}
-                  </div>
-                  <h3
-                    style={{
-                      fontSize: "0.9375rem",
-                      fontWeight: 700,
-                      color: "#0A0A0B",
-                      marginBottom: "0.625rem",
-                    }}
-                  >
-                    {step.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: "0.8125rem",
-                      color: "#666",
-                      lineHeight: 1.65,
-                    }}
-                  >
-                    {step.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={styles.stepsGrid}>
+            {(activeTab === "hirer" ? HIRER_STEPS : WORKER_STEPS).map((s) => (
+              <div key={s.num} className={styles.stepCard}>
+                <div className={styles.stepNum}>{s.num}</div>
+                <h3 className={styles.stepTitle}>{s.title}</h3>
+                <p className={styles.stepDesc}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── CATEGORIES (LIVE FROM API) ── */}
-      <section
-        style={{ padding: "6rem 5%", background: "#111113" }}
-        ref={catRef}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              marginBottom: "2.5rem",
-              flexWrap: "wrap",
-              gap: "1rem",
-            }}
-          >
+      {/* ── Categories ── */}
+      <section className={`${styles.section} ${styles.categoriesSection}`}>
+        <div className={styles.sectionInner}>
+          <div className={styles.catHeader}>
             <div>
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  color: "#F59E0B",
-                  display: "block",
-                  marginBottom: "0.5rem",
-                }}
-              >
+              <span className={styles.sectionEyebrow}>
                 Every Profession, Every Country
               </span>
-              <h2
-                style={{
-                  fontFamily: "'DM Serif Display', serif",
-                  fontSize: "clamp(2rem,3vw,2.5rem)",
-                  fontWeight: 400,
-                  color: "#F5F0EB",
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                {categories.length > 0
-                  ? `${categories.length}+ categories`
-                  : "500+ categories"}{" "}
-                — and growing
+              <h2 className={styles.sectionTitle}>
+                {categories.length > 0 ? `${categories.length}+` : "500+"}{" "}
+                categories — and growing
               </h2>
             </div>
-            <div style={{ display: "flex", gap: "0.625rem" }}>
-              <input
-                style={{
-                  padding: "0.625rem 1rem",
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 8,
-                  color: "#F5F0EB",
-                  fontSize: "0.875rem",
-                  outline: "none",
-                  width: 220,
-                  fontFamily: "inherit",
-                }}
-                placeholder="🔍 Search categories..."
-                value={catSearch}
-                onChange={(e) => setCatSearch(e.target.value)}
-              />
-            </div>
+            <input
+              className={styles.catSearchInput}
+              placeholder="🔍 Search categories..."
+              value={catSearch}
+              onChange={(e) => setCatSearch(e.target.value)}
+            />
           </div>
 
-          {/* Category grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-              gap: "0.75rem",
-              maxHeight: catSearch ? "none" : 480,
-              overflow: catSearch ? "visible" : "hidden",
-              position: "relative",
-            }}
-          >
+          <div className={styles.catGrid}>
             {(catSearch ? filteredCats : filteredCats.slice(0, 48)).map(
               (cat) => (
                 <Link
                   key={cat.id}
                   to={`/search?category=${cat.slug}`}
-                  style={{
-                    padding: "1.125rem 1rem",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 10,
-                    textAlign: "center",
-                    textDecoration: "none",
-                    transition: "all 0.2s",
-                    display: "block",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(245,158,11,0.1)";
-                    e.currentTarget.style.borderColor = "rgba(245,158,11,0.3)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                    e.currentTarget.style.borderColor =
-                      "rgba(255,255,255,0.07)";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
+                  className={styles.catCard}
                 >
-                  <span
-                    style={{
-                      fontSize: "1.5rem",
-                      display: "block",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    {cat.icon || "🔧"}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      color: "#F5F0EB",
-                      display: "block",
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {cat.name}
-                  </span>
+                  <span className={styles.catIcon}>{cat.icon || "🔧"}</span>
+                  <span className={styles.catName}>{cat.name}</span>
                   {cat._count?.workers > 0 && (
-                    <span
-                      style={{
-                        fontSize: "0.65rem",
-                        color: "rgba(245,240,235,0.35)",
-                        display: "block",
-                        marginTop: 3,
-                      }}
-                    >
+                    <span className={styles.catCount}>
                       {cat._count.workers} workers
                     </span>
                   )}
@@ -1205,159 +493,53 @@ export default function LandingPage() {
           </div>
 
           {!catSearch && filteredCats.length > 48 && (
-            <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-              <Link
-                to="/search"
-                style={{
-                  padding: "0.75rem 2rem",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: 8,
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "#F5F0EB",
-                  display: "inline-block",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#F59E0B";
-                  e.currentTarget.style.color = "#F59E0B";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                  e.currentTarget.style.color = "#F5F0EB";
-                }}
-              >
+            <div className={styles.catViewAll}>
+              <Link to="/search" className={styles.btnViewAll}>
                 Browse all {filteredCats.length} categories →
               </Link>
             </div>
           )}
 
-          {/* Custom category add */}
-          <div
-            style={{
-              marginTop: "2.5rem",
-              padding: "1.75rem",
-              background: "rgba(245,158,11,0.05)",
-              border: "1.5px dashed rgba(245,158,11,0.3)",
-              borderRadius: 14,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 260 }}>
-                <div
-                  style={{
-                    fontSize: "0.875rem",
-                    fontWeight: 700,
-                    color: "#F5F0EB",
-                    marginBottom: "0.25rem",
-                  }}
-                >
+          <div className={styles.catCustomBox}>
+            <div className={styles.catCustomInner}>
+              <div className={styles.catCustomText}>
+                <p className={styles.catCustomTitle}>
                   Can't find your profession? Add it.
-                </div>
-                <div
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "rgba(245,240,235,0.45)",
-                  }}
-                >
-                  SkilledProz is global. If your trade or profession isn't
-                  listed, add it instantly — it goes live for the whole
-                  platform.
-                </div>
+                </p>
+                <p className={styles.catCustomSub}>
+                  SkilledProz is global. If your trade isn't listed, add it
+                  instantly — it goes live for the whole platform.
+                </p>
               </div>
               {!showCustomCat ? (
                 <button
+                  className={styles.catAddBtn}
                   onClick={() => setShowCustomCat(true)}
-                  style={{
-                    padding: "0.75rem 1.5rem",
-                    background: "#F59E0B",
-                    borderRadius: 8,
-                    border: "none",
-                    fontSize: "0.875rem",
-                    fontWeight: 700,
-                    color: "#09090B",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                    transition: "background 0.2s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#D97706")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "#F59E0B")
-                  }
                 >
                   + Add your profession
                 </button>
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.625rem",
-                    flex: 1,
-                    minWidth: 320,
-                  }}
-                >
+                <div className={styles.catAddForm}>
                   <input
                     autoFocus
+                    className={styles.catAddInput}
                     value={customCatName}
                     onChange={(e) => setCustomCatName(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleAddCustomCategory()
-                    }
+                    onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
                     placeholder="e.g. Drone Operator, Solar Engineer..."
-                    style={{
-                      flex: 1,
-                      padding: "0.75rem 1rem",
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      borderRadius: 8,
-                      color: "#F5F0EB",
-                      fontSize: "0.875rem",
-                      outline: "none",
-                      fontFamily: "inherit",
-                    }}
                   />
                   <button
-                    onClick={handleAddCustomCategory}
+                    className={styles.catSubmitBtn}
+                    onClick={handleAddCategory}
                     disabled={addingCat || !customCatName.trim()}
-                    style={{
-                      padding: "0.75rem 1.25rem",
-                      background: "#F59E0B",
-                      borderRadius: 8,
-                      border: "none",
-                      fontSize: "0.875rem",
-                      fontWeight: 700,
-                      color: "#09090B",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      opacity: addingCat ? 0.6 : 1,
-                    }}
                   >
                     {addingCat ? "Adding..." : "Add"}
                   </button>
                   <button
+                    className={styles.catCancelBtn}
                     onClick={() => {
                       setShowCustomCat(false);
                       setCustomCatName("");
-                    }}
-                    style={{
-                      padding: "0.75rem 1rem",
-                      background: "transparent",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      borderRadius: 8,
-                      color: "rgba(245,240,235,0.5)",
-                      cursor: "pointer",
-                      fontSize: "0.875rem",
-                      fontFamily: "inherit",
                     }}
                   >
                     Cancel
@@ -1366,18 +548,7 @@ export default function LandingPage() {
               )}
             </div>
             {addedCat && (
-              <div
-                style={{
-                  marginTop: "1rem",
-                  padding: "0.75rem 1rem",
-                  background: "rgba(34,197,94,0.1)",
-                  border: "1px solid rgba(34,197,94,0.25)",
-                  borderRadius: 8,
-                  fontSize: "0.875rem",
-                  color: "#22c55e",
-                  fontWeight: 600,
-                }}
-              >
+              <div className={styles.catAddedMsg}>
                 ✅ "{addedCat.name}" is now live on SkilledProz!
               </div>
             )}
@@ -1385,127 +556,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CURRENCIES SHOWCASE ── */}
-      <section style={{ padding: "6rem 5%", background: "#09090B" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "#F59E0B",
-              display: "block",
-              marginBottom: "0.75rem",
-            }}
-          >
-            Global Payments
-          </span>
-          <h2
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontSize: "clamp(2rem,3.5vw,2.75rem)",
-              fontWeight: 400,
-              color: "#F5F0EB",
-              letterSpacing: "-0.03em",
-              marginBottom: "0.875rem",
-            }}
-          >
-            Pay and earn in your currency
-          </h2>
-          <p
-            style={{
-              color: "rgba(245,240,235,0.5)",
-              maxWidth: 520,
-              marginBottom: "3rem",
-              lineHeight: 1.7,
-            }}
-          >
-            From Naira to Yen, Pound to Dirham — and crypto (USDC, USDT).
-            Workers set their profile currency, hirers pay in theirs. Three
+      {/* ── Currencies ── */}
+      <section className={`${styles.section} ${styles.currenciesSection}`}>
+        <div className={styles.sectionInner}>
+          <span className={styles.sectionEyebrow}>Global Payments</span>
+          <h2 className={styles.sectionTitle}>Pay and earn in your currency</h2>
+          <p className={styles.sectionSub}>
+            From Naira to Yen, Pound to Dirham — and crypto (USDC, USDT). Three
             independent currency settings per account: dashboard display,
             payment, and profile rate.
           </p>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-              gap: "0.625rem",
-            }}
-          >
+          <div className={styles.currenciesGrid}>
             {CURRENCIES.map((c) => (
-              <div
-                key={c.code}
-                style={{
-                  padding: "0.875rem",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 10,
-                  textAlign: "center",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(245,158,11,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(245,158,11,0.25)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "1.25rem",
-                    display: "block",
-                    marginBottom: "0.375rem",
-                  }}
-                >
-                  {c.flag}
-                </span>
-                <span
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    color: "#F59E0B",
-                  }}
-                >
-                  {c.symbol}
-                </span>
-                <span
-                  style={{
-                    display: "block",
-                    fontSize: "0.7rem",
-                    fontWeight: 600,
-                    color: "#F5F0EB",
-                    marginTop: 2,
-                  }}
-                >
-                  {c.code}
-                </span>
-                <span
-                  style={{
-                    display: "block",
-                    fontSize: "0.6rem",
-                    color: "rgba(245,240,235,0.3)",
-                    marginTop: 1,
-                  }}
-                >
-                  {c.name}
-                </span>
+              <div key={c.code} className={styles.currencyCard}>
+                <span className={styles.currencyFlag}>{c.flag}</span>
+                <span className={styles.currencySymbol}>{c.symbol}</span>
+                <span className={styles.currencyCode}>{c.code}</span>
+                <span className={styles.currencyName}>{c.name}</span>
               </div>
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: "2rem",
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className={styles.currencyMethods}>
             {[
               "Bank Transfer",
               "Card Payments",
@@ -1513,18 +586,7 @@ export default function LandingPage() {
               "Crypto (USDC/USDT)",
               "Instant Withdrawal",
             ].map((m) => (
-              <span
-                key={m}
-                style={{
-                  padding: "0.5rem 1rem",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 999,
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                  color: "rgba(245,240,235,0.6)",
-                }}
-              >
+              <span key={m} className={styles.currencyMethod}>
                 ✓ {m}
               </span>
             ))}
@@ -1532,104 +594,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── DUAL CTA — WORKER vs HIRER ── */}
-      <section style={{ padding: "6rem 5%", background: "#F5F0EB" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-                color: "#D97706",
-                display: "block",
-                marginBottom: "0.75rem",
-              }}
-            >
-              Join SkilledProz
-            </span>
+      {/* ── CTA ── */}
+      <section className={`${styles.section} ${styles.ctaSection}`}>
+        <div className={styles.sectionInner}>
+          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <span className={styles.sectionEyebrow}>Join SkilledProz</span>
             <h2
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: "clamp(2rem,3.5vw,2.75rem)",
-                fontWeight: 400,
-                color: "#0A0A0B",
-                letterSpacing: "-0.03em",
-              }}
+              className={styles.sectionTitle}
+              style={{ maxWidth: "none", textAlign: "center" }}
             >
               Choose your path. Start today.
             </h2>
           </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1.5rem",
-            }}
-          >
-            {/* Hirer card */}
-            <div
-              style={{
-                background: "#0A0A0B",
-                borderRadius: 20,
-                padding: "2.5rem",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  width: "50%",
-                  height: "100%",
-                  background:
-                    "radial-gradient(ellipse at top right, rgba(245,158,11,0.08), transparent 70%)",
-                  pointerEvents: "none",
-                }}
-              />
-              <span
-                style={{
-                  fontSize: "2.5rem",
-                  display: "block",
-                  marginBottom: "1.25rem",
-                }}
-              >
-                🏗️
-              </span>
-              <h3
-                style={{
-                  fontFamily: "'DM Serif Display', serif",
-                  fontSize: "1.75rem",
-                  fontWeight: 400,
-                  color: "#F5F0EB",
-                  marginBottom: "0.75rem",
-                }}
-              >
-                Hire a Worker
-              </h3>
-              <p
-                style={{
-                  color: "rgba(245,240,235,0.5)",
-                  fontSize: "0.9375rem",
-                  lineHeight: 1.7,
-                  marginBottom: "1.75rem",
-                }}
-              >
+          <div className={styles.ctaGrid}>
+            <div className={styles.ctaCard}>
+              <span className={styles.ctaCardEmoji}>🏗️</span>
+              <h3 className={styles.ctaCardTitle}>Hire a Worker</h3>
+              <p className={styles.ctaCardDesc}>
                 Post jobs, browse verified workers, book with escrow protection.
                 GPS tracking, video calls, insurance, disputes — all covered.
               </p>
-              <ul
-                style={{
-                  marginBottom: "2rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.625rem",
-                }}
-              >
+              <ul className={styles.ctaList}>
                 {[
                   "Free to post jobs",
                   "Pay only when satisfied",
@@ -1637,108 +622,22 @@ export default function LandingPage() {
                   "29 currencies accepted",
                   "Dispute resolution included",
                 ].map((item) => (
-                  <li
-                    key={item}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.625rem",
-                      fontSize: "0.875rem",
-                      color: "rgba(245,240,235,0.7)",
-                      listStyle: "none",
-                    }}
-                  >
-                    <span style={{ color: "#F59E0B", fontWeight: 700 }}>✓</span>{" "}
-                    {item}
-                  </li>
+                  <li key={item}>{item}</li>
                 ))}
               </ul>
-              <Link
-                to="/register/hirer"
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  padding: "0.9rem 2rem",
-                  background: "#F59E0B",
-                  borderRadius: 10,
-                  fontSize: "1rem",
-                  fontWeight: 700,
-                  color: "#09090B",
-                  transition: "background 0.2s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#D97706")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "#F59E0B")
-                }
-              >
+              <Link to="/register/hirer" className={styles.ctaBtn}>
                 Create Hirer Account →
               </Link>
             </div>
 
-            {/* Worker card */}
-            <div
-              style={{
-                background: "#0A0A0B",
-                borderRadius: 20,
-                padding: "2.5rem",
-                position: "relative",
-                overflow: "hidden",
-                border: "1px solid rgba(245,158,11,0.2)",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "50%",
-                  height: "100%",
-                  background:
-                    "radial-gradient(ellipse at top left, rgba(59,130,246,0.06), transparent 70%)",
-                  pointerEvents: "none",
-                }}
-              />
-              <span
-                style={{
-                  fontSize: "2.5rem",
-                  display: "block",
-                  marginBottom: "1.25rem",
-                }}
-              >
-                ⚡
-              </span>
-              <h3
-                style={{
-                  fontFamily: "'DM Serif Display', serif",
-                  fontSize: "1.75rem",
-                  fontWeight: 400,
-                  color: "#F5F0EB",
-                  marginBottom: "0.75rem",
-                }}
-              >
-                Start Earning
-              </h3>
-              <p
-                style={{
-                  color: "rgba(245,240,235,0.5)",
-                  fontSize: "0.9375rem",
-                  lineHeight: 1.7,
-                  marginBottom: "1.75rem",
-                }}
-              >
+            <div className={`${styles.ctaCard} ${styles.ctaCardAccent}`}>
+              <span className={styles.ctaCardEmoji}>⚡</span>
+              <h3 className={styles.ctaCardTitle}>Start Earning</h3>
+              <p className={styles.ctaCardDesc}>
                 Set your rates (hourly, daily, weekly, monthly, custom), get
                 verified, receive bookings, and get paid to your local currency.
               </p>
-              <ul
-                style={{
-                  marginBottom: "2rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.625rem",
-                }}
-              >
+              <ul className={styles.ctaList}>
                 {[
                   "Multi-rate pricing (hourly to monthly)",
                   "Get paid in your currency",
@@ -1746,45 +645,10 @@ export default function LandingPage() {
                   "Featured listing boosts",
                   "SOS safety system included",
                 ].map((item) => (
-                  <li
-                    key={item}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.625rem",
-                      fontSize: "0.875rem",
-                      color: "rgba(245,240,235,0.7)",
-                      listStyle: "none",
-                    }}
-                  >
-                    <span style={{ color: "#F59E0B", fontWeight: 700 }}>✓</span>{" "}
-                    {item}
-                  </li>
+                  <li key={item}>{item}</li>
                 ))}
               </ul>
-              <Link
-                to="/register/worker"
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  padding: "0.9rem 2rem",
-                  background: "rgba(245,158,11,0.1)",
-                  border: "1.5px solid rgba(245,158,11,0.4)",
-                  borderRadius: 10,
-                  fontSize: "1rem",
-                  fontWeight: 700,
-                  color: "#F59E0B",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#F59E0B";
-                  e.currentTarget.style.color = "#09090B";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(245,158,11,0.1)";
-                  e.currentTarget.style.color = "#F59E0B";
-                }}
-              >
+              <Link to="/register/worker" className={styles.ctaBtnOutline}>
                 Create Worker Account →
               </Link>
             </div>
@@ -1792,19 +656,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SAFETY STRIP ── */}
-      <div
-        style={{
-          background: "#111113",
-          padding: "2rem 5%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "3rem",
-          flexWrap: "wrap",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
+      {/* ── Safety strip ── */}
+      <div className={styles.safetyStrip}>
         {[
           ["🔐", "Escrow on every booking"],
           ["📍", "GPS verification"],
@@ -1813,97 +666,32 @@ export default function LandingPage() {
           ["⚖️", "48hr dispute resolution"],
           ["✅", "ID & background checks"],
         ].map(([icon, label]) => (
-          <div
-            key={label}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              fontSize: "0.8125rem",
-              fontWeight: 600,
-              color: "rgba(245,240,235,0.5)",
-            }}
-          >
-            <span>{icon}</span> {label}
+          <div key={label} className={styles.safetyItem}>
+            <span>{icon}</span>
+            {label}
           </div>
         ))}
       </div>
 
-      {/* ── FOOTER ── */}
-      <footer
-        style={{
-          background: "#0A0A0B",
-          padding: "4rem 5% 2rem",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
-            gap: "3rem",
-            marginBottom: "3rem",
-          }}
-        >
+      {/* ── Footer ── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerTop}>
           <div>
-            <Link
-              to="/"
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: "1.5rem",
-                fontWeight: 400,
-                color: "#F5F0EB",
-                display: "inline-block",
-                marginBottom: "1rem",
-              }}
-            >
-              Skilled<span style={{ color: "#F59E0B" }}>Proz</span>
+            <Link to="/" className={styles.navLogo}>
+              Skilled<span>Proz</span>
             </Link>
-            <p
-              style={{
-                fontSize: "0.875rem",
-                color: "rgba(245,240,235,0.35)",
-                lineHeight: 1.75,
-                maxWidth: 260,
-                marginBottom: "1.5rem",
-              }}
-            >
+            <p className={styles.footerBrandDesc}>
               The global marketplace for skilled trades. Any profession, any
               country, any currency.
             </p>
-            <div style={{ display: "flex", gap: "0.625rem" }}>
+            <div className={styles.footerSocials}>
               {["𝕏", "in", "▶", "f"].map((s) => (
-                <a
-                  key={s}
-                  href="#"
-                  style={{
-                    width: 34,
-                    height: 34,
-                    background: "rgba(255,255,255,0.06)",
-                    borderRadius: 7,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.875rem",
-                    color: "rgba(245,240,235,0.4)",
-                    textDecoration: "none",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F59E0B";
-                    e.currentTarget.style.color = "#09090B";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                    e.currentTarget.style.color = "rgba(245,240,235,0.4)";
-                  }}
-                >
+                <a key={s} href="#" className={styles.socialLink}>
                   {s}
                 </a>
               ))}
             </div>
           </div>
-
           {[
             {
               title: "Platform",
@@ -1937,70 +725,26 @@ export default function LandingPage() {
             },
           ].map((col) => (
             <div key={col.title}>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: "#F5F0EB",
-                  marginBottom: "1.25rem",
-                }}
-              >
-                {col.title}
-              </p>
-              <ul
-                style={{
-                  listStyle: "none",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.625rem",
-                }}
-              >
+              <p className={styles.footerColTitle}>{col.title}</p>
+              <ul className={styles.footerLinks}>
                 {col.links.map((l) => (
                   <li key={l}>
-                    <Link
-                      to="#"
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "rgba(245,240,235,0.4)",
-                        textDecoration: "none",
-                        transition: "color 0.2s",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = "#F59E0B")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "rgba(245,240,235,0.4)")
-                      }
-                    >
-                      {l}
-                    </Link>
+                    <Link to="#">{l}</Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-
-        <div
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.07)",
-            paddingTop: "1.75rem",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <span style={{ fontSize: "0.8rem", color: "rgba(245,240,235,0.25)" }}>
+        <div className={styles.footerBottom}>
+          <span className={styles.footerCopy}>
             © {new Date().getFullYear()} SkilledProz Technologies Ltd. All
             rights reserved.
           </span>
-          <span style={{ fontSize: "0.8rem", color: "rgba(245,240,235,0.25)" }}>
-            50+ countries · 29 currencies · 500+ trades
-          </span>
+          <div className={styles.footerLegal}>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/terms">Terms</Link>
+          </div>
         </div>
       </footer>
     </div>
