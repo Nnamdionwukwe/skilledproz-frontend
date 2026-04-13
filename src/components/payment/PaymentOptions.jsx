@@ -262,7 +262,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
             <div className={styles.tabContent}>
               <p className={styles.tabDesc}>
                 Transfer directly to our escrow account. We'll confirm receipt
-                within 1–2 hours and notify the worker.
+                within 1–2 minutes and notify the worker.
               </p>
               <button
                 className={styles.payBtn}
