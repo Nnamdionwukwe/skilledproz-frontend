@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
           <Link to="/terms">Terms</Link>
           <Link to="/contact">Contact</Link>
           <Link to="/login" className={styles.navCta}>
-            Login
+            Sign in
           </Link>
         </div>
       </nav>

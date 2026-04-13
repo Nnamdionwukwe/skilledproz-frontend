@@ -71,7 +71,7 @@ export default function Terms() {
           <Link to="/privacy">Privacy</Link>
           <Link to="/contact">Contact</Link>
           <Link to="/login" className={styles.navCta}>
-            Login
+            Sign in
           </Link>
         </div>
       </nav>
