@@ -16,6 +16,8 @@ export default function WorkerPublicProfile() {
   // ── CRITICAL: always use the *viewer's* identity, never the profile owner ──
   const { user: viewerUser } = useAuthStore();
 
+  const [lightbox, setLightbox] = useState(null);
+
   // Layout is driven by WHO IS VIEWING, not whose profile it is
   const Layout = viewerUser?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
@@ -378,7 +380,12 @@ export default function WorkerPublicProfile() {
               ) : (
                 <div className={styles.portfolioGrid}>
                   {portfolio.map((item) => (
-                    <div key={item.id} className={styles.portfolioCard}>
+                    <div
+                      title="Click to view full size"
+                      key={item.id}
+                      className={styles.portfolioCard}
+                      onClick={() => setLightbox({ type: "portfolio", item })}
+                    >
                       <div className={styles.portfolioImg}>
                         <img src={item.imageUrl} alt={item.title} />
                       </div>
@@ -523,6 +530,106 @@ export default function WorkerPublicProfile() {
           )}
         </div>
       </div>
+
+      {/* ── LIGHTBOX ── */}
+      {lightbox && (
+        <div
+          className={styles.lightboxOverlay}
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className={styles.lightboxBox}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className={styles.lightboxClose}
+              onClick={() => setLightbox(null)}
+            >
+              ✕
+            </button>
+
+            {/* Portfolio lightbox */}
+            {lightbox.type === "portfolio" && (
+              <>
+                {lightbox.item.imageUrl && (
+                  <img
+                    src={lightbox.item.imageUrl}
+                    alt={lightbox.item.title}
+                    className={styles.lightboxImg}
+                  />
+                )}
+                <div className={styles.lightboxInfo}>
+                  <h2 className={styles.lightboxTitle}>
+                    {lightbox.item.title}
+                  </h2>
+                  {lightbox.item.description && (
+                    <p className={styles.lightboxDesc}>
+                      {lightbox.item.description}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Certification lightbox */}
+            {lightbox.type === "cert" && (
+              <div className={styles.lightboxCert}>
+                <div className={styles.lightboxCertIcon}>
+                  <Award size={40} />
+                </div>
+                <h2 className={styles.lightboxTitle}>{lightbox.item.name}</h2>
+                {lightbox.item.issuer && (
+                  <p className={styles.lightboxCertMeta}>
+                    Issued by <strong>{lightbox.item.issuer}</strong>
+                  </p>
+                )}
+                <div className={styles.lightboxCertDates}>
+                  {lightbox.item.issueDate && (
+                    <div className={styles.lightboxCertDate}>
+                      <span>Issue date</span>
+                      <strong>
+                        {new Date(lightbox.item.issueDate).toLocaleDateString(
+                          "en-GB",
+                          { day: "numeric", month: "long", year: "numeric" },
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                  {lightbox.item.expiryDate && (
+                    <div className={styles.lightboxCertDate}>
+                      <span>Expiry date</span>
+                      <strong>
+                        {new Date(lightbox.item.expiryDate).toLocaleDateString(
+                          "en-GB",
+                          { day: "numeric", month: "long", year: "numeric" },
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+                {lightbox.item.isVerified && (
+                  <div
+                    className={`${styles.badge} ${styles.badgeGreen}`}
+                    style={{ margin: "1rem auto 0" }}
+                  >
+                    <CheckCircle2 size={13} /> Verified by SkilledProz
+                  </div>
+                )}
+                {lightbox.item.documentUrl && (
+                  <a
+                    href={lightbox.item.documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.lightboxDocLink}
+                  >
+                    📄 View Certificate Document →
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

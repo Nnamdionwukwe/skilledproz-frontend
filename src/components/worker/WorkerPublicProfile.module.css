@@ -946,3 +946,324 @@
     padding: 36px 28px;
   }
 }
+
+/* ── Portfolio clickable ── */
+.portfolioCardClickable {
+  cursor: pointer;
+  position: relative;
+}
+.portfolioCardClickable:hover {
+  border-color: var(--orange);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15);
+}
+.portfolioExpand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.portfolioCardClickable:hover .portfolioExpand {
+  opacity: 1;
+}
+
+/* ── Cert clickable ── */
+.certCardClickable {
+  cursor: pointer;
+}
+.certCardClickable:hover {
+  border-color: var(--orange);
+  background: rgba(249, 115, 22, 0.03);
+}
+.certViewHint {
+  font-size: 11px;
+  color: var(--orange);
+  font-weight: 600;
+}
+
+/* ── Reviews ── */
+.reviewsLoading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2.5rem;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+.reviewSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.reviewSummaryLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reviewSummaryScore {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+}
+.reviewSummaryCount {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reviewCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  transition: border-color 0.15s;
+}
+.reviewCard:hover {
+  border-color: var(--border-hover);
+}
+.reviewTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.reviewAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1.5px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.reviewAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reviewMeta {
+  flex: 1;
+  min-width: 0;
+}
+.reviewerName {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.reviewerRole {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.reviewBooking {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+.reviewDate {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.reviewStars {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.reviewRatingNum {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.reviewComment {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.7;
+  border-left: 2px solid var(--orange-glow);
+  padding-left: 12px;
+  margin: 0;
+}
+
+/* ── Lightbox ── */
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeUp 0.15s ease;
+}
+.lightboxBox {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: fadeUp 0.2s ease;
+}
+.lightboxClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  z-index: 1;
+}
+.lightboxClose:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.lightboxImg {
+  width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  border-radius: 16px 16px 0 0;
+  display: block;
+  background: var(--bg);
+}
+.lightboxInfo {
+  padding: 20px 24px 24px;
+}
+.lightboxTitle {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.lightboxDesc {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* Cert lightbox */
+.lightboxCert {
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+.lightboxCertIcon {
+  width: 72px;
+  height: 72px;
+  background: var(--orange-dim);
+  border: 2px solid var(--orange-glow);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
+}
+.lightboxCertMeta {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.lightboxCertDates {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.lightboxCertDate {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 18px;
+  text-align: center;
+}
+.lightboxCertDate span {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.lightboxCertDate strong {
+  font-size: 13px;
+  color: var(--text);
+}
+.lightboxDocLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  border-radius: 10px;
+  color: var(--orange);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+  margin-top: 0.5rem;
+}
+.lightboxDocLink:hover {
+  background: rgba(249, 115, 22, 0.2);
+}
+
+@media (max-width: 640px) {
+  .lightboxBox {
+    border-radius: 16px;
+  }
+  .lightboxInfo {
+    padding: 16px;
+  }
+  .lightboxCert {
+    padding: 1.75rem 1.25rem;
+  }
+  .reviewCard {
+    padding: 12px;
+  }
+  .reviewTop {
+    flex-wrap: wrap;
+  }
+}
