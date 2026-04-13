@@ -100,7 +100,7 @@ export default function WorkerPublicProfile() {
                   // <span className={styles.verifiedBadge} title="Verified">
                   //   ✓
                   // </span>
-                  <ShieldCheck size={18} className={styles.verifiedIcon} />
+                  <ShieldCheck size={25} className={styles.verifiedDot} />
                 )}
               </div>
               {worker.isAvailable && <div className={styles.onlineDot} />}
@@ -111,12 +111,6 @@ export default function WorkerPublicProfile() {
                 <div>
                   <h1 className={styles.name}>
                     {user.firstName} {user.lastName}
-                    {worker.verificationStatus === "VERIFIED" && (
-                      // <span className={styles.verifiedBadge} title="Verified">
-                      //   ✓
-                      // </span>
-                      <ShieldCheck size={25} className={styles.verifiedIcon} />
-                    )}
                   </h1>
                   <p className={styles.workerTitle}>{worker.title}</p>
                 </div>

@@ -24,6 +24,8 @@
   position: absolute;
   bottom: 0;
   right: 0;
+  margin-right: -8px;
+  color: white;
   border-radius: 50%;
   width: 16px;
   height: 16px;
