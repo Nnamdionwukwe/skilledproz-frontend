@@ -37,7 +37,7 @@ import CreateBooking from "./components/booking/CreateBooking";
 import UserProfile from "./components/user/UserProfile";
 
 // Fallback
-import DashboardPlaceholder from "./pages/worker/dashboard/DashboardPlaceholder";
+
 import LandingPage from "./app/LandingPage";
 import HirerSavedWorkers from "./components/hirer/HirerSavedWorkers";
 import CategoriesBrowse from "./components/categories/CategoriesBrowse";
@@ -621,14 +621,7 @@ export default function App() {
         />
 
         {/* ── Fallback ── */}
-        <Route
-          path="/dashboard/placeholder"
-          element={
-            <RequireAuth>
-              <DashboardPlaceholder />
-            </RequireAuth>
-          }
-        />
+
         <Route path="landingpage" element={<LandingPage />} />
 
         {/* ── Verification ── */}
