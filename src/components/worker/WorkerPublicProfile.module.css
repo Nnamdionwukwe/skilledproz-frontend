@@ -984,3 +984,90 @@
   color: #dc2626;
   margin-bottom: 8px;
 }
+
+/* ── Mobile fixes for worker public profile ── */
+@media (max-width: 768px) {
+  /* Force single column on mobile */
+  .layout,
+  .profileLayout,
+  .workerLayout {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+
+  /* Profile header — stack vertically */
+  .profileHeader,
+  .workerHeader {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.875rem !important;
+    padding: 1rem !important;
+  }
+
+  /* Avatar — smaller on mobile */
+  .profileAvatar,
+  .workerAvatar {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 1.5rem !important;
+  }
+
+  /* Stats row — wrap */
+  .statsRow,
+  .workerStats {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Rate badges — stack */
+  .rateGrid,
+  .pricingGrid,
+  .ratesRow {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Categories — wrap tighter */
+  .categoriesRow,
+  .catsList {
+    flex-wrap: wrap !important;
+    gap: 0.375rem !important;
+  }
+
+  /* Action buttons — full width on mobile */
+  .bookBtn,
+  .contactBtn,
+  .actionBtn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Portfolio grid — 2 col on mobile */
+  .portfolioGrid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Text overflow protection */
+  .workerTitle,
+  .workerName,
+  .profileName {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Sidebar goes below main on mobile */
+  .sidebar {
+    width: 100% !important;
+    position: static !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .rateGrid,
+  .pricingGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .portfolioGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
