@@ -714,13 +714,7 @@ export default function LandingPage() {
             },
             {
               title: "Company",
-              links: [
-                "About Us",
-                "Careers",
-                "Press",
-                "Privacy Policy",
-                "Terms of Service",
-              ],
+              links: ["About Us", "Privacy Policy", "Terms of Service"],
             },
           ].map((col) => (
             <div key={col.title}>
