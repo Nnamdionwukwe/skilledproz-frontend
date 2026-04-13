@@ -546,9 +546,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                         type={currentOption.inputType}
                         step={currentOption.step || undefined}
                         min={
-                          currentOption.inputType === "number"
-                            ? "0.5"
-                            : undefined
+                          currentOption.inputType === "number" ? "" : undefined
                         }
                         placeholder={
                           currentOption.inputType === "text"

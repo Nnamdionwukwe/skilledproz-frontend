@@ -229,20 +229,6 @@ export default function PaymentOptions({ booking, onSuccess }) {
           </span>
         </div>
 
-        <div className={styles.summaryRow}>
-          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            Worker Receives
-          </span>
-          <span
-            style={{ color: "var(--green)", fontSize: 12, fontWeight: 600 }}
-          >
-            {p.currency}{" "}
-            {p.workerPayout.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
-
         <div className={styles.summaryDivider} />
 
         <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
@@ -348,7 +334,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
             <BankRow label="Account Name" value={bankDetails.accountName} />
             <BankRow
               label="Amount"
-              value={`${bankDetails.currency} ${Number(bankDetails.amount).toLocaleString()}`}
+              value={`${p.currency} ${p.totalCharged.toLocaleString()}`}
               accent
             />
             <BankRow label="Narration" value={bankDetails.narration} mono />
@@ -426,7 +412,7 @@ export default function PaymentOptions({ booking, onSuccess }) {
             />
             <BankRow
               label="Amount"
-              value={`${cryptoDetails.amountFiat} ${cryptoDetails.currency} equivalent`}
+              value={`${p.currency} ${p.totalCharged.toLocaleString()}`}
               accent
             />
             <BankRow label="Memo" value={cryptoDetails.note} mono />

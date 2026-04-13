@@ -5,6 +5,55 @@ import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
 
+// ── Pricing helper — identical to PaymentOptions.jsx calcPricing ──────────────
+// agreedRate = rate per unit · platformFeeRate = 0.1 (10%)
+function calcPricing(booking) {
+  const rate = booking.agreedRate || 0;
+  const unit = booking.estimatedUnit || "hours";
+  const hours = booking.estimatedHours;
+  const value = booking.estimatedValue
+    ? parseFloat(booking.estimatedValue)
+    : null;
+  const currency = booking.currency || "USD";
+  const PLATFORM_FEE_RATE = 0.1;
+
+  let qty = 1;
+  if (value && unit !== "custom") {
+    qty = value;
+  } else if (hours) {
+    if (unit === "hours") qty = hours;
+    if (unit === "days") qty = Math.round(hours / 8);
+    if (unit === "weeks") qty = Math.round(hours / 40);
+    if (unit === "months") qty = Math.round(hours / 160);
+  }
+
+  const unitSuffix =
+    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
+  const unitLabel =
+    { hours: "hour", days: "day", weeks: "week", months: "month" }[unit] ||
+    unit;
+
+  const subtotal = rate * qty;
+  const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
+  const workerPayout = parseFloat((subtotal - platformFee).toFixed(2));
+  const totalCharged = subtotal + platformFee;
+  const hasQty = (value || hours) && unit !== "custom";
+
+  return {
+    rate,
+    qty,
+    unit,
+    unitSuffix,
+    unitLabel,
+    currency,
+    subtotal,
+    platformFee,
+    workerPayout,
+    totalCharged,
+    hasQty,
+  };
+}
+
 export default function InitiatePayment() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
@@ -29,10 +78,10 @@ export default function InitiatePayment() {
       const res = await api.post(`/payments/initiate/${bookingId}`);
       const { authorizationUrl, clientSecret } = res.data.data;
       if (authorizationUrl) {
-        window.location.href = authorizationUrl; // Paystack
+        window.location.href = authorizationUrl;
       } else if (clientSecret) {
         sessionStorage.setItem("stripe_client_secret", clientSecret);
-        navigate(`/bookings/${bookingId}/stripe-confirm`); // Stripe
+        navigate(`/bookings/${bookingId}/stripe-confirm`);
       } else {
         setError("Unknown payment provider response.");
       }
@@ -67,10 +116,8 @@ export default function InitiatePayment() {
       </HirerLayout>
     );
 
-  const fee = booking?.agreedRate ? (booking.agreedRate * 0.1).toFixed(2) : "—";
-  const total = booking?.agreedRate
-    ? (booking.agreedRate * 1.1).toFixed(2)
-    : "—";
+  // ── All pricing derived from the same calcPricing used in PaymentOptions ──
+  const p = calcPricing(booking);
 
   return (
     <HirerLayout>
@@ -124,30 +171,57 @@ export default function InitiatePayment() {
             </div>
           </div>
 
-          {/* Breakdown */}
+          {/* Breakdown — now uses the same calcPricing as PaymentOptions */}
           <div className={styles.breakdownCard}>
             <p className={styles.breakdownTitle}>Payment Breakdown</p>
             <div className={styles.breakdownRows}>
               <div className={styles.breakdownRow}>
                 <span className={styles.breakdownLabel}>Agreed Rate</span>
                 <span className={styles.breakdownVal}>
-                  {booking?.currency}{" "}
-                  {Number(booking?.agreedRate).toLocaleString()}
+                  {p.currency} {p.rate.toLocaleString()}
+                  {p.unitSuffix}
                 </span>
               </div>
+
+              {p.hasQty && (
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>Duration</span>
+                  <span className={styles.breakdownVal}>
+                    {p.qty} {p.unitLabel}
+                    {p.qty !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
+
+              {p.hasQty && (
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>
+                    Subtotal ({p.qty} × {p.currency} {p.rate.toLocaleString()})
+                  </span>
+                  <span className={styles.breakdownVal}>
+                    {p.currency} {p.subtotal.toLocaleString()}
+                  </span>
+                </div>
+              )}
+
               <div className={styles.breakdownRow}>
                 <span className={styles.breakdownLabel}>
                   Platform Fee (10%)
                 </span>
                 <span className={styles.breakdownVal}>
-                  {booking?.currency} {fee}
+                  {p.currency}{" "}
+                  {p.platformFee.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
+
               <div className={styles.breakdownDivider} />
+
               <div className={styles.breakdownRow}>
-                <span className={styles.breakdownLabelTotal}>Total</span>
+                <span className={styles.breakdownLabelTotal}>You Pay</span>
                 <span className={styles.breakdownValTotal}>
-                  {booking?.currency} {Number(total).toLocaleString()}
+                  {p.currency} {p.totalCharged.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -180,14 +254,13 @@ export default function InitiatePayment() {
               </>
             ) : (
               <>
-                💳 Pay {booking?.currency} {Number(total).toLocaleString()}{" "}
-                Securely
+                💳 Pay {p.currency} {p.totalCharged.toLocaleString()} Securely
               </>
             )}
           </button>
 
           <p className={styles.payDisclaimer}>
-            Powered by Paystack & Stripe. Your payment is protected and
+            Powered by Paystack &amp; Stripe. Your payment is protected and
             encrypted.
           </p>
         </div>
