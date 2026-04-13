@@ -4,7 +4,7 @@ import styles from "./About.module.css";
 
 const stats = [
   { value: "500+", label: "Skill Categories" },
-  { value: "29+", label: "Countries Supported" },
+  { value: "50+", label: "Countries Supported" },
   { value: "100+", label: "Skilled Workers" },
   { value: "98%", label: "Satisfaction Rate" },
 ];

@@ -109,6 +109,7 @@
   padding: 0.35rem 0.9rem;
   border-radius: 100px;
   margin-bottom: 1.25rem;
+  margin-top: 1rem;
   border: 1px solid var(--orange-glow);
 }
 .title {
