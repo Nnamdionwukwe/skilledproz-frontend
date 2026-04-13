@@ -70,6 +70,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   animation: fadeUp 0.5s ease;
+  margin-top: 1.5rem;
 }
 .sidebarTitle {
   font-size: 0.7rem;
@@ -78,6 +79,7 @@
   text-transform: uppercase;
   color: var(--orange);
   margin-bottom: 1rem;
+  margin-top: 1.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
 }
