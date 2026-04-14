@@ -62,7 +62,7 @@ const NAV = [
   {
     group: "Account",
     items: [
-      { label: "Profile", path: "/dashboard/hirer/profile", icon: "👤" },
+      // { label: "Profile", path: "/dashboard/hirer/profile", icon: "👤" },
       {
         label: "Notifications",
         path: "/dashboard/hirer/notifications",
