@@ -250,10 +250,12 @@ export default function Messages() {
         }
         setMessages(incoming);
         prevMsgCount.current = incoming.length;
-      } catch {}
+      } catch {
+        // Silently handle API errors during message loading
+      }
       if (!silent) setLoadingMessages(false);
     },
-    [user?.id],
+    [user],
   );
 
   useEffect(() => {
