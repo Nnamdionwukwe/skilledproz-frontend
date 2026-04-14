@@ -373,12 +373,16 @@ export default function UserProfile() {
                 </div>
               )}
 
-              {/* In the .infoCard div — add after the currency row */}
+              {/* ── Shared: Website ── */}
               {user.hirerProfile?.website && (
                 <div className={s.infoRow}>
                   <Globe size={14} className={s.infoIcon} />
                   <a
-                    href={user.hirerProfile.website}
+                    href={
+                      user.hirerProfile.website.startsWith("http")
+                        ? user.hirerProfile.website
+                        : `https://${user.hirerProfile.website}`
+                    }
                     target="_blank"
                     rel="noreferrer"
                     style={{
