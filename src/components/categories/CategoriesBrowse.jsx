@@ -7,10 +7,13 @@ import { useAuthStore } from "../../store/authStore";
 
 export default function CategoriesBrowse() {
   const { user } = useAuthStore();
-  // const Layout =
-  //   // user?.role === "WORKER"
-  //   //   ? require("../layout/WorkerLayout").default
-  //   //   : HirerLayout;
+
+  const backDestination =
+    user?.role === "WORKER"
+      ? "/dashboard/worker"
+      : user?.role === "HIRER"
+        ? "/dashboard/hirer"
+        : "/landingpage"; // Default for Guests
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +73,7 @@ export default function CategoriesBrowse() {
   return (
     <>
       <div className={styles.page}>
-        <Link to="/landingpage" className={styles.backBtn}>
+        <Link to={backDestination} className={styles.backBtn}>
           ← Back
         </Link>
         <div className={styles.header}>
