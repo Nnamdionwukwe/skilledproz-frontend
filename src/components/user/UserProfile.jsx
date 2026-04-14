@@ -21,6 +21,8 @@ import {
   ChevronRight,
   DollarSign,
   ShieldCheck,
+  Building2,
+  Users,
 } from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -445,6 +447,20 @@ export default function UserProfile() {
 
             {/* Location + contact */}
             <div className={s.infoCard}>
+              {user.hirerProfile?.companyName && (
+                <div className={s.infoRow}>
+                  <Building2 size={14} className={s.statIcon} />
+                  <span>{user.hirerProfile?.companyName}</span>
+                </div>
+              )}
+
+              {user.hirerProfile?.companySize && (
+                <div className={s.infoRow}>
+                  <Users size={14} className={s.statIcon} />
+                  <span>{user.hirerProfile?.companySize}</span>
+                </div>
+              )}
+
               {(user.city || user.country) && (
                 <div className={s.infoRow}>
                   <MapPin size={14} className={s.statIcon} />
