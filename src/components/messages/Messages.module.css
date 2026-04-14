@@ -549,3 +549,181 @@
     height: calc(100vh - 64px);
   }
 }
+
+/* ── Unread badges ── */
+.totalUnreadBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: var(--orange);
+  color: var(--bg);
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  margin-left: 8px;
+}
+.convoItemUnread {
+  background: rgba(249, 115, 22, 0.04);
+}
+.convoNameBold {
+  font-weight: 700;
+  color: var(--text);
+}
+.convoPreviewBold {
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.convoTopRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.unreadBadge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--orange);
+  color: var(--bg);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.convoAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ── Sender name in bubble ── */
+.senderName {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--orange);
+  display: block;
+  margin-bottom: 3px;
+}
+
+/* ── Media messages ── */
+.messageImage {
+  max-width: 220px;
+  max-height: 280px;
+  border-radius: 10px;
+  display: block;
+  object-fit: cover;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.messageVideo {
+  max-width: 240px;
+  border-radius: 10px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ── Toolbar ── */
+.inputToolbar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 0;
+}
+.attachBtn {
+  width: 34px;
+  height: 34px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+.attachBtn:hover {
+  border-color: var(--orange);
+}
+
+/* ── Translate ── */
+.translateWrap {
+  margin-top: 4px;
+}
+.translateBtn {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.translateBtn:hover {
+  opacity: 1;
+}
+.translatedText {
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #93c5fd;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.translatedLabel {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #60a5fa;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+.translateDismiss {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0;
+}
+.langPicker {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 0;
+  min-width: 140px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  scrollbar-width: thin;
+}
+.langOption {
+  display: block;
+  width: 100%;
+  padding: 7px 14px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+.langOption:hover {
+  background: var(--bg-card);
+  color: var(--text);
+}
