@@ -64,7 +64,7 @@ export default function About() {
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroBadge}>Our Story</div>
         <h1 className={styles.heroTitle}>
-          The world's skills and professionals
+          The world's skills and proz
           <br />
           <span className={styles.accent}>one platform.</span>
         </h1>
