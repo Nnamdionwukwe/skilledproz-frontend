@@ -23,6 +23,13 @@ export default function JobDetail() {
   const isHirer = user?.role === "HIRER";
   const isOwner = user?.id === job?.hirer?.id;
 
+  const backDestination =
+    user?.role === "WORKER"
+      ? "/jobs"
+      : user?.role === "HIRER"
+        ? "/dashboard/hirer/jobs-management"
+        : "/landingpage"; // Default for Guests
+
   useEffect(() => {
     api
       .get(`/jobs/${id}`)
@@ -74,7 +81,7 @@ export default function JobDetail() {
         <div className={styles.notFound}>
           <span className={styles.notFoundIcon}>🔍</span>
           <h2 className={styles.notFoundTitle}>Job not found</h2>
-          <Link to="/jobs" className={styles.backLink}>
+          <Link to={backDestination} className={styles.backLink}>
             ← Back to Jobs
           </Link>
         </div>
@@ -94,7 +101,7 @@ export default function JobDetail() {
   return (
     <div className={styles.page}>
       {/* Back */}
-      <Link to="/jobs" className={styles.backLink}>
+      <Link to={backDestination} className={styles.backLink}>
         ← Back to Jobs
       </Link>
 

@@ -143,20 +143,21 @@ export default function Messages() {
     setSending(true);
 
     try {
+      // In handleSend, replace the receiverId resolution:
+      const withParam = searchParams.get("with");
       const activeConvo = conversations.find((c) => c.id === activeConvoId);
       const otherUser = activeConvo?.users?.find(
         (u) => u.userId !== user?.id,
       )?.user;
-
-      const withParam = searchParams.get("with");
       const receiverId = otherUser?.id || withParam;
 
-      const res = await api.post("/messages", {
-        receiverId,
-        content,
-        conversationId: activeConvoId,
-      });
+      if (!receiverId) return; // can't send without knowing recipient
 
+      await api.post("/messages", {
+        receiverId, // ← always include this
+        content,
+        conversationId: activeConvoId || undefined, // pass if known
+      });
       const { message, conversationId } = res.data.data;
 
       // If new convo was created
