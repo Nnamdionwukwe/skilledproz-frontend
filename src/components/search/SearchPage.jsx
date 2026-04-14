@@ -196,7 +196,11 @@ export default function SearchPage() {
               }),
             },
           });
-          setNearbyWorkers(res.data.data.workers || []);
+          // In findNearby(), replace setNearbyWorkers(res.data.data.workers || []) with:
+          const data = res.data.data;
+          const workersWithNote = data.workers || [];
+          workersWithNote._expansionNote = data.expansionNote || null;
+          setNearbyWorkers(workersWithNote);
         } catch {
           setNearbyWorkers([]);
         } finally {
@@ -330,190 +334,218 @@ export default function SearchPage() {
 
         <div className={styles.layout}>
           {/* Filter sidebar */}
-          <aside
-            className={`${styles.filterSidebar} ${showFilters ? styles.filterSidebarOpen : ""}`}
-          >
-            <div className={styles.filterHeader}>
-              <p className={styles.filterTitle}>
-                Filters{" "}
-                {activeFiltersCount > 0 && (
-                  <span className={styles.filterCount}>
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </p>
-              {activeFiltersCount > 0 && (
-                <button
-                  className={styles.clearFiltersBtn}
-                  onClick={clearFilters}
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
 
-            {/* Availability */}
-            <FilterSection title="Availability">
-              <label className={styles.toggle}>
-                <input
-                  type="checkbox"
-                  checked={filters.available === "true"}
-                  onChange={(e) =>
-                    applyFilter(
-                      "available",
-                      e.target.checked ? "true" : "false",
-                    )
-                  }
-                />
-                <span className={styles.toggleSlider} />
-                <span className={styles.toggleLabel}>Available only</span>
-              </label>
-            </FilterSection>
-
-            {/* Category */}
-            <FilterSection title="Category">
-              <select
-                className={styles.filterSelect}
-                value={filters.category}
-                onChange={(e) => applyFilter("category", e.target.value)}
-              >
-                <option value="">All categories</option>
-                {filterMeta.categories?.map((c) => (
-                  <option key={c.id} value={c.slug}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </FilterSection>
-
-            {/* City */}
-            <FilterSection title="City">
-              <input
-                className={styles.filterInput}
-                placeholder="e.g. Lagos"
-                value={filters.city}
-                onChange={(e) => applyFilter("city", e.target.value)}
+          {/* Filter sidebar — overlay on mobile, permanent on desktop */}
+          <>
+            {/* Mobile overlay backdrop */}
+            {showFilters && (
+              <div
+                className={styles.filterOverlay}
+                onClick={() => setShowFilters(false)}
               />
-            </FilterSection>
+            )}
 
-            {/* Rate range */}
-            <FilterSection title="Hourly Rate">
-              <div className={styles.rateInputs}>
-                <input
-                  className={styles.filterInput}
-                  type="number"
-                  placeholder={`Min`}
-                  value={filters.minRate}
-                  onChange={(e) => applyFilter("minRate", e.target.value)}
-                />
-                <span className={styles.rateSep}>–</span>
-                <input
-                  className={styles.filterInput}
-                  type="number"
-                  placeholder={`Max`}
-                  value={filters.maxRate}
-                  onChange={(e) => applyFilter("maxRate", e.target.value)}
-                />
-              </div>
-            </FilterSection>
-
-            {/* Rating */}
-            <FilterSection title="Minimum Rating">
-              <div className={styles.ratingOptions}>
-                {RATINGS.map((r) => (
-                  <button
-                    key={r.value}
-                    className={`${styles.ratingOpt} ${filters.rating == r.value ? styles.ratingOptActive : ""}`}
-                    onClick={() => applyFilter("rating", r.value)}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </FilterSection>
-
-            {/* Distance */}
-            <FilterSection title="Max Distance">
-              <select
-                className={styles.filterSelect}
-                value={filters.radius}
-                onChange={(e) => {
-                  applyFilter("radius", e.target.value);
-                  if (e.target.value && !filters.lat) findNearby();
-                }}
-              >
-                <option value="">Any distance</option>
-                {DISTANCES.map((d) => (
-                  <option key={d} value={d}>
-                    {d} km
-                  </option>
-                ))}
-              </select>
-              {filters.radius && !filters.lat && (
-                <p className={styles.filterHint}>
-                  📍 Allow location for distance filter
+            <aside
+              className={`${styles.filterSidebar} ${showFilters ? styles.filterSidebarOpen : ""}`}
+            >
+              <div className={styles.filterHeader}>
+                <p className={styles.filterTitle}>
+                  Filters
+                  {activeFiltersCount > 0 && (
+                    <span className={styles.filterCount}>
+                      {activeFiltersCount}
+                    </span>
+                  )}
                 </p>
-              )}
-            </FilterSection>
-
-            {/* Language */}
-            <FilterSection title="Language">
-              <select
-                className={styles.filterSelect}
-                value={filters.language}
-                onChange={(e) => applyFilter("language", e.target.value)}
-              >
-                <option value="">Any language</option>
-                {(filterMeta.languages?.length
-                  ? filterMeta.languages
-                  : [
-                      "English",
-                      "French",
-                      "Arabic",
-                      "Yoruba",
-                      "Hausa",
-                      "Igbo",
-                      "Swahili",
-                      "Portuguese",
-                    ]
-                ).map((l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </FilterSection>
-
-            {/* Gender preference */}
-            <FilterSection title="Gender Preference">
-              <div className={styles.ratingOptions}>
-                {GENDERS.map((g) => (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    alignItems: "center",
+                  }}
+                >
+                  {activeFiltersCount > 0 && (
+                    <button
+                      className={styles.clearFiltersBtn}
+                      onClick={clearFilters}
+                    >
+                      Clear all
+                    </button>
+                  )}
+                  {/* Close button mobile */}
                   <button
-                    key={g.value}
-                    className={`${styles.ratingOpt} ${filters.gender === g.value ? styles.ratingOptActive : ""}`}
-                    onClick={() => applyFilter("gender", g.value)}
+                    className={styles.filterCloseBtn}
+                    onClick={() => setShowFilters(false)}
                   >
-                    {g.label}
+                    ✕
                   </button>
-                ))}
+                </div>
               </div>
-            </FilterSection>
 
-            {/* Verification */}
-            <FilterSection title="Verification Level">
-              <div className={styles.ratingOptions}>
-                {VERIFICATIONS.map((v) => (
-                  <button
-                    key={v.value}
-                    className={`${styles.ratingOpt} ${filters.verification === v.value ? styles.ratingOptActive : ""}`}
-                    onClick={() => applyFilter("verification", v.value)}
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-            </FilterSection>
-          </aside>
+              {/* ── AVAILABILITY ── */}
+              <FilterSection title="Availability">
+                <label className={styles.toggle}>
+                  <input
+                    type="checkbox"
+                    checked={filters.available === "true"}
+                    onChange={(e) =>
+                      applyFilter(
+                        "available",
+                        e.target.checked ? "true" : "false",
+                      )
+                    }
+                  />
+                  <span className={styles.toggleSlider} />
+                  <span className={styles.toggleLabel}>Available only</span>
+                </label>
+              </FilterSection>
+
+              {/* ── CATEGORY — all categories from API ── */}
+              <FilterSection title="Category">
+                <select
+                  className={styles.filterSelect}
+                  value={filters.category}
+                  onChange={(e) => applyFilter("category", e.target.value)}
+                >
+                  <option value="">All categories</option>
+                  {filterMeta.categories?.map((c) => (
+                    <option key={c.id} value={c.slug}>
+                      {c.icon ? `${c.icon} ` : ""}
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </FilterSection>
+
+              {/* ── CITY ── */}
+              <FilterSection title="City">
+                <input
+                  className={styles.filterInput}
+                  placeholder="e.g. Lagos"
+                  value={filters.city}
+                  onChange={(e) => applyFilter("city", e.target.value)}
+                />
+              </FilterSection>
+
+              {/* ── RATE RANGE ── */}
+              <FilterSection title="Hourly Rate">
+                <div className={styles.rateInputs}>
+                  <input
+                    className={styles.filterInput}
+                    type="number"
+                    placeholder="Min"
+                    value={filters.minRate}
+                    onChange={(e) => applyFilter("minRate", e.target.value)}
+                  />
+                  <span className={styles.rateSep}>–</span>
+                  <input
+                    className={styles.filterInput}
+                    type="number"
+                    placeholder="Max"
+                    value={filters.maxRate}
+                    onChange={(e) => applyFilter("maxRate", e.target.value)}
+                  />
+                </div>
+              </FilterSection>
+
+              {/* ── RATING ── */}
+              <FilterSection title="Minimum Rating">
+                <div className={styles.ratingOptions}>
+                  {RATINGS.map((r) => (
+                    <button
+                      key={r.value}
+                      className={`${styles.ratingOpt} ${filters.rating == r.value ? styles.ratingOptActive : ""}`}
+                      onClick={() => applyFilter("rating", r.value)}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </FilterSection>
+
+              {/* ── DISTANCE ── */}
+              <FilterSection title="Max Distance">
+                <select
+                  className={styles.filterSelect}
+                  value={filters.radius}
+                  onChange={(e) => {
+                    applyFilter("radius", e.target.value);
+                    if (e.target.value && !filters.lat) findNearby();
+                  }}
+                >
+                  <option value="">Any distance</option>
+                  {DISTANCES.map((d) => (
+                    <option key={d} value={d}>
+                      {d} km
+                    </option>
+                  ))}
+                </select>
+                {filters.radius && !filters.lat && (
+                  <p className={styles.filterHint}>
+                    📍 Allow location for distance filter
+                  </p>
+                )}
+              </FilterSection>
+
+              {/* ── LANGUAGE — all from API ── */}
+              <FilterSection title="Language">
+                <select
+                  className={styles.filterSelect}
+                  value={filters.language}
+                  onChange={(e) => applyFilter("language", e.target.value)}
+                >
+                  <option value="">Any language</option>
+                  {(filterMeta.languages?.length
+                    ? filterMeta.languages
+                    : [
+                        "English",
+                        "French",
+                        "Arabic",
+                        "Yoruba",
+                        "Hausa",
+                        "Igbo",
+                        "Swahili",
+                        "Portuguese",
+                      ]
+                  ).map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </FilterSection>
+
+              {/* ── GENDER ── */}
+              <FilterSection title="Gender Preference">
+                <div className={styles.ratingOptions}>
+                  {GENDERS.map((g) => (
+                    <button
+                      key={g.value}
+                      className={`${styles.ratingOpt} ${filters.gender === g.value ? styles.ratingOptActive : ""}`}
+                      onClick={() => applyFilter("gender", g.value)}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+              </FilterSection>
+
+              {/* ── VERIFICATION ── */}
+              <FilterSection title="Verification">
+                <div className={styles.ratingOptions}>
+                  {VERIFICATIONS.map((v) => (
+                    <button
+                      key={v.value}
+                      className={`${styles.ratingOpt} ${filters.verification === v.value ? styles.ratingOptActive : ""}`}
+                      onClick={() => applyFilter("verification", v.value)}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </FilterSection>
+            </aside>
+          </>
 
           {/* Main content */}
           <div className={styles.mainContent}>
@@ -694,6 +726,12 @@ export default function SearchPage() {
                 </div>
               ) : (
                 <>
+                  {/* Show expansion note if radius was expanded */}
+                  {nearbyWorkers._expansionNote && (
+                    <div className={styles.expansionNote}>
+                      ℹ️ {nearbyWorkers._expansionNote}
+                    </div>
+                  )}
                   <p className={styles.resultsMeta}>
                     {nearbyWorkers.length} worker
                     {nearbyWorkers.length !== 1 ? "s" : ""} within{" "}
