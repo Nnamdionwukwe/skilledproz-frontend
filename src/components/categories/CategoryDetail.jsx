@@ -12,24 +12,34 @@ export default function CategoryDetail() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Fetch category
     api
       .get(`/categories/${slug}`)
-      .then((res) => {
-        setCategory(res.data.data.category);
-      })
+      .then((res) => setCategory(res.data.data.category))
       .catch(() => setError("Category not found"));
 
-    // Fetch workers in this category
+    // Use /search endpoint with category filter — this is what exists
     api
-      .get("/workers/search", { params: { category: slug, limit: 20 } })
+      .get("/search", {
+        params: {
+          q: slug,
+          type: "workers",
+          category: slug,
+          limit: 20,
+          available: "false",
+        },
+      })
       .then((res) => {
-        setWorkers(res.data.data.workers || []);
+        const data = res.data.data.workers?.data || res.data.data.workers || [];
+        setWorkers(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch((err) => {
-        console.warn("Could not load workers", err);
-        setLoading(false);
+      .catch(() => {
+        // Fallback: fetch all workers via worker endpoint
+        api
+          .get("/workers", { params: { category: slug, limit: 20 } })
+          .then((res) => setWorkers(res.data.data?.workers || []))
+          .catch(() => {})
+          .finally(() => setLoading(false));
       });
   }, [slug]);
 
@@ -73,57 +83,61 @@ export default function CategoryDetail() {
         </div>
 
         <div className={styles.workersGrid}>
-          {workers.map((worker) => (
-            <Link
-              key={worker.id}
-              to={`/workers/${worker.id}`}
-              className={styles.workerCard}
-            >
-              <div className={styles.avatar}>
-                {worker.avatar ? (
-                  <img src={worker.avatar} alt={worker.firstName} />
-                ) : (
-                  <span>
-                    {worker.firstName?.[0]}
-                    {worker.lastName?.[0]}
+          {workers.map((worker, i) => {
+            // Search returns workerProfile shape; /workers endpoint returns user shape
+            const isSearchShape = !!worker.user; // has nested user
+            const userId = isSearchShape ? worker.user?.id : worker.id;
+            const firstName = isSearchShape
+              ? worker.user?.firstName
+              : worker.firstName;
+            const lastName = isSearchShape
+              ? worker.user?.lastName
+              : worker.lastName;
+            const avatar = isSearchShape ? worker.user?.avatar : worker.avatar;
+            const city = isSearchShape ? worker.user?.city : worker.city;
+            const wp = isSearchShape ? worker : worker.workerProfile;
+
+            return (
+              <Link
+                key={userId || i}
+                to={`/workers/${userId}`}
+                className={styles.workerCard}
+              >
+                <div className={styles.avatar}>
+                  {avatar ? (
+                    <img src={avatar} alt={firstName} />
+                  ) : (
+                    <span>
+                      {firstName?.[0]}
+                      {lastName?.[0]}
+                    </span>
+                  )}
+                </div>
+                <h3 className={styles.name}>
+                  {firstName} {lastName}
+                </h3>
+                {wp?.title && <p className={styles.title}>{wp.title}</p>}
+                <div className={styles.rating}>
+                  <span className={styles.stars}>★</span>
+                  <span className={styles.ratingValue}>
+                    {wp?.avgRating || "New"}
                   </span>
+                  <span className={styles.ratingCount}>
+                    ({wp?.totalReviews || 0} reviews)
+                  </span>
+                </div>
+                {city && <p className={styles.location}>📍 {city}</p>}
+                {wp?.hourlyRate && (
+                  <p className={styles.rate}>
+                    {wp.currency || "USD"} {wp.hourlyRate}/hr
+                  </p>
                 )}
-              </div>
-
-              <h3 className={styles.name}>
-                {worker.firstName} {worker.lastName}
-              </h3>
-
-              {worker.workerProfile?.title && (
-                <p className={styles.title}>{worker.workerProfile.title}</p>
-              )}
-
-              <div className={styles.rating}>
-                <span className={styles.stars}>★</span>
-                <span className={styles.ratingValue}>
-                  {worker.workerProfile?.avgRating || "N/A"}
-                </span>
-                <span className={styles.ratingCount}>
-                  ({worker.workerProfile?.totalReviews || 0} reviews)
-                </span>
-              </div>
-
-              {worker.city && (
-                <p className={styles.location}>📍 {worker.city}</p>
-              )}
-
-              {worker.workerProfile?.hourlyRate && (
-                <p className={styles.rate}>
-                  {worker.workerProfile.currency || "USD"}{" "}
-                  {worker.workerProfile.hourlyRate}/hr
-                </p>
-              )}
-
-              {worker.workerProfile?.isAvailable && (
-                <div className={styles.available}>🟢 Available</div>
-              )}
-            </Link>
-          ))}
+                {wp?.isAvailable && (
+                  <div className={styles.available}>🟢 Available</div>
+                )}
+              </Link>
+            );
+          })}
         </div>
 
         {workers.length === 0 && (
