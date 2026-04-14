@@ -373,6 +373,25 @@ export default function UserProfile() {
                 </div>
               )}
 
+              {/* In the .infoCard div — add after the currency row */}
+              {user.hirerProfile?.website && (
+                <div className={s.infoRow}>
+                  <Globe size={14} className={s.infoIcon} />
+                  <a
+                    href={user.hirerProfile.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: "var(--orange)",
+                      textDecoration: "none",
+                      fontSize: "13.5px",
+                    }}
+                  >
+                    {user.hirerProfile.website.replace(/^https?:\/\//, "")}
+                  </a>
+                </div>
+              )}
+
               {isOwn && (
                 <button
                   className={s.editBtn}
