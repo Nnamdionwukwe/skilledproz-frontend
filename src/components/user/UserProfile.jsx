@@ -353,6 +353,25 @@ export default function UserProfile() {
                   </div>
                 </div>
               )}
+              {/* ── Shared: email ── */}
+              {user.email && (
+                <div className={s.statItem}>
+                  <Mail size={15} className={s.statIcon} />
+                  <div>
+                    <a
+                      href={`mailto:${user.email}`}
+                      className={s.statVal}
+                      style={{
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      {user.email}
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {isOwn && (
                 <button
