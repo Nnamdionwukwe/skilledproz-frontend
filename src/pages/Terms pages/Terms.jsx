@@ -40,11 +40,11 @@ const sections = [
   },
   {
     title: "10. Intellectual Property",
-    content: `All platform content, trademarks, and technology are owned by SkilledPro. Workers retain ownership of their portfolio content but grant SkilledPro a licence to display it on the platform. You may not reproduce or distribute our content without written permission.`,
+    content: `All platform content, trademarks, and technology are owned by SkilledProz. Workers retain ownership of their portfolio content but grant SkilledProz a licence to display it on the platform. You may not reproduce or distribute our content without written permission.`,
   },
   {
     title: "11. Limitation of Liability",
-    content: `SkilledPro is a marketplace and is not liable for the quality of work performed, disputes between users, or losses arising from platform downtime. Our total liability to any user shall not exceed the fees paid to SkilledPro in the 3 months preceding the claim.`,
+    content: `SkilledProz is a marketplace and is not liable for the quality of work performed, disputes between users, or losses arising from platform downtime. Our total liability to any user shall not exceed the fees paid to SkilledProz in the 3 months preceding the claim.`,
   },
   {
     title: "12. Termination",
@@ -111,7 +111,8 @@ export default function Terms() {
 
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz. All rights reserved.
+          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          reserved.
         </span>
         <div className={styles.footerLinks}>
           <Link to="/privacy">Privacy</Link>

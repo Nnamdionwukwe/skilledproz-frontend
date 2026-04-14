@@ -6,17 +6,17 @@ const contactMethods = [
   {
     icon: "📧",
     label: "Email",
-    value: "support@skilledpro.com",
-    href: "mailto:support@skilledpro.com",
+    value: "support@skilledproz.com",
+    href: "mailto:support@skilledproz.com",
   },
   { icon: "💬", label: "Live Chat", value: "Available in-app", href: null },
   {
     icon: "🐦",
     label: "Twitter / X",
-    value: "@SkilledPro",
-    href: "https://twitter.com/skilledpro",
+    value: "@SkilledProz",
+    href: "https://twitter.com/skilledproz",
   },
-  { icon: "📍", label: "Headquarters", value: "Lagos, Nigeria 🇳🇬", href: null },
+  { icon: "📍", label: "Headquarters", value: "Abuja, Nigeria 🇳🇬", href: null },
 ];
 
 export default function Contact() {
@@ -190,7 +190,8 @@ export default function Contact() {
 
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz. All rights reserved.
+          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          reserved.
         </span>
         <div className={styles.footerLinks}>
           <Link to="/privacy">Privacy</Link>

@@ -16,7 +16,7 @@ const sections = [
   },
   {
     title: "4. Multi-Currency & Payment Data",
-    content: `SkilledPro operates across multiple currencies and regions. Payment data is processed by regional payment partners. We do not store full card numbers or bank credentials. All payment data is encrypted in transit and at rest.`,
+    content: `SkilledProz operates across multiple currencies and regions. Payment data is processed by regional payment partners. We do not store full card numbers or bank credentials. All payment data is encrypted in transit and at rest.`,
   },
   {
     title: "5. Location Data",
@@ -28,7 +28,7 @@ const sections = [
   },
   {
     title: "7. Your Rights",
-    content: `Depending on your region, you may have the right to: access your personal data, correct inaccurate data, request deletion, withdraw consent, export your data, and object to processing. Contact privacy@skilledpro.com to exercise these rights.`,
+    content: `Depending on your region, you may have the right to: access your personal data, correct inaccurate data, request deletion, withdraw consent, export your data, and object to processing. Contact privacy@SkilledProz.com to exercise these rights.`,
   },
   {
     title: "8. Cookies",
@@ -44,7 +44,7 @@ const sections = [
   },
   {
     title: "11. Contact",
-    content: `For privacy-related queries, contact our Data Protection Officer at privacy@skilledpro.com or write to: SkilledPro, Lagos, Nigeria.`,
+    content: `For privacy-related queries, contact our Data Protection Officer at privacy@SkilledProz.com or write to: SkilledPro, Lagos, Nigeria.`,
   },
 ];
 
@@ -101,7 +101,8 @@ export default function PrivacyPolicy() {
 
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz. All rights reserved.
+          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          reserved.
         </span>
         <div className={styles.footerLinks}>
           <Link to="/privacy">Privacy</Link>
