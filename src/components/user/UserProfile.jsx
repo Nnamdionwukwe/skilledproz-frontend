@@ -334,6 +334,26 @@ export default function UserProfile() {
                 )}
               </div>
 
+              {/* ── Shared: phone number ── */}
+              {user.phone && (
+                <div className={s.statItem}>
+                  <Phone size={15} className={s.statIcon} />
+                  <div>
+                    <a
+                      href={`tel:${user.phone}`}
+                      className={s.statVal}
+                      style={{
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      {user.phone}
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {isOwn && (
                 <button
                   className={s.editBtn}
@@ -352,11 +372,23 @@ export default function UserProfile() {
                     <DollarSign size={15} className={s.statIcon} />
                     <div>
                       <span className={s.statVal}>
-                        ₦{Number(wp.hourlyRate ?? 0).toLocaleString()}
+                        {wp.currency ?? user.currency ?? "USD"}{" "}
+                        {Number(wp.hourlyRate ?? 0).toLocaleString()}
                       </span>
                       <span className={s.statLabel}>/hr</span>
                     </div>
                   </div>
+
+                  <div className={s.statItem}>
+                    <CheckCircle2 size={15} className={s.statIcon} />
+                    <div>
+                      <span className={s.statVal}>
+                        {wp.completedJobs ?? wp.totalJobs ?? 0}
+                      </span>
+                      <span className={s.statLabel}>jobs done</span>
+                    </div>
+                  </div>
+
                   {wp.serviceRadius && (
                     <div className={s.statItem}>
                       <MapPin size={15} className={s.statIcon} />
@@ -366,13 +398,46 @@ export default function UserProfile() {
                       </div>
                     </div>
                   )}
+                </>
+              )}
+
+              {/* ── HIRER stats ── */}
+              {user.role === "HIRER" && user.hirerStats && (
+                <>
                   <div className={s.statItem}>
-                    <CheckCircle2 size={15} className={s.statIcon} />
+                    <Briefcase size={15} className={s.statIcon} />
                     <div>
-                      <span className={s.statVal}>{wp.totalJobs ?? 0}</span>
-                      <span className={s.statLabel}>jobs done</span>
+                      <span className={s.statVal}>
+                        {user.hirerStats.totalHires}
+                      </span>
+                      <span className={s.statLabel}>total hires</span>
                     </div>
                   </div>
+
+                  <div className={s.statItem}>
+                    <DollarSign size={15} className={s.statIcon} />
+                    <div>
+                      <span className={s.statVal}>
+                        {user.currency ?? "USD"}{" "}
+                        {Number(user.hirerStats.totalSpent).toLocaleString()}
+                      </span>
+                      <span className={s.statLabel}>total spent</span>
+                    </div>
+                  </div>
+
+                  {user.hirerStats.avgRating > 0 && (
+                    <div className={s.statItem}>
+                      <Star size={15} className={s.statIcon} />
+                      <div>
+                        <span className={s.statVal}>
+                          {Number(user.hirerStats.avgRating).toFixed(1)}
+                        </span>
+                        <span className={s.statLabel}>
+                          rating ({user.hirerStats.totalReviews} reviews)
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
