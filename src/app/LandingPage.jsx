@@ -246,9 +246,9 @@ export default function LandingPage() {
 
         <ul className={styles.navLinks}>
           {[
-            ["Find Workers", "/search"],
-            ["Browse Jobs", "/jobs"],
-            ["Become a Worker", "/register/worker"],
+            ["About us", "/about"],
+            ["Terms of Service", "/terms"],
+            ["Contact Us", "/contact"],
           ].map(([label, href]) => (
             <li key={label}>
               <Link to={href}>{label}</Link>
@@ -279,9 +279,9 @@ export default function LandingPage() {
       {/* Mobile nav */}
       <div className={`${styles.mobileNav} ${mobileOpen ? styles.open : ""}`}>
         {[
-          ["Find Workers", "/search"],
-          ["Browse Jobs", "/jobs"],
-          ["Become a Worker", "/register/worker"],
+          ["About us", "/about"],
+          ["Terms of Service", "/terms"],
+          ["Contact Us", "/contact"],
           ["Sign in", "/login"],
           ["Get Started Free", "/register"],
         ].map(([label, href]) => (
@@ -691,28 +691,28 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-          // Replace the footer columns array:
+
           {[
-            {
-              title: "Platform",
-              links: [
-                ["Find Workers", "/search"],
-                ["Browse Jobs", "/jobs"],
-                ["Post a Job", "/dashboard/hirer/post-job"],
-                ["How it Works", "/#how-it-works"],
-                ["All Categories", "/search"],
-              ],
-            },
-            {
-              title: "Workers",
-              links: [
-                ["Register as Worker", "/register/worker"],
-                ["Worker Dashboard", "/dashboard/worker"],
-                ["Browse Jobs", "/jobs"],
-                ["Earnings", "/dashboard/worker/earnings"],
-                ["Subscriptions", "/settings?tab=subscription"],
-              ],
-            },
+            // {
+            //   title: "Platform",
+            //   links: [
+            //     ["Find Workers", "/search"],
+            //     ["Browse Jobs", "/jobs"],
+            //     ["Post a Job", "/dashboard/hirer/post-job"],
+            //     ["How it Works", "/#how-it-works"],
+            //     ["All Categories", "/search"],
+            //   ],
+            // },
+            // {
+            //   title: "Workers",
+            //   links: [
+            //     ["Register as Worker", "/register/worker"],
+            //     ["Worker Dashboard", "/dashboard/worker"],
+            //     ["Browse Jobs", "/jobs"],
+            //     ["Earnings", "/dashboard/worker/earnings"],
+            //     ["Subscriptions", "/settings?tab=subscription"],
+            //   ],
+            // },
             {
               title: "Company",
               links: [

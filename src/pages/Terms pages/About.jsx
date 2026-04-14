@@ -177,7 +177,8 @@ export default function About() {
       {/* Footer */}
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz. All rights reserved.
+          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          reserved.
         </span>
         <div className={styles.footerLinks}>
           <Link to="/privacy">Privacy</Link>
