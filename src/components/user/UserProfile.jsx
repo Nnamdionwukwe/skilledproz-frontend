@@ -334,68 +334,6 @@ export default function UserProfile() {
                 )}
               </div>
 
-              {/* ── Shared: phone number ── */}
-              {user.phone && (
-                <div className={s.statItem}>
-                  <Phone size={15} className={s.statIcon} />
-                  <div>
-                    <a
-                      href={`tel:${user.phone}`}
-                      className={s.statVal}
-                      style={{
-                        fontSize: "13px",
-                        textDecoration: "none",
-                        color: "inherit",
-                      }}
-                    >
-                      {user.phone}
-                    </a>
-                  </div>
-                </div>
-              )}
-              {/* ── Shared: email ── */}
-              {user.email && (
-                <div className={s.statItem}>
-                  <Mail size={15} className={s.statIcon} />
-                  <div>
-                    <a
-                      href={`mailto:${user.email}`}
-                      className={s.statVal}
-                      style={{
-                        fontSize: "13px",
-                        textDecoration: "none",
-                        color: "inherit",
-                      }}
-                    >
-                      {user.email}
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Shared: Website ── */}
-              {user.hirerProfile?.website && (
-                <div className={s.infoRow}>
-                  <Globe size={14} className={s.infoIcon} />
-                  <a
-                    href={
-                      user.hirerProfile.website.startsWith("http")
-                        ? user.hirerProfile.website
-                        : `https://${user.hirerProfile.website}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      color: "var(--orange)",
-                      textDecoration: "none",
-                      fontSize: "13.5px",
-                    }}
-                  >
-                    {user.hirerProfile.website.replace(/^https?:\/\//, "")}
-                  </a>
-                </div>
-              )}
-
               {isOwn && (
                 <button
                   className={s.editBtn}
@@ -509,22 +447,73 @@ export default function UserProfile() {
             <div className={s.infoCard}>
               {(user.city || user.country) && (
                 <div className={s.infoRow}>
-                  <MapPin size={14} className={s.infoIcon} />
+                  <MapPin size={14} className={s.statIcon} />
                   <span>
                     {[user.city, user.country].filter(Boolean).join(", ")}
                   </span>
                 </div>
               )}
+
+              {user.phone && (
+                <div className={s.infoRow}>
+                  <Phone size={15} className={s.statIcon} />
+                  <div>
+                    <a
+                      href={`tel:${user.phone}`}
+                      className={s.statVal}
+                      style={{
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      {user.phone}
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {user.email && isOwn && (
                 <div className={s.infoRow}>
-                  <Mail size={14} className={s.infoIcon} />
-                  <span>{user.email}</span>
+                  <Mail size={14} className={s.statIcon} />
+                  <a
+                    href={`mailto:${user.email}`}
+                    style={{
+                      fontSize: "13px",
+                      textDecoration: "none",
+                      color: "inherit",
+                      wordBreak: "break-all",
+                      maxWidth: "200px",
+                      display: "block",
+                    }}
+                  >
+                    {user.email}
+                  </a>
                 </div>
               )}
               {user.currency && (
                 <div className={s.infoRow}>
-                  <Globe size={14} className={s.infoIcon} />
+                  <Globe size={14} className={s.statIcon} />
                   <span>{user.currency}</span>
+                </div>
+              )}
+
+              {/* Website — hirer only */}
+              {user.hirerProfile?.website && (
+                <div className={s.infoRow}>
+                  <Globe size={14} className={s.statIcon} />
+                  <a
+                    href={
+                      user.hirerProfile.website.startsWith("http")
+                        ? user.hirerProfile.website
+                        : `https://${user.hirerProfile.website}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className={s.websiteLink}
+                  >
+                    {user.hirerProfile.website.replace(/^https?:\/\//, "")}
+                  </a>
                 </div>
               )}
             </div>
