@@ -476,7 +476,7 @@ export default function LandingPage() {
               (cat) => (
                 <Link
                   key={cat.id}
-                  to={`/search?category=${cat.slug}`}
+                  to={`/categories/${cat.slug}`}
                   className={styles.catCard}
                 >
                   <span className={styles.catIcon}>{cat.icon || "🔧"}</span>
@@ -493,7 +493,7 @@ export default function LandingPage() {
 
           {!catSearch && filteredCats.length > 48 && (
             <div className={styles.catViewAll}>
-              <Link to="/search" className={styles.btnViewAll}>
+              <Link to="/categories" className={styles.btnViewAll}>
                 Browse all {filteredCats.length} categories →
               </Link>
             </div>

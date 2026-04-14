@@ -57,7 +57,7 @@ export default function CategoryDetail() {
   }
 
   return (
-    <HirerLayout>
+    <>
       <div className={styles.page}>
         <div className={styles.header}>
           <Link to="/categories" className={styles.backBtn}>
@@ -135,6 +135,6 @@ export default function CategoryDetail() {
           </div>
         )}
       </div>
-    </HirerLayout>
+    </>
   );
 }

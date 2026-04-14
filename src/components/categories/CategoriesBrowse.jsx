@@ -7,10 +7,10 @@ import { useAuthStore } from "../../store/authStore";
 
 export default function CategoriesBrowse() {
   const { user } = useAuthStore();
-  const Layout =
-    user?.role === "WORKER"
-      ? require("../layout/WorkerLayout").default
-      : HirerLayout;
+  // const Layout =
+  //   // user?.role === "WORKER"
+  //   //   ? require("../layout/WorkerLayout").default
+  //   //   : HirerLayout;
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,8 +68,11 @@ export default function CategoriesBrowse() {
   }
 
   return (
-    <Layout>
+    <>
       <div className={styles.page}>
+        <Link to="/landingpage" className={styles.backBtn}>
+          ← Back
+        </Link>
         <div className={styles.header}>
           <h1 className={styles.title}>Browse Categories</h1>
           <p className={styles.sub}>
@@ -177,6 +180,6 @@ export default function CategoriesBrowse() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }
