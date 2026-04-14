@@ -74,7 +74,7 @@ export default function PostJob() {
 
   useEffect(() => {
     api
-      .get("/categories?limit=500")
+      .get("/categories?limit=1000")
       .then((res) => {
         const data = res.data.data;
         setCategories(Array.isArray(data) ? data : data?.categories || []);

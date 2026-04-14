@@ -115,3 +115,123 @@
     font-size: 2.5rem;
   }
 }
+
+.controlRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.625rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+.searchInput:focus {
+  border-color: var(--border-focus);
+}
+.suggestTrigger {
+  padding: 0.625rem 1.25rem;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  border-radius: 10px;
+  color: var(--orange);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.suggestTrigger:hover {
+  background: rgba(249, 115, 22, 0.2);
+}
+.suggestForm {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 280px;
+  flex-wrap: wrap;
+}
+.suggestInput {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.625rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+.suggestInput:focus {
+  border-color: var(--orange);
+}
+.suggestBtn {
+  padding: 0.625rem 1.125rem;
+  background: var(--orange);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.15s;
+}
+.suggestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.suggestCancel {
+  padding: 0.625rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.suggestMsg {
+  padding: 0.625rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.suggestMsgOk {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.suggestMsgErr {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.userTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border-radius: 100px;
+  padding: 1px 7px;
+  margin-top: 2px;
+  display: inline-block;
+}
+.skeleton {
+  height: 100px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  animation: pulse 1.4s ease infinite;
+}

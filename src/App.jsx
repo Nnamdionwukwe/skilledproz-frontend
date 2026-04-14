@@ -548,23 +548,9 @@ export default function App() {
             </RequireAuth>
           }
         />
-        {/* ── Categories ── */}
-        <Route
-          path="/categories"
-          element={
-            <RequireAuth>
-              <CategoriesBrowse />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/categories/:slug"
-          element={
-            <RequireAuth>
-              <CategoryDetail />
-            </RequireAuth>
-          }
-        />
+        {/* ── Categories And Also It's Public Aceess ── */}
+        <Route path="/categories" element={<CategoriesBrowse />} />
+        <Route path="/categories/:slug" element={<CategoryDetail />} />
         {/* ── Public Aceess ── */}
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
         <Route path="/hirers/:userId" element={<HirerPublicProfile />} />

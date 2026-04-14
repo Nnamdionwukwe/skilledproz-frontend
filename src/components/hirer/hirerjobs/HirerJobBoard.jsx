@@ -30,7 +30,7 @@ export default function HirerJobBoard() {
 
   useEffect(() => {
     api
-      .get("/categories")
+      .get(`/categories?limit=1000`)
       .then((res) => {
         const cats = res.data.data;
         setCategories(Array.isArray(cats) ? cats : cats?.categories || []);

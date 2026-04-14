@@ -193,7 +193,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     fetch(
-      `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/categories?limit=500`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/categories?limit=1000`,
     )
       .then((r) => r.json())
       .then((data) => {

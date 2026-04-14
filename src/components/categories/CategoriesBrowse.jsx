@@ -3,88 +3,180 @@ import { Link } from "react-router-dom";
 import styles from "./CategoriesBrowse.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
+import { useAuthStore } from "../../store/authStore";
 
 export default function CategoriesBrowse() {
+  const { user } = useAuthStore();
+  const Layout =
+    user?.role === "WORKER"
+      ? require("../layout/WorkerLayout").default
+      : HirerLayout;
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [showSuggest, setShowSuggest] = useState(false);
+  const [suggestName, setSuggestName] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestMsg, setSuggestMsg] = useState("");
 
-  useEffect(() => {
+  function loadCategories() {
     api
-      .get("/categories")
+      .get("/categories?limit=500")
       .then((res) => {
-        setCategories(res.data.data.categories || []);
-        setLoading(false);
+        const data = res.data.data;
+        setCategories(Array.isArray(data) ? data : data?.categories || []);
       })
-      .catch((err) => {
-        setError("Failed to load categories");
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.header}>
-          <h1>Browse Services</h1>
-          <p>Loading categories...</p>
-        </div>
-      </div>
-    );
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }
 
-  if (error) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.header}>
-          <h1>Browse Services</h1>
-          <p className={styles.error}>{error}</p>
-        </div>
-      </div>
-    );
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const filtered = categories.filter(
+    (c) => !search || c.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  async function handleSuggest(e) {
+    e.preventDefault();
+    if (!suggestName.trim()) return;
+    setSuggesting(true);
+    setSuggestMsg("");
+    try {
+      const res = await api.post("/categories/suggest", {
+        name: suggestName.trim(),
+      });
+      const { category, alreadyExists } = res.data.data;
+      if (!alreadyExists) {
+        setCategories((prev) => [...prev, category]);
+      }
+      setSuggestMsg(
+        alreadyExists
+          ? `"${category.name}" already exists.`
+          : `✅ "${category.name}" added to the platform!`,
+      );
+      setSuggestName("");
+      setShowSuggest(false);
+    } catch (err) {
+      setSuggestMsg("Failed to add category. Try again.");
+    } finally {
+      setSuggesting(false);
+      setTimeout(() => setSuggestMsg(""), 5000);
+    }
   }
 
   return (
-    <HirerLayout>
+    <Layout>
       <div className={styles.page}>
         <div className={styles.header}>
-          <h1>Browse Services</h1>
-          <p>Find workers and jobs by category</p>
+          <h1 className={styles.title}>Browse Categories</h1>
+          <p className={styles.sub}>
+            {categories.length > 0
+              ? `${categories.length}+ categories`
+              : "All categories"}{" "}
+            — search or add yours
+          </p>
         </div>
 
-        <div className={styles.grid}>
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              to={`/categories/${category.slug}`}
-              className={styles.card}
+        {/* Search + suggest row */}
+        <div className={styles.controlRow}>
+          <input
+            className={styles.searchInput}
+            placeholder="🔍 Search categories..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {!showSuggest ? (
+            <button
+              className={styles.suggestTrigger}
+              onClick={() => setShowSuggest(true)}
             >
-              {category.icon && (
-                <span className={styles.icon}>{category.icon}</span>
-              )}
-              <h3 className={styles.name}>{category.name}</h3>
-              <p className={styles.count}>
-                {category._count?.workers || 0} workers
-              </p>
-              {category.children && category.children.length > 0 && (
-                <div className={styles.subcategories}>
-                  {category.children.map((child) => (
-                    <span key={child.id} className={styles.subcat}>
-                      {child.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Link>
-          ))}
+              + Add Category
+            </button>
+          ) : (
+            <form onSubmit={handleSuggest} className={styles.suggestForm}>
+              <input
+                autoFocus
+                className={styles.suggestInput}
+                placeholder="e.g. Drone Operator, Solar Engineer..."
+                value={suggestName}
+                onChange={(e) => setSuggestName(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && setShowSuggest(false)}
+              />
+              <button
+                type="submit"
+                className={styles.suggestBtn}
+                disabled={suggesting || !suggestName.trim()}
+              >
+                {suggesting ? "Adding..." : "Add"}
+              </button>
+              <button
+                type="button"
+                className={styles.suggestCancel}
+                onClick={() => {
+                  setShowSuggest(false);
+                  setSuggestName("");
+                }}
+              >
+                Cancel
+              </button>
+            </form>
+          )}
         </div>
 
-        {categories.length === 0 && (
+        {suggestMsg && (
+          <div
+            className={`${styles.suggestMsg} ${suggestMsg.startsWith("✅") ? styles.suggestMsgOk : styles.suggestMsgErr}`}
+          >
+            {suggestMsg}
+          </div>
+        )}
+
+        {loading ? (
+          <div className={styles.grid}>
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className={styles.skeleton} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className={styles.empty}>
-            <p>No categories available</p>
+            <p>No categories found{search ? ` for "${search}"` : ""}.</p>
+            {search && (
+              <button
+                className={styles.suggestTrigger}
+                onClick={() => {
+                  setSuggestName(search);
+                  setShowSuggest(true);
+                  setSearch("");
+                }}
+              >
+                + Add "{search}" as a new category
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {filtered.map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/categories/${cat.slug}`}
+                className={styles.card}
+              >
+                {cat.icon && <span className={styles.icon}>{cat.icon}</span>}
+                <h3 className={styles.name}>{cat.name}</h3>
+                <p className={styles.count}>
+                  {cat._count?.workers || 0} workers
+                </p>
+                {cat.isUserSubmitted && (
+                  <span className={styles.userTag}>Community</span>
+                )}
+              </Link>
+            ))}
           </div>
         )}
       </div>
-    </HirerLayout>
+    </Layout>
   );
 }
