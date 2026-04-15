@@ -165,23 +165,27 @@ export default function Messages() {
   const fileInputRef = useRef(null);
 
   // REPLACE the existing loadConversations with this merge version:
-  const loadConversations = useCallback(async () => {
+  const loadConversations = useCallback(async (justReadConvoId = null) => {
     try {
       const res = await api.get("/messages/conversations");
       const fresh = res.data.data.conversations || [];
       setConversations((prev) => {
-        // Build a map of existing unread counts
         const prevUnread = {};
         prev.forEach((c) => {
           prevUnread[c.id] = c.unreadCount || 0;
         });
 
-        return fresh.map((f) => ({
-          ...f,
-          // Take the HIGHER of backend vs local — backend only goes to 0 after
-          // getMessages marks them read, which we handle separately below
-          unreadCount: Math.max(f.unreadCount ?? 0, prevUnread[f.id] ?? 0),
-        }));
+        return fresh.map((f) => {
+          // If this is the convo we just marked as read — trust server (should be 0)
+          if (f.id === justReadConvoId) {
+            return { ...f, unreadCount: f.unreadCount ?? 0 };
+          }
+          // All other convos: take higher of server vs local to avoid badge flicker
+          return {
+            ...f,
+            unreadCount: Math.max(f.unreadCount ?? 0, prevUnread[f.id] ?? 0),
+          };
+        });
       });
     } catch {}
   }, []);
@@ -217,13 +221,15 @@ export default function Messages() {
   useEffect(() => {
     if (!activeConvoId) return;
 
-    // Load messages immediately — backend will mark them as read
+    // Load messages (no longer marks as read)
     loadMessages(activeConvoId);
 
-    // After messages load + backend marks read, sync the sidebar count
-    // Use a delay so the mark-as-read DB write has completed first
+    // Mark this conversation as read explicitly — separate API call
+    // This is what zeros out the unread badge for the active convo
+    api.patch(`/messages/${activeConvoId}/read`).catch(() => {});
+
+    // After mark-as-read completes, sync sidebar counts
     const syncTimer = setTimeout(async () => {
-      // Only zero out THIS conversation's unread count — leave others untouched
       const res = await api.get("/messages/conversations").catch(() => null);
       if (!res) return;
       const fresh = res.data.data.conversations || [];
@@ -231,11 +237,11 @@ export default function Messages() {
         prev.map((c) => {
           const fromServer = fresh.find((f) => f.id === c.id);
           if (!fromServer) return c;
-          // For the active convo: trust server (it's now 0 after mark-as-read)
-          // For all other convos: take max(server, local) to avoid badge flicker
           if (c.id === activeConvoId) {
+            // Active convo: trust server (mark-as-read just ran)
             return { ...fromServer, unreadCount: fromServer.unreadCount ?? 0 };
           }
+          // Other convos: take higher of server vs local to avoid badge flicker
           return {
             ...fromServer,
             unreadCount: Math.max(
@@ -245,15 +251,15 @@ export default function Messages() {
           };
         }),
       );
-    }, 800); // 800ms gives backend time to commit the mark-as-read
+    }, 600);
 
-    // Fast poll — messages only (3s)
+    // Fast poll — messages only (3s), does NOT mark as read
     clearInterval(msgPollRef.current);
     msgPollRef.current = setInterval(() => {
       loadMessages(activeConvoId, true);
     }, 3000);
 
-    // Slow poll — conversation list only (12s), uses merge logic from loadConversations
+    // Slow poll — sidebar conversation list (12s)
     clearInterval(convoPollRef.current);
     convoPollRef.current = setInterval(() => {
       loadConversations();
