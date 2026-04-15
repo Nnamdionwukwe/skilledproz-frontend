@@ -1,8 +1,10 @@
 /* ── Shell layout ── */
+/* REPLACE the existing .shell rule: */
 .shell {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px); /* dvh handles mobile browser chrome collapse */
   overflow: hidden;
   background: var(--bg);
 }
@@ -530,26 +532,139 @@
 }
 
 /* Mobile */
+/* ── MOBILE — replace everything from @media (max-width: 768px) downward ── */
 @media (max-width: 768px) {
+  /* Shell becomes a single stacking container */
   .shell {
-    grid-template-columns: 1fr;
-  }
-  .backBtn {
-    display: flex;
-  }
-
-  .hideMobile {
-    display: none !important;
+    display: block; /* ← not grid — avoids column sizing issues */
+    position: relative;
+    height: calc(100dvh - 56px);
+    overflow: hidden;
   }
 
+  /* Both panels are absolutely positioned and fill the shell */
+  .sidebar,
+  .chatPane {
+    position: absolute;
+    inset: 0; /* top:0 right:0 bottom:0 left:0 */
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease;
+  }
+
+  /* Sidebar slides in from left, chat pane from right */
   .sidebar {
-    border-right: none;
+    transform: translateX(0);
   }
   .chatPane {
-    height: calc(100vh - 64px);
+    transform: translateX(100%);
+  }
+
+  /* When chat is active: slide sidebar out, slide chat in */
+  .sidebar.hideMobile {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+  .chatPane.hideMobile {
+    transform: translateX(100%);
+    pointer-events: none;
+  }
+
+  /* When chat pane is visible */
+  .chatPane:not(.hideMobile) {
+    transform: translateX(0);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Back button always shows on mobile */
+  .backBtn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .backBtn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  /* ADD inside the @media (max-width: 768px) block: */
+  .sidebar {
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* chatPane already has display:flex from .chatPane:not(.hideMobile) rule */
+  /* but add it explicitly for safety: */
+  .chatPane {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Input area respects iOS safe area (notch / home bar) */
+  .inputArea {
+    padding: 8px 12px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    flex-shrink: 0;
+  }
+
+  /* Messages area fills remaining space */
+  .messagesArea {
+    padding: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Chat header tighter */
+  .chatHeader {
+    padding: 10px 12px;
+    min-height: 54px;
+  }
+
+  /* Hide profile link on narrow screens */
+  .viewProfileBtn {
+    display: none;
   }
 }
 
+@media (max-width: 390px) {
+  .chatHeaderName {
+    font-size: 0.85rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 390px) {
+  .chatHeaderName {
+    font-size: 0.85rem;
+  }
+  .viewProfileBtn {
+    display: none;
+  }
+}
+
+/* Ensure shell uses dynamic viewport height on mobile (handles browser chrome) */
+@supports (height: 100dvh) {
+  @media (max-width: 768px) {
+    .shell {
+      height: calc(100dvh - 56px);
+    }
+  }
+}
 /* ── Unread badges ── */
 .totalUnreadBadge {
   display: inline-flex;

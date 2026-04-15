@@ -149,18 +149,40 @@ export default function Messages() {
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [mobileView, setMobileView] = useState("list");
+  // REPLACE the initial state declaration for mobileView:
+  const [mobileView, setMobileView] = useState(() => {
+    // On mobile, always start on list regardless of URL
+    if (window.innerWidth <= 768) return "list";
+    // On desktop, if there's a convo in URL, "chat" pane is always visible anyway
+    return "list";
+  });
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
-  const pollRef = useRef(null);
+  const msgPollRef = useRef(null);
+  const convoPollRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // REPLACE the existing loadConversations with this merge version:
   const loadConversations = useCallback(async () => {
     try {
       const res = await api.get("/messages/conversations");
-      setConversations(res.data.data.conversations || []);
+      const fresh = res.data.data.conversations || [];
+      setConversations((prev) => {
+        // Build a map of existing unread counts
+        const prevUnread = {};
+        prev.forEach((c) => {
+          prevUnread[c.id] = c.unreadCount || 0;
+        });
+
+        return fresh.map((f) => ({
+          ...f,
+          // Take the HIGHER of backend vs local — backend only goes to 0 after
+          // getMessages marks them read, which we handle separately below
+          unreadCount: Math.max(f.unreadCount ?? 0, prevUnread[f.id] ?? 0),
+        }));
+      });
     } catch {}
   }, []);
 
@@ -168,13 +190,19 @@ export default function Messages() {
     loadConversations().finally(() => setLoadingConvos(false));
   }, []);
 
+  // REPLACE the useEffect that reads the convo URL param:
+  // REPLACE the URL param useEffect:
   useEffect(() => {
     const convoParam = searchParams.get("convo");
     if (convoParam) {
       setActiveConvoId(convoParam);
-      setMobileView("chat");
+      // Only auto-open chat on desktop
+      if (window.innerWidth > 768) {
+        setMobileView("chat");
+      }
+      // Mobile: stays on "list" — user taps a card to open chat
     }
-  }, []);
+  }, []); // eslint-disable-line
 
   const loadMessages = useCallback(async (convoId, silent = false) => {
     if (!convoId) return;
@@ -188,28 +216,81 @@ export default function Messages() {
 
   useEffect(() => {
     if (!activeConvoId) return;
+
+    // Load messages immediately — backend will mark them as read
     loadMessages(activeConvoId);
-    // Also refresh conversation list to reset unread count
-    loadConversations();
-    pollRef.current = setInterval(() => {
+
+    // After messages load + backend marks read, sync the sidebar count
+    // Use a delay so the mark-as-read DB write has completed first
+    const syncTimer = setTimeout(async () => {
+      // Only zero out THIS conversation's unread count — leave others untouched
+      const res = await api.get("/messages/conversations").catch(() => null);
+      if (!res) return;
+      const fresh = res.data.data.conversations || [];
+      setConversations((prev) =>
+        prev.map((c) => {
+          const fromServer = fresh.find((f) => f.id === c.id);
+          if (!fromServer) return c;
+          // For the active convo: trust server (it's now 0 after mark-as-read)
+          // For all other convos: take max(server, local) to avoid badge flicker
+          if (c.id === activeConvoId) {
+            return { ...fromServer, unreadCount: fromServer.unreadCount ?? 0 };
+          }
+          return {
+            ...fromServer,
+            unreadCount: Math.max(
+              fromServer.unreadCount ?? 0,
+              c.unreadCount ?? 0,
+            ),
+          };
+        }),
+      );
+    }, 800); // 800ms gives backend time to commit the mark-as-read
+
+    // Fast poll — messages only (3s)
+    clearInterval(msgPollRef.current);
+    msgPollRef.current = setInterval(() => {
       loadMessages(activeConvoId, true);
-      loadConversations();
     }, 3000);
-    return () => clearInterval(pollRef.current);
+
+    // Slow poll — conversation list only (12s), uses merge logic from loadConversations
+    clearInterval(convoPollRef.current);
+    convoPollRef.current = setInterval(() => {
+      loadConversations();
+    }, 12000);
+
+    return () => {
+      clearTimeout(syncTimer);
+      clearInterval(msgPollRef.current);
+      clearInterval(convoPollRef.current);
+    };
   }, [activeConvoId, loadMessages, loadConversations]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // REPLACE the useEffect that syncs activeConvoId to URL:
   useEffect(() => {
-    if (activeConvoId) setSearchParams({ convo: activeConvoId });
+    // Only sync URL on desktop — on mobile, mobileView state controls navigation
+    if (activeConvoId && window.innerWidth > 768) {
+      setSearchParams({ convo: activeConvoId }, { replace: true });
+    }
   }, [activeConvoId]);
 
+  // REPLACE selectConversation:
+  // REPLACE selectConversation:
   const selectConversation = (convoId) => {
+    if (convoId === activeConvoId) {
+      // Already selected — on mobile just open the pane
+      setMobileView("chat");
+      return;
+    }
     setActiveConvoId(convoId);
-    setMobileView("chat");
-    clearInterval(pollRef.current);
+    setMobileView("chat"); // ← this is intentional: user tapped a card
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convoId ? { ...c, unreadCount: 0 } : c)),
+    );
   };
 
   const getOtherUser = (convo) =>
@@ -240,20 +321,22 @@ export default function Messages() {
       if (!activeConvoId || conversationId !== activeConvoId) {
         setActiveConvoId(conversationId);
         await loadConversations();
+        // In handleSend, REPLACE the else block after message is sent:
       } else {
         setMessages((prev) => [...prev, message]);
+        // Optimistic sidebar update — don't trigger a full conversation reload
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConvoId
               ? {
                   ...c,
                   messages: [message],
-                  updatedAt: new Date(),
-                  unreadCount: 0,
+                  updatedAt: new Date().toISOString(),
                 }
               : c,
           ),
         );
+        // No loadConversations() call here — avoids wiping other convos' unread counts
       }
     } catch {}
     setSending(false);
@@ -373,7 +456,7 @@ export default function Messages() {
                 const lastMsg = convo.messages?.[0];
                 const isActive = convo.id === activeConvoId;
                 const unread = convo.unreadCount || 0;
-                const isUnread = unread > 0 && !isActive;
+                const isUnread = unread > 0;
 
                 return (
                   <button
@@ -398,7 +481,7 @@ export default function Messages() {
                               {formatTime(lastMsg.createdAt)}
                             </span>
                           )}
-                          {unread > 0 && !isActive && (
+                          {unread > 0 && (
                             <span className={styles.unreadBadge}>
                               {unread > 9 ? "9+" : unread}
                             </span>
