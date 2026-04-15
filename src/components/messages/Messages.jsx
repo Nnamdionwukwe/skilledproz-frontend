@@ -5,30 +5,7 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./Messages.module.css";
-
-// All platform languages
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "fr", label: "French" },
-  { code: "ar", label: "Arabic" },
-  { code: "yo", label: "Yoruba" },
-  { code: "ha", label: "Hausa" },
-  { code: "ig", label: "Igbo" },
-  { code: "sw", label: "Swahili" },
-  { code: "pt", label: "Portuguese" },
-  { code: "es", label: "Spanish" },
-  { code: "de", label: "German" },
-  { code: "zh", label: "Chinese" },
-  { code: "hi", label: "Hindi" },
-  { code: "bn", label: "Bengali" },
-  { code: "ur", label: "Urdu" },
-  { code: "tr", label: "Turkish" },
-  { code: "ko", label: "Korean" },
-  { code: "ja", label: "Japanese" },
-  { code: "ru", label: "Russian" },
-  { code: "id", label: "Indonesian" },
-  { code: "vi", label: "Vietnamese" },
-];
+import TranslateButton from "../common/TranslateButton";
 
 function Avatar({ user, size = "md" }) {
   const initials =
@@ -36,7 +13,7 @@ function Avatar({ user, size = "md" }) {
   return (
     <div className={`${styles.avatar} ${styles[`avatar_${size}`]}`}>
       {user?.avatar ? (
-        <img src={user.avatar} alt={user.firstName} />
+        <img src={user.avatar} alt="" />
       ) : (
         <span>{initials || "?"}</span>
       )}
@@ -47,8 +24,10 @@ function Avatar({ user, size = "md" }) {
 function formatTime(dateStr) {
   const d = new Date(dateStr);
   const now = new Date();
-  if (d.toDateString() === now.toDateString())
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
@@ -73,67 +52,6 @@ function formatDateDivider(dateStr) {
   });
 }
 
-// Inline translate button for each message
-function TranslateButton({ text }) {
-  const [translated, setTranslated] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
-
-  async function translate(langCode) {
-    setShowPicker(false);
-    setLoading(true);
-    try {
-      const res = await api.post("/translate", { text, targetLang: langCode });
-      setTranslated(res.data.data.translated);
-    } catch {
-      setTranslated("Translation failed.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className={styles.translateWrap}>
-      {translated ? (
-        <div className={styles.translatedText}>
-          <span className={styles.translatedLabel}>Translated:</span>
-          <span>{translated}</span>
-          <button
-            className={styles.translateDismiss}
-            onClick={() => setTranslated(null)}
-          >
-            ✕
-          </button>
-        </div>
-      ) : (
-        <div style={{ position: "relative" }}>
-          <button
-            className={styles.translateBtn}
-            onClick={() => setShowPicker((v) => !v)}
-            disabled={loading}
-            title="Translate message"
-          >
-            {loading ? "…" : "🌐"}
-          </button>
-          {showPicker && (
-            <div className={styles.langPicker}>
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l.code}
-                  className={styles.langOption}
-                  onClick={() => translate(l.code)}
-                >
-                  {l.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Messages() {
   const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -149,61 +67,34 @@ export default function Messages() {
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  // REPLACE the initial state declaration for mobileView:
-  const [mobileView, setMobileView] = useState(() => {
-    // On mobile, always start on list regardless of URL
-    if (window.innerWidth <= 768) return "list";
-    // On desktop, if there's a convo in URL, "chat" pane is always visible anyway
-    return "list";
-  });
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [mobileView, setMobileView] = useState("list"); // 'list' | 'chat'
 
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
-  const msgPollRef = useRef(null);
-  const convoPollRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const pollRef = useRef(null);
 
-  // REPLACE the existing loadConversations with this merge version:
-  const loadConversations = useCallback(async () => {
-    try {
-      const res = await api.get("/messages/conversations");
-      const fresh = res.data.data.conversations || [];
-      setConversations((prev) => {
-        // Build a map of existing unread counts
-        const prevUnread = {};
-        prev.forEach((c) => {
-          prevUnread[c.id] = c.unreadCount || 0;
-        });
-
-        return fresh.map((f) => ({
-          ...f,
-          // Take the HIGHER of backend vs local — backend only goes to 0 after
-          // getMessages marks them read, which we handle separately below
-          unreadCount: Math.max(f.unreadCount ?? 0, prevUnread[f.id] ?? 0),
-        }));
-      });
-    } catch {}
-  }, []);
-
+  // Load conversations
   useEffect(() => {
-    loadConversations().finally(() => setLoadingConvos(false));
+    api
+      .get("/messages/conversations")
+      .then((res) => setConversations(res.data.data.conversations || []))
+      .catch(() => {})
+      .finally(() => setLoadingConvos(false));
   }, []);
 
-  // REPLACE the useEffect that reads the convo URL param:
-  // REPLACE the URL param useEffect:
+  // Auto-open conversation from URL param
   useEffect(() => {
     const convoParam = searchParams.get("convo");
+    const withParam = searchParams.get("with");
     if (convoParam) {
       setActiveConvoId(convoParam);
-      // Only auto-open chat on desktop
-      if (window.innerWidth > 768) {
-        setMobileView("chat");
-      }
-      // Mobile: stays on "list" — user taps a card to open chat
+      setMobileView("chat");
+    } else if (withParam) {
+      // Start new convo with this user — handled on send
     }
-  }, []); // eslint-disable-line
+  }, []);
 
+  // Load messages for active conversation
   const loadMessages = useCallback(async (convoId, silent = false) => {
     if (!convoId) return;
     if (!silent) setLoadingMessages(true);
@@ -216,167 +107,78 @@ export default function Messages() {
 
   useEffect(() => {
     if (!activeConvoId) return;
-
-    // Load messages immediately — backend will mark them as read
     loadMessages(activeConvoId);
+    // Poll every 3 seconds for new messages
+    pollRef.current = setInterval(
+      () => loadMessages(activeConvoId, true),
+      3000,
+    );
+    return () => clearInterval(pollRef.current);
+  }, [activeConvoId, loadMessages]);
 
-    // After messages load + backend marks read, sync the sidebar count
-    // Use a delay so the mark-as-read DB write has completed first
-    const syncTimer = setTimeout(async () => {
-      // Only zero out THIS conversation's unread count — leave others untouched
-      const res = await api.get("/messages/conversations").catch(() => null);
-      if (!res) return;
-      const fresh = res.data.data.conversations || [];
-      setConversations((prev) =>
-        prev.map((c) => {
-          const fromServer = fresh.find((f) => f.id === c.id);
-          if (!fromServer) return c;
-          // For the active convo: trust server (it's now 0 after mark-as-read)
-          // For all other convos: take max(server, local) to avoid badge flicker
-          if (c.id === activeConvoId) {
-            return { ...fromServer, unreadCount: fromServer.unreadCount ?? 0 };
-          }
-          return {
-            ...fromServer,
-            unreadCount: Math.max(
-              fromServer.unreadCount ?? 0,
-              c.unreadCount ?? 0,
-            ),
-          };
-        }),
-      );
-    }, 800); // 800ms gives backend time to commit the mark-as-read
-
-    // Fast poll — messages only (3s)
-    clearInterval(msgPollRef.current);
-    msgPollRef.current = setInterval(() => {
-      loadMessages(activeConvoId, true);
-    }, 3000);
-
-    // Slow poll — conversation list only (12s), uses merge logic from loadConversations
-    clearInterval(convoPollRef.current);
-    convoPollRef.current = setInterval(() => {
-      loadConversations();
-    }, 12000);
-
-    return () => {
-      clearTimeout(syncTimer);
-      clearInterval(msgPollRef.current);
-      clearInterval(convoPollRef.current);
-    };
-  }, [activeConvoId, loadMessages, loadConversations]);
-
+  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // REPLACE the useEffect that syncs activeConvoId to URL:
+  // Update URL
   useEffect(() => {
-    // Only sync URL on desktop — on mobile, mobileView state controls navigation
-    if (activeConvoId && window.innerWidth > 768) {
-      setSearchParams({ convo: activeConvoId }, { replace: true });
+    if (activeConvoId) {
+      setSearchParams({ convo: activeConvoId });
     }
   }, [activeConvoId]);
 
-  // REPLACE selectConversation:
-  // REPLACE selectConversation:
   const selectConversation = (convoId) => {
-    if (convoId === activeConvoId) {
-      // Already selected — on mobile just open the pane
-      setMobileView("chat");
-      return;
-    }
     setActiveConvoId(convoId);
-    setMobileView("chat"); // ← this is intentional: user tapped a card
-    setConversations((prev) =>
-      prev.map((c) => (c.id === convoId ? { ...c, unreadCount: 0 } : c)),
-    );
+    setMobileView("chat");
+    clearInterval(pollRef.current);
   };
-
-  const getOtherUser = (convo) =>
-    convo.users?.find((u) => u.userId !== user?.id)?.user;
 
   const handleSend = async (e) => {
     e?.preventDefault();
     if (!newMessage.trim() || sending) return;
+
     const content = newMessage.trim();
     setNewMessage("");
     setSending(true);
+
     try {
+      // In handleSend, replace the receiverId resolution:
       const withParam = searchParams.get("with");
       const activeConvo = conversations.find((c) => c.id === activeConvoId);
       const otherUser = activeConvo?.users?.find(
         (u) => u.userId !== user?.id,
       )?.user;
       const receiverId = otherUser?.id || withParam;
-      if (!receiverId) return;
 
-      const res = await api.post("/messages", {
-        receiverId,
+      if (!receiverId) return; // can't send without knowing recipient
+
+      await api.post("/messages", {
+        receiverId, // ← always include this
         content,
-        conversationId: activeConvoId || undefined,
+        conversationId: activeConvoId || undefined, // pass if known
       });
       const { message, conversationId } = res.data.data;
 
+      // If new convo was created
       if (!activeConvoId || conversationId !== activeConvoId) {
         setActiveConvoId(conversationId);
-        await loadConversations();
-        // In handleSend, REPLACE the else block after message is sent:
+        // Refresh convos list
+        const convosRes = await api.get("/messages/conversations");
+        setConversations(convosRes.data.data.conversations || []);
       } else {
         setMessages((prev) => [...prev, message]);
-        // Optimistic sidebar update — don't trigger a full conversation reload
+        // Update last message in sidebar
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConvoId
-              ? {
-                  ...c,
-                  messages: [message],
-                  updatedAt: new Date().toISOString(),
-                }
+              ? { ...c, messages: [message], updatedAt: new Date() }
               : c,
           ),
         );
-        // No loadConversations() call here — avoids wiping other convos' unread counts
       }
     } catch {}
     setSending(false);
-  };
-
-  // Handle file/image/video upload
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const withParam = searchParams.get("with");
-    const activeConvo = conversations.find((c) => c.id === activeConvoId);
-    const otherUser = activeConvo?.users?.find(
-      (u) => u.userId !== user?.id,
-    )?.user;
-    const receiverId = otherUser?.id || withParam;
-    if (!receiverId) return;
-
-    setUploadingFile(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("receiverId", receiverId);
-      formData.append("content", file.name); // filename as content
-      if (activeConvoId) formData.append("conversationId", activeConvoId);
-
-      const res = await api.post("/messages", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const { message, conversationId } = res.data.data;
-
-      if (!activeConvoId || conversationId !== activeConvoId) {
-        setActiveConvoId(conversationId);
-        await loadConversations();
-      } else {
-        setMessages((prev) => [...prev, message]);
-      }
-    } catch {}
-    setUploadingFile(false);
-    e.target.value = "";
   };
 
   const handleKeyDown = (e) => {
@@ -386,8 +188,13 @@ export default function Messages() {
     }
   };
 
+  // Get other user in a conversation
+  const getOtherUser = (convo) =>
+    convo.users?.find((u) => u.userId !== user?.id)?.user;
+
   const activeConvo = conversations.find((c) => c.id === activeConvoId);
   const activeOther = activeConvo ? getOtherUser(activeConvo) : null;
+
   const filteredConvos = conversations.filter((c) => {
     if (!searchQuery) return true;
     const other = getOtherUser(c);
@@ -396,6 +203,7 @@ export default function Messages() {
       .includes(searchQuery.toLowerCase());
   });
 
+  // Group messages by date
   const groupedMessages = messages.reduce((groups, msg) => {
     const dateKey = new Date(msg.createdAt).toDateString();
     if (!groups[dateKey]) groups[dateKey] = [];
@@ -403,28 +211,18 @@ export default function Messages() {
     return groups;
   }, {});
 
-  // Total unread across all conversations (for nav badge)
-  const totalUnread = conversations.reduce(
-    (sum, c) => sum + (c.unreadCount || 0),
-    0,
-  );
-
   return (
     <Layout>
       <div className={styles.shell}>
-        {/* ── Conversation sidebar ── */}
+        {/* ── Sidebar ── */}
         <div
           className={`${styles.sidebar} ${mobileView === "chat" ? styles.hideMobile : ""}`}
         >
           <div className={styles.sidebarHeader}>
-            <h2 className={styles.sidebarTitle}>
-              Messages
-              {totalUnread > 0 && (
-                <span className={styles.totalUnreadBadge}>
-                  {totalUnread > 99 ? "99+" : totalUnread}
-                </span>
-              )}
-            </h2>
+            <h2 className={styles.sidebarTitle}>Messages</h2>
+            {conversations.length > 0 && (
+              <span className={styles.convoCount}>{conversations.length}</span>
+            )}
           </div>
 
           <div className={styles.searchWrap}>
@@ -455,42 +253,25 @@ export default function Messages() {
                 const other = getOtherUser(convo);
                 const lastMsg = convo.messages?.[0];
                 const isActive = convo.id === activeConvoId;
-                const unread = convo.unreadCount || 0;
-                const isUnread = unread > 0;
-
                 return (
                   <button
                     key={convo.id}
-                    className={`${styles.convoItem} ${isActive ? styles.convoItemActive : ""} ${isUnread ? styles.convoItemUnread : ""}`}
+                    className={`${styles.convoItem} ${isActive ? styles.convoItemActive : ""}`}
                     onClick={() => selectConversation(convo.id)}
                   >
-                    <div className={styles.convoAvatarWrap}>
-                      <Avatar user={other} size="md" />
-                      {/* Online indicator could go here */}
-                    </div>
+                    <Avatar user={other} size="md" />
                     <div className={styles.convoInfo}>
                       <div className={styles.convoTop}>
-                        <span
-                          className={`${styles.convoName} ${isUnread ? styles.convoNameBold : ""}`}
-                        >
+                        <span className={styles.convoName}>
                           {other?.firstName} {other?.lastName}
                         </span>
-                        <div className={styles.convoTopRight}>
-                          {lastMsg && (
-                            <span className={styles.convoTime}>
-                              {formatTime(lastMsg.createdAt)}
-                            </span>
-                          )}
-                          {unread > 0 && (
-                            <span className={styles.unreadBadge}>
-                              {unread > 9 ? "9+" : unread}
-                            </span>
-                          )}
-                        </div>
+                        {lastMsg && (
+                          <span className={styles.convoTime}>
+                            {formatTime(lastMsg.createdAt)}
+                          </span>
+                        )}
                       </div>
-                      <p
-                        className={`${styles.convoPreview} ${isUnread ? styles.convoPreviewBold : ""}`}
-                      >
+                      <p className={styles.convoPreview}>
                         {lastMsg
                           ? lastMsg.senderId === user?.id
                             ? `You: ${lastMsg.content}`
@@ -578,24 +359,14 @@ export default function Messages() {
                       </div>
                       {msgs.map((msg, i) => {
                         const isMine = msg.senderId === user?.id;
-                        const isMedia =
-                          msg.fileUrl &&
-                          (msg.fileUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ||
-                            msg.fileUrl.includes("image"));
-                        const isVideo =
-                          msg.fileUrl &&
-                          (msg.fileUrl.match(/\.(mp4|mov|webm)$/i) ||
-                            msg.fileUrl.includes("video"));
                         const showAvatar =
                           !isMine &&
                           (i === 0 || msgs[i - 1]?.senderId !== msg.senderId);
-
                         return (
                           <div
                             key={msg.id}
                             className={`${styles.messageRow} ${isMine ? styles.messageRowMine : ""}`}
                           >
-                            {/* Sender avatar — shown for other person's messages */}
                             {!isMine && (
                               <div
                                 className={`${styles.messageAvatar} ${showAvatar ? "" : styles.avatarHidden}`}
@@ -605,59 +376,23 @@ export default function Messages() {
                                 )}
                               </div>
                             )}
-
                             <div
                               className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
                             >
-                              {/* Sender name on first message in a group */}
-                              {!isMine && showAvatar && (
-                                <span className={styles.senderName}>
-                                  {msg.sender?.firstName} {msg.sender?.lastName}
-                                </span>
-                              )}
-
-                              {/* Media content */}
-                              {isMedia && (
-                                <a
-                                  href={msg.fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  <img
-                                    src={msg.fileUrl}
-                                    alt="attachment"
-                                    className={styles.messageImage}
-                                  />
-                                </a>
-                              )}
-                              {isVideo && (
-                                <video controls className={styles.messageVideo}>
-                                  <source src={msg.fileUrl} />
-                                </video>
-                              )}
-                              {msg.fileUrl && !isMedia && !isVideo && (
+                              {msg.fileUrl && (
                                 <a
                                   href={msg.fileUrl}
                                   target="_blank"
                                   rel="noreferrer"
                                   className={styles.fileAttachment}
                                 >
-                                  📎 {msg.content || "Attachment"}
+                                  📎 Attachment
                                 </a>
                               )}
-
-                              {/* Text content — don't show filename if it's just a media message */}
-                              {(!msg.fileUrl || (!isMedia && !isVideo)) && (
-                                <p className={styles.bubbleText}>
-                                  {msg.content}
-                                </p>
-                              )}
-
-                              {/* Translate button for received messages */}
-                              {!isMine && msg.content && (
+                              <p className={styles.bubbleText}>{msg.content}</p>{" "}
+                              {!isMine && (
                                 <TranslateButton text={msg.content} />
                               )}
-
                               <span className={styles.bubbleTime}>
                                 {formatMessageTime(msg.createdAt)}
                                 {isMine && (
@@ -675,54 +410,8 @@ export default function Messages() {
                 )}
                 <div ref={bottomRef} />
               </div>
-
               {/* Input area */}
               <div className={styles.inputArea}>
-                {/* Hidden file inputs */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  style={{ display: "none" }}
-                  onChange={handleFileUpload}
-                />
-
-                <div className={styles.inputToolbar}>
-                  <button
-                    type="button"
-                    className={styles.attachBtn}
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFile}
-                    title="Send image or video"
-                  >
-                    {uploadingFile ? <span className={styles.spinner} /> : "📎"}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.attachBtn}
-                    onClick={() => {
-                      fileInputRef.current.accept = "image/*";
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={uploadingFile}
-                    title="Send photo"
-                  >
-                    📷
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.attachBtn}
-                    onClick={() => {
-                      fileInputRef.current.accept = "video/*";
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={uploadingFile}
-                    title="Send video"
-                  >
-                    🎥
-                  </button>
-                </div>
-
                 <div className={styles.inputWrap}>
                   <textarea
                     ref={textareaRef}
