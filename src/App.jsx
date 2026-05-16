@@ -126,6 +126,25 @@ export default function App() {
     return <Navigate to="/login" replace />;
   }
 
+  function GuestOnly({ children }) {
+    const { accessToken, isHydrated, user } = useAuthStore();
+
+    // Don't redirect until we know the actual auth state
+    if (!isHydrated) return null;
+
+    if (accessToken && user) {
+      const dest =
+        user.role === "WORKER"
+          ? "/dashboard/worker"
+          : user.role === "HIRER"
+            ? "/dashboard/hirer"
+            : "/";
+      return <Navigate to={dest} replace />;
+    }
+
+    return children;
+  }
+
   return (
     <BrowserRouter>
       <div id="google_translate_element" style={{ display: "none" }} />
@@ -133,7 +152,14 @@ export default function App() {
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/landingpage" replace />} />
         {/* ── Auth (guest only) ── */}
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={
+            <GuestOnly>
+              <Login />
+            </GuestOnly>
+          }
+        />
         <Route path="/register" element={<Register />} />
         <Route path="/register/hirer" element={<RegisterHirer />} />
         <Route

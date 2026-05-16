@@ -1,22 +1,19 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 
 export default function AuthGuard({ children, requireVerified = false }) {
-  const navigate = useNavigate();
-  const { user, accessToken } = useAuthStore();
+  const { user, accessToken, isHydrated } = useAuthStore();
 
-  useEffect(() => {
-    if (!accessToken || !user) {
-      navigate("/login", { replace: true });
-      return;
-    }
-    if (requireVerified && !user.isEmailVerified) {
-      navigate("/verify-email", { replace: true });
-    }
-  }, [accessToken, user, requireVerified, navigate]);
+  // Wait for store to rehydrate from localStorage before making any decision
+  if (!isHydrated) return null;
 
-  if (!accessToken || !user) return null;
-  if (requireVerified && !user.isEmailVerified) return null;
+  if (!accessToken || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requireVerified && !user.isEmailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   return children;
 }

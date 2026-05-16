@@ -9,6 +9,7 @@ export const useAuthStore = create(
       accessToken: null,
       refreshToken: null,
       isLoading: false,
+      isHydrated: false, // ← added; flipped to true by onRehydrateStorage
 
       setAuth: (user, accessToken, refreshToken) => {
         localStorage.setItem("accessToken", accessToken);
@@ -16,8 +17,6 @@ export const useAuthStore = create(
         set({ user, accessToken, refreshToken });
       },
 
-      // Patch specific user fields without a full re-fetch
-      // Call this after avatar upload, profile save, etc.
       updateUser: (patch) => {
         set((state) => ({
           user: state.user ? { ...state.user, ...patch } : state.user,
@@ -83,6 +82,11 @@ export const useAuthStore = create(
         accessToken: s.accessToken,
         refreshToken: s.refreshToken,
       }),
+      // Fires after localStorage is read and state is restored.
+      // This is the correct place to flip isHydrated.
+      onRehydrateStorage: () => (state) => {
+        if (state) state.isHydrated = true;
+      },
     },
   ),
 );

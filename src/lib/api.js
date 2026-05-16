@@ -32,7 +32,10 @@ api.interceptors.response.use(
     if (original.url?.includes("/auth/refresh")) {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      window.location.href = "/login";
+      const wasLoggedIn = !!localStorage.getItem("refreshToken");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      if (wasLoggedIn) window.location.href = "/login";
       return Promise.reject(error);
     }
 
@@ -54,8 +57,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem("refreshToken");
       if (!refreshToken) {
         isRefreshing = false;
-        window.location.href = "/login";
-        return Promise.reject(error);
+        return Promise.reject(error); // just reject silently — no redirect
       }
 
       try {
@@ -73,9 +75,10 @@ api.interceptors.response.use(
         return api(original);
       } catch (refreshError) {
         processQueue(refreshError, null);
+        const hadToken = !!localStorage.getItem("refreshToken");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
+        if (hadToken) window.location.href = "/login"; // only redirect if they were logged in
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

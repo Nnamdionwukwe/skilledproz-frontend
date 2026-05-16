@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/pages/auth/Login.jsx
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
@@ -7,7 +8,8 @@ import s from "../../components/auth/form.module.css";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuthStore();
+  const { login, isLoading } = useAuthStore(); // no more user/isHydrated needed here
+
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
@@ -19,17 +21,23 @@ export default function Login() {
     e.preventDefault();
     setError("");
     try {
-      const user = await login(form.email, form.password);
+      const loggedInUser = await login(form.email, form.password);
       navigate(
-        user.role === "WORKER" ? "/dashboard/worker" : "/dashboard/hirer",
+        loggedInUser.role === "WORKER"
+          ? "/dashboard/worker"
+          : "/dashboard/hirer",
+        { replace: true },
       );
     } catch (err) {
-      setError(
-        err?.response?.data?.message || "Login failed. Please try again.",
-      );
+      const message =
+        err?.response?.data?.message ??
+        err?.message ??
+        "Login failed. Please try again.";
+      setError(message);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <AuthLayout>
       <div className={s.container}>
@@ -100,8 +108,9 @@ export default function Login() {
               <button
                 type="button"
                 className={s.iconRight}
-                onClick={() => setShowPw(!showPw)}
+                onClick={() => setShowPw((v) => !v)}
                 tabIndex={-1}
+                aria-label={showPw ? "Hide password" : "Show password"}
               >
                 {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
@@ -111,7 +120,7 @@ export default function Login() {
           <button
             type="submit"
             className={`${s.btn} ${s.btnPrimary}`}
-            disabled={isLoading || !form.email || !form.password}
+            disabled={isLoading || !form.email.trim() || !form.password}
             style={{ marginTop: 4 }}
           >
             {isLoading && <span className={s.spinner} />}
