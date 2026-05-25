@@ -90,6 +90,8 @@ import SettingsPage from "./components/settimg/SettingsPage";
 import AdminJobs from "./pages/admin/AdminJobs";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
+import AdminPosts from "./pages/admin/AdminPosts";
+import AdminMessages from "./pages/admin/AdminMessages";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -311,6 +313,38 @@ export default function App() {
         />
         <Route
           path="/admin/subscriptions"
+          element={
+            <RequireAdmin>
+              <AdminSubscriptions />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/FeatueredBoosts"
+          element={
+            <RequireAdmin>
+              <AdminSubscriptions />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/Posts"
+          element={
+            <RequireAdmin>
+              <AdminPosts />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/messages"
+          element={
+            <RequireAdmin>
+              <AdminMessages />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/video-calls"
           element={
             <RequireAdmin>
               <AdminSubscriptions />
