@@ -92,6 +92,7 @@ import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminVideoCalls from "./pages/admin/AdminVideoCalls";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -347,7 +348,7 @@ export default function App() {
           path="/admin/video-calls"
           element={
             <RequireAdmin>
-              <AdminSubscriptions />
+              <AdminVideoCalls />
             </RequireAdmin>
           }
         />
