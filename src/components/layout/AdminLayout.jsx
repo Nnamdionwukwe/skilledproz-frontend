@@ -27,6 +27,13 @@ const NAV = [
       { label: "Categories", path: "/admin/categories", icon: "🔧" },
       { label: "Reviews", path: "/admin/reviews", icon: "⭐" },
       { label: "Payments", path: "/admin/payments", icon: "💳" },
+      { label: "Withdrawals", path: "/admin/withdrawals", icon: "💸" },
+      { label: "jobs", path: "/admin/jobs", icon: "💼" },
+      { label: "subscriptions", path: "/admin/subscriptions", icon: "�" },
+      { label: "featured", path: "/admin/featured", icon: "🌟" },
+      { label: "posts", path: "/admin/posts", icon: "🌟" },
+      { label: "messages", path: "/admin/messages", icon: "🌟" },
+      { label: "video calls", path: "/admin/video-calls", icon: "🌟" },
     ],
   },
   {

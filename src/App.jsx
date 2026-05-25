@@ -36,8 +36,6 @@ import CreateBooking from "./components/booking/CreateBooking";
 // User / shared
 import UserProfile from "./components/user/UserProfile";
 
-// Fallback
-
 import LandingPage from "./app/LandingPage";
 import HirerSavedWorkers from "./components/hirer/HirerSavedWorkers";
 import CategoriesBrowse from "./components/categories/CategoriesBrowse";
@@ -89,69 +87,83 @@ import MyPostsPage from "./pages/feed/MyPosts";
 import FeedPage from "./pages/feed/FeedPage";
 import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
 import SettingsPage from "./components/settimg/SettingsPage";
+import AdminJobs from "./pages/admin/AdminJobs";
+import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 
-// ── Route guards ──────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Returns the correct home path for a given role */
+function homePath(role) {
+  if (role === "WORKER") return "/dashboard/worker";
+  if (role === "HIRER") return "/dashboard/hirer";
+  if (role === "ADMIN") return "/admin";
+  return "/landingpage";
+}
+
+// ── Route guards (defined OUTSIDE App so they don't re-create on every render) ─
+
+/** Redirect logged-in users away from auth pages */
 function GuestOnly({ children }) {
-  const { accessToken } = useAuthStore();
-  if (accessToken) return <Navigate to="/dashboard" replace />;
+  const { accessToken, isHydrated, user } = useAuthStore();
+  if (!isHydrated) return null; // wait for localStorage restore
+  if (accessToken && user) return <Navigate to={homePath(user.role)} replace />;
   return children;
 }
 
+/** Require any authenticated user; optionally require verified email */
 function RequireAuth({ children, requireVerified = false }) {
   return <AuthGuard requireVerified={requireVerified}>{children}</AuthGuard>;
 }
 
+/** Require ADMIN role specifically */
+function RequireAdmin({ children }) {
+  const { user, isHydrated } = useAuthStore();
+  if (!isHydrated) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== "ADMIN")
+    return <Navigate to={homePath(user.role)} replace />;
+  return children;
+}
+
+/** Require WORKER role specifically */
+function RequireWorker({ children }) {
+  const { user, isHydrated } = useAuthStore();
+  if (!isHydrated) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== "WORKER")
+    return <Navigate to={homePath(user.role)} replace />;
+  return children;
+}
+
+/** Require HIRER role specifically */
+function RequireHirer({ children }) {
+  const { user, isHydrated } = useAuthStore();
+  if (!isHydrated) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== "HIRER")
+    return <Navigate to={homePath(user.role)} replace />;
+  return children;
+}
+
+/** /dashboard → correct dashboard by role */
+function RoleRedirect() {
+  const { user, isHydrated } = useAuthStore();
+  if (!isHydrated) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={homePath(user.role)} replace />;
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
-  const { user } = useAuthStore();
-  const isWorker = user?.role === "WORKER";
-  const isHirer = user?.role === "HIRER";
-  const isAdmin = user?.role === "ADMIN";
-
-  function RequireAdmin({ children }) {
-    const { user } = useAuthStore();
-    if (!user) return <Navigate to="/login" replace />;
-    if (user.role !== "ADMIN") return <Navigate to="/" replace />;
-    return children;
-  }
-
-  function RoleRedirect() {
-    const { user } = useAuthStore();
-    if (!user) return <Navigate to="/login" replace />;
-    if (user.role === "WORKER")
-      return <Navigate to="/dashboard/worker" replace />;
-    if (user.role === "HIRER")
-      return <Navigate to="/dashboard/hirer" replace />;
-    if (user.role === "ADMIN") return <Navigate to="/admin" replace />;
-    return <Navigate to="/login" replace />;
-  }
-
-  function GuestOnly({ children }) {
-    const { accessToken, isHydrated, user } = useAuthStore();
-
-    // Don't redirect until we know the actual auth state
-    if (!isHydrated) return null;
-
-    if (accessToken && user) {
-      const dest =
-        user.role === "WORKER"
-          ? "/dashboard/worker"
-          : user.role === "HIRER"
-            ? "/dashboard/hirer"
-            : "/";
-      return <Navigate to={dest} replace />;
-    }
-
-    return children;
-  }
-
   return (
     <BrowserRouter>
       <div id="google_translate_element" style={{ display: "none" }} />
       <Routes>
-        {/* Root redirect */}
+        {/* ── Root ── */}
         <Route path="/" element={<Navigate to="/landingpage" replace />} />
-        {/* ── Auth (guest only) ── */}
+        <Route path="/landingpage" element={<LandingPage />} />
+
+        {/* ── Guest-only auth pages ── */}
         <Route
           path="/login"
           element={
@@ -160,8 +172,22 @@ export default function App() {
             </GuestOnly>
           }
         />
-        <Route path="/register" element={<Register />} />
-        <Route path="/register/hirer" element={<RegisterHirer />} />
+        <Route
+          path="/register"
+          element={
+            <GuestOnly>
+              <Register />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/register/hirer"
+          element={
+            <GuestOnly>
+              <RegisterHirer />
+            </GuestOnly>
+          }
+        />
         <Route
           path="/register/worker"
           element={
@@ -180,25 +206,20 @@ export default function App() {
         />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        {/* ── Dashboard root — redirects by role ── */}
+
+        {/* ── /dashboard → role-based redirect ── */}
         <Route
           path="/dashboard"
           element={
-            <RequireAuth requireVerified>
-              <Navigate
-                to={
-                  isWorker
-                    ? "/dashboard/worker"
-                    : isHirer
-                      ? "/dashboard/hirer"
-                      : "/dashboard/placeholder"
-                }
-                replace
-              />
+            <RequireAuth>
+              <RoleRedirect />
             </RequireAuth>
           }
         />
-        {/* ── ADMIN dashboard ── */}
+
+        {/* ════════════════════════════════════════
+            ADMIN ROUTES
+        ════════════════════════════════════════ */}
         <Route
           path="/admin"
           element={
@@ -280,6 +301,22 @@ export default function App() {
           }
         />
         <Route
+          path="/admin/withdrawals"
+          element={
+            <RequireAdmin>
+              <AdminWithdrawals />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/jobs"
+          element={
+            <RequireAdmin>
+              <AdminJobs />
+            </RequireAdmin>
+          }
+        />
+        <Route
           path="/admin/settings"
           element={
             <RequireAdmin>
@@ -287,7 +324,289 @@ export default function App() {
             </RequireAdmin>
           }
         />
-        {/* ── Hirer/Worker Messages ── */}
+
+        {/* ════════════════════════════════════════
+            WORKER ROUTES
+        ════════════════════════════════════════ */}
+        <Route
+          path="/dashboard/worker"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerDashboard />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/earnings"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerEarningsPage />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/withdrawals"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerWithdrawals />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/notifications"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerNotifications />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/portfolio"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerPortfolio />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/profile"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerProfile />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/reviews"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerReviewsPage />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/availability"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerAvailability />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/categories"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerCategories />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/certifications"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerCertifications />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/applications"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <MyJobApplications />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/verification"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerVerification />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/background-check"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <BackgroundCheck />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/subscription"
+          element={
+            <RequireWorker>
+              <RequireAuth>
+                <SubscriptionPlans />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/featured"
+          element={
+            <RequireWorker>
+              <RequireAuth>
+                <FeaturedBoost />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+
+        {/* ════════════════════════════════════════
+            HIRER ROUTES
+        ════════════════════════════════════════ */}
+        <Route
+          path="/dashboard/hirer"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerDashboard />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/notifications"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerNotifications />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/profile"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerProfile />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/post-job"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <PostJob />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/saved-workers"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerSavedWorkers />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/reviews/received"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerReviewsReceived />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/reviews/given"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerReviewsGiven />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/payment-history"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerPaymentHistory />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/jobs-management"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <HirerJobBoardManagement />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/verification"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerVerification />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/subscription"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <SubscriptionPlans />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/featured"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <FeaturedBoost />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+
+        {/* ════════════════════════════════════════
+            SHARED AUTHENTICATED ROUTES
+            (both hirers and workers can access)
+        ════════════════════════════════════════ */}
         <Route
           path="/messages"
           element={
@@ -296,186 +615,33 @@ export default function App() {
             </RequireAuth>
           }
         />
-        {/* ── Worker dashboard ── */}
         <Route
-          path="/dashboard/worker"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerDashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/earnings"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerEarningsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/withdrawals"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerWithdrawals />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/notifications"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerNotifications />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/portfolio"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerPortfolio />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/profile"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerProfile />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/reviews"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerReviewsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/availability"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerAvailability />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/categories"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerCategories />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/certifications"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerCertifications />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/applications"
-          element={
-            <RequireAuth requireVerified>
-              <MyJobApplications />
-            </RequireAuth>
-          }
-        />
-        {/* ── Hirer dashboard ── */}
-        <Route
-          path="/dashboard/hirer"
-          element={
-            <RequireAuth requireVerified>
-              <HirerDashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/notifications"
-          element={
-            <RequireAuth requireVerified>
-              <HirerNotifications />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/profile"
-          element={
-            <RequireAuth requireVerified>
-              <HirerProfile />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/post-job"
-          element={
-            <RequireAuth requireVerified>
-              <PostJob />
-            </RequireAuth>
-          }
-        />
-        <Route path="/jobs/:id" element={<JobDetail />} />
-        <Route
-          path="/jobs"
+          path="/settings"
           element={
             <RequireAuth>
-              <HirerJobBoard />
+              <SettingsPage />
             </RequireAuth>
           }
         />
         <Route
-          path="/jobs/:id/applications"
-          element={
-            <RequireAuth requireVerified>
-              <JobApplications />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/jobs-management"
+          path="/disputes"
           element={
             <RequireAuth>
-              <HirerJobBoardManagement />
+              <MyDisputes />
             </RequireAuth>
           }
         />
+        <Route path="/feed" element={<FeedPage />} />
         <Route
-          path="/dashboard/hirer/saved-workers"
+          path="/my-posts"
           element={
-            <RequireAuth requireVerified>
-              <HirerSavedWorkers />
+            <RequireAuth>
+              <MyPostsPage />
             </RequireAuth>
           }
         />
-        <Route
-          path="/dashboard/hirer/reviews/received"
-          element={
-            <RequireAuth requireVerified>
-              <HirerReviewsReceived />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/reviews/given"
-          element={
-            <RequireAuth requireVerified>
-              <HirerReviewsGiven />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/payment-history"
-          element={
-            <RequireAuth requireVerified>
-              <HirerPaymentHistory />
-            </RequireAuth>
-          }
-        />
-        {/* ── Bookings ── */}
+
+        {/* ── Bookings (both roles) ── */}
         <Route
           path="/bookings"
           element={
@@ -517,15 +683,6 @@ export default function App() {
           }
         />
         <Route
-          path="/insurance/success"
-          element={
-            <RequireAuth>
-              <InsuranceSuccess />
-            </RequireAuth>
-          }
-        />
-        <Route path="/payments/verify/paystack" element={<PaystackVerify />} />
-        <Route
           path="/bookings/:bookingId/stripe-confirm"
           element={
             <RequireAuth>
@@ -541,15 +698,36 @@ export default function App() {
             </RequireAuth>
           }
         />
+        <Route path="/payments/verify/paystack" element={<PaystackVerify />} />
         <Route
-          path="/disputes"
+          path="/insurance/success"
           element={
             <RequireAuth>
-              <MyDisputes />
+              <InsuranceSuccess />
             </RequireAuth>
           }
         />
-        {/* ── User profile ── */}
+
+        {/* ── Jobs (both roles can view, hirer creates) ── */}
+        <Route
+          path="/jobs"
+          element={
+            <RequireAuth>
+              <HirerJobBoard />
+            </RequireAuth>
+          }
+        />
+        <Route path="/jobs/:id" element={<JobDetail />} />
+        <Route
+          path="/jobs/:id/applications"
+          element={
+            <RequireAuth requireVerified>
+              <JobApplications />
+            </RequireAuth>
+          }
+        />
+
+        {/* ── Profiles ── */}
         <Route
           path="/profile/me"
           element={
@@ -574,47 +752,8 @@ export default function App() {
             </RequireAuth>
           }
         />
-        {/* ── Categories And Also It's Public Aceess ── */}
-        <Route path="/categories" element={<CategoriesBrowse />} />
-        <Route path="/categories/:slug" element={<CategoryDetail />} />
-        {/* ── Public Aceess ── */}
-        <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
-        <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
-        <Route path="/search" element={<SearchPage />} />
 
-        {/* ── Subscriptions ── */}
-        <Route
-          path="/dashboard/worker/subscription"
-          element={
-            <RequireAuth>
-              <SubscriptionPlans />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/subscription"
-          element={
-            <RequireAuth>
-              <SubscriptionPlans />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/featured"
-          element={
-            <RequireAuth>
-              <FeaturedBoost />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/featured"
-          element={
-            <RequireAuth>
-              <FeaturedBoost />
-            </RequireAuth>
-          }
-        />
+        {/* ── Subscriptions / Featured (shared success pages) ── */}
         <Route
           path="/subscription/success"
           element={
@@ -632,53 +771,18 @@ export default function App() {
           }
         />
 
-        {/* ── Feeds ── */}
-        <Route path="/feed" element={<FeedPage />} />
-        <Route
-          path="/my-posts"
-          element={
-            <RequireAuth>
-              <MyPostsPage />
-            </RequireAuth>
-          }
-        />
-
-        {/* ── Fallback ── */}
-
-        <Route path="landingpage" element={<LandingPage />} />
-
-        {/* ── Verification ── */}
-        <Route
-          path="/dashboard/worker/verification"
-          element={
-            <RequireAuth requireVerified>
-              <WorkerVerification />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/hirer/verification"
-          element={
-            <RequireAuth requireVerified>
-              <HirerVerification />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/worker/background-check"
-          element={
-            <RequireAuth requireVerified>
-              <BackgroundCheck />
-            </RequireAuth>
-          }
-        />
-
-        {/* ── Settings ── */}
-        <Route path="/settings" element={<SettingsPage />} />
+        {/* ── Public pages ── */}
+        <Route path="/categories" element={<CategoriesBrowse />} />
+        <Route path="/categories/:slug" element={<CategoryDetail />} />
+        <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
+        <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
+
+        {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
