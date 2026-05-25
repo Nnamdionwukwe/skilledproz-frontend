@@ -93,6 +93,7 @@ function isImageUrl(str) {
     )
   )
     return true;
+  if (trimmed.startsWith("http") && trimmed.length > 10) return true;
   return false;
 }
 

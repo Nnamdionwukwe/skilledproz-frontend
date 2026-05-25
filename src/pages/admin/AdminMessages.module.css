@@ -476,6 +476,10 @@
   flex-direction: column;
   background: var(--bg-card);
   overflow: hidden;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  border-radius: 0;
 }
 .threadPaneHidden {
   display: none;
