@@ -89,6 +89,7 @@ import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
 import SettingsPage from "./components/settimg/SettingsPage";
 import AdminJobs from "./pages/admin/AdminJobs";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -305,6 +306,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminWithdrawals />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/subscriptions"
+          element={
+            <RequireAdmin>
+              <AdminSubscriptions />
             </RequireAdmin>
           }
         />
