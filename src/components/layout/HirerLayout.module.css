@@ -205,6 +205,8 @@
   /* Never shrink — logout must always be visible */
   flex-shrink: 0;
   background: var(--bg-panel);
+  position: sticky; /* ← ADD */
+  bottom: 0;
 }
 .logoutBtn {
   display: flex;
