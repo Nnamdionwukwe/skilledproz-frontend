@@ -1,8 +1,6 @@
 // src/pages/messages/AdminMessages.jsx
-// Full admin conversation oversight (read-only).
-// Endpoints:
-//   GET /admin/conversations?page=&limit=
-//   GET /admin/conversations/:conversationId?page=&limit=
+// Full admin conversation oversight — read-only.
+// Fixes: image messages styled + clickable lightbox, thread fills full screen.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -23,8 +21,7 @@ const ROLE_META = {
 function fmtDate(d) {
   if (!d) return "—";
   const dt = new Date(d);
-  const now = new Date();
-  const diff = now - dt;
+  const diff = Date.now() - dt;
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
@@ -64,12 +61,10 @@ function truncate(str, n = 55) {
   return str.length > n ? str.slice(0, n) + "…" : str;
 }
 
-// Extract participants from conversation.users array
 function getParticipants(conv) {
   return (conv.users ?? []).map((cu) => cu.user).filter(Boolean);
 }
 
-// Check if two messages are on the same calendar day
 function isSameDay(a, b) {
   const da = new Date(a),
     db = new Date(b);
@@ -80,13 +75,139 @@ function isSameDay(a, b) {
   );
 }
 
+// Detect whether a string looks like an image URL
+function isImageUrl(str) {
+  if (!str || typeof str !== "string") return false;
+  const trimmed = str.trim();
+  // Direct image extension
+  if (
+    /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|avif|bmp|svg)(\?.*)?$/i.test(
+      trimmed,
+    )
+  )
+    return true;
+  // Common CDN patterns that serve images
+  if (
+    /^https?:\/\/.*(cloudinary\.com|cloudfront\.net|amazonaws\.com|supabase\.co|firebase\w*\.app|imgix\.net|imagekit\.io|res\.cloudinary\.com)\/.+/i.test(
+      trimmed,
+    )
+  )
+    return true;
+  return false;
+}
+
+// Parse a message object into { type, text, imageUrls }
+function parseContent(msg) {
+  // Explicit image fields from the backend
+  const explicitImages = [
+    ...(Array.isArray(msg.images) ? msg.images : []),
+    ...(Array.isArray(msg.imageUrls) ? msg.imageUrls : []),
+    ...(Array.isArray(msg.attachments)
+      ? msg.attachments.map((a) => a?.url ?? a)
+      : []),
+    ...(msg.imageUrl ? [msg.imageUrl] : []),
+  ].filter((u) => typeof u === "string" && u.length > 0);
+
+  const raw = msg.content ?? "";
+
+  // If the entire content is an image URL and no explicit images
+  if (!explicitImages.length && isImageUrl(raw.trim())) {
+    return { type: "image", text: "", imageUrls: [raw.trim()] };
+  }
+
+  // If there are explicit image fields
+  if (explicitImages.length > 0) {
+    return {
+      type: raw.trim() ? "mixed" : "image",
+      text: raw.trim(),
+      imageUrls: explicitImages,
+    };
+  }
+
+  // Mixed content: lines may contain image URLs
+  const lines = raw.split("\n");
+  const imgLines = lines.filter((l) => isImageUrl(l.trim()));
+  const textLines = lines.filter((l) => !isImageUrl(l.trim()) && l.trim());
+
+  if (imgLines.length > 0) {
+    return {
+      type: textLines.length > 0 ? "mixed" : "image",
+      text: textLines.join("\n").trim(),
+      imageUrls: imgLines.map((l) => l.trim()),
+    };
+  }
+
+  return { type: "text", text: raw, imageUrls: [] };
+}
+
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
+function Lightbox({ src, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div className={s.lightbox} onClick={onClose}>
+      <button className={s.lightboxClose} onClick={onClose} title="Close (Esc)">
+        ✕
+      </button>
+      <div className={s.lightboxImgWrap} onClick={(e) => e.stopPropagation()}>
+        <img src={src} alt="Full size attachment" className={s.lightboxImg} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Message image group ──────────────────────────────────────────────────────
+function MsgImages({ urls, onImageClick }) {
+  const count = urls.length;
+  if (count === 0) return null;
+
+  if (count === 1) {
+    return (
+      <div className={s.msgImgSingle} onClick={() => onImageClick(urls[0])}>
+        <img src={urls[0]} alt="attachment" className={s.msgImgFull} />
+        <div className={s.msgImgOverlay} />
+      </div>
+    );
+  }
+
+  const shown = urls.slice(0, 4);
+  const extra = count - 4;
+
+  return (
+    <div
+      className={`${s.msgImgGrid} ${count >= 3 ? s.msgImgGrid3 : s.msgImgGrid2}`}
+    >
+      {shown.map((url, i) => (
+        <div key={i} className={s.msgImgCell} onClick={() => onImageClick(url)}>
+          <img src={url} alt="attachment" className={s.msgImgThumb} />
+          {i === 3 && extra > 0 && <div className={s.msgImgMore}>+{extra}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ user, size = "sm", index = 0 }) {
   const sizeClass =
     { sm: s.avatar, md: s.avatarMd, lg: s.avatarLg, xs: s.avatarXs }[size] ??
     s.avatar;
-  const colors = [s.avatarOrange, s.avatarIndigo, s.avatarGreen, s.avatarRose];
-  const colorClass = colors[index % colors.length];
+  const colorClass = [
+    s.avatarOrange,
+    s.avatarIndigo,
+    s.avatarGreen,
+    s.avatarRose,
+  ][index % 4];
   return (
     <div className={`${sizeClass} ${colorClass}`}>
       {user?.avatar ? (
@@ -98,16 +219,14 @@ function Avatar({ user, size = "sm", index = 0 }) {
   );
 }
 
-// Overlapping avatar stack for conversation list
 function AvatarStack({ participants }) {
-  const shown = participants.slice(0, 2);
   return (
     <div className={s.avatarStack}>
-      {shown.map((u, i) => (
+      {participants.slice(0, 2).map((u, i) => (
         <div
           key={u?.id ?? i}
           className={s.avatarStackItem}
-          style={{ zIndex: shown.length - i }}
+          style={{ zIndex: 2 - i }}
         >
           <Avatar user={u} size="sm" index={i} />
         </div>
@@ -139,7 +258,7 @@ function StatCard({ icon, label, value, sub, accent, delay }) {
   );
 }
 
-// ─── Skeleton rows ────────────────────────────────────────────────────────────
+// ─── Skeletons ────────────────────────────────────────────────────────────────
 function ConvSkeletons() {
   return (
     <>
@@ -153,10 +272,11 @@ function ConvSkeletons() {
 function MsgSkeletons() {
   return (
     <div className={s.msgSkeletons}>
-      {Array.from({ length: 6 }).map((_, i) => (
+      {[60, 45, 70, 38, 55, 48, 65].map((w, i) => (
         <div
           key={i}
           className={`${s.skMsgBubble} ${i % 2 === 0 ? s.skLeft : s.skRight}`}
+          style={{ width: `${w}%` }}
         />
       ))}
     </div>
@@ -175,56 +295,69 @@ function DateDivider({ date }) {
 }
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
-function MessageBubble({ msg, participants, isFirst, showDate, prevMsg }) {
-  // Assign a consistent side to each participant
+function MessageBubble({ msg, participants, showDate, prevMsg, onImageClick }) {
   const p0Id = participants[0]?.id;
-  const isLeft = msg.senderId !== p0Id; // right = first participant, left = second
+  const isLeft = msg.senderId !== p0Id;
   const sender = msg.sender;
-
-  // Group consecutive messages from same sender (show avatar only on last in group)
   const showSender = !prevMsg || prevMsg.senderId !== msg.senderId || showDate;
+  const parsed = parseContent(msg);
+  const hasImg = parsed.imageUrls.length > 0;
+  const hasText = parsed.text.length > 0;
 
   return (
     <>
       {showDate && <DateDivider date={msg.createdAt} />}
-      <div className={`${s.bubble} ${isLeft ? s.bubbleLeft : s.bubbleRight}`}>
-        {/* Avatar — only show on first message of group (left side) */}
-        {isLeft ? (
-          <div className={s.bubbleAvatarWrap}>
-            {showSender ? (
-              <Avatar user={sender} size="xs" index={1} />
-            ) : (
-              <div className={s.bubbleAvatarSpacer} />
-            )}
-          </div>
-        ) : null}
+      <div
+        className={`${s.bubbleWrap} ${isLeft ? s.bubbleWrapLeft : s.bubbleWrapRight}`}
+      >
+        {/* Avatar slot */}
+        <div className={s.bubbleAvatar}>
+          {showSender ? (
+            <Avatar user={sender} size="xs" index={isLeft ? 1 : 0} />
+          ) : (
+            <div className={s.bubbleAvatarGap} />
+          )}
+        </div>
 
-        <div className={s.bubbleCol}>
+        <div
+          className={`${s.bubbleCol} ${isLeft ? s.bubbleColLeft : s.bubbleColRight}`}
+        >
           {showSender && (
             <span
-              className={`${s.bubbleSenderName} ${isLeft ? s.bubbleSenderLeft : s.bubbleSenderRight}`}
+              className={`${s.bubbleSender} ${isLeft ? s.bubbleSenderLeft : s.bubbleSenderRight}`}
             >
               {sender?.firstName} {sender?.lastName}
             </span>
           )}
-          <div
-            className={`${s.bubbleContent} ${isLeft ? s.bubbleContentLeft : s.bubbleContentRight}`}
-          >
-            <p className={s.bubbleText}>{msg.content}</p>
-            <span className={s.bubbleTime}>{fmtTime(msg.createdAt)}</span>
-          </div>
-        </div>
 
-        {/* Avatar right side */}
-        {!isLeft ? (
-          <div className={s.bubbleAvatarWrap}>
-            {showSender ? (
-              <Avatar user={sender} size="xs" index={0} />
-            ) : (
-              <div className={s.bubbleAvatarSpacer} />
-            )}
-          </div>
-        ) : null}
+          {/* Images */}
+          {hasImg && (
+            <div
+              className={`${s.bubbleImgs} ${isLeft ? s.bubbleImgsLeft : s.bubbleImgsRight}`}
+            >
+              <MsgImages urls={parsed.imageUrls} onImageClick={onImageClick} />
+            </div>
+          )}
+
+          {/* Text */}
+          {hasText && (
+            <div
+              className={`${s.bubble} ${isLeft ? s.bubbleLeft : s.bubbleRight}`}
+            >
+              <p className={s.bubbleText}>{parsed.text}</p>
+              <span className={s.bubbleTime}>{fmtTime(msg.createdAt)}</span>
+            </div>
+          )}
+
+          {/* Time under image-only messages */}
+          {hasImg && !hasText && (
+            <span
+              className={`${s.bubbleTimeOnly} ${isLeft ? s.bubbleTimeLeft : s.bubbleTimeRight}`}
+            >
+              {fmtTime(msg.createdAt)}
+            </span>
+          )}
+        </div>
       </div>
     </>
   );
@@ -235,14 +368,15 @@ function ConvRow({ conv, active, onClick, searchQuery }) {
   const participants = getParticipants(conv);
   const lastMsg = conv.messages?.[0];
   const msgCount = conv._count?.messages ?? 0;
-  const hasBooking = !!conv.bookingId;
   const names = participants
     .map((u) => `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim())
     .join(" & ");
-  const lastMsgContent = lastMsg?.content ?? "";
+  const lastContent = lastMsg?.content ?? "";
+  const previewText = isImageUrl(lastContent.trim())
+    ? "📷 Image"
+    : truncate(lastContent);
 
-  // Highlight search match
-  function highlight(str) {
+  function hl(str) {
     if (!searchQuery || !str) return str;
     const re = new RegExp(
       `(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
@@ -251,7 +385,7 @@ function ConvRow({ conv, active, onClick, searchQuery }) {
     const parts = str.split(re);
     return parts.map((p, i) =>
       re.test(p) ? (
-        <mark key={i} className={s.highlight}>
+        <mark key={i} className={s.hl}>
           {p}
         </mark>
       ) : (
@@ -266,19 +400,16 @@ function ConvRow({ conv, active, onClick, searchQuery }) {
       onClick={onClick}
     >
       <AvatarStack participants={participants} />
-
       <div className={s.convInfo}>
         <div className={s.convTopRow}>
-          <span className={s.convNames}>{highlight(names)}</span>
+          <span className={s.convNames}>{hl(names)}</span>
           <span className={s.convTime}>{fmtDate(conv.updatedAt)}</span>
         </div>
         <div className={s.convBottomRow}>
-          <span className={s.convPreview}>
-            {highlight(truncate(lastMsgContent))}
-          </span>
+          <span className={s.convPreview}>{hl(previewText)}</span>
           <div className={s.convMeta}>
-            {hasBooking && <span className={s.bookingTag}>📅</span>}
-            <span className={s.msgCountBadge}>{msgCount}</span>
+            {conv.bookingId && <span>📅</span>}
+            <span className={s.convCount}>{msgCount}</span>
           </div>
         </div>
       </div>
@@ -287,26 +418,19 @@ function ConvRow({ conv, active, onClick, searchQuery }) {
 }
 
 // ─── Thread Header ────────────────────────────────────────────────────────────
-function ThreadHeader({ conv, onClose }) {
-  if (!conv) return null;
+function ThreadHeader({ conv, onBack }) {
   const participants = getParticipants(conv);
   const msgCount = conv._count?.messages ?? 0;
-
   return (
     <div className={s.threadHeader}>
-      <button
-        className={s.threadBackBtn}
-        onClick={onClose}
-        title="Back to list"
-      >
+      <button className={s.backBtn} onClick={onBack}>
         ←
       </button>
-
-      <div className={s.threadHeaderParticipants}>
+      <div className={s.threadParticipants}>
         {participants.map((u, i) => (
           <div key={u?.id ?? i} className={s.threadParticipant}>
             <Avatar user={u} size="sm" index={i} />
-            <div className={s.threadParticipantInfo}>
+            <div className={s.threadParticipantMeta}>
               <span className={s.threadParticipantName}>
                 {u?.firstName} {u?.lastName}
               </span>
@@ -315,25 +439,22 @@ function ThreadHeader({ conv, onClose }) {
           </div>
         ))}
       </div>
-
       <div className={s.threadHeaderRight}>
-        {conv.bookingId && (
-          <span className={s.threadBookingTag}>📅 Booking</span>
-        )}
-        <span className={s.threadMsgCount}>{msgCount} messages</span>
+        {conv.bookingId && <span className={s.bookingTag}>📅 Booking</span>}
+        <span className={s.threadCount}>{msgCount} msgs</span>
       </div>
     </div>
   );
 }
 
-// ─── Empty Thread Pane ────────────────────────────────────────────────────────
+// ─── Empty thread ─────────────────────────────────────────────────────────────
 function EmptyThread() {
   return (
     <div className={s.emptyThread}>
-      <div className={s.emptyThreadIcon}>💬</div>
+      <span className={s.emptyThreadIcon}>💬</span>
       <p className={s.emptyThreadTitle}>Select a conversation</p>
       <p className={s.emptyThreadSub}>
-        Choose a conversation from the list to read the thread
+        Choose from the list to read the thread
       </p>
     </div>
   );
@@ -341,7 +462,6 @@ function EmptyThread() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminMessages() {
-  // ── Conversations ────────────────────────────────────────────────────────────
   const [convs, setConvs] = useState([]);
   const [convLoading, setConvLoading] = useState(true);
   const [convPage, setConvPage] = useState(1);
@@ -349,7 +469,6 @@ export default function AdminMessages() {
   const [convTotal, setConvTotal] = useState(0);
   const [search, setSearch] = useState("");
 
-  // ── Selected thread ──────────────────────────────────────────────────────────
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [msgLoading, setMsgLoading] = useState(false);
@@ -358,34 +477,30 @@ export default function AdminMessages() {
   const [msgTotal, setMsgTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // ── Mobile pane toggle ───────────────────────────────────────────────────────
-  const [mobileView, setMobileView] = useState("list"); // "list" | "thread"
-
+  const [mobileView, setMobileView] = useState("list");
   const [toast, setToast] = useState(null);
-  const threadEndRef = useRef(null);
-  const searchTimer = useRef(null);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
-  // ── Derived stats ────────────────────────────────────────────────────────────
+  const threadEndRef = useRef(null);
+
   const totalMessages = convs.reduce(
-    (sum, c) => sum + (c._count?.messages ?? 0),
+    (s, c) => s + (c._count?.messages ?? 0),
     0,
   );
   const withBooking = convs.filter((c) => !!c.bookingId).length;
-  const avgMsgCount =
-    convs.length > 0
-      ? Math.round(
-          convs.reduce((s, c) => s + (c._count?.messages ?? 0), 0) /
-            convs.length,
-        )
-      : 0;
+  const avgMsgCount = convs.length
+    ? Math.round(
+        convs.reduce((s, c) => s + (c._count?.messages ?? 0), 0) / convs.length,
+      )
+    : 0;
 
   // ── Load conversations ────────────────────────────────────────────────────────
-  const loadConvs = useCallback(async (pg = 1, q = search) => {
+  const loadConvs = useCallback(async (pg = 1) => {
     if (pg === 1) setConvLoading(true);
     try {
-      const params = { page: pg, limit: CONV_LIMIT };
-      // Note: backend doesn't have search on conversations, we filter client-side
-      const res = await api.get("/admin/conversations", { params });
+      const res = await api.get("/admin/conversations", {
+        params: { page: pg, limit: CONV_LIMIT },
+      });
       const d = res.data.data;
       setConvs(
         pg === 1 ? d.conversations : (prev) => [...prev, ...d.conversations],
@@ -404,9 +519,9 @@ export default function AdminMessages() {
     loadConvs(1);
   }, []);
 
-  // ── Load thread messages ──────────────────────────────────────────────────────
+  // ── Load thread ───────────────────────────────────────────────────────────────
   const loadMessages = useCallback(async (convId, pg = 1, append = false) => {
-    if (pg === 1 && !append) setMsgLoading(true);
+    if (!append) setMsgLoading(true);
     else setLoadingMore(true);
     try {
       const res = await api.get(`/admin/conversations/${convId}`, {
@@ -425,7 +540,6 @@ export default function AdminMessages() {
     }
   }, []);
 
-  // Select a conversation
   function selectConv(conv) {
     setActiveConv(conv);
     setMessages([]);
@@ -434,7 +548,6 @@ export default function AdminMessages() {
     loadMessages(conv.id, 1, false);
   }
 
-  // Scroll to bottom on new messages loaded (pg=1)
   useEffect(() => {
     if (msgPage === 1 && messages.length > 0) {
       setTimeout(
@@ -444,39 +557,35 @@ export default function AdminMessages() {
     }
   }, [messages, msgPage]);
 
-  // ── Search (client-side filter over loaded convs) ─────────────────────────────
-  function handleSearch(e) {
-    const val = e.target.value;
-    setSearch(val);
-  }
-
   const filteredConvs = search.trim()
-    ? convs.filter((c) => {
-        const names = getParticipants(c)
+    ? convs.filter((c) =>
+        getParticipants(c)
           .map(
             (u) =>
               `${u?.firstName ?? ""} ${u?.lastName ?? ""} ${u?.email ?? ""}`,
           )
           .join(" ")
-          .toLowerCase();
-        return names.includes(search.toLowerCase());
-      })
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+      )
     : convs;
 
-  // ── Toast ────────────────────────────────────────────────────────────────────
   function showToast(type, msg) {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
   }
 
-  // ── Get participants of active conv ──────────────────────────────────────────
   const activeParticipants = activeConv ? getParticipants(activeConv) : [];
 
-  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <AdminLayout>
+      {/* Lightbox — rendered outside the page flow, covers everything */}
+      {lightboxSrc && (
+        <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      )}
+
       <div className={s.page}>
-        {/* ── Toast ── */}
+        {/* Toast */}
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
             <span>
@@ -488,97 +597,99 @@ export default function AdminMessages() {
           </div>
         )}
 
-        {/* ── Header ── */}
-        <div className={s.pageHeader}>
-          <div>
-            <p className={s.eyebrow}>Platform</p>
-            <h1 className={s.pageTitle}>
-              Messages
+        {/* ── Top section (doesn't grow) ── */}
+        <div className={s.topSection}>
+          <div className={s.pageHeader}>
+            <div>
+              <p className={s.eyebrow}>Platform</p>
+              <h1 className={s.pageTitle}>
+                Messages
+                {convTotal > 0 && (
+                  <span className={s.countPill}>{convTotal}</span>
+                )}
+              </h1>
+              <p className={s.pageSubtitle}>
+                Read-only oversight of all user conversations
+              </p>
+            </div>
+            <div className={s.readOnlyBanner}>
+              <span className={s.readOnlyDot} />
+              <span className={s.readOnlyText}>Read-only</span>
+            </div>
+          </div>
+
+          <div className={s.statsGrid}>
+            <StatCard
+              icon="💬"
+              label="Conversations"
+              value={convTotal}
+              sub="All platform"
+              accent="orange"
+              delay={0}
+            />
+            <StatCard
+              icon="📨"
+              label="Messages"
+              value={totalMessages}
+              sub="This page total"
+              accent="indigo"
+              delay={0.05}
+            />
+            <StatCard
+              icon="📅"
+              label="With Booking"
+              value={withBooking}
+              sub="Linked to a booking"
+              accent="green"
+              delay={0.1}
+            />
+            <StatCard
+              icon="📊"
+              label="Avg. Messages"
+              value={avgMsgCount}
+              sub="Per conversation"
+              accent="yellow"
+              delay={0.15}
+            />
+          </div>
+
+          {/* Mobile tabs */}
+          <div className={s.mobileTabs}>
+            <button
+              className={`${s.mobileTab} ${mobileView === "list" ? s.mobileTabActive : ""}`}
+              onClick={() => setMobileView("list")}
+            >
+              📋 Conversations
               {convTotal > 0 && (
-                <span className={s.countPill}>{convTotal}</span>
+                <span className={s.mobileTabCount}>{convTotal}</span>
               )}
-            </h1>
-            <p className={s.pageSubtitle}>
-              Read-only oversight of all user conversations
-            </p>
+            </button>
+            <button
+              className={`${s.mobileTab} ${mobileView === "thread" ? s.mobileTabActive : ""}`}
+              onClick={() => setMobileView("thread")}
+              disabled={!activeConv}
+            >
+              💬 Thread
+              {activeConv && (
+                <span className={s.mobileTabCount}>{msgTotal}</span>
+              )}
+            </button>
           </div>
-          <div className={s.readOnlyBanner}>
-            <span className={s.readOnlyDot} />
-            <span className={s.readOnlyText}>Read-only view</span>
-          </div>
         </div>
 
-        {/* ── Stats ── */}
-        <div className={s.statsGrid}>
-          <StatCard
-            icon="💬"
-            label="Conversations"
-            value={convTotal}
-            sub="All platform"
-            accent="orange"
-            delay={0}
-          />
-          <StatCard
-            icon="📨"
-            label="Messages"
-            value={totalMessages}
-            sub="This page total"
-            accent="indigo"
-            delay={0.05}
-          />
-          <StatCard
-            icon="📅"
-            label="With Booking"
-            value={withBooking}
-            sub="Linked to a booking"
-            accent="green"
-            delay={0.1}
-          />
-          <StatCard
-            icon="📊"
-            label="Avg. Messages"
-            value={avgMsgCount}
-            sub="Per conversation"
-            accent="yellow"
-            delay={0.15}
-          />
-        </div>
-
-        {/* ── Mobile tabs ── */}
-        <div className={s.mobileTabs}>
-          <button
-            className={`${s.mobileTab} ${mobileView === "list" ? s.mobileTabActive : ""}`}
-            onClick={() => setMobileView("list")}
-          >
-            📋 Conversations
-            {convTotal > 0 && (
-              <span className={s.mobileTabCount}>{convTotal}</span>
-            )}
-          </button>
-          <button
-            className={`${s.mobileTab} ${mobileView === "thread" ? s.mobileTabActive : ""}`}
-            onClick={() => setMobileView("thread")}
-            disabled={!activeConv}
-          >
-            💬 Thread
-            {activeConv && <span className={s.mobileTabCount}>{msgTotal}</span>}
-          </button>
-        </div>
-
-        {/* ── Split pane ── */}
+        {/* ── Split pane — fills remaining height ── */}
         <div className={s.splitPane}>
-          {/* ── LEFT: Conversations list ── */}
+          {/* LEFT — conversation list */}
           <div
             className={`${s.convPane} ${mobileView === "thread" ? s.convPaneHidden : ""}`}
           >
-            {/* Search */}
             <div className={s.convSearch}>
               <span className={s.searchIcon}>🔍</span>
               <input
                 className={s.searchInput}
                 placeholder="Search by name or email…"
                 value={search}
-                onChange={handleSearch}
+                onChange={(e) => setSearch(e.target.value)}
               />
               {search && (
                 <button className={s.searchClear} onClick={() => setSearch("")}>
@@ -587,7 +698,6 @@ export default function AdminMessages() {
               )}
             </div>
 
-            {/* List */}
             <div className={s.convList}>
               {convLoading ? (
                 <ConvSkeletons />
@@ -595,9 +705,7 @@ export default function AdminMessages() {
                 <div className={s.convEmpty}>
                   <span>💭</span>
                   <p>
-                    {search
-                      ? "No conversations match your search."
-                      : "No conversations yet."}
+                    {search ? "No matches found." : "No conversations yet."}
                   </p>
                 </div>
               ) : (
@@ -613,20 +721,19 @@ export default function AdminMessages() {
               )}
             </div>
 
-            {/* Load more conversations */}
             {convPage < convPages && (
               <div className={s.convLoadMore}>
                 <button
                   className={s.loadMoreBtn}
                   onClick={() => loadConvs(convPage + 1)}
                 >
-                  Load more conversations
+                  Load more
                 </button>
               </div>
             )}
           </div>
 
-          {/* ── RIGHT: Thread view ── */}
+          {/* RIGHT — thread */}
           <div
             className={`${s.threadPane} ${mobileView === "list" ? s.threadPaneHidden : ""}`}
           >
@@ -634,17 +741,13 @@ export default function AdminMessages() {
               <EmptyThread />
             ) : (
               <>
-                {/* Thread header */}
                 <ThreadHeader
                   conv={activeConv}
-                  onClose={() => {
-                    setMobileView("list");
-                  }}
+                  onBack={() => setMobileView("list")}
                 />
 
-                {/* Messages */}
                 <div className={s.threadBody}>
-                  {/* Load earlier messages */}
+                  {/* Load earlier */}
                   {msgPage < msgPages && !loadingMore && (
                     <div className={s.loadEarlierWrap}>
                       <button
@@ -658,7 +761,7 @@ export default function AdminMessages() {
                     </div>
                   )}
                   {loadingMore && (
-                    <div className={s.loadingMore}>
+                    <div className={s.spinnerRow}>
                       <span className={s.spinner} />
                     </div>
                   )}
@@ -666,7 +769,7 @@ export default function AdminMessages() {
                   {msgLoading ? (
                     <MsgSkeletons />
                   ) : messages.length === 0 ? (
-                    <div className={s.noMessages}>
+                    <div className={s.noMsgs}>
                       <span>📭</span>
                       <p>No messages in this conversation.</p>
                     </div>
@@ -680,27 +783,22 @@ export default function AdminMessages() {
                           key={msg.id}
                           msg={msg}
                           participants={activeParticipants}
-                          isFirst={i === 0}
                           showDate={showDate}
                           prevMsg={prev}
+                          onImageClick={setLightboxSrc}
                         />
                       );
                     })
                   )}
-
-                  {/* Scroll anchor */}
                   <div ref={threadEndRef} />
                 </div>
 
-                {/* Read-only footer */}
                 <div className={s.threadFooter}>
-                  <div className={s.readOnlyFooter}>
-                    <span className={s.readOnlyFooterIcon}>🔒</span>
-                    <p className={s.readOnlyFooterText}>
-                      Admin view only · {msgTotal} message
-                      {msgTotal !== 1 ? "s" : ""} in this conversation
-                    </p>
-                  </div>
+                  <span>🔒</span>
+                  <span className={s.threadFooterText}>
+                    Admin read-only · {msgTotal} message
+                    {msgTotal !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </>
             )}
