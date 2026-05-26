@@ -93,6 +93,7 @@ import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminVideoCalls from "./pages/admin/AdminVideoCalls";
+import AdminFeatured from "./pages/admin/AdminFeatured";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -357,6 +358,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminJobs />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/featured"
+          element={
+            <RequireAdmin>
+              <AdminFeatured />
             </RequireAdmin>
           }
         />
