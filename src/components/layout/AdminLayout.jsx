@@ -30,7 +30,7 @@ const NAV = [
       { label: "Withdrawals", path: "/admin/withdrawals", icon: "💸" },
       { label: "jobs", path: "/admin/jobs", icon: "💼" },
       { label: "subscriptions", path: "/admin/subscriptions", icon: "💎" },
-      { label: "featured", path: "/admin/featured", icon: "✨🚀" },
+      { label: "featured", path: "/admin/featured", icon: "🚀" },
       { label: "posts", path: "/admin/posts", icon: "✍️" },
       { label: "messages", path: "/admin/messages", icon: "💬" },
       { label: "video calls", path: "/admin/video-calls", icon: "📹" },
