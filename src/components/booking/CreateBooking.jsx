@@ -748,7 +748,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                         <textarea
                           className={styles.textarea}
                           rows={2}
-                          placeholder="e.g. Agreed 10% discount for repeat booking, confirmed via WhatsApp"
+                          placeholder="e.g. Agreed 10% discount for repeat booking, confirmed via platform Chat or WhatsApp"
                           value={negotiationNote}
                           onChange={(e) => setNegotiationNote(e.target.value)}
                         />
@@ -756,7 +756,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
                       <div className={styles.negotiatedBanner}>
                         🔒 Both you and the worker agreed to this rate in the
-                        platform chat. Make sure the worker aggreed to this
+                        platform Chat. Make sure the worker aggreed to this
                         price before booking. This replaces the listed rate of{" "}
                         <strong>
                           {lockedCurrency} {Number(lockedRate).toLocaleString()}
