@@ -756,7 +756,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
                       <div className={styles.negotiatedBanner}>
                         🔒 Both you and the worker agreed to this rate in the
-                        platform chat. This replaces the listed rate of{" "}
+                        platform chat. Make sure the worker aggreed to this
+                        price before booking. This replaces the listed rate of{" "}
                         <strong>
                           {lockedCurrency} {Number(lockedRate).toLocaleString()}
                           {currentOption?.suffix}
