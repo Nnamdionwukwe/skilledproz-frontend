@@ -295,9 +295,10 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       "categoryId",
       "title",
       "description",
-      "address",
+      ...(locationType !== "REMOTE" ? ["address"] : []),
       "scheduledAt",
     ];
+
     for (const k of required) {
       if (!form[k]) {
         setError(
@@ -306,6 +307,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         return;
       }
     }
+
     if (lockedRate <= 0 && currentOption?.unit !== "custom") {
       setError("This worker has not set a rate for the selected duration.");
       return;
@@ -329,7 +331,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         categoryId: form.categoryId,
         title: form.title,
         description: form.description,
-        address: form.address,
+        address: locationType === "REMOTE" ? "Remote" : form.address,
         latitude: form.latitude ? parseFloat(form.latitude) : undefined,
         longitude: form.longitude ? parseFloat(form.longitude) : undefined,
         scheduledAt: form.scheduledAt,
@@ -925,17 +927,19 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 rows={4}
               />
             </div>
-            <div className={styles.field}>
-              <label className={styles.label}>
-                Service Address <span className={styles.req}>*</span>
-              </label>
-              <input
-                className={styles.input}
-                placeholder="Full address where the job will take place"
-                value={form.address}
-                onChange={(e) => set("address", e.target.value)}
-              />
-            </div>
+            {locationType !== "REMOTE" && (
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Service Address <span className={styles.req}>*</span>
+                </label>
+                <input
+                  className={styles.input}
+                  placeholder="Full address where the job will take place"
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                />
+              </div>
+            )}
             <div className={styles.field}>
               <label className={styles.label}>Additional Notes</label>
               <textarea
