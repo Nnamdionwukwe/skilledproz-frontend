@@ -115,19 +115,22 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
   const initialWorkerId = propWorkerId || searchParams.get("workerId") || "";
 
-  // Worker state
+  // ── 1. All useState declarations ─────────────────────────────────────────
   const [worker, setWorker] = useState(null);
   const [workerLoading, setWorkerLoading] = useState(false);
   const [workerError, setWorkerError] = useState("");
   const [jobPost, setJobPost] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
 
-  // New type selection state
   const [jobType, setJobType] = useState("FULL_TIME");
   const [locationType, setLocationType] = useState("REMOTE");
   const [budgetType, setBudgetType] = useState("HOURLY");
   const [durationType, setDurationType] = useState("HOURS");
   const [durationValue, setDurationValue] = useState("");
+
+  const [isNegotiated, setIsNegotiated] = useState(false);
+  const [negotiatedRate, setNegotiatedRate] = useState("");
+  const [negotiationNote, setNegotiationNote] = useState("");
 
   const [form, setForm] = useState({
     workerId: initialWorkerId,
@@ -144,11 +147,13 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ── 2. Simple derived values that don't depend on other derived values ────
   const fromJobId = searchParams.get("fromJob") || null;
   const minDate = new Date(Date.now() + 60 * 60 * 1000)
     .toISOString()
     .slice(0, 16);
 
+  // ── 3. All useEffect hooks ────────────────────────────────────────────────
   // Sync budgetType / durationType when engagement unit changes
   useEffect(() => {
     if (selectedUnit && UNIT_TO_TYPES[selectedUnit]) {
@@ -157,31 +162,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     }
   }, [selectedUnit]);
 
-  // Hirer guard
-  if (user?.role !== "HIRER") {
-    return (
-      <HirerLayout>
-        <div className={styles.page}>
-          <div className={styles.restrictedMsg}>
-            <h2>📋 Only Hirers Can Post Jobs</h2>
-            <p>
-              Workers can accept and complete jobs, but only Hirers can post
-              them.
-            </p>
-            <button
-              onClick={() => navigate("/bookings")}
-              className={styles.submitBtn}
-            >
-              Back to Bookings
-            </button>
-          </div>
-        </div>
-      </HirerLayout>
-    );
-  }
-
   // Fetch worker when ID changes
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const id = form.workerId?.trim();
     if (!id) {
@@ -210,8 +191,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       .finally(() => setWorkerLoading(false));
   }, [form.workerId]); // eslint-disable-line
 
-  // Fetch job post if fromJob
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // Fetch job post if fromJob param is present
   useEffect(() => {
     if (!fromJobId) return;
     api
@@ -234,16 +214,22 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       .catch(() => {});
   }, [fromJobId]); // eslint-disable-line
 
+  // ── 4. Derived values — order matters: each must come after its dependencies
   const isFromJob = !!fromJobId && !!jobPost;
+
   const currentOption = DURATION_OPTIONS.find((o) => o.unit === selectedUnit);
+
+  // lockedRate must be declared BEFORE finalRate uses it
   const lockedRate = isFromJob
     ? jobPost?.budget || 0
     : worker && currentOption
       ? worker[currentOption.rateKey] || 0
       : 0;
+
   const lockedCurrency = isFromJob
     ? jobPost?.currency || "USD"
     : worker?.currency || "USD";
+
   const availableUnits = worker
     ? DURATION_OPTIONS.filter((o) =>
         o.rateKey === "customRate"
@@ -252,18 +238,46 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       )
     : [];
 
+  // finalRate comes AFTER lockedRate — this was the source of the crash
+  const finalRate =
+    isNegotiated && negotiatedRate ? parseFloat(negotiatedRate) : lockedRate;
+
   const estQty = parseFloat(form.estimatedValue) || 1;
   const estFees =
     lockedRate > 0 &&
     form.estimatedValue &&
     currentOption?.inputType === "number"
-      ? computeFees(lockedRate, estQty)
+      ? computeFees(finalRate, estQty)
       : null;
 
   const durationTypeItem = DURATION_TYPES_LIST.find(
     (d) => d.value === durationType,
   );
 
+  // ── 5. Early returns (after ALL hooks — React rules of hooks) ─────────────
+  if (user?.role !== "HIRER") {
+    return (
+      <HirerLayout>
+        <div className={styles.page}>
+          <div className={styles.restrictedMsg}>
+            <h2>📋 Only Hirers Can Post Jobs</h2>
+            <p>
+              Workers can accept and complete jobs, but only Hirers can post
+              them.
+            </p>
+            <button
+              onClick={() => navigate("/bookings")}
+              className={styles.submitBtn}
+            >
+              Back to Bookings
+            </button>
+          </div>
+        </div>
+      </HirerLayout>
+    );
+  }
+
+  // ── 6. Event handlers ─────────────────────────────────────────────────────
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
     setError("");
@@ -322,10 +336,13 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
         estimatedValue: form.estimatedValue || undefined,
-        agreedRate: lockedRate,
+        agreedRate: finalRate,
+        isNegotiated,
+        negotiatedRate: isNegotiated ? parseFloat(negotiatedRate) : undefined,
+        negotiationNote:
+          isNegotiated && negotiationNote ? negotiationNote : undefined,
         currency: lockedCurrency,
         notes: form.notes || undefined,
-        // New type fields
         jobType: jobType || undefined,
         locationType: locationType || undefined,
         budgetType: budgetType || undefined,
@@ -344,6 +361,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       setLoading(false);
     }
   }
+
+  // ── 7. JSX return ─────────────────────────────────────────────────────────
+  // ... rest of your JSX stays exactly the same
 
   return (
     <HirerLayout>
@@ -649,6 +669,103 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                     </div>
                   )}
                 </>
+              )}
+
+              {/* ── Negotiated Rate Toggle ── */}
+              {worker && (
+                <div className={styles.negotiatedWrap}>
+                  <button
+                    type="button"
+                    className={`${styles.negotiatedToggle} ${isNegotiated ? styles.negotiatedToggleActive : ""}`}
+                    onClick={() => {
+                      setIsNegotiated((v) => !v);
+                      if (isNegotiated) {
+                        setNegotiatedRate("");
+                        setNegotiationNote("");
+                      }
+                    }}
+                  >
+                    <span className={styles.negotiatedToggleIcon}>
+                      {isNegotiated ? "✅" : "🤝"}
+                    </span>
+                    <div className={styles.negotiatedToggleText}>
+                      <span className={styles.negotiatedToggleLabel}>
+                        {isNegotiated
+                          ? "Using negotiated rate"
+                          : "We agreed on a different rate"}
+                      </span>
+                      <span className={styles.negotiatedToggleSub}>
+                        {isNegotiated
+                          ? "Tap to go back to worker's listed rate"
+                          : "Override the worker's listed price with your agreed amount"}
+                      </span>
+                    </div>
+                    <div
+                      className={`${styles.negotiatedDot} ${isNegotiated ? styles.negotiatedDotOn : ""}`}
+                    />
+                  </button>
+
+                  {isNegotiated && (
+                    <div className={styles.negotiatedFields}>
+                      <div className={styles.field}>
+                        <label className={styles.label}>
+                          Negotiated Rate ({lockedCurrency}){" "}
+                          <span className={styles.req}>*</span>
+                        </label>
+                        <div className={styles.iconInputWrap}>
+                          <span className={styles.iconInputIcon}>💬</span>
+                          <input
+                            className={styles.iconInput}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder={`e.g. ${lockedRate > 0 ? lockedRate : "5000"}`}
+                            value={negotiatedRate}
+                            onChange={(e) => {
+                              setNegotiatedRate(e.target.value);
+                              setError("");
+                            }}
+                          />
+                          <span className={styles.negotiatedCurrency}>
+                            {lockedCurrency}
+                          </span>
+                        </div>
+                        {lockedRate > 0 && negotiatedRate && (
+                          <p className={styles.negotiatedDiff}>
+                            {parseFloat(negotiatedRate) < lockedRate
+                              ? `🟢 ${lockedCurrency} ${(lockedRate - parseFloat(negotiatedRate)).toLocaleString()} below listed rate`
+                              : parseFloat(negotiatedRate) > lockedRate
+                                ? `🟡 ${lockedCurrency} ${(parseFloat(negotiatedRate) - lockedRate).toLocaleString()} above listed rate`
+                                : "✅ Same as listed rate"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className={styles.field}>
+                        <label className={styles.label}>
+                          Negotiation Note (optional)
+                        </label>
+                        <textarea
+                          className={styles.textarea}
+                          rows={2}
+                          placeholder="e.g. Agreed 10% discount for repeat booking, confirmed via WhatsApp"
+                          value={negotiationNote}
+                          onChange={(e) => setNegotiationNote(e.target.value)}
+                        />
+                      </div>
+
+                      <div className={styles.negotiatedBanner}>
+                        🔒 Both you and the worker agreed to this rate in the
+                        platform chat. This replaces the listed rate of{" "}
+                        <strong>
+                          {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                          {currentOption?.suffix}
+                        </strong>{" "}
+                        for this booking only.
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Estimated total */}
