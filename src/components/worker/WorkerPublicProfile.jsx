@@ -6,6 +6,7 @@ import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import { ShieldCheck } from "lucide-react";
+import VideoIntroSection from "./VideoIntroSection";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -403,6 +404,11 @@ export default function WorkerPublicProfile() {
               )}
             </section>
           )}
+
+          <VideoIntroSection
+            videoUrl={worker.videoIntroUrl}
+            workerName={user.firstName}
+          />
 
           {/* Certifications */}
           {tab === "certifications" && (
