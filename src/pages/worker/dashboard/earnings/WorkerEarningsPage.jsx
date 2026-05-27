@@ -1,3 +1,9 @@
+// src/pages/worker/dashboard/earnings/Earnings.jsx
+// Updated to reflect FEE_CONFIG Phase 1:
+//   Worker keeps 100% of agreedRate (workerPayout = agreedRate)
+//   Hirer pays 5% service fee on top — worker is never charged
+//   Zero withdrawal fees in Phase 1
+
 import { useEffect, useState } from "react";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import styles from "./Earnings.module.css";
@@ -10,18 +16,6 @@ import DashboardCurrencySwitch from "../../../../components/common/DashboardCurr
 
 const CRYPTO = ["USDC", "USDT"];
 
-function fmt(n, currency = "USD") {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: CRYPTO.includes(currency) ? 2 : 0,
-    }).format(n || 0);
-  } catch {
-    return `${currency} ${Number(n || 0).toFixed(2)}`;
-  }
-}
-
 function fmtDate(d) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-GB", {
@@ -31,30 +25,24 @@ function fmtDate(d) {
   });
 }
 
+// Currency pill
 function CurrencyPill({ currency }) {
   const isCrypto = CRYPTO.includes(currency);
+  const meta = CURRENCY_META[currency];
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 3,
-        background: isCrypto ? "rgba(139,92,246,0.12)" : "var(--orange-dim)",
-        border: `1px solid ${isCrypto ? "rgba(139,92,246,0.25)" : "var(--orange-glow)"}`,
-        color: isCrypto ? "#a78bfa" : "var(--orange)",
-        borderRadius: 999,
-        padding: "2px 8px",
-        fontSize: "0.7rem",
-        fontWeight: 700,
-      }}
-    >
-      {isCrypto ? "₿" : "💱"} {currency}
+    <span className={isCrypto ? styles.cryptoPill : styles.currencyPill}>
+      {isCrypto ? "₿" : (meta?.symbol ?? "💱")} {currency}
     </span>
   );
 }
 
+// Worker earned = workerPayout = 100% of agreed rate in Phase 1
+// platformFee   = hirer's 5% service fee (not deducted from worker)
+// amount        = workerPayout + platformFee = total hirer was charged
+
 export default function WorkerEarningsPage() {
   const { dashboardCurrency, fmt: ctxFmt } = useCurrency();
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,10 +51,12 @@ export default function WorkerEarningsPage() {
   const [activeCurrency, setActiveCurrency] = useState("ALL");
   const [page, setPage] = useState(1);
 
-  // Local fmt — uses filter currency if set, else dashboard currency
-  function fmt(amount, currency) {
+  // Resolved display currency for amounts
+  function fmtAmt(amount, payCurrency) {
     const display =
-      activeCurrency !== "ALL" ? activeCurrency : currency || dashboardCurrency;
+      activeCurrency !== "ALL"
+        ? activeCurrency
+        : payCurrency || dashboardCurrency;
     return ctxFmt(amount, display);
   }
 
@@ -81,7 +71,7 @@ export default function WorkerEarningsPage() {
       .get(`/workers/dashboard/earnings?${q}`)
       .then((r) => setData(r.data.data))
       .catch((e) =>
-        setError(e.response?.data?.message || "Failed to load earnings"),
+        setError(e.response?.data?.message ?? "Failed to load earnings"),
       )
       .finally(() => setLoading(false));
   }
@@ -96,118 +86,102 @@ export default function WorkerEarningsPage() {
     pages = 1,
     summary = {},
     availableCurrencies = [],
-  } = data || {};
+  } = data ?? {};
+
+  const displayCurrency =
+    activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency;
+
+  // Derived: worker fee rate is always 0 in Phase 1
+  // These are just for the banner copy
+  const HIRER_FEE_DISPLAY = "5%";
+  const WORKER_FEE_DISPLAY = "0%";
 
   return (
     <WorkerLayout>
       <div className={styles.page}>
-        {/* ── Page header with dashboard currency switch ── */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: "0.75rem",
-            marginBottom: "0.5rem",
-          }}
-        >
+        {/* ── Page header ── */}
+        <div className={styles.pageHeader}>
           <div>
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "1.5rem",
-                fontWeight: 800,
-                color: "var(--text)",
-                margin: 0,
-              }}
-            >
-              Earnings
-            </h1>
-            <p
-              style={{
-                fontSize: "0.82rem",
-                color: "var(--text-dim)",
-                marginTop: 2,
-              }}
-            >
-              Your completed payment history
-            </p>
+            <h1 className={styles.pageTitle}>Earnings</h1>
+            <p className={styles.pageSub}>Your completed payment history</p>
           </div>
           <DashboardCurrencySwitch />
+        </div>
+
+        {/* ── Phase 1 fee banner ── */}
+        <div className={styles.feeBanner}>
+          <span className={styles.feeBannerIcon}>🎉</span>
+          <div className={styles.feeBannerBody}>
+            <span className={styles.feeBannerTitle}>
+              You keep 100% of every job
+            </span>
+            <span className={styles.feeBannerSub}>
+              SkilledProz charges hirers a {HIRER_FEE_DISPLAY} service fee on
+              top of your rate. Zero fees are deducted from your earnings. Zero
+              withdrawal fees.
+            </span>
+          </div>
+          <div className={styles.feeBannerPills}>
+            <span className={styles.feePillGreen}>
+              Worker fee: {WORKER_FEE_DISPLAY}
+            </span>
+            <span className={styles.feePillOrange}>
+              Hirer fee: {HIRER_FEE_DISPLAY}
+            </span>
+          </div>
         </div>
 
         {/* ── Summary strip ── */}
         <div className={styles.summaryStrip}>
           <div className={styles.sumItem}>
-            <div className={styles.sumLabel}>Total Earned</div>
+            <div className={styles.sumLabel}>You Earned</div>
             <div className={`${styles.sumValue} ${styles.orange}`}>
-              {ctxFmt(
-                summary.totalEarned,
-                activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency,
-              )}
+              {ctxFmt(summary.totalEarned, displayCurrency)}
             </div>
-            <span
-              style={{
-                fontSize: "0.68rem",
-                color: "var(--text-muted)",
-                marginTop: 2,
-              }}
-            >
+            <span className={styles.sumNote}>
               {activeCurrency !== "ALL"
-                ? `filtered to ${activeCurrency}`
-                : `displayed in ${dashboardCurrency}`}
+                ? `filtered · ${activeCurrency}`
+                : `in ${dashboardCurrency}`}
             </span>
           </div>
+
           <div className={styles.sumDivider} />
+
           <div className={styles.sumItem}>
-            <div className={styles.sumLabel}>Job Value</div>
+            <div className={styles.sumLabel}>Hirers Paid Total</div>
             <div className={styles.sumValue}>
-              {ctxFmt(
-                summary.totalJobValue,
-                activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency,
-              )}
+              {ctxFmt(summary.totalJobValue, displayCurrency)}
             </div>
+            <span className={styles.sumNote}>
+              incl. {HIRER_FEE_DISPLAY} service fee
+            </span>
           </div>
+
           <div className={styles.sumDivider} />
+
           <div className={styles.sumItem}>
-            <div className={styles.sumLabel}>Platform Fees</div>
-            <div className={styles.sumValue}>
-              {ctxFmt(
-                summary.totalFees,
-                activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency,
-              )}
+            <div className={styles.sumLabel}>Service Fees Collected</div>
+            <div className={`${styles.sumValue} ${styles.dimVal}`}>
+              {ctxFmt(summary.totalFees, displayCurrency)}
             </div>
+            <span className={styles.sumNote}>
+              from hirers only — not from you
+            </span>
           </div>
+
           <div className={styles.sumDivider} />
+
           <div className={styles.sumItem}>
             <div className={styles.sumLabel}>Transactions</div>
             <div className={styles.sumValue}>{total}</div>
+            <span className={styles.sumNote}>completed jobs</span>
           </div>
         </div>
 
         {/* ── Filters ── */}
         <div className={styles.filtersRow}>
-          {/* Currency tabs — show actual currencies transacted in */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "0.72rem",
-                color: "var(--text-muted)",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-              }}
-            >
-              Currency:
-            </span>
-            {/* ALL tab */}
+          <div className={styles.currencyTabsRow}>
+            <span className={styles.filterLabel}>Currency:</span>
             <button
               className={`${styles.currencyTab} ${activeCurrency === "ALL" ? styles.currencyTabActive : ""}`}
               onClick={() => {
@@ -217,7 +191,6 @@ export default function WorkerEarningsPage() {
             >
               All
             </button>
-            {/* One tab per currency the worker has earned in */}
             {availableCurrencies.map((c) => (
               <button
                 key={c}
@@ -232,7 +205,6 @@ export default function WorkerEarningsPage() {
             ))}
           </div>
 
-          {/* Date range */}
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>From</span>
             <input
@@ -272,7 +244,7 @@ export default function WorkerEarningsPage() {
           )}
         </div>
 
-        {/* ── Table (rest is unchanged) ── */}
+        {/* ── Table ── */}
         <div className={styles.tableCard}>
           {loading ? (
             <div className={styles.skeletonWrap}>
@@ -288,86 +260,104 @@ export default function WorkerEarningsPage() {
               <p className={styles.emptyTitle}>No payments found</p>
               <p className={styles.emptyText}>
                 {activeCurrency !== "ALL"
-                  ? `No ${activeCurrency} transactions.`
+                  ? `No ${activeCurrency} transactions in this period.`
                   : "Complete jobs to start earning."}
               </p>
             </div>
           ) : (
             <>
+              {/* Desktop column headers */}
               <div className={styles.tableHead}>
                 <span>Job</span>
                 <span>Client</span>
                 <span>Date</span>
                 <span>Currency</span>
-                <span>Job Value</span>
-                <span>You Earned</span>
-                <span>Fee</span>
+                <span>Agreed Rate</span>
+                <span>You Earned ✓</span>
+                <span>Hirer's Fee</span>
               </div>
-              {payments.map((p, idx) => (
-                <div
-                  key={p.id}
-                  className={styles.tableRow}
-                  style={{ animationDelay: `${idx * 35}ms` }}
-                >
-                  <div className={styles.jobCell}>
-                    <div className={styles.jobTitle}>
-                      {p.booking?.title ?? "—"}
+
+              {payments.map((p, idx) => {
+                // workerPayout = agreedRate (100% in Phase 1)
+                // platformFee  = hirer's 5% — NOT deducted from worker
+                // amount       = workerPayout + platformFee (total hirer paid)
+                const agreedRate = p.workerPayout; // what the job was worth
+                const youEarned = p.workerPayout; // worker keeps it all
+                const hirerFee = p.platformFee; // hirer paid this extra
+                const workerFee = 0; // always 0 in Phase 1
+
+                return (
+                  <div
+                    key={p.id}
+                    className={styles.tableRow}
+                    style={{ animationDelay: `${idx * 35}ms` }}
+                  >
+                    {/* Job */}
+                    <div className={styles.jobCell}>
+                      <div className={styles.jobTitle}>
+                        {p.booking?.title ?? "—"}
+                      </div>
+                      <div className={styles.jobCat}>
+                        {p.booking?.category?.icon} {p.booking?.category?.name}
+                      </div>
                     </div>
-                    <div className={styles.jobCat}>
-                      {p.booking?.category?.icon} {p.booking?.category?.name}
+
+                    {/* Client */}
+                    <div className={styles.hirerCell}>
+                      <div className={styles.hirerAvatar}>
+                        {p.booking?.hirer?.avatar ? (
+                          <img src={p.booking.hirer.avatar} alt="" />
+                        ) : (
+                          <span>
+                            {p.booking?.hirer?.firstName?.[0]}
+                            {p.booking?.hirer?.lastName?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <span>
+                        {p.booking?.hirer?.firstName}{" "}
+                        {p.booking?.hirer?.lastName}
+                      </span>
+                    </div>
+
+                    {/* Date */}
+                    <div className={styles.dateCell}>
+                      {fmtDate(p.createdAt)}
+                    </div>
+
+                    {/* Currency */}
+                    <div className={styles.currencyCell}>
+                      <CurrencyPill currency={p.currency} />
+                    </div>
+
+                    {/* Agreed Rate (= workerPayout = what worker agreed to do job for) */}
+                    <div className={styles.amountRate}>
+                      {ctxFmt(agreedRate, p.currency)}
+                    </div>
+
+                    {/* You Earned — green, 100% badge */}
+                    <div className={styles.earnedCell}>
+                      <span className={styles.amountEarned}>
+                        {ctxFmt(youEarned, p.currency)}
+                      </span>
+                      <span className={styles.earnedBadge}>100%</span>
+                    </div>
+
+                    {/* Hirer's fee — dimmed, clearly labelled as hirer's cost */}
+                    <div className={styles.hirerFeeCell}>
+                      <span className={styles.hirerFeeAmt}>
+                        {ctxFmt(hirerFee, p.currency)}
+                      </span>
+                      <span className={styles.hirerFeeLabel}>hirer paid</span>
                     </div>
                   </div>
-                  <div className={styles.hirerCell}>
-                    <div className={styles.hirerAvatar}>
-                      {p.booking?.hirer?.avatar ? (
-                        <img src={p.booking.hirer.avatar} alt="" />
-                      ) : (
-                        <span>
-                          {p.booking?.hirer?.firstName?.[0]}
-                          {p.booking?.hirer?.lastName?.[0]}
-                        </span>
-                      )}
-                    </div>
-                    <span>
-                      {p.booking?.hirer?.firstName} {p.booking?.hirer?.lastName}
-                    </span>
-                  </div>
-                  <div className={styles.dateCell}>{fmtDate(p.createdAt)}</div>
-                  <div className={styles.currencyCell}>
-                    <span
-                      style={{
-                        background: ["USDC", "USDT"].includes(p.currency)
-                          ? "rgba(139,92,246,0.12)"
-                          : "var(--orange-dim)",
-                        border: `1px solid ${["USDC", "USDT"].includes(p.currency) ? "rgba(139,92,246,0.25)" : "var(--orange-glow)"}`,
-                        color: ["USDC", "USDT"].includes(p.currency)
-                          ? "#a78bfa"
-                          : "var(--orange)",
-                        borderRadius: 999,
-                        padding: "2px 8px",
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {CURRENCY_META[p.currency]?.symbol || ""} {p.currency}
-                    </span>
-                  </div>
-                  <div className={styles.amountTotal}>
-                    {ctxFmt(p.amount, p.currency)}
-                  </div>
-                  <div className={styles.amountEarned}>
-                    {ctxFmt(p.workerPayout, p.currency)}
-                  </div>
-                  <div className={styles.amountFee}>
-                    {ctxFmt(p.platformFee, p.currency)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
         </div>
 
-        {/* Pagination */}
+        {/* ── Pagination ── */}
         {pages > 1 && (
           <div className={styles.pagination}>
             <button

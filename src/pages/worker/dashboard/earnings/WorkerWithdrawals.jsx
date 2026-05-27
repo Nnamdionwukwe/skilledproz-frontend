@@ -1,132 +1,341 @@
-import { useState, useEffect, useRef } from "react";
+// src/pages/worker/dashboard/withdrawals/WorkerWithdrawals.jsx
+// Updated for Flutterwave + Paystack multi-currency wallet system.
+// Features:
+//   - Per-currency balance cards (only currencies with a balance are shown)
+//   - Nigerian + African + International bank list from API
+//   - Live bank account name resolution before submit
+//   - Method options filtered by selected currency
+//   - Mobile money, bank transfer, crypto all unified
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import api from "../../../../lib/api";
-import styles from "./WorkerWithdrawals.module.css";
+import s from "./WorkerWithdrawals.module.css";
 
-// ── Payout methods ─────────────────────────────────────────────────────────────
-const PAYOUT_METHODS = [
+// ─────────────────────────────────────────────────────────────────────────────
+// NIGERIAN BANKS — complete static list (50+ institutions)
+// Sorted A→Z. Codes match Paystack's /bank endpoint.
+// Used as immediate data while the API call resolves, and as fallback if it fails.
+// ─────────────────────────────────────────────────────────────────────────────
+export const NIGERIAN_BANKS = [
+  // ── Tier 1 commercial banks ──────────────────────────────────────────────
+  { name: "Access Bank", code: "044", type: "commercial" },
+  { name: "Ecobank Nigeria", code: "050", type: "commercial" },
+  { name: "Fidelity Bank", code: "070", type: "commercial" },
+  { name: "First Bank of Nigeria", code: "011", type: "commercial" },
+  { name: "First City Monument Bank (FCMB)", code: "214", type: "commercial" },
+  { name: "Guaranty Trust Bank (GTBank)", code: "058", type: "commercial" },
+  { name: "Stanbic IBTC Bank", code: "221", type: "commercial" },
+  { name: "Sterling Bank", code: "232", type: "commercial" },
+  { name: "United Bank for Africa (UBA)", code: "033", type: "commercial" },
+  { name: "Union Bank of Nigeria", code: "032", type: "commercial" },
+  { name: "Unity Bank", code: "215", type: "commercial" },
+  { name: "Wema Bank / ALAT", code: "035", type: "commercial" },
+  { name: "Zenith Bank", code: "057", type: "commercial" },
+
+  // ── Other licensed commercial banks ─────────────────────────────────────
+  { name: "Citibank Nigeria", code: "023", type: "commercial" },
+  { name: "Coronation Merchant Bank", code: "559", type: "merchant" },
+  { name: "FBNQuest Merchant Bank", code: "060002", type: "merchant" },
+  { name: "FSDH Merchant Bank", code: "501", type: "merchant" },
+  { name: "Greenwich Merchant Bank", code: "562", type: "merchant" },
+  { name: "Heritage Bank", code: "030", type: "commercial" },
+  { name: "Jaiz Bank", code: "301", type: "commercial" },
+  { name: "Keystone Bank", code: "082", type: "commercial" },
+  { name: "Lotus Bank", code: "303", type: "commercial" },
+  { name: "Nova Merchant Bank", code: "561", type: "merchant" },
+  { name: "Optimus Bank", code: "070026", type: "commercial" },
+  { name: "Parallex Bank", code: "526", type: "commercial" },
+  { name: "Polaris Bank", code: "076", type: "commercial" },
+  { name: "Providus Bank", code: "101", type: "commercial" },
+  { name: "Rand Merchant Bank", code: "502", type: "merchant" },
+  { name: "Standard Chartered Bank", code: "068", type: "commercial" },
+  { name: "Suntrust Bank", code: "100", type: "commercial" },
+  { name: "TAJ Bank", code: "302", type: "commercial" },
+  { name: "Titan Trust Bank", code: "102", type: "commercial" },
+
+  // ── Digital banks & payment service banks ───────────────────────────────
+  { name: "9PSB (9 Payment Service Bank)", code: "120001", type: "digital" },
+  { name: "Carbon (Paylater)", code: "565", type: "digital" },
+  { name: "Eyowo", code: "50126", type: "digital" },
+  { name: "FairMoney MFB", code: "51318", type: "digital" },
+  { name: "HabariPay (Sterling Alt)", code: "50737", type: "digital" },
+  { name: "Kuda Bank", code: "090267", type: "digital" },
+  { name: "Moniepoint MFB", code: "50515", type: "digital" },
+  { name: "MoMo PSB (MTN Nigeria)", code: "120003", type: "digital" },
+  { name: "OPay Digital Services", code: "100004", type: "digital" },
+  { name: "PalmPay", code: "100033", type: "digital" },
+  { name: "Paga", code: "327", type: "digital" },
+  { name: "Rubies Bank (MFB)", code: "125", type: "digital" },
+  { name: "SafeHaven MFB", code: "090286", type: "digital" },
+  { name: "Sparkle MFB", code: "090325", type: "digital" },
+  { name: "VBank (VFD Microfinance Bank)", code: "090110", type: "digital" },
+  { name: "Airtel Smartcash PSB", code: "120004", type: "digital" },
+
+  // ── Microfinance banks ───────────────────────────────────────────────────
+  { name: "AB Microfinance Bank", code: "090270", type: "microfinance" },
+  { name: "Accion Microfinance Bank", code: "090134", type: "microfinance" },
+  { name: "Baobab Microfinance Bank", code: "070012", type: "microfinance" },
+  { name: "Bowen Microfinance Bank", code: "090129", type: "microfinance" },
+  { name: "CEMCS Microfinance Bank", code: "562", type: "microfinance" },
+  { name: "Empire Trust MFB", code: "090114", type: "microfinance" },
   {
-    id: "bank_transfer",
-    label: "Bank Transfer",
-    icon: "🏦",
-    desc: "SWIFT / local wire",
-    regions: "Global",
-    fields: [
-      "bankName",
-      "accountNumber",
-      "accountName",
-      "swiftBic",
-      "routingNumber",
-      "bankCountry",
-    ],
+    name: "Fina Trust Microfinance Bank",
+    code: "090306",
+    type: "microfinance",
+  },
+  { name: "Fortis Microfinance Bank", code: "070012", type: "microfinance" },
+  { name: "Hasal Microfinance Bank", code: "090121", type: "microfinance" },
+  { name: "Ibile Microfinance Bank", code: "090115", type: "microfinance" },
+  { name: "Infinity Microfinance Bank", code: "090136", type: "microfinance" },
+  { name: "LAPO Microfinance Bank", code: "090177", type: "microfinance" },
+  { name: "Links Microfinance Bank", code: "090326", type: "microfinance" },
+  { name: "Living Trust Mortgage Bank", code: "090129", type: "microfinance" },
+  { name: "MKOBO Microfinance Bank", code: "090455", type: "microfinance" },
+  {
+    name: "Mutual Benefits Microfinance",
+    code: "090190",
+    type: "microfinance",
+  },
+  { name: "NIRSAL Microfinance Bank", code: "090194", type: "microfinance" },
+  { name: "NPF Microfinance Bank", code: "090131", type: "microfinance" },
+  { name: "Pennywise Microfinance Bank", code: "090196", type: "microfinance" },
+  {
+    name: "Personal Trust Savings & Loans",
+    code: "090135",
+    type: "microfinance",
+  },
+  { name: "Petra Microfinance Bank", code: "090165", type: "microfinance" },
+  { name: "Prestige Microfinance Bank", code: "090274", type: "microfinance" },
+  { name: "Quickfund Microfinance Bank", code: "090261", type: "microfinance" },
+  { name: "RenMoney Microfinance Bank", code: "090198", type: "microfinance" },
+  { name: "Royal Exchange Microfinance", code: "090138", type: "microfinance" },
+  { name: "Summit Microfinance Bank", code: "090309", type: "microfinance" },
+  { name: "TCF Microfinance Bank", code: "090115", type: "microfinance" },
+  { name: "Tower Microfinance Bank", code: "090133", type: "microfinance" },
+  { name: "Trident Microfinance Bank", code: "090164", type: "microfinance" },
+  { name: "UNAAB Microfinance Bank", code: "090191", type: "microfinance" },
+  { name: "Unical Microfinance Bank", code: "090193", type: "microfinance" },
+  { name: "YCT Microfinance Bank", code: "090143", type: "microfinance" },
+].sort((a, b) => a.name.localeCompare(b.name)); // keep alphabetical
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Methods available per currency
+const CURRENCY_METHODS = {
+  NGN: [
+    {
+      key: "ng_bank",
+      method: "bank_transfer",
+      label: "Nigerian Bank / Fintech",
+      icon: "🏦",
+      desc: "GTBank, Kuda, OPay, Access, Zenith, UBA, PalmPay +70 more",
+      country: "NG",
+      hasBankList: true,
+    },
+    {
+      key: "ng_mtn",
+      method: "mobile_money",
+      label: "MTN MoMo Nigeria",
+      icon: "📡",
+      desc: "MTN mobile money",
+      country: "NG",
+      provider: "MTN",
+    },
+    {
+      key: "ng_airtel",
+      method: "mobile_money",
+      label: "Airtel Money Nigeria",
+      icon: "📲",
+      desc: "Airtel mobile money",
+      country: "NG",
+      provider: "Airtel",
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      icon: "₿",
+      desc: "Stablecoin — any country",
+    },
+  ],
+  GHS: [
+    {
+      key: "gh_bank",
+      method: "bank_transfer",
+      label: "Ghana Bank",
+      icon: "🏦",
+      desc: "GCB, Ecobank, Fidelity, ADB +more",
+      country: "GH",
+      hasBankList: true,
+    },
+    {
+      key: "gh_mtn",
+      method: "mobile_money",
+      label: "MTN MoMo Ghana",
+      icon: "📱",
+      desc: "MTN Mobile Money",
+      country: "GH",
+      provider: "MTN",
+    },
+    {
+      key: "gh_voda",
+      method: "mobile_money",
+      label: "Vodafone Cash",
+      icon: "📱",
+      desc: "Vodafone Cash Ghana",
+      country: "GH",
+      provider: "Vodafone",
+    },
+    {
+      key: "gh_airtel",
+      method: "mobile_money",
+      label: "AirtelTigo",
+      icon: "📱",
+      desc: "AirtelTigo Money Ghana",
+      country: "GH",
+      provider: "AirtelTigo",
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      icon: "₿",
+      desc: "Stablecoin — any country",
+    },
+  ],
+  KES: [
+    {
+      key: "ke_mpesa",
+      method: "mobile_money",
+      label: "M-Pesa Kenya",
+      icon: "📱",
+      desc: "Safaricom M-Pesa",
+      country: "KE",
+      provider: "mpesa",
+    },
+    {
+      key: "ke_bank",
+      method: "bank_transfer",
+      label: "Kenya Bank",
+      icon: "🏦",
+      desc: "Equity, KCB, Co-op +more",
+      country: "KE",
+      hasBankList: true,
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      icon: "₿",
+      desc: "Stablecoin — any country",
+    },
+  ],
+  ZAR: [
+    {
+      key: "za_bank",
+      method: "bank_transfer",
+      label: "South Africa Bank",
+      icon: "🏦",
+      desc: "FNB, Absa, Standard Bank +more",
+      country: "ZA",
+      hasBankList: true,
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      icon: "₿",
+      desc: "Stablecoin — any country",
+    },
+  ],
+  TZS: [
+    {
+      key: "tz_vodacom",
+      method: "mobile_money",
+      label: "Vodacom M-Pesa TZ",
+      icon: "📱",
+      desc: "M-Pesa Tanzania",
+      country: "TZ",
+      provider: "Vodacom",
+    },
+    {
+      key: "tz_airtel",
+      method: "mobile_money",
+      label: "Airtel Money TZ",
+      icon: "📡",
+      desc: "Airtel Tanzania",
+      country: "TZ",
+      provider: "Airtel",
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      icon: "₿",
+      desc: "Stablecoin — any country",
+    },
+  ],
+  UGX: [
+    {
+      key: "ug_mtn",
+      method: "mobile_money",
+      label: "MTN MoMo Uganda",
+      icon: "📡",
+      desc: "MTN Uganda",
+      country: "UG",
+      provider: "MTN",
+    },
+    {
+      key: "ug_airtel",
+      method: "mobile_money",
+      label: "Airtel Money Uganda",
+      icon: "📲",
+      desc: "Airtel Uganda",
+      country: "UG",
+      provider: "Airtel",
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      icon: "₿",
+      desc: "Stablecoin — any country",
+    },
+  ],
+};
+
+// International (USD, EUR, GBP, AUD, CAD, etc.)
+const INTL_METHODS = [
+  {
+    key: "intl_bank",
+    method: "bank_transfer",
+    label: "International Wire",
+    icon: "🌐",
+    desc: "SWIFT / IBAN — 150+ countries",
+    isInternational: true,
   },
   {
-    id: "paystack",
-    label: "Paystack",
-    icon: "🇳🇬",
-    desc: "Nigeria, Ghana, Kenya, SA",
-    regions: "Africa",
-    fields: ["paystackEmail"],
-  },
-  {
-    id: "paypal",
-    label: "PayPal",
-    icon: "🅿️",
-    desc: "200+ countries",
-    regions: "Global",
-    fields: ["paypalEmail"],
-  },
-  {
-    id: "wise",
-    label: "Wise",
-    icon: "💸",
-    desc: "40+ currencies",
-    regions: "Global",
-    fields: ["wiseEmail"],
-  },
-  {
-    id: "mpesa",
-    label: "M-Pesa",
-    icon: "📱",
-    desc: "Kenya, Tanzania, Uganda",
-    regions: "East Africa",
-    fields: ["mobileNumber"],
-  },
-  {
-    id: "opay",
-    label: "OPay / PalmPay",
-    icon: "📲",
-    desc: "Nigeria",
-    regions: "West Africa",
-    fields: ["mobileNumber", "mobileProvider"],
-  },
-  {
-    id: "mtn_momo",
-    label: "MTN MoMo",
-    icon: "📡",
-    desc: "19 African countries",
-    regions: "Africa",
-    fields: ["mobileNumber", "mobileCountry"],
-  },
-  {
-    id: "gcash",
-    label: "GCash / Maya",
-    icon: "🇵🇭",
-    desc: "Philippines",
-    regions: "SE Asia",
-    fields: ["mobileNumber"],
-  },
-  {
-    id: "bkash",
-    label: "bKash / Nagad",
-    icon: "🇧🇩",
-    desc: "Bangladesh",
-    regions: "South Asia",
-    fields: ["mobileNumber"],
-  },
-  {
-    id: "crypto",
+    key: "crypto",
+    method: "crypto",
     label: "USDC / USDT",
     icon: "₿",
-    desc: "Any country — stablecoin",
-    regions: "Global",
-    fields: ["walletAddress", "cryptoNetwork"],
+    desc: "Stablecoin — any country",
   },
 ];
 
-const FIELD_LABELS = {
-  bankName: "Bank Name",
-  accountNumber: "Account Number",
-  accountName: "Account Name",
-  swiftBic: "SWIFT / BIC",
-  routingNumber: "Routing Number (US/CA)",
-  bankCountry: "Bank Country",
-  paystackEmail: "Paystack Email",
-  paypalEmail: "PayPal Email",
-  wiseEmail: "Wise Email / Phone",
-  mobileNumber: "Mobile Number",
-  mobileProvider: "Provider",
-  mobileCountry: "Country",
-  walletAddress: "Wallet Address",
-  cryptoNetwork: "Network",
-};
+const CRYPTO_NETWORKS = [
+  { value: "BSC", label: "BNB Smart Chain (BSC)" },
+  { value: "ETH", label: "Ethereum (ERC-20)" },
+  { value: "TRC20", label: "Tron (TRC-20)" },
+  { value: "POLYGON", label: "Polygon (MATIC)" },
+  { value: "SOLANA", label: "Solana (SOL)" },
+  { value: "AVALANCHE", label: "Avalanche (AVAX)" },
+];
 
-const FIELD_PLACEHOLDERS = {
-  bankName: "e.g. First Bank, Barclays",
-  accountNumber: "0123456789",
-  accountName: "As on your account",
-  swiftBic: "e.g. FBNINGLA",
-  routingNumber: "9-digit routing",
-  bankCountry: "e.g. Nigeria, UK",
-  paystackEmail: "your@email.com",
-  paypalEmail: "your@paypal.com",
-  wiseEmail: "email or +1234567890",
-  mobileNumber: "+234 800 000 0000",
-  mobileProvider: "OPay / PalmPay...",
-  mobileCountry: "Kenya / Tanzania...",
-  walletAddress: "0x... or TRC20...",
-  cryptoNetwork: "Ethereum / Tron",
-};
+const CRYPTO_TOKENS = ["USDC", "USDT", "BTC", "ETH"];
 
 const STATUS_META = {
   PENDING: { label: "Pending", cls: "pending" },
@@ -136,6 +345,25 @@ const STATUS_META = {
   CANCELLED: { label: "Cancelled", cls: "cancelled" },
 };
 
+// Currency flags + symbols
+const CURRENCY_META = {
+  NGN: { flag: "🇳🇬", symbol: "₦", name: "Naira" },
+  GHS: { flag: "🇬🇭", symbol: "₵", name: "Cedi" },
+  KES: { flag: "🇰🇪", symbol: "KSh", name: "Shilling" },
+  ZAR: { flag: "🇿🇦", symbol: "R", name: "Rand" },
+  TZS: { flag: "🇹🇿", symbol: "TSh", name: "Shilling" },
+  UGX: { flag: "🇺🇬", symbol: "USh", name: "Shilling" },
+  USD: { flag: "🇺🇸", symbol: "$", name: "Dollar" },
+  EUR: { flag: "🇪🇺", symbol: "€", name: "Euro" },
+  GBP: { flag: "🇬🇧", symbol: "£", name: "Pound" },
+  CAD: { flag: "🇨🇦", symbol: "C$", name: "Dollar" },
+  AUD: { flag: "🇦🇺", symbol: "A$", name: "Dollar" },
+  INR: { flag: "🇮🇳", symbol: "₹", name: "Rupee" },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 function fmt(amount, currency = "NGN") {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -162,92 +390,312 @@ function timeAgo(d) {
   });
 }
 
-// ── Receipt modal ──────────────────────────────────────────────────────────────
-function ReceiptModal({ withdrawal, currency, onClose }) {
+function getMethodsForCurrency(currency) {
+  return CURRENCY_METHODS[currency?.toUpperCase()] ?? INTL_METHODS;
+}
+
+function isAfricanCurrency(c) {
+  return [
+    "NGN",
+    "GHS",
+    "KES",
+    "ZAR",
+    "TZS",
+    "UGX",
+    "RWF",
+    "XOF",
+    "MAD",
+    "EGP",
+  ].includes((c ?? "").toUpperCase());
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BANK DROPDOWN — searchable, 70+ Nigerian banks with type labels
+// ─────────────────────────────────────────────────────────────────────────────
+const BANK_TYPE_LABELS = {
+  commercial: { label: "Commercial", color: "#818cf8" },
+  digital: { label: "Digital/Fintech", color: "#f97316" },
+  microfinance: { label: "Microfinance", color: "#22c55e" },
+  merchant: { label: "Merchant", color: "#a78bfa" },
+};
+
+function BankDropdown({ banks, value, onChange, loading, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef();
+
+  const filtered = banks.filter(
+    (b) =>
+      b.name.toLowerCase().includes(search.toLowerCase()) ||
+      b.code.includes(search),
+  );
+  const selected = banks.find((b) => b.code === value);
+
+  // Group filtered results by type when no search active
+  const grouped = search.trim()
+    ? null // flat list when searching
+    : ["digital", "commercial", "microfinance", "merchant"].reduce(
+        (acc, type) => {
+          const items = filtered.filter(
+            (b) => (b.type ?? "commercial") === type,
+          );
+          if (items.length) acc.push({ type, items });
+          return acc;
+        },
+        [],
+      );
+
+  useEffect(() => {
+    const fn = (e) => {
+      if (!ref.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  return (
+    <div className={s.bankDropdown} ref={ref}>
+      <button
+        type="button"
+        className={`${s.bankDropdownBtn} ${open ? s.bankDropdownBtnOpen : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        disabled={loading}
+      >
+        <div className={s.bankDropdownBtnInner}>
+          {loading ? (
+            <span className={s.bankDropdownLoading}>Loading banks…</span>
+          ) : selected ? (
+            <>
+              <span className={s.bankDropdownSelected}>{selected.name}</span>
+              {selected.type && BANK_TYPE_LABELS[selected.type] && (
+                <span
+                  className={s.bankTypeChip}
+                  style={{ color: BANK_TYPE_LABELS[selected.type].color }}
+                >
+                  {BANK_TYPE_LABELS[selected.type].label}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className={s.bankDropdownPlaceholder}>
+              {placeholder ?? "Select bank"}
+            </span>
+          )}
+        </div>
+        <span className={s.bankDropdownChevron}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className={s.bankDropdownMenu}>
+          <div className={s.bankSearchWrap}>
+            <span className={s.bankSearchIcon}>🔍</span>
+            <input
+              className={s.bankSearchInput}
+              placeholder={`Search ${banks.length} banks…`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+            {search && (
+              <button
+                className={s.bankSearchClear}
+                onClick={() => setSearch("")}
+                type="button"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Result count when searching */}
+          {search && (
+            <div className={s.bankResultCount}>
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""} for "
+              {search}"
+            </div>
+          )}
+
+          <div className={s.bankList}>
+            {filtered.length === 0 ? (
+              <div className={s.bankNoResults}>
+                <span>🔍</span>
+                <p>No bank found for "{search}"</p>
+                <p className={s.bankNoResultsSub}>
+                  Try a shorter name or bank code
+                </p>
+              </div>
+            ) : search.trim() ? (
+              // Flat list when searching
+              filtered.map((b) => (
+                <BankOption
+                  key={b.code}
+                  bank={b}
+                  selected={value === b.code}
+                  onSelect={(b) => {
+                    onChange(b);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                />
+              ))
+            ) : (
+              // Grouped by type when not searching
+              grouped?.map(({ type, items }) => (
+                <div key={type} className={s.bankGroup}>
+                  <div
+                    className={s.bankGroupHeader}
+                    style={{ color: BANK_TYPE_LABELS[type]?.color }}
+                  >
+                    {BANK_TYPE_LABELS[type]?.label ?? type} ({items.length})
+                  </div>
+                  {items.map((b) => (
+                    <BankOption
+                      key={b.code}
+                      bank={b}
+                      selected={value === b.code}
+                      onSelect={(b) => {
+                        onChange(b);
+                        setOpen(false);
+                        setSearch("");
+                      }}
+                    />
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BankOption({ bank, selected, onSelect }) {
+  const typeMeta = BANK_TYPE_LABELS[bank.type ?? "commercial"];
+  return (
+    <button
+      type="button"
+      className={`${s.bankOption} ${selected ? s.bankOptionSelected : ""}`}
+      onClick={() => onSelect(bank)}
+    >
+      <span className={s.bankOptionName}>{bank.name}</span>
+      <div className={s.bankOptionRight}>
+        {typeMeta && (
+          <span className={s.bankOptionType} style={{ color: typeMeta.color }}>
+            {typeMeta.label}
+          </span>
+        )}
+        <span className={s.bankOptionCode}>{bank.code}</span>
+      </div>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECEIPT MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function ReceiptModal({ withdrawal, feeConfig, onClose }) {
   const ref = useRef();
   useEffect(() => {
     const fn = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [onClose]);
+
   if (!withdrawal) return null;
-  const sm = STATUS_META[withdrawal.status] || {
+  const sm = STATUS_META[withdrawal.status] ?? {
     label: withdrawal.status,
     cls: "pending",
   };
 
+  // Use fee config from server; fall back to 0 (Phase 1 default)
+  const feeRate = feeConfig?.withdrawalFeeRate ?? 0;
+  const feeAmt = parseFloat((withdrawal.amount * feeRate).toFixed(2));
+  const netAmt = parseFloat((withdrawal.amount - feeAmt).toFixed(2));
+  const isFree = feeRate === 0;
+
   return (
     <div
-      className={styles.backdrop}
+      className={s.backdrop}
       onMouseDown={(e) => {
         if (!ref.current?.contains(e.target)) onClose();
       }}
     >
-      <div className={styles.receiptModal} ref={ref}>
-        <div className={styles.receiptHeader}>
-          <div className={styles.receiptLogo}>
-            <span className={styles.receiptLogoMark}>SP</span>
-            <span className={styles.receiptLogoText}>SkilledProz</span>
+      <div className={s.receiptModal} ref={ref}>
+        <div className={s.receiptHeader}>
+          <div className={s.receiptLogo}>
+            <span className={s.receiptLogoMark}>SP</span>
+            <span className={s.receiptLogoText}>SkilledProz</span>
           </div>
-          <button className={styles.modalClose} onClick={onClose}>
+          <button className={s.modalClose} onClick={onClose}>
             ✕
           </button>
         </div>
 
-        <div className={styles.receiptTitle}>
-          <h2 className={styles.receiptHeading}>Withdrawal Receipt</h2>
-          <span className={`${styles.pill} ${styles[sm.cls]}`}>{sm.label}</span>
+        <div className={s.receiptTitle}>
+          <h2 className={s.receiptHeading}>Withdrawal Receipt</h2>
+          <span className={`${s.pill} ${s[sm.cls]}`}>{sm.label}</span>
         </div>
 
-        <div className={styles.receiptGrid}>
+        <div className={s.receiptGrid}>
           <MetaItem label="Reference" value={`#${withdrawal.reference}`} />
+          <MetaItem
+            label="Method"
+            value={withdrawal.method?.replace(/_/g, " ")}
+          />
           <MetaItem
             label="Requested"
             value={new Date(withdrawal.createdAt).toLocaleString("en-GB")}
           />
+          {withdrawal.processedAt && (
+            <MetaItem
+              label="Processed"
+              value={new Date(withdrawal.processedAt).toLocaleString("en-GB")}
+            />
+          )}
           {withdrawal.completedAt && (
             <MetaItem
               label="Completed"
               value={new Date(withdrawal.completedAt).toLocaleString("en-GB")}
             />
           )}
-          <MetaItem
-            label="Method"
-            value={withdrawal.method?.replace(/_/g, " ")}
-          />
+          <MetaItem label="Currency" value={withdrawal.currency} />
         </div>
 
-        <div className={styles.receiptDivider} />
-        <div className={styles.receiptDest}>
-          <span className={styles.metaLabel}>Paid to</span>
-          <span className={styles.receiptDestVal}>
-            {withdrawal.destination}
-          </span>
+        <div className={s.receiptDivider} />
+        <div className={s.receiptDest}>
+          <span className={s.metaLabel}>Paid to</span>
+          <span className={s.receiptDestVal}>{withdrawal.destination}</span>
         </div>
-        <div className={styles.receiptDivider} />
+        <div className={s.receiptDivider} />
 
-        <div className={styles.receiptBreakdown}>
-          <div className={styles.breakRow}>
+        <div className={s.receiptBreakdown}>
+          <div className={s.breakRow}>
             <span>Withdrawal amount</span>
             <span>{fmt(withdrawal.amount, withdrawal.currency)}</span>
           </div>
-          <div className={styles.breakRow}>
-            <span>Processing fee (1%)</span>
-            <span className={styles.feeText}>
-              − {fmt(withdrawal.amount * 0.01, withdrawal.currency)}
-            </span>
+          <div className={s.breakRow}>
+            <span>Withdrawal fee</span>
+            {isFree ? (
+              <span className={s.feeZero}>Free 🎉</span>
+            ) : (
+              <span className={s.feeText}>
+                − {fmt(feeAmt, withdrawal.currency)} (
+                {(feeRate * 100).toFixed(0)}%)
+              </span>
+            )}
           </div>
-          <div className={`${styles.breakRow} ${styles.breakTotal}`}>
-            <span>Net payout</span>
-            <span className={styles.breakTotalAmt}>
-              {fmt(withdrawal.amount * 0.99, withdrawal.currency)}
+          <div className={`${s.breakRow} ${s.breakTotal}`}>
+            <span>You receive</span>
+            <span className={s.breakTotalAmt}>
+              {fmt(netAmt, withdrawal.currency)}
             </span>
           </div>
         </div>
 
-        <div className={styles.receiptFooter}>
+        <div className={s.receiptFooter}>
           <span>SkilledProz · Global Skills Marketplace</span>
-          <button className={styles.printBtn} onClick={() => window.print()}>
+          <button className={s.printBtn} onClick={() => window.print()}>
             Print / PDF
           </button>
         </div>
@@ -258,144 +706,832 @@ function ReceiptModal({ withdrawal, currency, onClose }) {
 
 function MetaItem({ label, value }) {
   return (
-    <div className={styles.metaItem}>
-      <span className={styles.metaLabel}>{label}</span>
-      <span className={styles.metaValue}>{value}</span>
+    <div className={s.metaItem}>
+      <span className={s.metaLabel}>{label}</span>
+      <span className={s.metaValue}>{value}</span>
     </div>
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
-export default function WorkerWithdrawals() {
-  const [balance, setBalance] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [receipt, setReceipt] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [method, setMethod] = useState(PAYOUT_METHODS[0]);
+// ─────────────────────────────────────────────────────────────────────────────
+// WITHDRAWAL FORM MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function WithdrawalModal({
+  onClose,
+  balance,
+  currencyBalances,
+  defaultCurrency,
+  feeConfig,
+  onSuccess,
+}) {
+  // Step state
+  const [currency, setCurrency] = useState(
+    defaultCurrency ?? Object.keys(currencyBalances)[0] ?? "NGN",
+  );
+  const [selMethod, setSelMethod] = useState(null);
+  const [form, setForm] = useState({});
   const [amount, setAmount] = useState("");
-  const [fields, setFields] = useState({});
+  const [banks, setBanks] = useState([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [verifiedName, setVerifiedName] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyErr, setVerifyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
+  const [success, setSuccess] = useState("");
 
-  async function loadData(p = 1) {
-    setLoading(true);
+  const methods = getMethodsForCurrency(currency);
+
+  // Pick first method when currency changes
+  useEffect(() => {
+    setSelMethod(methods[0]);
+    setForm({});
+    setVerifiedName(null);
+    setVerifyErr("");
+  }, [currency]);
+
+  // Load banks when method requires a bank list
+  useEffect(() => {
+    if (!selMethod?.hasBankList) {
+      setBanks([]);
+      return;
+    }
+    const country = selMethod.country ?? "NG";
+
+    // Nigerian banks — use full static list immediately (no latency)
+    // Then try to merge any extras the API returns
+    if (country === "NG") {
+      setBanks(NIGERIAN_BANKS); // instant — 70+ banks available right away
+      setBanksLoading(false);
+      // Background merge: pick up any banks Paystack has that aren't in our list
+      api
+        .get("/payments/banks?country=NG")
+        .then((r) => {
+          const apibanks = r.data.data?.banks ?? [];
+          if (!apibanks.length) return;
+          // Merge: deduplicate by code, API name wins for existing codes
+          const merged = new Map(NIGERIAN_BANKS.map((b) => [b.code, b]));
+          apibanks.forEach((b) =>
+            merged.set(b.code, {
+              name: b.name,
+              code: b.code,
+              type: b.type ?? "commercial",
+            }),
+          );
+          setBanks(
+            [...merged.values()].sort((a, b) => a.name.localeCompare(b.name)),
+          );
+        })
+        .catch(() => {
+          /* already have static list — ignore */
+        });
+      return;
+    }
+
+    // For all other countries — fetch from API (Flutterwave)
+    setBanksLoading(true);
+    api
+      .get(`/payments/banks?country=${country}`)
+      .then((r) => setBanks(r.data.data?.banks ?? []))
+      .catch(() => setBanks([]))
+      .finally(() => setBanksLoading(false));
+  }, [selMethod]);
+
+  // Clear verification when account/bank changes
+  useEffect(() => {
+    setVerifiedName(null);
+    setVerifyErr("");
+  }, [form.accountNumber, form.bankCode]);
+
+  function setF(k, v) {
+    setForm((p) => ({ ...p, [k]: v }));
+  }
+
+  async function verifyAccount() {
+    if (!form.accountNumber || !form.bankCode) {
+      setVerifyErr("Enter account number and select a bank first.");
+      return;
+    }
+    setVerifying(true);
+    setVerifyErr("");
+    setVerifiedName(null);
     try {
-      const res = await api.get(`/payments/withdrawals?page=${p}&limit=15`);
-      setHistory(res.data.data.withdrawals);
-      setBalance(res.data.data.balance);
-      setPages(res.data.data.pages);
-      setPage(p);
-    } catch {
-      setError("Failed to load withdrawal data.");
+      const res = await api.post("/payments/verify-account", {
+        accountNumber: form.accountNumber,
+        bankCode: form.bankCode,
+        country: selMethod?.country ?? "NG",
+      });
+      setVerifiedName(res.data.data.accountName);
+    } catch (e) {
+      setVerifyErr(
+        e.response?.data?.message ?? "Account not found. Check details.",
+      );
     } finally {
-      setLoading(false);
+      setVerifying(false);
     }
   }
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  function setField(k, v) {
-    setFields((prev) => ({ ...prev, [k]: v }));
-  }
+  const availableForCurrency =
+    currencyBalances[currency] ?? balance?.available ?? 0;
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return setError("Enter a valid amount.");
-    if (amt < 500) return setError("Minimum withdrawal is 500.");
-    if (amt > (balance?.available || 0))
-      return setError("Amount exceeds available balance.");
+    if (amt < 1) return setError("Minimum withdrawal is 1 unit.");
+    if (amt > availableForCurrency)
+      return setError(
+        `Exceeds available balance (${fmt(availableForCurrency, currency)}).`,
+      );
+    if (!selMethod) return setError("Select a payout method.");
 
-    // Build destination label from fields
-    const dest = fields[method.fields[0]] || "—";
+    // Validate required fields per method type
+    const m = selMethod.method;
+    if (m === "bank_transfer" && !selMethod.isInternational) {
+      if (!form.bankCode) return setError("Select a bank.");
+      if (!form.accountNumber) return setError("Enter account number.");
+      if (!verifiedName)
+        return setError("Verify your account name before proceeding.");
+    }
+    if (m === "bank_transfer" && selMethod.isInternational) {
+      if (!form.accountNumber) return setError("Enter account / IBAN number.");
+      if (!form.swiftBic) return setError("Enter SWIFT / BIC code.");
+      if (!form.accountName) return setError("Enter account holder name.");
+    }
+    if (m === "mobile_money") {
+      if (!form.mobileNumber) return setError("Enter mobile number.");
+    }
+    if (m === "crypto") {
+      if (!form.cryptoAddress) return setError("Enter wallet address.");
+      if (!form.cryptoToken) return setError("Select crypto token.");
+      if (!form.cryptoNetwork) return setError("Select network.");
+    }
+
+    // Build payload
+    const payload = {
+      amount: amt,
+      currency: currency.toUpperCase(),
+      method: m,
+      country: selMethod.country ?? "INTL",
+    };
+
+    if (m === "bank_transfer" && !selMethod.isInternational) {
+      Object.assign(payload, {
+        bankCode: form.bankCode,
+        bankName: form.bankName,
+        accountNumber: form.accountNumber,
+        accountName: verifiedName ?? form.accountName,
+      });
+    } else if (m === "bank_transfer" && selMethod.isInternational) {
+      Object.assign(payload, {
+        bankCode: form.swiftBic, // FLW uses SWIFT as bank code for intl
+        bankName: form.bankName,
+        accountNumber: form.accountNumber,
+        accountName: form.accountName,
+        swiftBic: form.swiftBic,
+        routingNumber: form.routingNumber ?? "",
+      });
+    } else if (m === "mobile_money") {
+      Object.assign(payload, {
+        mobileNumber: form.mobileNumber,
+        mobileName: form.mobileName ?? "",
+        mobileProvider: selMethod.provider ?? form.mobileProvider ?? "",
+      });
+    } else if (m === "crypto") {
+      Object.assign(payload, {
+        cryptoAddress: form.cryptoAddress,
+        cryptoCurrency: form.cryptoToken ?? "USDT",
+        cryptoNetwork: form.cryptoNetwork ?? "BSC",
+      });
+    }
 
     setSubmitting(true);
     try {
-      await api.post("/payments/withdraw", {
-        amount: amt,
-        currency: "NGN",
-        method: method.id,
-        destination: dest,
-        details: fields,
-      });
+      await api.post("/payments/withdraw", payload);
       setSuccess(
-        `Withdrawal of ${fmt(amt)} submitted. Processing within 1–3 business days.`,
+        `Withdrawal of ${fmt(amt, currency)} submitted. Processing within 1–3 business days.`,
       );
-      setAmount("");
-      setFields({});
-      loadData(1); // refresh history
-    } catch (e) {
+      onSuccess();
+    } catch (err) {
       setError(
-        e.response?.data?.message || "Withdrawal failed. Please try again.",
+        err.response?.data?.message ?? "Withdrawal failed. Please try again.",
       );
     } finally {
       setSubmitting(false);
     }
   }
 
-  const available = balance?.available || 0;
+  // Available currencies to withdraw (only those with balance)
+  const withdrawableCurrencies = Object.entries(currencyBalances)
+    .filter(([, bal]) => bal > 0)
+    .map(([cur]) => cur);
+
+  const currMeta = CURRENCY_META[currency] ?? {
+    flag: "💱",
+    symbol: currency,
+    name: currency,
+  };
+
+  return (
+    <div
+      className={s.backdrop}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className={s.formModal}>
+        {/* Header */}
+        <div className={s.formModalHeader}>
+          <h2 className={s.formModalTitle}>Request Payout</h2>
+          <button className={s.modalClose} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        {success ? (
+          <div className={s.successBox}>
+            <span className={s.successIcon}>🎉</span>
+            <h3 className={s.successTitle}>Withdrawal Submitted!</h3>
+            <p className={s.successMsg}>{success}</p>
+            <button
+              className={s.doneBtn}
+              onClick={() => {
+                onClose();
+              }}
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <form className={s.payoutForm} onSubmit={handleSubmit}>
+            {/* ── Currency selector ─────────────────────────────────────── */}
+            <div className={s.formSection}>
+              <p className={s.formSectionLabel}>Withdraw from Wallet</p>
+              <div className={s.currencyTabs}>
+                {withdrawableCurrencies.map((cur) => {
+                  const cm = CURRENCY_META[cur] ?? {
+                    flag: "💱",
+                    symbol: cur,
+                    name: cur,
+                  };
+                  const bal = currencyBalances[cur] ?? 0;
+                  return (
+                    <button
+                      key={cur}
+                      type="button"
+                      className={`${s.currencyTab} ${currency === cur ? s.currencyTabActive : ""}`}
+                      onClick={() => setCurrency(cur)}
+                    >
+                      <span className={s.currencyTabFlag}>{cm.flag}</span>
+                      <div className={s.currencyTabInfo}>
+                        <span className={s.currencyTabCode}>{cur}</span>
+                        <span className={s.currencyTabBal}>
+                          {fmt(bal, cur)}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Selected currency balance display */}
+              <div className={s.selectedCurrencyBar}>
+                <div className={s.selectedCurrencyLeft}>
+                  <span className={s.selectedCurrencyFlag}>
+                    {currMeta.flag}
+                  </span>
+                  <div>
+                    <span className={s.selectedCurrencyName}>
+                      {currMeta.name} Wallet
+                    </span>
+                    <span className={s.selectedCurrencyCode}>{currency}</span>
+                  </div>
+                </div>
+                <div className={s.selectedCurrencyBalance}>
+                  <span className={s.selectedCurrencyBalLabel}>Available</span>
+                  <span className={s.selectedCurrencyBalAmt}>
+                    {fmt(availableForCurrency, currency)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Method selector ───────────────────────────────────────── */}
+            <div className={s.formSection}>
+              <p className={s.formSectionLabel}>Payout Method</p>
+              <div className={s.methodGrid}>
+                {methods.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    className={`${s.methodCard} ${selMethod?.key === m.key ? s.methodCardActive : ""}`}
+                    onClick={() => {
+                      setSelMethod(m);
+                      setForm({});
+                      setVerifiedName(null);
+                    }}
+                  >
+                    <span className={s.methodCardIcon}>{m.icon}</span>
+                    <span className={s.methodCardLabel}>{m.label}</span>
+                    <span className={s.methodCardDesc}>{m.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Dynamic fields per method ──────────────────────────────── */}
+            {selMethod && (
+              <div className={s.formSection}>
+                <p className={s.formSectionLabel}>Payout Details</p>
+
+                {/* ── Local bank transfer (NGN, GHS, KES, etc.) ─────────── */}
+                {selMethod.method === "bank_transfer" &&
+                  !selMethod.isInternational && (
+                    <div className={s.fieldsStack}>
+                      <div className={s.formField}>
+                        <label className={s.formLabel}>Bank / Fintech *</label>
+                        <BankDropdown
+                          banks={banks}
+                          loading={banksLoading}
+                          value={form.bankCode}
+                          onChange={(b) => {
+                            setF("bankCode", b.code);
+                            setF("bankName", b.name);
+                          }}
+                          placeholder="Select bank, Kuda, OPay…"
+                        />
+                      </div>
+
+                      <div className={s.formField}>
+                        <label className={s.formLabel}>Account Number *</label>
+                        <input
+                          className={s.formInput}
+                          placeholder="0123456789"
+                          value={form.accountNumber ?? ""}
+                          onChange={(e) =>
+                            setF("accountNumber", e.target.value)
+                          }
+                          maxLength={12}
+                          required
+                        />
+                      </div>
+
+                      {/* Account name verification */}
+                      <div className={s.verifyRow}>
+                        <div className={s.verifyStatus}>
+                          {verifiedName ? (
+                            <div className={s.verifiedTag}>
+                              ✅ {verifiedName}
+                            </div>
+                          ) : verifyErr ? (
+                            <div className={s.verifyErrTag}>❌ {verifyErr}</div>
+                          ) : (
+                            <span className={s.verifyHint}>
+                              Verify to confirm account holder name
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className={s.verifyBtn}
+                          onClick={verifyAccount}
+                          disabled={
+                            verifying || !form.accountNumber || !form.bankCode
+                          }
+                        >
+                          {verifying ? (
+                            <span className={s.spinnerSm} />
+                          ) : (
+                            "Verify"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                {/* ── International bank transfer ────────────────────────── */}
+                {selMethod.method === "bank_transfer" &&
+                  selMethod.isInternational && (
+                    <div className={s.fieldsGrid}>
+                      {[
+                        {
+                          key: "bankName",
+                          label: "Bank Name *",
+                          placeholder: "e.g. Bank of America",
+                        },
+                        {
+                          key: "accountNumber",
+                          label: "Account / IBAN *",
+                          placeholder: "IBAN or account number",
+                        },
+                        {
+                          key: "swiftBic",
+                          label: "SWIFT / BIC *",
+                          placeholder: "e.g. BOFAUS3N",
+                        },
+                        {
+                          key: "routingNumber",
+                          label: "Routing (US/CA)",
+                          placeholder: "9-digit routing",
+                        },
+                        {
+                          key: "accountName",
+                          label: "Account Holder Name *",
+                          placeholder: "Full name on account",
+                        },
+                        {
+                          key: "bankCountry",
+                          label: "Bank Country *",
+                          placeholder: "e.g. United States",
+                        },
+                      ].map(({ key, label, placeholder }) => (
+                        <div key={key} className={s.formField}>
+                          <label className={s.formLabel}>{label}</label>
+                          <input
+                            className={s.formInput}
+                            placeholder={placeholder}
+                            value={form[key] ?? ""}
+                            onChange={(e) => setF(key, e.target.value)}
+                            required={label.includes("*")}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                {/* ── Mobile money ───────────────────────────────────────── */}
+                {selMethod.method === "mobile_money" && (
+                  <div className={s.fieldsStack}>
+                    <div className={s.formField}>
+                      <label className={s.formLabel}>Mobile Number *</label>
+                      <input
+                        className={s.formInput}
+                        placeholder="+234 800 000 0000"
+                        value={form.mobileNumber ?? ""}
+                        onChange={(e) => setF("mobileNumber", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={s.formField}>
+                      <label className={s.formLabel}>
+                        Account Name (optional)
+                      </label>
+                      <input
+                        className={s.formInput}
+                        placeholder="Name on mobile account"
+                        value={form.mobileName ?? ""}
+                        onChange={(e) => setF("mobileName", e.target.value)}
+                      />
+                    </div>
+                    {selMethod.provider && (
+                      <div className={s.providerChip}>
+                        <span>{selMethod.icon}</span>
+                        <span>
+                          Provider: <strong>{selMethod.provider}</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Crypto ─────────────────────────────────────────────── */}
+                {selMethod.method === "crypto" && (
+                  <div className={s.fieldsStack}>
+                    {/* Token selector */}
+                    <div className={s.formField}>
+                      <label className={s.formLabel}>Token *</label>
+                      <div className={s.tokenGrid}>
+                        {CRYPTO_TOKENS.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            className={`${s.tokenBtn} ${form.cryptoToken === t ? s.tokenBtnActive : ""}`}
+                            onClick={() => setF("cryptoToken", t)}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Network selector */}
+                    <div className={s.formField}>
+                      <label className={s.formLabel}>Network *</label>
+                      <div className={s.networkGrid}>
+                        {CRYPTO_NETWORKS.map((n) => (
+                          <button
+                            key={n.value}
+                            type="button"
+                            className={`${s.networkBtn} ${form.cryptoNetwork === n.value ? s.networkBtnActive : ""}`}
+                            onClick={() => setF("cryptoNetwork", n.value)}
+                          >
+                            {n.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={s.formField}>
+                      <label className={s.formLabel}>Wallet Address *</label>
+                      <input
+                        className={`${s.formInput} ${s.monoInput}`}
+                        placeholder="0x… or TRC20 address"
+                        value={form.cryptoAddress ?? ""}
+                        onChange={(e) => setF("cryptoAddress", e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className={s.cryptoWarning}>
+                      <span>⚠️</span>
+                      <p>
+                        Double-check the network matches your wallet. Sending to
+                        the wrong network will result in permanent loss of
+                        funds.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Amount ────────────────────────────────────────────────── */}
+            <div className={s.formSection}>
+              <p className={s.formSectionLabel}>Amount ({currency})</p>
+              <div className={s.amountWrap}>
+                <span className={s.amountCurrency}>{currMeta.symbol}</span>
+                <input
+                  className={s.amountInput}
+                  type="number"
+                  placeholder="0.00"
+                  min="1"
+                  step="0.01"
+                  max={availableForCurrency}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <div className={s.quickAmounts}>
+                {[0.25, 0.5, 0.75, 1].map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    className={s.quickBtn}
+                    onClick={() =>
+                      setAmount((availableForCurrency * f).toFixed(2))
+                    }
+                  >
+                    {f === 1 ? "Max" : `${f * 100}%`}
+                  </button>
+                ))}
+              </div>
+              {amount &&
+                parseFloat(amount) > 0 &&
+                (() => {
+                  const feeRate = feeConfig?.withdrawalFeeRate ?? 0;
+                  const feeAmt = parseFloat(amount) * feeRate;
+                  const netAmt = parseFloat(amount) - feeAmt;
+                  const isFree = feeRate === 0;
+                  return (
+                    <div className={s.amountPreview}>
+                      {isFree ? (
+                        <>
+                          You receive{" "}
+                          <strong className={s.amountPreviewFull}>
+                            {fmt(netAmt, currency)} — no fee 🎉
+                          </strong>
+                        </>
+                      ) : (
+                        <>
+                          You receive approx.{" "}
+                          <strong>{fmt(netAmt, currency)}</strong> after{" "}
+                          {(feeRate * 100).toFixed(0)}% fee
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+            </div>
+
+            {error && <div className={s.errorBox}>⚠️ {error}</div>}
+
+            <div className={s.formInfo}>
+              <span>ℹ️</span>
+              <p>
+                Payouts processed within 1–3 business days ·{" "}
+                {(feeConfig?.withdrawalFeeRate ?? 0) === 0 ? (
+                  <strong>
+                    No withdrawal fee — you keep 100% of your earnings 🎉
+                  </strong>
+                ) : (
+                  `${((feeConfig?.withdrawalFeeRate ?? 0) * 100).toFixed(0)}% withdrawal fee applies`
+                )}{" "}
+                · Crypto is USDC/USDT equivalent · Minimum: 1 {currency}
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className={s.submitBtn}
+              disabled={submitting || !amount || !selMethod}
+            >
+              {submitting ? (
+                <>
+                  <span className={s.spinner} /> Processing…
+                </>
+              ) : (
+                `↑ Withdraw ${amount ? fmt(parseFloat(amount) || 0, currency) : ""}`
+              )}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+export default function WorkerWithdrawals() {
+  const [balance, setBalance] = useState(null);
+  const [currencyBalances, setCurrencyBalances] = useState({});
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [receipt, setReceipt] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [toast, setToast] = useState(null);
+
+  // ── Load wallet data ───────────────────────────────────────────────────────
+  const loadData = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      // 1. Get withdrawal history + total balance
+      const wdRes = await api.get(`/payments/withdrawals?page=${p}&limit=15`);
+      setHistory(wdRes.data.data.withdrawals);
+      setBalance(wdRes.data.data.balance);
+      setPages(wdRes.data.data.pages);
+      setPage(p);
+
+      // 2. Get available currencies from earnings
+      const earnRes = await api.get("/payments/earnings?limit=1");
+      const currencies = earnRes.data.data.availableCurrencies ?? ["NGN"];
+
+      // 3. Fetch per-currency earnings to build currency balance map
+      const balMap = {};
+      await Promise.all(
+        currencies.map(async (cur) => {
+          try {
+            const r = await api.get(
+              `/payments/earnings?currency=${cur}&limit=1`,
+            );
+            const earned = r.data.data.summary?.totalEarned ?? 0;
+            // Deduct pending withdrawals for this currency
+            const pending = wdRes.data.data.withdrawals
+              .filter(
+                (w) =>
+                  w.currency === cur &&
+                  ["PENDING", "PROCESSING"].includes(w.status),
+              )
+              .reduce((sum, w) => sum + (w.amount || 0), 0);
+            balMap[cur] = Math.max(0, earned - pending);
+          } catch {
+            balMap[cur] = 0;
+          }
+        }),
+      );
+
+      setCurrencyBalances(balMap);
+
+      // Default selected currency to highest balance
+      const topCur = Object.entries(balMap).sort(
+        ([, a], [, b]) => b - a,
+      )[0]?.[0];
+      if (topCur) setSelectedCurrency(topCur);
+    } catch {
+      setToast({ type: "error", msg: "Failed to load wallet data." });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  function showToast(type, msg) {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  function handleWithdrawalSuccess() {
+    loadData(1);
+  }
+
+  const currenciesWithBalance = Object.entries(currencyBalances)
+    .filter(([, v]) => v > 0)
+    .sort(([, a], [, b]) => b - a);
 
   return (
     <WorkerLayout>
-      <div className={styles.page}>
+      <div className={s.page}>
+        {/* Toast */}
+        {toast && (
+          <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
+            <span>
+              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+            </span>
+            <button className={s.toastClose} onClick={() => setToast(null)}>
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Header */}
-        <div className={styles.header}>
+        <div className={s.header}>
           <div>
-            <div className={styles.eyebrow}>Earnings & Payouts</div>
-            <h1 className={styles.title}>Your Wallet</h1>
-            <p className={styles.sub}>
-              Track earnings, escrows, and withdraw funds
+            <div className={s.eyebrow}>Earnings & Payouts</div>
+            <h1 className={s.title}>Your Wallet</h1>
+            <p className={s.sub}>
+              Multi-currency earnings, withdrawals, and payout history
             </p>
           </div>
           <button
-            className={styles.withdrawBtn}
-            onClick={() => {
-              setShowForm(true);
-              setSuccess("");
-              setError("");
-            }}
-            disabled={available <= 0}
+            className={s.withdrawBtn}
+            onClick={() => setShowForm(true)}
+            disabled={currenciesWithBalance.length === 0 || loading}
           >
             ↑ Withdraw Funds
           </button>
         </div>
 
+        {/* ── Currency wallet cards ──────────────────────────────────────── */}
+        {!loading && currenciesWithBalance.length > 0 && (
+          <div className={s.currencyWallets}>
+            <p className={s.walletSectionLabel}>💳 Your Currency Wallets</p>
+            <div className={s.currencyWalletGrid}>
+              {currenciesWithBalance.map(([cur, bal]) => {
+                const cm = CURRENCY_META[cur] ?? {
+                  flag: "💱",
+                  symbol: cur,
+                  name: cur,
+                };
+                return (
+                  <div
+                    key={cur}
+                    className={`${s.currencyWalletCard} ${selectedCurrency === cur ? s.currencyWalletCardActive : ""}`}
+                    onClick={() => setSelectedCurrency(cur)}
+                  >
+                    <div className={s.walletCardTop}>
+                      <span className={s.walletFlag}>{cm.flag}</span>
+                      <span className={s.walletCode}>{cur}</span>
+                    </div>
+                    <div className={s.walletAmount}>{fmt(bal, cur)}</div>
+                    <div className={s.walletName}>{cm.name}</div>
+                    <button
+                      className={s.walletWithdrawBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCurrency(cur);
+                        setShowForm(true);
+                      }}
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Summary cards */}
-        <div className={styles.summaryGrid}>
-          <div className={`${styles.summaryCard} ${styles.summaryAccent}`}>
-            <span className={styles.summaryLabel}>Available to Withdraw</span>
-            <span className={styles.summaryValue}>
-              {loading ? "—" : fmt(available)}
+        <div className={s.summaryGrid}>
+          <div className={`${s.summaryCard} ${s.summaryAccent}`}>
+            <span className={s.summaryLabel}>Total Available</span>
+            <span className={s.summaryValue}>
+              {loading ? "—" : fmt(balance?.available ?? 0)}
             </span>
-            <span className={styles.summarySub}>Ready now</span>
+            <span className={s.summarySub}>Across all currencies</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>In Escrow</span>
-            <span className={styles.summaryValue}>
-              {loading ? "—" : fmt(balance?.inEscrow || 0)}
+          <div className={s.summaryCard}>
+            <span className={s.summaryLabel}>In Escrow</span>
+            <span className={s.summaryValue}>
+              {loading ? "—" : fmt(balance?.inEscrow ?? 0)}
             </span>
-            <span className={styles.summarySub}>Awaiting completion</span>
+            <span className={s.summarySub}>Awaiting completion</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Total Withdrawn</span>
-            <span className={styles.summaryValue}>
-              {loading ? "—" : fmt(balance?.totalWithdrawn || 0)}
+          <div className={s.summaryCard}>
+            <span className={s.summaryLabel}>Pending Payouts</span>
+            <span className={s.summaryValue}>
+              {loading ? "—" : fmt(balance?.pendingPayout ?? 0)}
             </span>
-            <span className={styles.summarySub}>All time</span>
-          </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Pending Payouts</span>
-            <span className={styles.summaryValue}>
-              {loading ? "—" : fmt(balance?.pendingPayout || 0)}
-            </span>
-            <span className={styles.summarySub}>
+            <span className={s.summarySub}>
               {
                 history.filter((w) =>
                   ["PENDING", "PROCESSING"].includes(w.status),
@@ -404,98 +1540,119 @@ export default function WorkerWithdrawals() {
               request(s)
             </span>
           </div>
+          <div className={s.summaryCard}>
+            <span className={s.summaryLabel}>Wallets</span>
+            <span className={s.summaryValue}>
+              {loading ? "—" : currenciesWithBalance.length}
+            </span>
+            <span className={s.summarySub}>Active currencies</span>
+          </div>
         </div>
 
         {/* History table */}
-        <div className={styles.tableWrap}>
-          <div className={styles.tableHeader}>
-            <h2 className={styles.tableTitle}>Withdrawal History</h2>
-            <span className={styles.tableCount}>{history.length} records</span>
+        <div className={s.tableWrap}>
+          <div className={s.tableHeader}>
+            <h2 className={s.tableTitle}>Withdrawal History</h2>
+            <span className={s.tableCount}>{history.length} records</span>
           </div>
 
-          {/* Desktop head */}
-          <div className={styles.tableHead}>
+          <div className={s.tableHead}>
             <span>Reference</span>
             <span>Method</span>
             <span>Destination</span>
-            <span>Requested</span>
+            <span>Date</span>
             <span>Amount</span>
             <span>Status</span>
-            <span></span>
+            <span />
           </div>
 
-          <div className={styles.tableBody}>
+          <div className={s.tableBody}>
             {loading ? (
-              [...Array(3)].map((_, i) => (
-                <div key={i} className={styles.skRow} />
-              ))
+              [...Array(3)].map((_, i) => <div key={i} className={s.skRow} />)
             ) : history.length === 0 ? (
-              <div className={styles.empty}>
-                <span className={styles.emptyIcon}>💸</span>
-                <p className={styles.emptyTitle}>No withdrawals yet</p>
-                <p className={styles.emptySub}>
+              <div className={s.empty}>
+                <span className={s.emptyIcon}>💸</span>
+                <p className={s.emptyTitle}>No withdrawals yet</p>
+                <p className={s.emptySub}>
                   Request your first payout when you have available balance.
                 </p>
               </div>
             ) : (
               history.map((w, i) => {
-                const sm = STATUS_META[w.status] || {
+                const sm = STATUS_META[w.status] ?? {
                   label: w.status,
                   cls: "pending",
                 };
-                const methodMeta = PAYOUT_METHODS.find(
-                  (m) => m.id === w.method,
-                );
+                const cm = CURRENCY_META[w.currency] ?? { flag: "💱" };
                 return (
                   <div
                     key={w.id}
-                    className={styles.tableRow}
+                    className={s.tableRow}
                     style={{ animationDelay: `${i * 35}ms` }}
                   >
-                    {/* Mobile: stacked layout */}
-                    <div className={styles.rowMobileTop}>
-                      <div className={styles.refCell}>
-                        <span className={styles.refText}>#{w.reference}</span>
-                        <span className={styles.dateCell}>
+                    {/* Mobile: stacked */}
+                    <div className={s.rowMobileTop}>
+                      <div className={s.refCell}>
+                        <span className={s.refText}>
+                          #{w.reference?.slice(-8)}
+                        </span>
+                        <span className={s.dateCell}>
                           {timeAgo(w.createdAt)}
                         </span>
                       </div>
-                      <span className={`${styles.pill} ${styles[sm.cls]}`}>
+                      <span className={`${s.pill} ${s[sm.cls]}`}>
                         {sm.label}
                       </span>
                     </div>
 
-                    {/* Desktop cells */}
-                    <div className={styles.methodCell}>
-                      <span className={styles.methodIcon}>
-                        {methodMeta?.icon || "💳"}
-                      </span>
-                      <span className={styles.methodName}>
-                        {methodMeta?.label || w.method}
+                    {/* Method cell */}
+                    <div className={s.methodCell}>
+                      <span className={s.methodName}>
+                        {cm.flag} {w.method?.replace(/_/g, " ")}
                       </span>
                     </div>
-                    <div className={styles.destCell}>{w.destination}</div>
-                    <div className={styles.dateCellDesktop}>
+
+                    {/* Destination */}
+                    <div className={s.destCell}>{w.destination}</div>
+
+                    {/* Date (desktop) */}
+                    <div className={s.dateCellDesktop}>
                       {timeAgo(w.createdAt)}
                     </div>
-                    <div className={styles.amountCell}>
-                      <span className={styles.amountVal}>
+
+                    {/* Amount */}
+                    <div className={s.amountCell}>
+                      <span className={s.amountVal}>
                         {fmt(w.amount, w.currency)}
                       </span>
-                      {w.status === "COMPLETED" && (
-                        <span className={styles.amountNet}>
-                          Net {fmt(w.amount * 0.99, w.currency)}
-                        </span>
-                      )}
+                      {w.status === "COMPLETED" &&
+                        (() => {
+                          const feeRate = balance?.withdrawalFeeRate ?? 0;
+                          const net = parseFloat(
+                            (w.amount * (1 - feeRate)).toFixed(2),
+                          );
+                          return feeRate > 0 ? (
+                            <span className={s.amountNet}>
+                              Net {fmt(net, w.currency)}
+                            </span>
+                          ) : (
+                            <span className={s.amountNetFree}>
+                              Full amount sent ✓
+                            </span>
+                          );
+                        })()}
                     </div>
-                    <div className={styles.statusCellDesktop}>
-                      <span className={`${styles.pill} ${styles[sm.cls]}`}>
+
+                    {/* Status (desktop) */}
+                    <div className={s.statusCellDesktop}>
+                      <span className={`${s.pill} ${s[sm.cls]}`}>
                         {sm.label}
                       </span>
                     </div>
-                    <div className={styles.actionsCell}>
+
+                    <div className={s.actionsCell}>
                       <button
-                        className={styles.receiptBtn}
+                        className={s.receiptBtn}
                         onClick={() => setReceipt(w)}
                       >
                         Receipt
@@ -507,21 +1664,20 @@ export default function WorkerWithdrawals() {
             )}
           </div>
 
-          {/* Pagination */}
           {pages > 1 && (
-            <div className={styles.pager}>
+            <div className={s.pager}>
               <button
-                className={styles.pageBtn}
+                className={s.pageBtn}
                 disabled={page === 1}
                 onClick={() => loadData(page - 1)}
               >
                 ← Prev
               </button>
-              <span className={styles.pageInfo}>
+              <span className={s.pageInfo}>
                 {page} / {pages}
               </span>
               <button
-                className={styles.pageBtn}
+                className={s.pageBtn}
                 disabled={page === pages}
                 onClick={() => loadData(page + 1)}
               >
@@ -530,175 +1686,31 @@ export default function WorkerWithdrawals() {
             </div>
           )}
         </div>
-
-        {/* Payout request modal */}
-        {showForm && (
-          <div
-            className={styles.backdrop}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowForm(false);
-            }}
-          >
-            <div className={styles.formModal}>
-              <div className={styles.formModalHeader}>
-                <h2 className={styles.formModalTitle}>Request Payout</h2>
-                <button
-                  className={styles.modalClose}
-                  onClick={() => setShowForm(false)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Balance bar */}
-              <div className={styles.balanceBar}>
-                <div>
-                  <p className={styles.balanceLabel}>Available</p>
-                  <p className={styles.balanceValue}>{fmt(available)}</p>
-                </div>
-                <div>
-                  <p className={styles.balanceLabel}>In Escrow</p>
-                  <p className={styles.balanceEscrow}>
-                    {fmt(balance?.inEscrow || 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className={styles.balanceLabel}>Min. Withdrawal</p>
-                  <p className={styles.balanceMin}>NGN 500</p>
-                </div>
-              </div>
-
-              {success ? (
-                <div className={styles.successBox}>
-                  <span className={styles.successIcon}>✅</span>
-                  <p className={styles.successMsg}>{success}</p>
-                  <button
-                    className={styles.doneBtn}
-                    onClick={() => {
-                      setShowForm(false);
-                      setSuccess("");
-                    }}
-                  >
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <form className={styles.payoutForm} onSubmit={handleSubmit}>
-                  {/* Method selector */}
-                  <div className={styles.formSection}>
-                    <p className={styles.formSectionLabel}>Payout Method</p>
-                    <div className={styles.methodGrid}>
-                      {PAYOUT_METHODS.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className={`${styles.methodCard} ${method.id === m.id ? styles.methodCardActive : ""}`}
-                          onClick={() => {
-                            setMethod(m);
-                            setFields({});
-                          }}
-                        >
-                          <span className={styles.methodCardIcon}>
-                            {m.icon}
-                          </span>
-                          <span className={styles.methodCardLabel}>
-                            {m.label}
-                          </span>
-                          <span className={styles.methodCardRegion}>
-                            {m.regions}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                    <p className={styles.methodDesc}>{method.desc}</p>
-                  </div>
-
-                  {/* Amount */}
-                  <div className={styles.formSection}>
-                    <p className={styles.formSectionLabel}>Amount</p>
-                    <div className={styles.amountWrap}>
-                      <span className={styles.amountCurrency}>NGN</span>
-                      <input
-                        className={styles.amountInput}
-                        type="number"
-                        placeholder="0.00"
-                        min="500"
-                        max={available}
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className={styles.quickAmounts}>
-                      {[0.25, 0.5, 0.75, 1].map((f) => (
-                        <button
-                          key={f}
-                          type="button"
-                          className={styles.quickBtn}
-                          onClick={() =>
-                            setAmount(Math.floor(available * f).toString())
-                          }
-                        >
-                          {f === 1 ? "Max" : `${f * 100}%`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Method fields */}
-                  <div className={styles.formSection}>
-                    <p className={styles.formSectionLabel}>Payout Details</p>
-                    <div className={styles.fieldsGrid}>
-                      {method.fields.map((f) => (
-                        <div key={f} className={styles.formField}>
-                          <label className={styles.formLabel}>
-                            {FIELD_LABELS[f] || f} *
-                          </label>
-                          <input
-                            className={styles.formInput}
-                            placeholder={FIELD_PLACEHOLDERS[f] || ""}
-                            value={fields[f] || ""}
-                            onChange={(e) => setField(f, e.target.value)}
-                            required
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {error && <div className={styles.errorBox}>⚠️ {error}</div>}
-
-                  <div className={styles.formInfo}>
-                    <span>ℹ️</span>
-                    <p>
-                      Payouts processed within 1–3 business days. 1% processing
-                      fee applies. Crypto payouts are USDC/USDT equivalent.
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className={styles.submitBtn}
-                    disabled={submitting || !amount}
-                  >
-                    {submitting ? (
-                      <>
-                        <span className={styles.spinner} /> Processing...
-                      </>
-                    ) : (
-                      `↑ Request ${amount ? fmt(parseFloat(amount) || 0) : ""} Payout`
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
-
-        {receipt && (
-          <ReceiptModal withdrawal={receipt} onClose={() => setReceipt(null)} />
-        )}
       </div>
+
+      {/* Modals */}
+      {showForm && (
+        <WithdrawalModal
+          onClose={() => setShowForm(false)}
+          balance={balance}
+          currencyBalances={currencyBalances}
+          defaultCurrency={selectedCurrency}
+          feeConfig={balance}
+          onSuccess={() => {
+            setShowForm(false);
+            handleWithdrawalSuccess();
+            showToast("success", "Withdrawal submitted!");
+          }}
+        />
+      )}
+
+      {receipt && (
+        <ReceiptModal
+          withdrawal={receipt}
+          feeConfig={balance}
+          onClose={() => setReceipt(null)}
+        />
+      )}
     </WorkerLayout>
   );
 }
