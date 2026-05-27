@@ -1,5 +1,6 @@
+/* ── Page ──────────────────────────────────────────────────── */
 .page {
-  padding: 32px 24px;
+  padding: 24px 16px 48px;
   max-width: 680px;
   margin: 0 auto;
   animation: fadeUp 0.4s ease both;
@@ -16,7 +17,7 @@
   border-radius: 20px;
   transition: all 0.15s;
   text-decoration: none;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .back:hover {
   border-color: var(--orange);
@@ -24,11 +25,11 @@
 }
 
 .header {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 .eyebrow {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--orange);
@@ -36,7 +37,7 @@
 }
 .title {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.5px;
@@ -52,19 +53,17 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
-
 .fieldset {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 20px 20px 16px;
+  padding: 18px 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
-
 .legend {
   font-size: 11px;
   font-weight: 700;
@@ -74,13 +73,11 @@
   padding: 0 6px;
   margin-left: -6px;
 }
-
 .field {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
-
 .label {
   font-size: 11px;
   font-weight: 600;
@@ -91,22 +88,38 @@
 .req {
   color: var(--orange);
 }
+.fieldHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hintLink {
+  color: var(--orange);
+  text-decoration: underline;
+}
 
+/* Standard inputs */
 .input,
 .select,
 .textarea {
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 15px;
   padding: 0 14px;
-  height: 44px;
+  height: 48px;
   outline: none;
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
   width: 100%;
+  font-family: var(--font-body);
 }
 .input:focus,
 .select:focus,
@@ -118,7 +131,6 @@
 .textarea::placeholder {
   color: var(--text-muted);
 }
-
 .select {
   appearance: none;
   cursor: pointer;
@@ -130,46 +142,379 @@
 .select option {
   background: #0c0c18;
 }
-
 .textarea {
   height: auto;
   padding: 12px 14px;
   resize: vertical;
   line-height: 1.6;
 }
-
 .row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 
-/* Rate input with currency prefix */
-.rateWrap {
-  position: relative;
+/* ── Icon Input (with leading icon) ───────────────────────── */
+.iconInputWrap {
   display: flex;
   align-items: center;
+  gap: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 14px;
+  height: 52px;
+  transition: border-color 0.15s;
 }
-.rateCurrency {
-  position: absolute;
-  left: 14px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--orange);
-  pointer-events: none;
-  z-index: 1;
+.iconInputWrap:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--orange-dim);
 }
-.rateInput {
-  padding-left: 46px !important;
+.iconInputIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.iconInput {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font-body);
+}
+.iconInput::placeholder {
+  color: var(--text-muted);
+}
+/* datetime-local native text */
+.iconInput[type="datetime-local"] {
+  color-scheme: dark;
 }
 
-.hint {
+/* ── Job Type — 2×2 grid ───────────────────────────────────── */
+.jobTypeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.jobTypeCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 22px 12px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.jobTypeCard:hover {
+  border-color: var(--orange-glow);
+}
+.jobTypeCardActive {
+  border-color: var(--orange);
+  background: rgba(249, 115, 22, 0.08);
+}
+.jobTypeIcon {
+  font-size: 26px;
+}
+.jobTypeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.jobTypeCardActive .jobTypeLabel {
+  color: var(--orange);
+}
+
+/* Active dot indicator (top-right corner of cards) */
+.activeDot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background: var(--orange);
+  border-radius: 50%;
+}
+
+/* ── Location Type — 3 columns ─────────────────────────────── */
+.locationGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.locationCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 18px 8px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.locationCard:hover {
+  border-color: var(--orange-glow);
+}
+.locationCardActive {
+  border-color: var(--orange);
+  background: rgba(249, 115, 22, 0.08);
+}
+.locationIcon {
+  font-size: 22px;
+}
+.locationLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.locationCardActive .locationLabel {
+  color: var(--orange);
+}
+
+/* ── Type List (Payment Type & Job Duration) ───────────────── */
+.typeList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.typeListRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-body);
+  text-align: left;
+  transition: background 0.12s;
+  width: 100%;
+}
+.typeListRow:last-child {
+  border-bottom: none;
+}
+.typeListRow:hover {
+  background: rgba(249, 115, 22, 0.04);
+}
+.typeListRowActive {
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.typeListIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.typeListIconActive {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+.typeListContent {
+  flex: 1;
+  min-width: 0;
+}
+.typeListLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.typeListRowActive .typeListLabel {
+  color: var(--orange);
+}
+.typeListSub {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.typeListCheck {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Pricing unit cards ────────────────────────────────────── */
+.unitGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.unitCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+  text-align: center;
+}
+.unitCard:hover:not(:disabled) {
+  border-color: var(--orange);
+}
+.unitCardActive {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+}
+.unitCardDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.unitCardLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.unitCardActive .unitCardLabel {
+  color: var(--orange);
+}
+.unitCardRate {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+.unitCardActive .unitCardRate {
+  color: var(--orange);
+}
+.unitCardNoRate {
   font-size: 11px;
   color: var(--text-muted);
 }
-.hintLink {
+
+/* ── Rate locked display ───────────────────────────────────── */
+.rateLockedRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.rateLockedBox {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(249, 115, 22, 0.06);
+  border: 1px solid var(--orange-glow);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.rateLockedLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.rateLockedValue {
+  font-size: 1.1rem;
+  font-weight: 800;
   color: var(--orange);
-  text-decoration: underline;
+  font-family: var(--font-display);
+}
+.rateLockedNote {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Estimated Total box ───────────────────────────────────── */
+.estimatedTotalBox {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.estimatedTotalLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.estimatedTotalValue {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--green);
+  letter-spacing: -0.02em;
+}
+
+/* ── Pricing note ──────────────────────────────────────────── */
+.pricingNoteBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Duration label (below qty input) ─────────────────────── */
+.durationLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.durationEqv {
+  color: var(--text-muted);
+}
+
+/* ── Locked field (single category) ───────────────────────── */
+.lockedField {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text);
+}
+.lockedBadge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
 }
 
 /* ── Error ─────────────────────────────────────────────────── */
@@ -180,30 +525,33 @@
   padding: 12px 16px;
   background: var(--red-dim);
   border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 10px;
+  border-radius: 12px;
   animation: fadeUp 0.25s ease both;
 }
 
-/* ── Submit ────────────────────────────────────────────────── */
+/* ── Submit button — pill ──────────────────────────────────── */
 .submitBtn {
-  height: 52px;
+  height: 60px;
   background: var(--orange);
-  color: var(--bg);
+  color: #000;
   border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+  letter-spacing: -0.01em;
   transition:
-    background 0.15s,
+    opacity 0.15s,
     transform 0.1s;
 }
 .submitBtn:hover:not(:disabled) {
-  background: var(--orange-hover);
+  opacity: 0.88;
   transform: translateY(-1px);
 }
 .submitBtn:disabled {
@@ -211,13 +559,28 @@
   cursor: not-allowed;
 }
 
+.submitBtnPlus {
+  width: 30px;
+  height: 30px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .spinner {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: var(--bg);
+  border-top-color: #000;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
+  display: inline-block;
 }
 
 .disclaimer {
@@ -228,38 +591,25 @@
   padding: 0 8px;
 }
 
-/* ── Responsive ────────────────────────────────────────────── */
-@media (min-width: 640px) {
-  .page {
-    padding: 40px 32px;
-  }
-}
-@media (max-width: 480px) {
-  .row2 {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ── Worker card ── */
 .workerCard {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 14px;
   background: var(--bg-card);
-  border: 1px solid var(--orange-glow);
-  border-radius: 14px;
-  padding: 1.25rem;
-  margin-bottom: 0.5rem;
+  border: 1.5px solid var(--orange-glow);
+  border-radius: 16px;
+  padding: 16px;
   flex-wrap: wrap;
   animation: fadeUp 0.2s ease;
 }
 .workerCardSkeleton {
   display: flex;
-  gap: 1rem;
+  gap: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1.25rem;
+  border-radius: 16px;
+  padding: 16px;
 }
 .workerCardAvatar {
   width: 52px;
@@ -297,54 +647,54 @@
   min-width: 0;
 }
 .workerCardName {
-  font-size: 0.95rem;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text);
   margin: 0 0 2px;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 5px;
 }
 .workerCardTitle {
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--text-dim);
-  margin: 0 0 0.4rem;
+  margin: 0 0 6px;
 }
 .workerCardMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  font-size: 0.72rem;
+  gap: 10px;
+  font-size: 12px;
   color: var(--text-muted);
-  margin-bottom: 0.4rem;
+  margin-bottom: 6px;
 }
 .workerCardCats {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: 5px;
 }
 .catChip {
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
   color: var(--orange);
   border-radius: 100px;
-  padding: 0.2rem 0.625rem;
-  font-size: 0.7rem;
+  padding: 3px 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 .workerCardLock {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  font-size: 0.65rem;
+  gap: 3px;
+  font-size: 11px;
   color: var(--text-muted);
   text-align: center;
   flex-shrink: 0;
-  padding-top: 0.25rem;
+  padding-top: 4px;
 }
 .lockIcon {
-  font-size: 1rem;
+  font-size: 16px;
 }
 .lockText {
   max-width: 80px;
@@ -353,168 +703,10 @@
 .workerError {
   background: var(--red-dim);
   border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  font-size: 0.82rem;
-  color: var(--red);
-  margin-bottom: 0.5rem;
-}
-.verifiedBadge {
-  background: var(--green);
-  color: #fff;
-  border-radius: 50%;
-  width: 17px;
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 800;
-}
-
-/* ── Unit cards ── */
-.unitGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.625rem;
-  margin-top: 0.5rem;
-}
-.unitCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.875rem 0.75rem;
-  background: var(--bg-card);
-  border: 1.5px solid var(--border);
   border-radius: 12px;
-  cursor: pointer;
-  font-family: var(--font-body);
-  transition: all 0.15s;
-  text-align: center;
-}
-.unitCard:hover:not(:disabled) {
-  border-color: var(--orange);
-}
-.unitCardActive {
-  border-color: var(--orange);
-  background: var(--orange-dim);
-}
-.unitCardDisabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.unitCardLabel {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-dim);
-}
-.unitCardActive .unitCardLabel {
-  color: var(--orange);
-}
-.unitCardRate {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--text);
-}
-.unitCardActive .unitCardRate {
-  color: var(--orange);
-}
-.unitCardNoRate {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-.unitCardSuffix {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
-
-/* ── Locked rate display ── */
-.rateLockedRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-@media (max-width: 480px) {
-  .rateLockedRow {
-    grid-template-columns: 1fr;
-  }
-}
-.rateLockedBox {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  background: rgba(249, 115, 22, 0.06);
-  border: 1px solid var(--orange-glow);
-  border-radius: 10px;
-  padding: 0.875rem 1rem;
-}
-.rateLockedLabel {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
-}
-.rateLockedValue {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--orange);
-  font-family: var(--font-display);
-}
-.rateLockedNote {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-}
-
-/* ── Total estimate ── */
-.totalEstimate {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  margin-top: 0.375rem;
-}
-.totalNote {
-  color: var(--text-muted);
-}
-
-/* ── Pricing note ── */
-.pricingNoteBox {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.775rem;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-
-/* ── Locked field ── */
-.lockedField {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 0.6rem 0.875rem;
-  font-size: 0.875rem;
-  color: var(--text);
-}
-.lockedBadge {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.2rem 0.5rem;
-}
-
-/* ── Field hint ── */
-.fieldHint {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin: 0.2rem 0 0.5rem;
-  line-height: 1.4;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--red);
 }
 
 /* ── Skeletons ── */
@@ -533,53 +725,66 @@
   animation: pulse 1.4s ease infinite;
 }
 
-.durationLabel {
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
-.durationEqv {
-  color: var(--text-muted);
-}
-
-.bookingSummary {
-  background: var(--bg-card);
-  border: 1.5px solid var(--orange-glow);
-  border-radius: 14px;
-  padding: 1.25rem;
-  margin-top: 0.5rem;
-}
-.summaryTitle {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--orange);
-  margin: 0 0 0.875rem;
-}
-.summaryGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.625rem;
-  margin-bottom: 0.875rem;
-}
-.summaryItem {
+/* ── Restricted msg ── */
+.restrictedMsg {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
 }
-.summaryLabel {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
+.restrictedMsg h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 700;
-}
-.summaryValue {
-  font-size: 0.875rem;
-  font-weight: 600;
   color: var(--text);
 }
-.summaryNote {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  line-height: 1.4;
+.restrictedMsg p {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ── Responsive ── */
+@media (min-width: 640px) {
+  .page {
+    padding: 32px 24px 48px;
+  }
+}
+@media (max-width: 480px) {
+  .rateLockedRow {
+    grid-template-columns: 1fr;
+  }
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+  .unitGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

@@ -49,7 +49,7 @@ import Terms from "./pages/Terms pages/Terms";
 import InitiatePayment from "./components/payment/InitiatePayment";
 import ReleasePayment from "./components/payment/ReleasePayment";
 import PaystackVerify from "./components/payment/PaystackVerify";
-import StripeConfirm from "./components/payment/StripeConfirm";
+import StripeConfirm from "./components/payment/FlutterwaveConfirm";
 import LeaveReview from "./components/review/LeaveReview";
 import WorkerReviewsPage from "./components/review/WorkerReviewsPage";
 import HirerReviewsGiven from "./components/hirer/HirerReviewsGiven";
@@ -94,6 +94,7 @@ import AdminPosts from "./pages/admin/AdminPosts";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminVideoCalls from "./pages/admin/AdminVideoCalls";
 import AdminFeatured from "./pages/admin/AdminFeatured";
+import FlutterwaveConfirm from "./components/payment/FlutterwaveConfirm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -739,7 +740,7 @@ export default function App() {
           path="/bookings/:bookingId/stripe-confirm"
           element={
             <RequireAuth>
-              <StripeConfirm />
+              <FlutterwaveConfirm />
             </RequireAuth>
           }
         />

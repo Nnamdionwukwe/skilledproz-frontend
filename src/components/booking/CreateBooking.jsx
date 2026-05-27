@@ -1,4 +1,3 @@
-// src/components/booking/CreateBooking.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import styles from "./CreateBooking.module.css";
@@ -7,6 +6,7 @@ import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import { ShieldCheck } from "lucide-react";
 
+// ── Engagement type options ────────────────────────────────────────────────────
 const DURATION_OPTIONS = [
   {
     unit: "hours",
@@ -55,6 +55,59 @@ const DURATION_OPTIONS = [
   },
 ];
 
+// ── New booking type constants ─────────────────────────────────────────────────
+const JOB_TYPES = [
+  { value: "FULL_TIME", label: "Full-time", icon: "💼" },
+  { value: "PART_TIME", label: "Part-time", icon: "⏰" },
+  { value: "CONTRACT", label: "Contract", icon: "📄" },
+  { value: "TEMPORARY", label: "Temporary", icon: "⏳" },
+];
+
+const LOCATION_TYPES = [
+  { value: "REMOTE", label: "Remote", icon: "🌐" },
+  { value: "ON_SITE", label: "On-site", icon: "📍" },
+  { value: "HYBRID", label: "Hybrid", icon: "🔀" },
+];
+
+const BUDGET_TYPES = [
+  { value: "FIXED", label: "Fixed Price", sub: "Pay a set total", icon: "💵" },
+  { value: "HOURLY", label: "Per Hour", sub: "Billed hourly", icon: "🕐" },
+  { value: "DAILY", label: "Per Day", sub: "Billed daily", icon: "🌤" },
+  { value: "WEEKLY", label: "Per Week", sub: "Billed weekly", icon: "📅" },
+  { value: "MONTHLY", label: "Per Month", sub: "Billed monthly", icon: "📆" },
+  { value: "CUSTOM", label: "Custom", sub: "Define your own", icon: "✏️" },
+];
+
+const DURATION_TYPES_LIST = [
+  { value: "HOURS", label: "Hours", icon: "🕐" },
+  { value: "DAYS", label: "Days", icon: "🌤" },
+  { value: "WEEKS", label: "Weeks", icon: "📅" },
+  { value: "MONTHS", label: "Months", icon: "📆" },
+  { value: "CUSTOM", label: "Custom", icon: "✏️" },
+];
+
+// ── Fee config ─────────────────────────────────────────────────────────────────
+const HIRER_FEE_RATE = 0.05;
+const WORKER_FEE_RATE = 0.0;
+
+function computeFees(agreedRate, qty = 1) {
+  const subtotal = parseFloat((agreedRate * qty).toFixed(2));
+  const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
+  const totalToPay = parseFloat((subtotal + hirerFee).toFixed(2));
+  const workerGets = subtotal;
+  return { subtotal, hirerFee, totalToPay, workerGets };
+}
+
+// ── Sync map: engagement unit → budget/duration types ─────────────────────────
+const UNIT_TO_TYPES = {
+  hours: { budget: "HOURLY", duration: "HOURS" },
+  days: { budget: "DAILY", duration: "DAYS" },
+  weeks: { budget: "WEEKLY", duration: "WEEKS" },
+  months: { budget: "MONTHLY", duration: "MONTHS" },
+  custom: { budget: "CUSTOM", duration: "CUSTOM" },
+};
+
+// ── Component ──────────────────────────────────────────────────────────────────
 export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -62,21 +115,20 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
   const initialWorkerId = propWorkerId || searchParams.get("workerId") || "";
 
-  // ── Worker data fetched from API ─────────────────────────────────────────
+  // Worker state
   const [worker, setWorker] = useState(null);
   const [workerLoading, setWorkerLoading] = useState(false);
   const [workerError, setWorkerError] = useState("");
-
-  // ── Job-sourced values (locked when fromJob is set) ──────────────────────
   const [jobPost, setJobPost] = useState(null);
-  const [jobLoading, setJobLoading] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState(null);
 
-  const fromJobId = searchParams.get("fromJob") || null; // ← new
+  // New type selection state
+  const [jobType, setJobType] = useState("FULL_TIME");
+  const [locationType, setLocationType] = useState("REMOTE");
+  const [budgetType, setBudgetType] = useState("HOURLY");
+  const [durationType, setDurationType] = useState("HOURS");
+  const [durationValue, setDurationValue] = useState("");
 
-  // ── Selected pricing unit ────────────────────────────────────────────────
-  const [selectedUnit, setSelectedUnit] = useState(null); // null until worker loaded
-
-  // ── Form state ───────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     workerId: initialWorkerId,
     categoryId: "",
@@ -86,18 +138,26 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     latitude: "",
     longitude: "",
     scheduledAt: "",
-    estimatedValue: "", // hours/days/weeks/months or custom text
+    estimatedValue: "",
     notes: "",
   });
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const fromJobId = searchParams.get("fromJob") || null;
   const minDate = new Date(Date.now() + 60 * 60 * 1000)
     .toISOString()
     .slice(0, 16);
 
-  // ── Hirer guard ──────────────────────────────────────────────────────────
+  // Sync budgetType / durationType when engagement unit changes
+  useEffect(() => {
+    if (selectedUnit && UNIT_TO_TYPES[selectedUnit]) {
+      setBudgetType(UNIT_TO_TYPES[selectedUnit].budget);
+      setDurationType(UNIT_TO_TYPES[selectedUnit].duration);
+    }
+  }, [selectedUnit]);
+
+  // Hirer guard
   if (user?.role !== "HIRER") {
     return (
       <HirerLayout>
@@ -120,54 +180,45 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     );
   }
 
-  // ── Fetch worker when workerId is known ──────────────────────────────────
+  // Fetch worker when ID changes
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const id = form.workerId?.trim();
     if (!id) {
       setWorker(null);
       return;
     }
-
     setWorkerLoading(true);
     setWorkerError("");
-
     api
       .get(`/workers/${id}`)
       .then((res) => {
         const w = res.data.data.worker;
         setWorker(w);
-
-        // Auto-select the first available pricing unit
-        const available = DURATION_OPTIONS.filter((o) => {
-          if (o.rateKey === "customRate") return w.customRate > 0;
-          return w[o.rateKey] > 0;
-        });
-        const first = available[0] || DURATION_OPTIONS[0];
-        setSelectedUnit(first.unit);
-
-        // Lock category to worker's primary (or first) category
+        const available = DURATION_OPTIONS.filter((o) =>
+          o.rateKey === "customRate" ? w.customRate > 0 : w[o.rateKey] > 0,
+        );
+        setSelectedUnit((available[0] || DURATION_OPTIONS[0]).unit);
         const primaryCat =
           w.categories?.find((c) => c.isPrimary) || w.categories?.[0];
-        if (primaryCat) {
+        if (primaryCat)
           setForm((f) => ({ ...f, categoryId: primaryCat.category.id }));
-        }
       })
       .catch(() =>
         setWorkerError("Worker not found. Check the ID and try again."),
       )
       .finally(() => setWorkerLoading(false));
-  }, [form.workerId]);
+  }, [form.workerId]); // eslint-disable-line
 
-  // ── Fetch job post when fromJob is present ───────────────────────────────────
+  // Fetch job post if fromJob
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!fromJobId) return;
-    setJobLoading(true);
     api
       .get(`/jobs/${fromJobId}`)
       .then((res) => {
         const jp = res.data.data.jobPost;
         setJobPost(jp);
-        // Pre-fill form fields from the job post
         setForm((f) => ({
           ...f,
           categoryId: jp.categoryId || f.categoryId,
@@ -178,43 +229,40 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             jp.estimatedValue ||
             (jp.estimatedHours ? String(jp.estimatedHours) : f.estimatedValue),
         }));
-        // Set duration unit from the job post
         if (jp.estimatedUnit) setSelectedUnit(jp.estimatedUnit);
       })
-      .catch(() => {}) // silently fail — form still usable
-      .finally(() => setJobLoading(false));
-  }, [fromJobId]);
+      .catch(() => {});
+  }, [fromJobId]); // eslint-disable-line
 
   const isFromJob = !!fromJobId && !!jobPost;
-
-  // ── Derived values from worker + selected unit ───────────────────────────
   const currentOption = DURATION_OPTIONS.find((o) => o.unit === selectedUnit);
-
   const lockedRate = isFromJob
     ? jobPost?.budget || 0
     : worker && currentOption
       ? worker[currentOption.rateKey] || 0
       : 0;
-
-  // const lockedRate =
-  //   worker && currentOption ? worker[currentOption.rateKey] || 0 : 0;
-
-  // const lockedCurrency = worker?.currency || "USD";
-
   const lockedCurrency = isFromJob
     ? jobPost?.currency || "USD"
     : worker?.currency || "USD";
-
   const availableUnits = worker
-    ? DURATION_OPTIONS.filter((o) => {
-        if (o.rateKey === "customRate") return worker.customRate > 0;
-        return worker[o.rateKey] > 0;
-      })
+    ? DURATION_OPTIONS.filter((o) =>
+        o.rateKey === "customRate"
+          ? worker.customRate > 0
+          : worker[o.rateKey] > 0,
+      )
     : [];
 
-  // If worker has no set pricing for an option show hourly as fallback
-  const displayUnits =
-    availableUnits.length > 0 ? availableUnits : [DURATION_OPTIONS[0]];
+  const estQty = parseFloat(form.estimatedValue) || 1;
+  const estFees =
+    lockedRate > 0 &&
+    form.estimatedValue &&
+    currentOption?.inputType === "number"
+      ? computeFees(lockedRate, estQty)
+      : null;
+
+  const durationTypeItem = DURATION_TYPES_LIST.find(
+    (d) => d.value === durationType,
+  );
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
@@ -223,7 +271,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-
     if (!worker) {
       setError("Please enter a valid Worker ID first.");
       return;
@@ -246,23 +293,24 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       }
     }
     if (lockedRate <= 0 && currentOption?.unit !== "custom") {
-      setError(
-        "This worker has not set a rate for the selected duration. Please choose another option.",
-      );
+      setError("This worker has not set a rate for the selected duration.");
       return;
     }
 
     setLoading(true);
     try {
-      // Build estimatedHours from the selected unit + value
       let estimatedHours = null;
-      const val = parseFloat(form.estimatedValue) || 1;
-      if (currentOption?.unit === "hours") estimatedHours = val;
-      if (currentOption?.unit === "days") estimatedHours = val * 8;
-      if (currentOption?.unit === "weeks") estimatedHours = val * 40;
-      if (currentOption?.unit === "months") estimatedHours = val * 160;
-      // custom → no numeric conversion
-      const payload = {
+      const rawVal = form.estimatedValue
+        ? parseFloat(form.estimatedValue)
+        : null;
+      if (rawVal !== null) {
+        if (currentOption?.unit === "hours") estimatedHours = rawVal;
+        if (currentOption?.unit === "days") estimatedHours = rawVal * 8;
+        if (currentOption?.unit === "weeks") estimatedHours = rawVal * 40;
+        if (currentOption?.unit === "months") estimatedHours = rawVal * 160;
+      }
+
+      const res = await api.post("/bookings", {
         workerId: form.workerId,
         categoryId: form.categoryId,
         title: form.title,
@@ -271,22 +319,22 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         latitude: form.latitude ? parseFloat(form.latitude) : undefined,
         longitude: form.longitude ? parseFloat(form.longitude) : undefined,
         scheduledAt: form.scheduledAt,
-        estimatedHours: estimatedHours || undefined,
+        estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
-        estimatedValue: form.estimatedValue
-          ? form.estimatedValue.toString()
-          : undefined,
+        estimatedValue: form.estimatedValue || undefined,
         agreedRate: lockedRate,
         currency: lockedCurrency,
-        notes: form.notes,
-      };
+        notes: form.notes || undefined,
+        // New type fields
+        jobType: jobType || undefined,
+        locationType: locationType || undefined,
+        budgetType: budgetType || undefined,
+        durationType: durationType || undefined,
+      });
 
-      const res = await api.post("/bookings", payload);
-      if (onSuccess) {
-        onSuccess(res.data.data.booking);
-      } else {
-        navigate(`/bookings/${res.data.data.booking.id}`);
-      }
+      const { booking } = res.data.data;
+      if (onSuccess) onSuccess(booking);
+      else navigate(`/bookings/${booking.id}/pay`);
     } catch (e) {
       setError(
         e.response?.data?.message ||
@@ -312,7 +360,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* ── Worker Selection ── */}
+          {/* ── Worker ID ── */}
           {!propWorkerId && (
             <fieldset className={styles.fieldset}>
               <legend className={styles.legend}>Worker</legend>
@@ -337,7 +385,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             </fieldset>
           )}
 
-          {/* ── Worker Profile Card (auto-loaded) ── */}
+          {/* Worker card / skeleton / error */}
           {workerLoading && (
             <div className={styles.workerCardSkeleton}>
               <div className={styles.skAvatar} />
@@ -350,11 +398,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
               </div>
             </div>
           )}
-
           {workerError && (
             <div className={styles.workerError}>⚠️ {workerError}</div>
           )}
-
           {worker && !workerLoading && (
             <div className={styles.workerCard}>
               <div className={styles.workerCardAvatar}>
@@ -397,7 +443,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 </div>
                 {worker.categories?.length > 0 && (
                   <div className={styles.workerCardCats}>
-                    {worker.categories.slice(0, 3).map((wc) => (
+                    {worker.categories.slice(0, 4).map((wc) => (
                       <span key={wc.id} className={styles.catChip}>
                         {wc.category.icon} {wc.category.name}
                       </span>
@@ -414,64 +460,86 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             </div>
           )}
 
-          {/* ── Pricing / Duration Selection ── */}
+          {/* ── Job Type ── */}
           {worker && (
             <fieldset className={styles.fieldset}>
-              <legend className={styles.legend}>Pricing & Duration</legend>
-
-              {/* If from job — show locked budget, don't show unit picker */}
-              {isFromJob ? (
-                <>
-                  <div className={styles.rateLockedRow}>
-                    <div className={styles.rateLockedBox}>
-                      <span className={styles.rateLockedLabel}>
-                        Agreed Budget (from job)
-                      </span>
-                      <span className={styles.rateLockedValue}>
-                        {lockedCurrency} {Number(lockedRate).toLocaleString()}
-                      </span>
-                      <span className={styles.rateLockedNote}>
-                        🔒 Set from the job post budget
-                      </span>
-                    </div>
-                    <div className={styles.rateLockedBox}>
-                      <span className={styles.rateLockedLabel}>Currency</span>
-                      <span className={styles.rateLockedValue}>
-                        {lockedCurrency}
-                      </span>
-                      <span className={styles.rateLockedNote}>
-                        🔒 Job's currency
-                      </span>
-                    </div>
-                  </div>
-                  {/* Duration from job — locked */}
-                  <div
-                    className={styles.rateLockedBox}
-                    style={{ marginTop: 8 }}
+              <legend className={styles.legend}>Job Type</legend>
+              <div className={styles.jobTypeGrid}>
+                {JOB_TYPES.map((jt) => (
+                  <button
+                    type="button"
+                    key={jt.value}
+                    className={`${styles.jobTypeCard} ${jobType === jt.value ? styles.jobTypeCardActive : ""}`}
+                    onClick={() => setJobType(jt.value)}
                   >
+                    {jobType === jt.value && (
+                      <span className={styles.activeDot} />
+                    )}
+                    <span className={styles.jobTypeIcon}>{jt.icon}</span>
+                    <span className={styles.jobTypeLabel}>{jt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Location Type ── */}
+          {worker && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Location Type</legend>
+              <div className={styles.locationGrid}>
+                {LOCATION_TYPES.map((lt) => (
+                  <button
+                    type="button"
+                    key={lt.value}
+                    className={`${styles.locationCard} ${locationType === lt.value ? styles.locationCardActive : ""}`}
+                    onClick={() => setLocationType(lt.value)}
+                  >
+                    {locationType === lt.value && (
+                      <span className={styles.activeDot} />
+                    )}
+                    <span className={styles.locationIcon}>{lt.icon}</span>
+                    <span className={styles.locationLabel}>{lt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Pricing & Duration ── */}
+          {worker && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Pricing &amp; Duration</legend>
+
+              {isFromJob ? (
+                <div className={styles.rateLockedRow}>
+                  <div className={styles.rateLockedBox}>
                     <span className={styles.rateLockedLabel}>
-                      Duration (from job)
+                      Agreed Budget (from job)
                     </span>
                     <span className={styles.rateLockedValue}>
-                      {jobPost?.estimatedValue
-                        ? `${jobPost.estimatedValue} ${jobPost.estimatedUnit || "hours"}`
-                        : jobPost?.estimatedHours
-                          ? `${jobPost.estimatedHours} hours`
-                          : "Not specified"}
+                      {lockedCurrency} {Number(lockedRate).toLocaleString()}
                     </span>
                     <span className={styles.rateLockedNote}>
-                      🔒 From job post
+                      🔒 Set from the job post budget
                     </span>
                   </div>
-                </>
+                  <div className={styles.rateLockedBox}>
+                    <span className={styles.rateLockedLabel}>Currency</span>
+                    <span className={styles.rateLockedValue}>
+                      {lockedCurrency}
+                    </span>
+                    <span className={styles.rateLockedNote}>
+                      🔒 Job's currency
+                    </span>
+                  </div>
+                </div>
               ) : (
-                // Normal worker-based pricing
                 <>
                   <div className={styles.field}>
                     <label className={styles.label}>
                       Engagement Type <span className={styles.req}>*</span>
                     </label>
-
                     <p className={styles.fieldHint}>
                       Select how you want to engage this worker. The rate is set
                       by the worker and cannot be modified.
@@ -509,6 +577,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                       })}
                     </div>
                   </div>
+
                   <div className={styles.rateLockedRow}>
                     <div className={styles.rateLockedBox}>
                       <span className={styles.rateLockedLabel}>
@@ -532,6 +601,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                       </span>
                     </div>
                   </div>
+
                   {currentOption && (
                     <div className={styles.field}>
                       <label className={styles.label}>
@@ -540,22 +610,23 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                           : `Number of ${currentOption.inputLabel}`}
                         <span className={styles.req}> *</span>
                       </label>
-                      <input
-                        className={styles.input}
-                        type={currentOption.inputType}
-                        step={currentOption.step || undefined}
-                        min={
-                          currentOption.inputType === "number" ? "" : undefined
-                        }
-                        placeholder={
-                          currentOption.inputType === "text"
-                            ? "e.g. Full build"
-                            : "e.g. 4"
-                        }
-                        value={form.estimatedValue}
-                        onChange={(e) => set("estimatedValue", e.target.value)}
-                      />
-                      {/* Duration label */}
+                      <div className={styles.iconInputWrap}>
+                        <span className={styles.iconInputIcon}>⏳</span>
+                        <input
+                          className={styles.iconInput}
+                          type={currentOption.inputType}
+                          step={currentOption.step || undefined}
+                          placeholder={
+                            currentOption.inputType === "text"
+                              ? "e.g. Full build"
+                              : "e.g. 4"
+                          }
+                          value={form.estimatedValue}
+                          onChange={(e) =>
+                            set("estimatedValue", e.target.value)
+                          }
+                        />
+                      </div>
                       {form.estimatedValue &&
                         currentOption.inputType === "number" && (
                           <p className={styles.durationLabel}>
@@ -563,8 +634,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                             {currentOption.inputLabel.toLowerCase()}
                             {currentOption.unit !== "hours" && (
                               <span className={styles.durationEqv}>
-                                {" "}
-                                ≈{" "}
+                                {" ≈ "}
                                 {currentOption.unit === "days"
                                   ? `${parseFloat(form.estimatedValue) * 8}h`
                                   : currentOption.unit === "weeks"
@@ -576,35 +646,105 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                             )}
                           </p>
                         )}
-                      {form.estimatedValue &&
-                        currentOption.inputType === "number" &&
-                        lockedRate > 0 && (
-                          <p className={styles.totalEstimate}>
-                            Estimated total:{" "}
-                            <strong>
-                              {lockedCurrency}{" "}
-                              {(
-                                Number(form.estimatedValue) * lockedRate
-                              ).toLocaleString()}
-                            </strong>
-                          </p>
-                        )}
-
-                      {/* Pricing note from worker */}
-                      {worker.pricingNote && (
-                        <div className={styles.pricingNoteBox}>
-                          💬 Worker's pricing note:{" "}
-                          <em>{worker.pricingNote}</em>
-                        </div>
-                      )}
                     </div>
                   )}
                 </>
               )}
+
+              {/* Estimated total */}
+              {estFees && (
+                <div className={styles.estimatedTotalBox}>
+                  <span className={styles.estimatedTotalLabel}>
+                    Estimated Total
+                  </span>
+                  <span className={styles.estimatedTotalValue}>
+                    {lockedCurrency} {estFees.subtotal.toLocaleString()}
+                  </span>
+                </div>
+              )}
+
+              {worker.pricingNote && (
+                <div className={styles.pricingNoteBox}>
+                  💬 Worker's pricing note: <em>{worker.pricingNote}</em>
+                </div>
+              )}
             </fieldset>
           )}
 
-          {/* ── Category — locked from worker ── */}
+          {/* ── Payment Type ── */}
+          {worker && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Payment Type</legend>
+              <div className={styles.typeList}>
+                {BUDGET_TYPES.map((bt) => (
+                  <button
+                    type="button"
+                    key={bt.value}
+                    className={`${styles.typeListRow} ${budgetType === bt.value ? styles.typeListRowActive : ""}`}
+                    onClick={() => setBudgetType(bt.value)}
+                  >
+                    <div
+                      className={`${styles.typeListIcon} ${budgetType === bt.value ? styles.typeListIconActive : ""}`}
+                    >
+                      <span>{bt.icon}</span>
+                    </div>
+                    <div className={styles.typeListContent}>
+                      <span className={styles.typeListLabel}>{bt.label}</span>
+                      <span className={styles.typeListSub}>{bt.sub}</span>
+                    </div>
+                    {budgetType === bt.value && (
+                      <div className={styles.typeListCheck}>✓</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Job Duration ── */}
+          {worker && (
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>Job Duration</legend>
+              <div className={styles.typeList}>
+                {DURATION_TYPES_LIST.map((dt) => (
+                  <button
+                    type="button"
+                    key={dt.value}
+                    className={`${styles.typeListRow} ${durationType === dt.value ? styles.typeListRowActive : ""}`}
+                    onClick={() => setDurationType(dt.value)}
+                  >
+                    <div
+                      className={`${styles.typeListIcon} ${durationType === dt.value ? styles.typeListIconActive : ""}`}
+                    >
+                      <span>{dt.icon}</span>
+                    </div>
+                    <span className={styles.typeListLabel}>{dt.label}</span>
+                    {durationType === dt.value && (
+                      <div className={styles.typeListCheck}>✓</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.field} style={{ marginTop: "0.75rem" }}>
+                <label className={styles.label}>
+                  Number of {durationTypeItem?.label || "Units"}
+                </label>
+                <div className={styles.iconInputWrap}>
+                  <span className={styles.iconInputIcon}>⏳</span>
+                  <input
+                    className={styles.iconInput}
+                    type="number"
+                    step="1"
+                    placeholder="e.g. 5"
+                    value={durationValue}
+                    onChange={(e) => setDurationValue(e.target.value)}
+                  />
+                </div>
+              </div>
+            </fieldset>
+          )}
+
+          {/* ── Category ── */}
           {worker && (
             <fieldset className={styles.fieldset}>
               <legend className={styles.legend}>Category</legend>
@@ -643,7 +783,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
           {/* ── Job Information ── */}
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Job Information</legend>
-
             <div className={styles.field}>
               <label className={styles.label}>
                 Job Title <span className={styles.req}>*</span>
@@ -656,7 +795,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 maxLength={120}
               />
             </div>
-
             <div className={styles.field}>
               <label className={styles.label}>
                 Description <span className={styles.req}>*</span>
@@ -669,7 +807,17 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
                 rows={4}
               />
             </div>
-
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Service Address <span className={styles.req}>*</span>
+              </label>
+              <input
+                className={styles.input}
+                placeholder="Full address where the job will take place"
+                value={form.address}
+                onChange={(e) => set("address", e.target.value)}
+              />
+            </div>
             <div className={styles.field}>
               <label className={styles.label}>Additional Notes</label>
               <textarea
@@ -682,134 +830,27 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             </div>
           </fieldset>
 
-          {/* ── Location ── */}
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Location</legend>
-            <div className={styles.field}>
-              <label className={styles.label}>
-                Service Address <span className={styles.req}>*</span>
-              </label>
-              <input
-                className={styles.input}
-                placeholder="Full address where the job will take place"
-                value={form.address}
-                onChange={(e) => set("address", e.target.value)}
-              />
-            </div>
-            <div className={styles.row2}>
-              <div className={styles.field}>
-                <label className={styles.label}>Latitude (optional)</label>
-                <input
-                  className={styles.input}
-                  type="number"
-                  step="any"
-                  placeholder="e.g. 6.5244"
-                  value={form.latitude}
-                  onChange={(e) => set("latitude", e.target.value)}
-                />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Longitude (optional)</label>
-                <input
-                  className={styles.input}
-                  type="number"
-                  step="any"
-                  placeholder="e.g. 3.3792"
-                  value={form.longitude}
-                  onChange={(e) => set("longitude", e.target.value)}
-                />
-              </div>
-            </div>
-          </fieldset>
-
           {/* ── Schedule ── */}
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Schedule</legend>
             <div className={styles.field}>
               <label className={styles.label}>
-                Date & Time <span className={styles.req}>*</span>
+                Date &amp; Time <span className={styles.req}>*</span>
               </label>
-              <input
-                className={styles.input}
-                type="datetime-local"
-                min={minDate}
-                value={form.scheduledAt}
-                onChange={(e) => set("scheduledAt", e.target.value)}
-              />
+              <div className={styles.iconInputWrap}>
+                <span className={styles.iconInputIcon}>📅</span>
+                <input
+                  className={styles.iconInput}
+                  type="datetime-local"
+                  min={minDate}
+                  value={form.scheduledAt}
+                  onChange={(e) => set("scheduledAt", e.target.value)}
+                />
+              </div>
             </div>
           </fieldset>
 
           {error && <p className={styles.error}>⚠️ {error}</p>}
-
-          {/* ── Booking Summary ── */}
-          {worker && form.title && form.address && form.scheduledAt && (
-            <div className={styles.bookingSummary}>
-              <p className={styles.summaryTitle}>📋 Booking Summary</p>
-              <div className={styles.summaryGrid}>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Worker</span>
-                  <span className={styles.summaryValue}>
-                    {worker.user?.firstName} {worker.user?.lastName}
-                  </span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Category</span>
-                  <span className={styles.summaryValue}>
-                    {worker.categories?.find(
-                      (c) => c.category.id === form.categoryId,
-                    )?.category.name || "—"}
-                  </span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Rate</span>
-                  <span
-                    className={styles.summaryValue}
-                    style={{ color: "var(--orange)", fontWeight: 700 }}
-                  >
-                    {lockedCurrency} {Number(lockedRate).toLocaleString()}
-                    {currentOption?.suffix}
-                  </span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Duration</span>
-                  <span className={styles.summaryValue}>
-                    {form.estimatedValue
-                      ? `${form.estimatedValue} ${currentOption?.inputLabel?.toLowerCase() || currentOption?.unit}`
-                      : "—"}
-                  </span>
-                </div>
-                {form.estimatedValue &&
-                  currentOption?.inputType === "number" &&
-                  lockedRate > 0 && (
-                    <div
-                      className={styles.summaryItem}
-                      style={{ gridColumn: "1/-1" }}
-                    >
-                      <span className={styles.summaryLabel}>
-                        Estimated Total
-                      </span>
-                      <span
-                        className={styles.summaryValue}
-                        style={{
-                          color: "var(--green)",
-                          fontWeight: 800,
-                          fontSize: "1.1rem",
-                        }}
-                      >
-                        {lockedCurrency}{" "}
-                        {(
-                          Number(form.estimatedValue) * lockedRate
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-              </div>
-              <p className={styles.summaryNote}>
-                ⚠️ Final amount depends on actual time. Payment is only charged
-                after the worker accepts.
-              </p>
-            </div>
-          )}
 
           <button
             type="submit"
@@ -818,10 +859,12 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
           >
             {loading ? (
               <>
-                <span className={styles.spinner} /> Creating booking...
+                <span className={styles.spinner} /> Creating booking…
               </>
             ) : (
-              <>📋 Create Booking</>
+              <>
+                <span className={styles.submitBtnPlus}>+</span> Create Booking
+              </>
             )}
           </button>
 
