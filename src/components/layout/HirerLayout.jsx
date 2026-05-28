@@ -60,6 +60,16 @@ const NAV = [
     ],
   },
   {
+    group: "Referrals",
+    items: [
+      {
+        label: "Referals",
+        path: "/referrals",
+        icon: "👥",
+      },
+    ],
+  },
+  {
     group: "Account",
     items: [
       // { label: "Profile", path: "/dashboard/hirer/profile", icon: "👤" },

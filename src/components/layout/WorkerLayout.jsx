@@ -31,6 +31,11 @@ const NAV = [
         path: "/dashboard/worker/withdrawals",
         icon: "↑",
       },
+      {
+        label: "Referrals",
+        path: "/referrals",
+        icon: "👥",
+      },
     ],
   },
   {

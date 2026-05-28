@@ -95,6 +95,7 @@ import AdminMessages from "./pages/admin/AdminMessages";
 import AdminVideoCalls from "./pages/admin/AdminVideoCalls";
 import AdminFeatured from "./pages/admin/AdminFeatured";
 import FlutterwaveConfirm from "./components/payment/FlutterwaveConfirm";
+import ReferralDashboard from "./pages/referral/ReferralDashboard";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -691,6 +692,16 @@ export default function App() {
           element={
             <RequireAuth>
               <MyPostsPage />
+            </RequireAuth>
+          }
+        />
+
+        {/* ── Refrreals (both roles) ── */}
+        <Route
+          path="/referrals"
+          element={
+            <RequireAuth>
+              <ReferralDashboard />
             </RequireAuth>
           }
         />
