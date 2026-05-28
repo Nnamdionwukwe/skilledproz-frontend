@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./ReferralDashboard.module.css";
-import HirerLayout from "../../components/layout/HirerLayout";
 import WorkerLayout from "../../components/layout/WorkerLayout";
+import HirerLayout from "../../components/layout/HirerLayout";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtAmt(n) {

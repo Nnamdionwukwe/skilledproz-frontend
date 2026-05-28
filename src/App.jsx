@@ -96,6 +96,8 @@ import AdminVideoCalls from "./pages/admin/AdminVideoCalls";
 import AdminFeatured from "./pages/admin/AdminFeatured";
 import FlutterwaveConfirm from "./components/payment/FlutterwaveConfirm";
 import ReferralDashboard from "./pages/referral/ReferralDashboard";
+import CampaignDashboard from "./pages/referral/CampaignDashboard";
+import AdminCampaign from "./pages/admin/AdminCampaign";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -368,6 +370,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminFeatured />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/campaigns"
+          element={
+            <RequireAdmin>
+              <AdminCampaign />
             </RequireAdmin>
           }
         />
@@ -705,6 +715,8 @@ export default function App() {
             </RequireAuth>
           }
         />
+
+        <Route path="/campaign" element={<CampaignDashboard />} />
 
         {/* ── Bookings (both roles) ── */}
         <Route

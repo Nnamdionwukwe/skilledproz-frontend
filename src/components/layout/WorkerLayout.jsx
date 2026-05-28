@@ -36,6 +36,11 @@ const NAV = [
         path: "/referrals",
         icon: "👥",
       },
+      {
+        label: "Campaigns",
+        path: "/campaign",
+        icon: "📢",
+      },
     ],
   },
   {

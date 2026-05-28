@@ -34,6 +34,7 @@ const NAV = [
       { label: "posts", path: "/admin/posts", icon: "✍️" },
       { label: "messages", path: "/admin/messages", icon: "💬" },
       { label: "video calls", path: "/admin/video-calls", icon: "📹" },
+      { label: "campaigns", path: "/admin/campaigns", icon: "�" },
     ],
   },
   {
