@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./AdminReferrals.module.css";
 import api from "../../lib/api";
+import AdminLayout from "../../components/layout/AdminLayout";
 
 // ── Tier badge colours ────────────────────────────────────────────────────────
 const TIER_CLASS = {
@@ -412,484 +413,488 @@ export default function AdminReferrals() {
   };
 
   return (
-    <div className={styles.page}>
-      {/* ── Page header ──────────────────────────────────────────────────── */}
-      <div className={styles.pageHeader}>
-        <div>
-          <p className={styles.eyebrow}>Admin Panel</p>
-          <h1 className={styles.pageTitle}>Referral Programme</h1>
-        </div>
-        <button
-          className={styles.btnPrimary}
-          onClick={() => setShowAdjust(true)}
-        >
-          💰 Adjust Wallet
-        </button>
-      </div>
-
-      <Alert type="success" text={success} onClose={() => setSuccess("")} />
-      <Alert type="error" text={error} onClose={() => setError("")} />
-
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <div className={styles.tabs}>
-        {[
-          { key: "overview", label: "📊 Overview" },
-          { key: "referrals", label: "📋 Referrals" },
-          { key: "leaderboard", label: "🏆 Leaderboard" },
-        ].map((t) => (
+    <AdminLayout>
+      <div className={styles.page}>
+        {/* ── Page header ──────────────────────────────────────────────────── */}
+        <div className={styles.pageHeader}>
+          <div>
+            <p className={styles.eyebrow}>Admin Panel</p>
+            <h1 className={styles.pageTitle}>Referral Programme</h1>
+          </div>
           <button
-            key={t.key}
-            className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-            onClick={() => setTab(t.key)}
+            className={styles.btnPrimary}
+            onClick={() => setShowAdjust(true)}
           >
-            {t.label}
+            💰 Adjust Wallet
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* ══ OVERVIEW TAB ══════════════════════════════════════════════════════ */}
-      {tab === "overview" && (
-        <div className={styles.tabContent}>
-          {statsLoading ? (
-            <div className={styles.loadingRow}>
-              <Spinner /> Loading stats…
-            </div>
-          ) : stats ? (
-            <>
-              {/* ── KPI cards ── */}
-              <div className={styles.statsGrid}>
-                <StatCard
-                  icon="🔗"
-                  label="Total Referrals"
-                  value={fmt(stats.overview.totalReferrals)}
-                />
-                <StatCard
-                  icon="✅"
-                  label="Converted"
-                  value={fmt(stats.overview.totalConverted)}
-                  accent
-                />
-                <StatCard
-                  icon="💸"
-                  label="Total Paid Out"
-                  value={`₦${fmt(stats.overview.totalPaidOut)}`}
-                  sub="REFERRAL_CONFIG.CURRENCY"
-                  accent
-                />
-                <StatCard
-                  icon="👛"
-                  label="Active Wallet Balances"
-                  value={`₦${fmt(stats.overview.totalWalletBalance)}`}
-                />
-                <StatCard
-                  icon="📈"
-                  label="Lifetime Wallet Earned"
-                  value={`₦${fmt(stats.overview.totalWalletEarned)}`}
-                />
+        <Alert type="success" text={success} onClose={() => setSuccess("")} />
+        <Alert type="error" text={error} onClose={() => setError("")} />
+
+        {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+        <div className={styles.tabs}>
+          {[
+            { key: "overview", label: "📊 Overview" },
+            { key: "referrals", label: "📋 Referrals" },
+            { key: "leaderboard", label: "🏆 Leaderboard" },
+          ].map((t) => (
+            <button
+              key={t.key}
+              className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ══ OVERVIEW TAB ══════════════════════════════════════════════════════ */}
+        {tab === "overview" && (
+          <div className={styles.tabContent}>
+            {statsLoading ? (
+              <div className={styles.loadingRow}>
+                <Spinner /> Loading stats…
               </div>
-
-              {/* ── Status breakdown ── */}
-              <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Referrals by Status</h2>
-                <div className={styles.statusBreakdown}>
-                  {Object.entries(stats.byStatus || {}).map(
-                    ([status, count]) => (
-                      <div key={status} className={styles.statusChip}>
-                        <span
-                          className={`${styles.statusDot} ${STATUS_CLASS[status]}`}
-                        />
-                        <span className={styles.statusLabel}>{status}</span>
-                        <span className={styles.statusCount}>{count}</span>
-                      </div>
-                    ),
-                  )}
+            ) : stats ? (
+              <>
+                {/* ── KPI cards ── */}
+                <div className={styles.statsGrid}>
+                  <StatCard
+                    icon="🔗"
+                    label="Total Referrals"
+                    value={fmt(stats.overview.totalReferrals)}
+                  />
+                  <StatCard
+                    icon="✅"
+                    label="Converted"
+                    value={fmt(stats.overview.totalConverted)}
+                    accent
+                  />
+                  <StatCard
+                    icon="💸"
+                    label="Total Paid Out"
+                    value={`₦${fmt(stats.overview.totalPaidOut)}`}
+                    sub="REFERRAL_CONFIG.CURRENCY"
+                    accent
+                  />
+                  <StatCard
+                    icon="👛"
+                    label="Active Wallet Balances"
+                    value={`₦${fmt(stats.overview.totalWalletBalance)}`}
+                  />
+                  <StatCard
+                    icon="📈"
+                    label="Lifetime Wallet Earned"
+                    value={`₦${fmt(stats.overview.totalWalletEarned)}`}
+                  />
                 </div>
-              </div>
 
-              {/* ── Top referrers ── */}
-              {stats.topReferrers?.length > 0 && (
+                {/* ── Status breakdown ── */}
                 <div className={styles.section}>
-                  <h2 className={styles.sectionTitle}>Top 10 Referrers</h2>
+                  <h2 className={styles.sectionTitle}>Referrals by Status</h2>
+                  <div className={styles.statusBreakdown}>
+                    {Object.entries(stats.byStatus || {}).map(
+                      ([status, count]) => (
+                        <div key={status} className={styles.statusChip}>
+                          <span
+                            className={`${styles.statusDot} ${STATUS_CLASS[status]}`}
+                          />
+                          <span className={styles.statusLabel}>{status}</span>
+                          <span className={styles.statusCount}>{count}</span>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Top referrers ── */}
+                {stats.topReferrers?.length > 0 && (
+                  <div className={styles.section}>
+                    <h2 className={styles.sectionTitle}>Top 10 Referrers</h2>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>User</th>
+                          <th>Tier</th>
+                          <th>Successful</th>
+                          <th>Lifetime Earned</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.topReferrers.map((u) => (
+                          <tr key={u.id}>
+                            <td>
+                              <div className={styles.userCell}>
+                                <Avatar name={`${u.firstName} ${u.lastName}`} />
+                                {u.firstName} {u.lastName}
+                              </div>
+                            </td>
+                            <td>
+                              <span
+                                className={`${styles.tierBadge} ${TIER_CLASS[u.referralTier?.toLowerCase?.()]}`}
+                              >
+                                {u.referralTier}
+                              </span>
+                            </td>
+                            <td>{u.successfulReferrals}</td>
+                            <td>₦{fmt(u.walletLifetimeTotal)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* ── Recent conversions ── */}
+                {stats.recentConversions?.length > 0 && (
+                  <div className={styles.section}>
+                    <h2 className={styles.sectionTitle}>Recent Conversions</h2>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Referrer</th>
+                          <th>Referred</th>
+                          <th>Role</th>
+                          <th>Converted</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.recentConversions.map((r) => (
+                          <tr key={r.id}>
+                            <td>
+                              {r.referrer?.firstName} {r.referrer?.lastName}
+                            </td>
+                            <td>{r.referred?.firstName}</td>
+                            <td>
+                              <span className={styles.rolePill}>
+                                {r.referred?.role}
+                              </span>
+                            </td>
+                            <td>{fmtDate(r.convertedAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* ── Tier table ── */}
+                <div className={styles.section}>
+                  <h2 className={styles.sectionTitle}>Tier Configuration</h2>
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th>User</th>
                         <th>Tier</th>
-                        <th>Successful</th>
-                        <th>Lifetime Earned</th>
+                        <th>Min Referrals</th>
+                        <th>Worker Bonus</th>
+                        <th>Hirer Bonus</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.topReferrers.map((u) => (
-                        <tr key={u.id}>
-                          <td>
-                            <div className={styles.userCell}>
-                              <Avatar name={`${u.firstName} ${u.lastName}`} />
-                              {u.firstName} {u.lastName}
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={`${styles.tierBadge} ${TIER_CLASS[u.referralTier?.toLowerCase?.()]}`}
-                            >
-                              {u.referralTier}
-                            </span>
-                          </td>
-                          <td>{u.successfulReferrals}</td>
-                          <td>₦{fmt(u.walletLifetimeTotal)}</td>
-                        </tr>
-                      ))}
+                      {Object.entries(stats.tierBreakdown || {}).map(
+                        ([key, label]) => (
+                          <tr key={key}>
+                            <td>
+                              <span
+                                className={`${styles.tierBadge} ${TIER_CLASS[key.toLowerCase()]}`}
+                              >
+                                {label}
+                              </span>
+                            </td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                          </tr>
+                        ),
+                      )}
                     </tbody>
                   </table>
                 </div>
-              )}
+              </>
+            ) : (
+              <p className={styles.empty}>No stats available.</p>
+            )}
+          </div>
+        )}
 
-              {/* ── Recent conversions ── */}
-              {stats.recentConversions?.length > 0 && (
-                <div className={styles.section}>
-                  <h2 className={styles.sectionTitle}>Recent Conversions</h2>
+        {/* ══ REFERRALS TAB ═════════════════════════════════════════════════════ */}
+        {tab === "referrals" && (
+          <div className={styles.tabContent}>
+            {/* ── Filters ── */}
+            <div className={styles.filterRow}>
+              <input
+                className={styles.searchInput}
+                placeholder="Search by code or email…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <select
+                className={styles.select}
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">All statuses</option>
+                {[
+                  "PENDING",
+                  "QUALIFIED",
+                  "CONVERTED",
+                  "REWARDED",
+                  "EXPIRED",
+                  "FLAGGED",
+                ].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <button className={styles.btnOutline} onClick={loadReferrals}>
+                🔄 Refresh
+              </button>
+            </div>
+
+            <p className={styles.resultsCount}>
+              {total} referral{total !== 1 ? "s" : ""} found
+            </p>
+
+            {listLoading ? (
+              <div className={styles.loadingRow}>
+                <Spinner /> Loading…
+              </div>
+            ) : referrals.length === 0 ? (
+              <div className={styles.empty}>
+                No referrals match your filters.
+              </div>
+            ) : (
+              <>
+                <div className={styles.tableWrap}>
                   <table className={styles.table}>
                     <thead>
                       <tr>
+                        <th>Code</th>
                         <th>Referrer</th>
                         <th>Referred</th>
                         <th>Role</th>
-                        <th>Converted</th>
+                        <th>Status</th>
+                        <th>Bonus (₦)</th>
+                        <th>Joined</th>
+                        <th>Expires</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.recentConversions.map((r) => (
+                      {referrals.map((r) => (
                         <tr key={r.id}>
                           <td>
-                            {r.referrer?.firstName} {r.referrer?.lastName}
+                            <code className={styles.code}>{r.code}</code>
                           </td>
-                          <td>{r.referred?.firstName}</td>
+                          <td>
+                            <div className={styles.userCell}>
+                              <Avatar
+                                name={`${r.referrer?.firstName} ${r.referrer?.lastName}`}
+                              />
+                              <div>
+                                <p className={styles.userName}>
+                                  {r.referrer?.firstName} {r.referrer?.lastName}
+                                </p>
+                                <p className={styles.userEmail}>
+                                  {r.referrer?.email}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className={styles.userCell}>
+                              <div>
+                                <p className={styles.userName}>
+                                  {r.referred?.firstName} {r.referred?.lastName}
+                                </p>
+                                <p className={styles.userEmail}>
+                                  {r.referred?.email}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
                           <td>
                             <span className={styles.rolePill}>
                               {r.referred?.role}
                             </span>
                           </td>
-                          <td>{fmtDate(r.convertedAt)}</td>
+                          <td>
+                            <span
+                              className={`${styles.statusBadge} ${STATUS_CLASS[r.status]}`}
+                            >
+                              {r.status}
+                            </span>
+                          </td>
+                          <td className={styles.bonusCell}>
+                            ₦{fmt(r.referrerBonus)}
+                          </td>
+                          <td>{fmtDate(r.referred?.createdAt)}</td>
+                          <td
+                            className={
+                              new Date(r.expiresAt) < new Date()
+                                ? styles.expired
+                                : ""
+                            }
+                          >
+                            {fmtDate(r.expiresAt)}
+                          </td>
+                          <td>
+                            <div className={styles.actionGroup}>
+                              {!["REWARDED", "FLAGGED", "EXPIRED"].includes(
+                                r.status,
+                              ) && (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnGreen}`}
+                                  title="Manual reward"
+                                  onClick={() => setRewardTarget(r)}
+                                >
+                                  🎁
+                                </button>
+                              )}
+                              {!["FLAGGED", "EXPIRED"].includes(r.status) && (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnRed}`}
+                                  title="Flag referral"
+                                  onClick={() => setFlagTarget(r)}
+                                >
+                                  🚩
+                                </button>
+                              )}
+                              {!["REWARDED", "FLAGGED", "EXPIRED"].includes(
+                                r.status,
+                              ) && (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnGray}`}
+                                  title="Mark expired"
+                                  onClick={() => handleExpire(r.id)}
+                                >
+                                  ⏰
+                                </button>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              )}
 
-              {/* ── Tier table ── */}
-              <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Tier Configuration</h2>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Tier</th>
-                      <th>Min Referrals</th>
-                      <th>Worker Bonus</th>
-                      <th>Hirer Bonus</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(stats.tierBreakdown || {}).map(
-                      ([key, label]) => (
-                        <tr key={key}>
-                          <td>
-                            <span
-                              className={`${styles.tierBadge} ${TIER_CLASS[key.toLowerCase()]}`}
-                            >
-                              {label}
-                            </span>
-                          </td>
-                          <td>—</td>
-                          <td>—</td>
-                          <td>—</td>
-                        </tr>
-                      ),
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <p className={styles.empty}>No stats available.</p>
-          )}
-        </div>
-      )}
-
-      {/* ══ REFERRALS TAB ═════════════════════════════════════════════════════ */}
-      {tab === "referrals" && (
-        <div className={styles.tabContent}>
-          {/* ── Filters ── */}
-          <div className={styles.filterRow}>
-            <input
-              className={styles.searchInput}
-              placeholder="Search by code or email…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
-            <select
-              className={styles.select}
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All statuses</option>
-              {[
-                "PENDING",
-                "QUALIFIED",
-                "CONVERTED",
-                "REWARDED",
-                "EXPIRED",
-                "FLAGGED",
-              ].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <button className={styles.btnOutline} onClick={loadReferrals}>
-              🔄 Refresh
-            </button>
-          </div>
-
-          <p className={styles.resultsCount}>
-            {total} referral{total !== 1 ? "s" : ""} found
-          </p>
-
-          {listLoading ? (
-            <div className={styles.loadingRow}>
-              <Spinner /> Loading…
-            </div>
-          ) : referrals.length === 0 ? (
-            <div className={styles.empty}>No referrals match your filters.</div>
-          ) : (
-            <>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Code</th>
-                      <th>Referrer</th>
-                      <th>Referred</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Bonus (₦)</th>
-                      <th>Joined</th>
-                      <th>Expires</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {referrals.map((r) => (
-                      <tr key={r.id}>
-                        <td>
-                          <code className={styles.code}>{r.code}</code>
-                        </td>
-                        <td>
-                          <div className={styles.userCell}>
-                            <Avatar
-                              name={`${r.referrer?.firstName} ${r.referrer?.lastName}`}
-                            />
-                            <div>
-                              <p className={styles.userName}>
-                                {r.referrer?.firstName} {r.referrer?.lastName}
-                              </p>
-                              <p className={styles.userEmail}>
-                                {r.referrer?.email}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className={styles.userCell}>
-                            <div>
-                              <p className={styles.userName}>
-                                {r.referred?.firstName} {r.referred?.lastName}
-                              </p>
-                              <p className={styles.userEmail}>
-                                {r.referred?.email}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={styles.rolePill}>
-                            {r.referred?.role}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`${styles.statusBadge} ${STATUS_CLASS[r.status]}`}
-                          >
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className={styles.bonusCell}>
-                          ₦{fmt(r.referrerBonus)}
-                        </td>
-                        <td>{fmtDate(r.referred?.createdAt)}</td>
-                        <td
-                          className={
-                            new Date(r.expiresAt) < new Date()
-                              ? styles.expired
-                              : ""
-                          }
-                        >
-                          {fmtDate(r.expiresAt)}
-                        </td>
-                        <td>
-                          <div className={styles.actionGroup}>
-                            {!["REWARDED", "FLAGGED", "EXPIRED"].includes(
-                              r.status,
-                            ) && (
-                              <button
-                                className={`${styles.actionBtn} ${styles.actionBtnGreen}`}
-                                title="Manual reward"
-                                onClick={() => setRewardTarget(r)}
-                              >
-                                🎁
-                              </button>
-                            )}
-                            {!["FLAGGED", "EXPIRED"].includes(r.status) && (
-                              <button
-                                className={`${styles.actionBtn} ${styles.actionBtnRed}`}
-                                title="Flag referral"
-                                onClick={() => setFlagTarget(r)}
-                              >
-                                🚩
-                              </button>
-                            )}
-                            {!["REWARDED", "FLAGGED", "EXPIRED"].includes(
-                              r.status,
-                            ) && (
-                              <button
-                                className={`${styles.actionBtn} ${styles.actionBtnGray}`}
-                                title="Mark expired"
-                                onClick={() => handleExpire(r.id)}
-                              >
-                                ⏰
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* ── Pagination ── */}
-              {pages > 1 && (
-                <div className={styles.pagination}>
-                  <button
-                    className={styles.pageBtn}
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                  >
-                    ← Prev
-                  </button>
-                  <span className={styles.pageInfo}>
-                    Page {page} of {pages}
-                  </span>
-                  <button
-                    className={styles.pageBtn}
-                    disabled={page >= pages}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    Next →
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ══ LEADERBOARD TAB ═══════════════════════════════════════════════════ */}
-      {tab === "leaderboard" && (
-        <div className={styles.tabContent}>
-          {lbLoading ? (
-            <div className={styles.loadingRow}>
-              <Spinner /> Loading leaderboard…
-            </div>
-          ) : leaderboard.length === 0 ? (
-            <div className={styles.empty}>No referrals yet.</div>
-          ) : (
-            <div className={styles.leaderboard}>
-              {leaderboard.map((u) => (
-                <div
-                  key={u.rank}
-                  className={`${styles.lbRow} ${u.isMe ? styles.lbRowMe : ""}`}
-                >
-                  <span
-                    className={`${styles.lbRank} ${u.rank <= 3 ? styles[`lbRank${u.rank}`] : ""}`}
-                  >
-                    {u.rank <= 3
-                      ? ["🥇", "🥈", "🥉"][u.rank - 1]
-                      : `#${u.rank}`}
-                  </span>
-                  <Avatar src={u.avatar} name={u.name} />
-                  <div className={styles.lbInfo}>
-                    <p className={styles.lbName}>
-                      {u.name}{" "}
-                      {u.isMe && <span className={styles.mePill}>You</span>}
-                    </p>
-                    <span
-                      className={`${styles.tierBadge} ${TIER_CLASS[u.badge]}`}
+                {/* ── Pagination ── */}
+                {pages > 1 && (
+                  <div className={styles.pagination}>
+                    <button
+                      className={styles.pageBtn}
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => p - 1)}
                     >
-                      {u.tier}
+                      ← Prev
+                    </button>
+                    <span className={styles.pageInfo}>
+                      Page {page} of {pages}
                     </span>
+                    <button
+                      className={styles.pageBtn}
+                      disabled={page >= pages}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next →
+                    </button>
                   </div>
-                  <div className={styles.lbStats}>
-                    <p className={styles.lbReferrals}>
-                      {u.referrals} referrals
-                    </p>
-                    <p className={styles.lbEarned}>₦{fmt(u.earned)} earned</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ══ LEADERBOARD TAB ═══════════════════════════════════════════════════ */}
+        {tab === "leaderboard" && (
+          <div className={styles.tabContent}>
+            {lbLoading ? (
+              <div className={styles.loadingRow}>
+                <Spinner /> Loading leaderboard…
+              </div>
+            ) : leaderboard.length === 0 ? (
+              <div className={styles.empty}>No referrals yet.</div>
+            ) : (
+              <div className={styles.leaderboard}>
+                {leaderboard.map((u) => (
+                  <div
+                    key={u.rank}
+                    className={`${styles.lbRow} ${u.isMe ? styles.lbRowMe : ""}`}
+                  >
+                    <span
+                      className={`${styles.lbRank} ${u.rank <= 3 ? styles[`lbRank${u.rank}`] : ""}`}
+                    >
+                      {u.rank <= 3
+                        ? ["🥇", "🥈", "🥉"][u.rank - 1]
+                        : `#${u.rank}`}
+                    </span>
+                    <Avatar src={u.avatar} name={u.name} />
+                    <div className={styles.lbInfo}>
+                      <p className={styles.lbName}>
+                        {u.name}{" "}
+                        {u.isMe && <span className={styles.mePill}>You</span>}
+                      </p>
+                      <span
+                        className={`${styles.tierBadge} ${TIER_CLASS[u.badge]}`}
+                      >
+                        {u.tier}
+                      </span>
+                    </div>
+                    <div className={styles.lbStats}>
+                      <p className={styles.lbReferrals}>
+                        {u.referrals} referrals
+                      </p>
+                      <p className={styles.lbEarned}>₦{fmt(u.earned)} earned</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* ── Modals ──────────────────────────────────────────────────────────── */}
-      {showAdjust && (
-        <AdjustWalletModal
-          onClose={() => setShowAdjust(false)}
-          onSuccess={(d) => {
-            setSuccess(`Wallet adjusted. New balance: ₦${fmt(d.newBalance)}`);
-            loadReferrals();
-          }}
-        />
-      )}
+        {/* ── Modals ──────────────────────────────────────────────────────────── */}
+        {showAdjust && (
+          <AdjustWalletModal
+            onClose={() => setShowAdjust(false)}
+            onSuccess={(d) => {
+              setSuccess(`Wallet adjusted. New balance: ₦${fmt(d.newBalance)}`);
+              loadReferrals();
+            }}
+          />
+        )}
 
-      {rewardTarget && (
-        <ManualRewardModal
-          referral={rewardTarget}
-          onClose={() => setRewardTarget(null)}
-          onSuccess={(d) => {
-            setSuccess(`Reward of ₦${fmt(d.bonus)} applied.`);
-            loadReferrals();
-          }}
-        />
-      )}
+        {rewardTarget && (
+          <ManualRewardModal
+            referral={rewardTarget}
+            onClose={() => setRewardTarget(null)}
+            onSuccess={(d) => {
+              setSuccess(`Reward of ₦${fmt(d.bonus)} applied.`);
+              loadReferrals();
+            }}
+          />
+        )}
 
-      {flagTarget && (
-        <FlagModal
-          referral={flagTarget}
-          onClose={() => setFlagTarget(null)}
-          onSuccess={() => {
-            setSuccess("Referral flagged and bonus reversed.");
-            loadReferrals();
-          }}
-        />
-      )}
-    </div>
+        {flagTarget && (
+          <FlagModal
+            referral={flagTarget}
+            onClose={() => setFlagTarget(null)}
+            onSuccess={() => {
+              setSuccess("Referral flagged and bonus reversed.");
+              loadReferrals();
+            }}
+          />
+        )}
+      </div>
+    </AdminLayout>
   );
 }

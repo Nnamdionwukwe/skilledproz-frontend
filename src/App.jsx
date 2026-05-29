@@ -98,6 +98,7 @@ import FlutterwaveConfirm from "./components/payment/FlutterwaveConfirm";
 import ReferralDashboard from "./pages/referral/ReferralDashboard";
 import CampaignDashboard from "./pages/referral/CampaignDashboard";
 import AdminCampaign from "./pages/admin/AdminCampaign";
+import AdminReferrals from "./pages/admin/AdminReferrals";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -378,6 +379,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminCampaign />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/referrals"
+          element={
+            <RequireAdmin>
+              <AdminReferrals />
             </RequireAdmin>
           }
         />
