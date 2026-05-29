@@ -99,6 +99,7 @@ import ReferralDashboard from "./pages/referral/ReferralDashboard";
 import CampaignDashboard from "./pages/referral/CampaignDashboard";
 import AdminCampaign from "./pages/admin/AdminCampaign";
 import AdminReferrals from "./pages/admin/AdminReferrals";
+import AdminManualPayments from "./pages/admin/AdminManualPayments";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -307,6 +308,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminPayments />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/manual-payments"
+          element={
+            <RequireAdmin>
+              <AdminManualPayments />
             </RequireAdmin>
           }
         />

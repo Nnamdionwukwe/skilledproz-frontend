@@ -27,6 +27,7 @@ const NAV = [
       { label: "Categories", path: "/admin/categories", icon: "🔧" },
       { label: "Reviews", path: "/admin/reviews", icon: "⭐" },
       { label: "Payments", path: "/admin/payments", icon: "💳" },
+      { label: "Manual Payments", path: "/admin/manual-payments", icon: "💵" },
       { label: "Withdrawals", path: "/admin/withdrawals", icon: "💸" },
       { label: "jobs", path: "/admin/jobs", icon: "💼" },
       { label: "subscriptions", path: "/admin/subscriptions", icon: "💎" },
