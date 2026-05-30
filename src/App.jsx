@@ -100,6 +100,7 @@ import CampaignDashboard from "./pages/referral/CampaignDashboard";
 import AdminCampaign from "./pages/admin/AdminCampaign";
 import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminManualPayments from "./pages/admin/AdminManualPayments";
+import MyReports from "./pages/reports/MyReports";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -844,6 +845,15 @@ export default function App() {
           element={
             <RequireAuth>
               <UserProfile />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/my-reports"
+          element={
+            <RequireAuth>
+              <MyReports />
             </RequireAuth>
           }
         />
