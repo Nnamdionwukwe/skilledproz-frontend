@@ -13,6 +13,14 @@ export default function SubscriptionPlans({ onClose }) {
   const [subscribing, setSubscribing] = useState(null);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+
+  // ── Promo code state ────────────────────────────────────────────────────────
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState(null); // { code, discountType, discountValue, description }
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
+  const [promoSuccess, setPromoSuccess] = useState("");
+
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   useEffect(() => {
@@ -28,12 +36,75 @@ export default function SubscriptionPlans({ onClose }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // ── Compute discounted price for a given plan price ──────────────────────────
+  function getDiscountedPrice(originalPrice) {
+    if (!promoApplied || originalPrice === 0) return null;
+    const { discountType, discountValue } = promoApplied;
+    const discount =
+      discountType === "PERCENT"
+        ? parseFloat(((originalPrice * discountValue) / 100).toFixed(2))
+        : Math.min(discountValue, originalPrice);
+    const finalPrice = Math.max(0, originalPrice - discount);
+    return { discount, finalPrice };
+  }
+
+  // ── Apply promo code ─────────────────────────────────────────────────────────
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoLoading(true);
+    setPromoError("");
+    setPromoSuccess("");
+
+    try {
+      // Validate without planId — backend returns discountType + discountValue
+      // so we can compute per-plan discounts client-side
+      const res = await api.get(`/subscriptions/promo/validate/${code}`);
+      const data = res.data.data;
+
+      if (data.valid) {
+        setPromoApplied({
+          code: data.code,
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+          description: data.description,
+          expiresAt: data.expiresAt,
+        });
+        const label =
+          data.discountType === "PERCENT"
+            ? `${data.discountValue}% off`
+            : `₦${Number(data.discountValue).toLocaleString()} off`;
+        setPromoSuccess(`Code applied — ${label} on your subscription!`);
+        setPromoInput("");
+      } else {
+        setPromoError("Invalid promo code.");
+      }
+    } catch (err) {
+      setPromoError(
+        err.response?.data?.message || "Invalid or expired promo code.",
+      );
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoApplied(null);
+    setPromoSuccess("");
+    setPromoError("");
+    setPromoInput("");
+  };
+
+  // ── Subscribe (Paystack checkout) ────────────────────────────────────────────
   const handleSubscribe = async (planId) => {
     setSubscribing(planId);
     setError("");
     try {
-      const res = await api.post("/subscriptions/checkout", { planId });
-      // Redirect to Stripe Checkout
+      const res = await api.post("/subscriptions/checkout", {
+        planId,
+        ...(promoApplied ? { promoCode: promoApplied.code } : {}),
+      });
+      // Redirect to Paystack hosted checkout page
       window.location.href = res.data.data.url;
     } catch (err) {
       setError(err.response?.data?.message || "Failed to start checkout.");
@@ -100,6 +171,54 @@ export default function SubscriptionPlans({ onClose }) {
         {error && <div className={styles.errorBox}>⚠️ {error}</div>}
         {success && <div className={styles.successBox}>✅ {success}</div>}
 
+        {/* ── Promo code section ─────────────────────────────────────────────── */}
+        <div className={styles.promoSection}>
+          {promoApplied ? (
+            /* Applied state — show the active code as a dismissible tag */
+            <div className={styles.promoAppliedRow}>
+              <span className={styles.promoTag}>
+                🏷️ <strong>{promoApplied.code}</strong>
+                {promoApplied.discountType === "PERCENT"
+                  ? ` — ${promoApplied.discountValue}% off`
+                  : ` — ₦${Number(promoApplied.discountValue).toLocaleString()} off`}
+              </span>
+              <button
+                className={styles.promoRemoveBtn}
+                onClick={handleRemovePromo}
+              >
+                ✕ Remove
+              </button>
+            </div>
+          ) : (
+            /* Input state */
+            <div className={styles.promoInputRow}>
+              <input
+                className={styles.promoInput}
+                type="text"
+                placeholder="Have a promo code?"
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && !promoLoading && handleApplyPromo()
+                }
+                maxLength={20}
+              />
+              <button
+                className={styles.promoApplyBtn}
+                onClick={handleApplyPromo}
+                disabled={!promoInput.trim() || promoLoading}
+              >
+                {promoLoading ? <span className={styles.spinner} /> : "Apply"}
+              </button>
+            </div>
+          )}
+          {promoSuccess && (
+            <p className={styles.promoSuccessMsg}>✓ {promoSuccess}</p>
+          )}
+          {promoError && <p className={styles.promoErrorMsg}>✗ {promoError}</p>}
+        </div>
+
+        {/* ── Plans grid ────────────────────────────────────────────────────── */}
         {loading ? (
           <div className={styles.plansGrid}>
             {[1, 2, 3].map((i) => (
@@ -111,11 +230,16 @@ export default function SubscriptionPlans({ onClose }) {
             {plans.map((plan) => {
               const isCurrent = current?.subscription?.tier === plan.tier;
               const isPopular = plan.popular;
+              const discounted = getDiscountedPrice(plan.price);
 
               return (
                 <div
                   key={plan.id}
-                  className={`${styles.planCard} ${isPopular ? styles.planPopular : ""} ${isCurrent ? styles.planCurrent : ""}`}
+                  className={[
+                    styles.planCard,
+                    isPopular ? styles.planPopular : "",
+                    isCurrent ? styles.planCurrent : "",
+                  ].join(" ")}
                 >
                   {isPopular && (
                     <div className={styles.popularBadge}>Most Popular</div>
@@ -130,6 +254,27 @@ export default function SubscriptionPlans({ onClose }) {
                   <div className={styles.planPrice}>
                     {plan.price === 0 ? (
                       <span className={styles.priceAmount}>Free</span>
+                    ) : discounted ? (
+                      /* Show discounted price when promo is applied */
+                      <div className={styles.priceDiscountWrap}>
+                        <span className={styles.priceStrike}>
+                          {plan.currency} {plan.price.toLocaleString()}
+                        </span>
+                        <div className={styles.priceRow}>
+                          <span className={styles.priceCurrency}>
+                            {plan.currency}
+                          </span>
+                          <span className={styles.priceAmount}>
+                            {discounted.finalPrice.toLocaleString()}
+                          </span>
+                          <span className={styles.pricePer}>
+                            /{plan.billingCycle === "yearly" ? "yr" : "mo"}
+                          </span>
+                        </div>
+                        <span className={styles.savingsBadge}>
+                          Save ₦{discounted.discount.toLocaleString()}
+                        </span>
+                      </div>
                     ) : (
                       <>
                         <span className={styles.priceCurrency}>
@@ -138,7 +283,9 @@ export default function SubscriptionPlans({ onClose }) {
                         <span className={styles.priceAmount}>
                           {plan.price.toLocaleString()}
                         </span>
-                        <span className={styles.pricePer}>/mo</span>
+                        <span className={styles.pricePer}>
+                          /{plan.billingCycle === "yearly" ? "yr" : "mo"}
+                        </span>
                       </>
                     )}
                   </div>
@@ -153,7 +300,14 @@ export default function SubscriptionPlans({ onClose }) {
                   </ul>
 
                   <button
-                    className={`${styles.planBtn} ${isCurrent ? styles.planBtnCurrent : isPopular ? styles.planBtnPopular : styles.planBtnDefault}`}
+                    className={[
+                      styles.planBtn,
+                      isCurrent
+                        ? styles.planBtnCurrent
+                        : isPopular
+                          ? styles.planBtnPopular
+                          : styles.planBtnDefault,
+                    ].join(" ")}
                     onClick={() =>
                       !isCurrent && plan.price > 0 && handleSubscribe(plan.id)
                     }
@@ -180,7 +334,8 @@ export default function SubscriptionPlans({ onClose }) {
         )}
 
         <p className={styles.disclaimer}>
-          Payments processed securely. Cancel anytime. All prices in USD.
+          Payments processed securely by Paystack. Cancel anytime. All prices in
+          NGN.
         </p>
       </div>
     </Layout>
