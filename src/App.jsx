@@ -822,14 +822,6 @@ export default function App() {
           }
         />
         <Route path="/payments/verify/paystack" element={<PaystackVerify />} />
-        <Route
-          path="/insurance/success"
-          element={
-            <RequireAuth>
-              <InsuranceSuccess />
-            </RequireAuth>
-          }
-        />
 
         {/* ── Jobs (both roles can view, hirer creates) ── */}
         <Route
@@ -899,6 +891,15 @@ export default function App() {
           element={
             <RequireAuth>
               <FeaturedSuccess />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/insurance/success"
+          element={
+            <RequireAuth>
+              <InsuranceSuccess />
             </RequireAuth>
           }
         />
