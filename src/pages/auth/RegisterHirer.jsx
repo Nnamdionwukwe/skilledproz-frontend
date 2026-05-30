@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -26,6 +26,7 @@ const INIT = {
   country: "",
   city: "",
   agree: false,
+  referralCode: "",
 };
 
 export default function RegisterHirer() {
@@ -34,6 +35,12 @@ export default function RegisterHirer() {
   const [form, setForm] = useState(INIT);
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setForm((f) => ({ ...f, referralCode: ref.toUpperCase() }));
+  }, []);
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -67,6 +74,9 @@ export default function RegisterHirer() {
         phone: form.phone || undefined,
         country: form.country || undefined,
         city: form.city || undefined,
+        ...(form.referralCode?.trim()
+          ? { referralCode: form.referralCode.trim().toUpperCase() }
+          : {}),
       });
       navigate("/verify-email");
     } catch (err) {
@@ -210,6 +220,28 @@ export default function RegisterHirer() {
               </div>
             </div>
           </div>
+
+          <div className={s.field}>
+            <label className={s.label}>
+              Referral code{" "}
+              <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                (optional)
+              </span>
+            </label>
+            <div className={s.inputWrap}>
+              <input
+                className={s.input}
+                type="text"
+                name="referralCode"
+                placeholder="e.g. SPTEST01"
+                value={form.referralCode}
+                onChange={onChange}
+                style={{ textTransform: "uppercase", letterSpacing: "0.1em" }}
+                maxLength={12}
+              />
+            </div>
+          </div>
+
           <div className={s.row}>
             <div
               className={`${s.field} ${errors.password ? s.fieldError : ""}`}

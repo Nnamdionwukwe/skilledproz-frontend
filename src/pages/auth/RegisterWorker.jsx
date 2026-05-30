@@ -66,6 +66,7 @@ export default function WorkerRegister() {
     confirm: "",
     country: "",
     city: "",
+    referralCode: "",
   });
 
   // Step 1 — Profile
@@ -111,6 +112,12 @@ export default function WorkerRegister() {
   const filteredCats = categories.filter(
     (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setAccount((p) => ({ ...p, referralCode: ref.toUpperCase() }));
+  }, []);
 
   function toggleCat(cat) {
     setSelectedCats((prev) => {
@@ -237,6 +244,10 @@ export default function WorkerRegister() {
           categoryId: c.id,
           isPrimary: c.id === primaryCatId,
         })),
+
+        ...(account.referralCode?.trim()
+          ? { referralCode: account.referralCode.trim().toUpperCase() }
+          : {}),
       };
 
       const res = await api.post("/auth/register", payload);
@@ -245,7 +256,7 @@ export default function WorkerRegister() {
         res.data.data.accessToken,
         res.data.data.refreshToken,
       );
-      navigate("/dashboard");
+      navigate("/dashboard/worker");
     } catch (e) {
       setError(e.response?.data?.message || "Registration failed");
     } finally {
@@ -341,6 +352,26 @@ export default function WorkerRegister() {
                   value={account.city}
                   onChange={(v) => a("city", v)}
                   placeholder="Lagos"
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Referral code{" "}
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                    (optional)
+                  </span>
+                </label>
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder="e.g. SPTEST01"
+                  value={account.referralCode}
+                  onChange={(e) =>
+                    a("referralCode", e.target.value.toUpperCase())
+                  }
+                  style={{ textTransform: "uppercase", letterSpacing: "0.1em" }}
+                  maxLength={12}
                 />
               </div>
               <Field
