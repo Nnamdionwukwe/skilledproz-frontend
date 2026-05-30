@@ -70,6 +70,16 @@ const NAV = [
     ],
   },
   {
+    group: "Reports",
+    items: [
+      {
+        label: "Reports",
+        path: "/my-reports",
+        icon: "🚩",
+      },
+    ],
+  },
+  {
     group: "Campaigns",
     items: [
       {

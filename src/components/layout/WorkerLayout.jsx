@@ -41,6 +41,11 @@ const NAV = [
         path: "/campaign",
         icon: "📢",
       },
+      {
+        label: "Reports",
+        path: "/my-reports",
+        icon: "🚩",
+      },
     ],
   },
   {
