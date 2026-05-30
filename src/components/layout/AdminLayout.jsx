@@ -40,6 +40,7 @@ const NAV = [
       { label: "reports", path: "/admin/reports", icon: "🚩" },
       { label: "audit logs", path: "/admin/audit-logs", icon: "�" },
       { label: "insurance claims", path: "/admin/insurance", icon: "🛡️" },
+      { label: "promo codes", path: "/admin/promocodes", icon: "🏷️" },
     ],
   },
   {

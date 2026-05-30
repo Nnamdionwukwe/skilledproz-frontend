@@ -1,0 +1,356 @@
+/* AdminPromoCodes.module.css
+   Matches the design language of AdminReferrals / AdminInsurance.
+   Uses existing CSS variables: --orange, --orange-dim, --green, --green-dim,
+   --red, --red-dim, --border, --bg, --bg-panel, --bg-card, --bg-input,
+   --text, --text-dim, --text-muted, --font-display, --font-body
+*/
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
+.page {
+  padding: 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+  animation: fadeUp 0.3s ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--orange);
+  margin-bottom: 4px;
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  animation: fadeUp 0.2s ease both;
+}
+.alert_success {
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  color: var(--green);
+}
+.alert_error {
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: var(--red);
+}
+.alertClose {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.7;
+  line-height: 1;
+}
+.alertClose:hover {
+  opacity: 1;
+}
+
+/* ── Stat cards ──────────────────────────────────────────────────────────── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.statCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: border-color 0.15s;
+}
+.statCard:hover {
+  border-color: var(--border-hover, var(--border));
+}
+
+.statCardAccent {
+  background: var(--orange-dim);
+  border-color: rgba(249, 115, 22, 0.28);
+}
+.statCardGreen {
+  background: var(--green-dim);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.statIcon {
+  font-size: 20px;
+}
+.statValue {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+}
+.statCardAccent .statValue {
+  color: var(--orange);
+}
+.statCardGreen .statValue {
+  color: var(--green);
+}
+.statLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.statSub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Filter row ──────────────────────────────────────────────────────────── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  height: 38px;
+  padding: 0 14px;
+  background: var(--bg-input, var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+.searchInput:focus {
+  border-color: var(--orange);
+}
+
+.select {
+  height: 38px;
+  padding: 0 12px;
+  background: var(--bg-input, var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.select:focus {
+  border-color: var(--orange);
+}
+
+.resultsCount {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btnPrimary {
+  height: 38px;
+  padding: 0 18px;
+  background: var(--orange);
+  color: #0f0f1a;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+  white-space: nowrap;
+}
+.btnPrimary:hover {
+  background: var(--orange-hover, #ea6c10);
+}
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnOutline {
+  height: 38px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+.btnOutline:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.btnCancel {
+  flex: 1;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnCancel:hover {
+  border-color: var(--border-hover, #444);
+  color: var(--text);
+}
+
+.btnDanger {
+  flex: 1;
+  height: 40px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+.btnDanger:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.btnDanger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--text);
+}
+.table thead tr {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+.table th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.tableRow {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.tableRow:last-child {
+  border-bottom: none;
+}
+.tableRow:hover {
+  background: var(--bg-card);
+}
+.td {
+  padding: 13px 14px;
+  vertical-align: middle;
+}
+
+/* ── Code label ──────────────────────────────────────────────────────────── */
+.codeLabel {
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.06em;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: inline-block;
+}

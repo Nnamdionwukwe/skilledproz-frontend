@@ -104,6 +104,7 @@ import MyReports from "./pages/reports/MyReports";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminInsurance from "./pages/admin/AdminInsurance";
+import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -424,6 +425,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminInsurance />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/promocodes"
+          element={
+            <RequireAdmin>
+              <AdminPromoCodes />
             </RequireAdmin>
           }
         />
