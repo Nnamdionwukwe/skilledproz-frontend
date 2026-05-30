@@ -73,7 +73,7 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
         <div className={styles.panel}>
           <p className={styles.panelTitle}>Choose a plan</p>
           <p className={styles.panelSub}>
-            One-time cover for this booking. Paid securely via Stripe.
+            One-time cover for this booking. Paid securely via Flutterwave.
           </p>
 
           {loading ? (
@@ -137,8 +137,8 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
           </div>
 
           <p className={styles.disclaimer}>
-            Secure payment via Stripe. Coverage activates immediately after
-            payment.
+            Secure payment via Flutterwave. Coverage activates immediately after
+            payment. You will be redirected back automatically.
           </p>
         </div>
       )}

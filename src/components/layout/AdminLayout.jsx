@@ -39,6 +39,7 @@ const NAV = [
       { label: "referrals", path: "/admin/referrals", icon: "🔗" },
       { label: "reports", path: "/admin/reports", icon: "🚩" },
       { label: "audit logs", path: "/admin/audit-logs", icon: "�" },
+      { label: "insurance claims", path: "/admin/insurance", icon: "🛡️" },
     ],
   },
   {
