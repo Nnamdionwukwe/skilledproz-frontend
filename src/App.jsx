@@ -102,6 +102,7 @@ import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminManualPayments from "./pages/admin/AdminManualPayments";
 import MyReports from "./pages/reports/MyReports";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminAuditLog from "./pages/admin/AdminAuditLog";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -406,6 +407,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminReports />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <RequireAdmin>
+              <AdminAuditLog />
             </RequireAdmin>
           }
         />

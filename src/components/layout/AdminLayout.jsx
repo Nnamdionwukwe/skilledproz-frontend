@@ -38,6 +38,7 @@ const NAV = [
       { label: "campaigns", path: "/admin/campaigns", icon: "�" },
       { label: "referrals", path: "/admin/referrals", icon: "🔗" },
       { label: "reports", path: "/admin/reports", icon: "🚩" },
+      { label: "audit logs", path: "/admin/audit-logs", icon: "�" },
     ],
   },
   {
