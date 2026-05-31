@@ -377,3 +377,51 @@
     transform: rotate(360deg);
   }
 }
+
+.fileLabel {
+  display: block;
+  cursor: pointer;
+}
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+.fileBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 13px;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.fileLabel:hover .fileBtn {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.fileRemove {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--red);
+  cursor: pointer;
+  font-family: var(--font-body);
+  padding: 0;
+}
+.fileRemove:hover {
+  text-decoration: underline;
+}
+.inputMono {
+  font-family: monospace;
+}

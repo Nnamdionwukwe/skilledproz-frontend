@@ -694,3 +694,211 @@
     opacity: 0.5;
   }
 }
+
+.fileUploadLabel {
+  display: block;
+  cursor: pointer;
+}
+.fileUploadInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+.fileUploadBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.fileUploadLabel:hover .fileUploadBtn {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.fileRemoveBtn {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--red);
+  cursor: pointer;
+  font-family: var(--font-body);
+  padding: 0;
+}
+.fileRemoveBtn:hover {
+  text-decoration: underline;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PASTE AT THE BOTTOM of Payment.module.css
+   (these are new classes — don't touch existing ones)
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── "Change method" button — styled like the back link but with a border ── */
+.changeMethodBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.changeMethodBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ── Meta row label / value (inside summaryMeta detail rows) ── */
+.metaRowLabel {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.metaRowValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+
+/* ── Crypto token selector — 2-column grid, each shows icon + label + network ── */
+.cryptoTokens {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tokenBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.tokenBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.tokenBtnActive {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.tokenBtnIcon {
+  font-size: 20px;
+}
+.tokenBtnNetwork {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.tokenBtnActive .tokenBtnNetwork {
+  color: var(--orange);
+  opacity: 0.75;
+}
+
+/* ── Referral inline buttons ── */
+.referralInlineBtn {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: var(--green);
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  padding: 0;
+}
+.referralApplyBtn {
+  flex-shrink: 0;
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 7px;
+  padding: 4px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s;
+}
+.referralApplyBtn:hover {
+  filter: brightness(1.1);
+}
+
+/* ── File upload (receipt) ── */
+.fileUploadLabel {
+  display: block;
+  cursor: pointer;
+}
+.fileUploadInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+.fileUploadBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.fileUploadLabel:hover .fileUploadBtn {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.fileRemoveBtn {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--red);
+  cursor: pointer;
+  font-family: var(--font-body);
+  padding: 0;
+}
+.fileRemoveBtn:hover {
+  text-decoration: underline;
+}

@@ -14,7 +14,7 @@ const CRYPTO_OPTIONS = [
 // agreedRate = rate per unit (hr / day / week / month)
 // estimatedUnit + estimatedHours → qty
 // platformFeeRate = 0.1 (10%) matching payment.service.js
-function calcPricing(booking) {
+function calcPricing(booking, applyReferral = false, referralDiscount = null) {
   const rate = booking.agreedRate || 0;
   const unit = booking.estimatedUnit || "hours";
   const hours = booking.estimatedHours;
@@ -22,7 +22,7 @@ function calcPricing(booking) {
     ? parseFloat(booking.estimatedValue)
     : null;
   const currency = booking.currency || "USD";
-  const PLATFORM_FEE_RATE = 0.1; // must match payment.service.js PLATFORM_FEE_PERCENT
+  const PLATFORM_FEE_RATE = 0.05; // Phase 1 — 5% // must match payment.service.js PLATFORM_FEE_PERCENT
 
   // Quantity of units
   let qty = 1;
@@ -44,8 +44,14 @@ function calcPricing(booking) {
 
   const subtotal = rate * qty;
   const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
-  const workerPayout = parseFloat((subtotal - platformFee).toFixed(2));
-  const totalCharged = subtotal + platformFee; // hirer pays subtotal; fee is taken from worker payout
+  const workerPayout = subtotal; // worker gets full agreed rate; fee is charged ON TOP
+  const referralDeduct =
+    applyReferral && referralDiscount
+      ? Math.min(referralDiscount.discount, subtotal + platformFee)
+      : 0;
+  const totalCharged = parseFloat(
+    (subtotal + platformFee - referralDeduct).toFixed(2),
+  );
 
   return {
     rate,
@@ -59,10 +65,17 @@ function calcPricing(booking) {
     workerPayout,
     totalCharged,
     hasQty: (value || hours) && unit !== "custom",
+    referralDeduct,
   };
 }
 
-export default function PaymentOptions({ booking, onSuccess }) {
+export default function PaymentOptions({
+  booking,
+  onSuccess,
+  referralDiscount,
+  referralApplied: referralAppliedProp,
+  onReferralToggle,
+}) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("crypto");
   const [loading, setLoading] = useState(false);
@@ -81,15 +94,23 @@ export default function PaymentOptions({ booking, onSuccess }) {
   const [cryptoAmount, setCryptoAmount] = useState("");
   const [cryptoDetails, setCryptoDetails] = useState(null);
 
+  const [bankReceiptFile, setBankReceiptFile] = useState(null);
+  const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
+
   // ── Pricing ───────────────────────────────────────────────────────────────
-  const p = calcPricing(booking);
+  const applyReferral = referralAppliedProp ?? false;
+  const p = calcPricing(booking, applyReferral, referralDiscount);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   async function handleBankInitiate() {
     setLoading(true);
     setError("");
     try {
-      const res = await api.post(`/payments/bank-transfer/${booking.id}`);
+      const res = await api.post(`/payments/bank-transfer/${booking.id}`, {
+        amount: p.totalCharged,
+        currency: p.currency,
+        narration: `SkilledProz-${booking.id.slice(0, 8).toUpperCase()}`,
+      });
       setBankDetails(res.data.data.bankDetails);
       setStep("details");
     } catch (e) {
@@ -107,10 +128,13 @@ export default function PaymentOptions({ booking, onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      await api.patch(`/payments/bank-transfer/${booking.id}/confirm`, {
-        proofUrl: bankProof,
-        senderName,
-        bankName: senderBank,
+      const fd = new FormData();
+      fd.append("senderName", senderName);
+      if (senderBank) fd.append("bankName", senderBank);
+      if (bankReceiptFile) fd.append("proof", bankReceiptFile);
+
+      await api.patch(`/payments/bank-transfer/${booking.id}/confirm`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       setStep("confirm");
       onSuccess?.();
@@ -147,10 +171,14 @@ export default function PaymentOptions({ booking, onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      await api.patch(`/payments/crypto/${booking.id}/confirm`, {
-        txHash: cryptoTxHash,
-        cryptoAmount,
-        cryptoCurrency: cryptoAsset,
+      const fd = new FormData();
+      fd.append("txHash", cryptoTxHash);
+      fd.append("cryptoCurrency", cryptoAsset);
+      if (cryptoAmount) fd.append("cryptoAmount", cryptoAmount);
+      if (cryptoReceiptFile) fd.append("proof", cryptoReceiptFile);
+
+      await api.patch(`/payments/crypto/${booking.id}/confirm`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       setStep("confirm");
       onSuccess?.();
@@ -219,8 +247,9 @@ export default function PaymentOptions({ booking, onSuccess }) {
 
         <div className={styles.summaryRow}>
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            Platform Fee (10%)
+            Platform Fee (5%)
           </span>
+
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
             − {p.currency}{" "}
             {p.platformFee.toLocaleString(undefined, {
@@ -228,6 +257,17 @@ export default function PaymentOptions({ booking, onSuccess }) {
             })}
           </span>
         </div>
+
+        {p.referralDeduct > 0 && (
+          <div className={styles.summaryRow}>
+            <span style={{ color: "var(--green)", fontSize: 12 }}>
+              🎁 Referral bonus
+            </span>
+            <span style={{ color: "var(--green)", fontSize: 12 }}>
+              − {p.currency} {p.referralDeduct.toLocaleString()}
+            </span>
+          </div>
+        )}
 
         <div className={styles.summaryDivider} />
 
@@ -340,8 +380,8 @@ export default function PaymentOptions({ booking, onSuccess }) {
             <BankRow label="Narration" value={bankDetails.narration} mono />
           </div>
           <div className={styles.bankWarn}>
-            ⚠️ Include the exact narration. Payments without the reference may
-            be delayed.
+            ⚠️ Include the exact proof of payment. Payments without the proof
+            may be delayed.
           </div>
           <p className={styles.bankSubtitle}>Confirm your transfer</p>
           <div className={styles.formGroup}>
@@ -364,14 +404,32 @@ export default function PaymentOptions({ booking, onSuccess }) {
           </div>
           <div className={styles.formGroup}>
             <label className={styles.label}>
-              Proof of Payment URL (optional)
+              Receipt / Proof of Payment (optional)
             </label>
-            <input
-              className={styles.input}
-              value={bankProof}
-              onChange={(e) => setBankProof(e.target.value)}
-              placeholder="Link to screenshot or receipt"
-            />
+            <label className={styles.fileLabel}>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                className={styles.fileInput}
+                onChange={(e) =>
+                  setBankReceiptFile(e.target.files?.[0] || null)
+                }
+              />
+              <span className={styles.fileBtn}>
+                {bankReceiptFile
+                  ? `✅ ${bankReceiptFile.name}`
+                  : "📎 Upload receipt (image or PDF)"}
+              </span>
+            </label>
+            {bankReceiptFile && (
+              <button
+                type="button"
+                className={styles.fileRemove}
+                onClick={() => setBankReceiptFile(null)}
+              >
+                ✕ Remove
+              </button>
+            )}
           </div>
           <div className={styles.bankBtns}>
             <button
@@ -425,15 +483,14 @@ export default function PaymentOptions({ booking, onSuccess }) {
           <div className={styles.formGroup}>
             <label className={styles.label}>Transaction Hash / TX ID *</label>
             <input
-              className={styles.input}
+              className={`${styles.input} ${styles.inputMono}`}
               value={cryptoTxHash}
               onChange={(e) => setCryptoTxHash(e.target.value)}
               placeholder="0x... or transaction ID"
-              style={{ fontFamily: "monospace" }}
             />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Amount Sent</label>
+            <label className={styles.label}>Amount Sent (optional)</label>
             <input
               className={styles.input}
               type="number"
@@ -442,6 +499,36 @@ export default function PaymentOptions({ booking, onSuccess }) {
               placeholder="Amount in crypto"
             />
           </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+              Transaction Screenshot (optional)
+            </label>
+            <label className={styles.fileLabel}>
+              <input
+                type="file"
+                accept="image/*"
+                className={styles.fileInput}
+                onChange={(e) =>
+                  setCryptoReceiptFile(e.target.files?.[0] || null)
+                }
+              />
+              <span className={styles.fileBtn}>
+                {cryptoReceiptFile
+                  ? `✅ ${cryptoReceiptFile.name}`
+                  : "📎 Upload screenshot"}
+              </span>
+            </label>
+            {cryptoReceiptFile && (
+              <button
+                type="button"
+                className={styles.fileRemove}
+                onClick={() => setCryptoReceiptFile(null)}
+              >
+                ✕ Remove
+              </button>
+            )}
+          </div>
+
           <div className={styles.bankBtns}>
             <button
               className={styles.backBtn}

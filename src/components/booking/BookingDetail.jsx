@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -15,6 +15,7 @@ import EmergencyContact from "./EmergencyContact";
 import PaymentOptions from "../payment/PaymentOptions";
 import VideoCallButton from "./VideoCallButton";
 
+// ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_META = {
   PENDING: { label: "Pending", color: "yellow", step: 0 },
   ACCEPTED: { label: "Accepted", color: "orange", step: 1 },
@@ -23,9 +24,9 @@ const STATUS_META = {
   CANCELLED: { label: "Cancelled", color: "red", step: -1 },
   DISPUTED: { label: "Disputed", color: "rose", step: -1 },
 };
-
 const TIMELINE_STEPS = ["Pending", "Accepted", "In Progress", "Completed"];
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -42,19 +43,14 @@ function mapsUrl(lat, lng) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
-// ── Guard: only call when booking is non-null ─────────────────────────────────
 function formatDuration(booking) {
-  if (!booking) return null; // ← THIS was the crash
-
+  if (!booking) return null;
   const unit = booking.estimatedUnit || "hours";
   const value = booking.estimatedValue || null;
   const hours = booking.estimatedHours || null;
-
   if (!value && !hours) return null;
-
   if (value) {
     if (unit === "custom") return { main: value, sub: null };
-
     const unitLabel = {
       hours: "hour",
       days: "day",
@@ -66,31 +62,70 @@ function formatDuration(booking) {
     const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
     return { main: `${num} ${label}`, sub: eqv };
   }
-
   return hours ? { main: `${hours} hours`, sub: null } : null;
 }
 
+function calcDuration(start, end) {
+  if (!start || !end) return null;
+  const ms = new Date(end) - new Date(start);
+  const hrs = Math.floor(ms / 3600000);
+  const min = Math.floor((ms % 3600000) / 60000);
+  return hrs > 0 ? `${hrs}h ${min}m` : `${min}m`;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function BookingDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
 
+  // Core state
   const [booking, setBooking] = useState(null);
+  const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [showCancel, setShowCancel] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [cancelError, setCancelError] = useState("");
+
+  // Review state
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewCheckDone, setReviewCheckDone] = useState(false);
+
+  // UI toggles
+  const [showCancel, setShowCancel] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
-  const [emergencyContact, setEmergencyContact] = useState(null);
+  const [showPayOptions, setShowPayOptions] = useState(false); // ← new: inline payment options
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
+
+  // Emergency contact
+  const [emergencyContact, setEmergencyContact] = useState({
+    name: "",
+    phone: "",
+    relationship: "",
+  });
+
+  // Referral perk
+  const [referralDiscount, setReferralDiscount] = useState(null);
+  const [referralApplied, setReferralApplied] = useState(false);
+
+  // Action loading flags
+  const [resolvingSOS, setResolvingSOS] = useState(false);
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── refetch ─────────────────────────────────────────────────────────────────
+  const refetch = useCallback(() => {
+    api
+      .get(`/bookings/${id}`)
+      .then((res) => setBooking(res.data.data.booking))
+      .catch(() => {});
+  }, [id]);
+
+  // ── Initial load ─────────────────────────────────────────────────────────────
   useEffect(() => {
     api
       .get(`/bookings/${id}`)
@@ -98,13 +133,24 @@ export default function BookingDetail() {
         const b = res.data.data.booking;
         setBooking(b);
 
-        // Parse emergency contact if present
+        // Parse stored emergency contact JSON
         if (b.emergencyContact) {
           try {
-            setEmergencyContact(JSON.parse(b.emergencyContact));
+            const ec =
+              typeof b.emergencyContact === "string"
+                ? JSON.parse(b.emergencyContact)
+                : b.emergencyContact;
+            setEmergencyContact(ec);
           } catch {}
         }
 
+        // Load payment record
+        api
+          .get(`/payments/${b.id}`)
+          .then((pr) => setPayment(pr.data.data))
+          .catch(() => {});
+
+        // Check review status on completed bookings
         if (b.status === "COMPLETED") {
           api
             .get(`/reviews/check/${id}`)
@@ -114,34 +160,41 @@ export default function BookingDetail() {
         } else {
           setReviewCheckDone(true);
         }
+
+        // Referral perk for hirers who haven't paid yet
+        if (user?.role === "HIRER" && !b.payment) {
+          api
+            .get("/referral/dashboard")
+            .then((rd) => {
+              const data = rd.data.data;
+              // Only show if the hirer was referred (has a code from someone else)
+              // Backend applies 5% up to ₦2,500 on first booking for referred hirers
+              if (data?.code) {
+                const raw = (b.agreedRate || 0) * 0.05;
+                const discount = Math.min(raw, 2500);
+                if (discount > 0) {
+                  setReferralDiscount({
+                    discount,
+                    finalAmount: (b.agreedRate || 0) - discount,
+                  });
+                }
+              }
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
 
-  // ── Silent auto-refresh every 10 minutes ────────────────────────────────────
+  // ── Silent refresh every 10 min ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
-    const interval = setInterval(() => {
-      api
-        .get(`/bookings/${id}`)
-        .then((res) => {
-          const updated = res.data.data.booking;
-          setBooking((prev) => {
-            if (!prev) return updated;
-            if (
-              prev.status !== updated.status ||
-              prev.payment?.status !== updated.payment?.status
-            )
-              return updated;
-            return prev;
-          });
-        })
-        .catch(() => {});
-    }, 600_000);
-    return () => clearInterval(interval);
-  }, [id]);
+    const timer = setInterval(refetch, 600_000);
+    return () => clearInterval(timer);
+  }, [id, refetch]);
 
+  // ── Status update ────────────────────────────────────────────────────────────
   async function updateStatus(status, extra = {}) {
     setActing(true);
     setError("");
@@ -167,46 +220,80 @@ export default function BookingDetail() {
 
   function handleCancelSubmit() {
     if (!cancelReason.trim()) {
-      setCancelError("Please provide a reason for cancellation.");
+      setCancelError("Please provide a reason.");
       return;
     }
     updateStatus("CANCELLED", { cancelReason: cancelReason.trim() });
   }
 
-  // ── Guard renders ────────────────────────────────────────────────────────────
+  // ── SOS resolve ──────────────────────────────────────────────────────────────
+  const handleResolveSOS = async () => {
+    if (!confirm("Mark this SOS as resolved?")) return;
+    setResolvingSOS(true);
+    try {
+      await api.patch(`/bookings/${booking.id}/sos/resolve`);
+      setSuccess("SOS marked as resolved.");
+      refetch();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resolve SOS");
+    } finally {
+      setResolvingSOS(false);
+    }
+  };
+
+  // ── Refund ───────────────────────────────────────────────────────────────────
+  const handleRefund = async () => {
+    if (!confirm("Issue a full refund? This cannot be undone.")) return;
+    setRefundLoading(true);
+    try {
+      await api.post(`/payments/refund/${booking.id}`);
+      setSuccess("Refund processed successfully.");
+      refetch();
+    } catch (err) {
+      setError(err.response?.data?.message || "Refund failed");
+    } finally {
+      setRefundLoading(false);
+    }
+  };
+
+  // ── Invoice download ─────────────────────────────────────────────────────────
+  const handleDownloadInvoice = async () => {
+    setInvoiceLoading(true);
+    try {
+      const res = await api.get(`/payments/invoice/${booking.id}`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(
+        new Blob([res.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice-${booking.id.slice(0, 8)}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Failed to download invoice");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  // ── Guards ───────────────────────────────────────────────────────────────────
   if (loading) return <DetailSkeleton Layout={Layout} />;
   if (!booking) return <NotFound />;
 
-  // ── All booking-derived values BELOW the null guard ─────────────────────────
+  // ── Derived values (safe — booking is non-null below here) ───────────────────
   const meta = STATUS_META[booking.status] || {};
   const step = meta.step ?? 0;
   const isHirer = userId === booking.hirerId;
   const isWorker = userId === booking.workerId;
   const other = isHirer ? booking.worker : booking.hirer;
-  const scheduled = new Date(booking.scheduledAt);
-
-  // formatDuration is now safe — booking is guaranteed non-null here
   const dur = formatDuration(booking);
 
-  // Estimated total calc
-  const estTotal = (() => {
-    const rate = booking.agreedRate;
-    const unit = booking.estimatedUnit;
-    const value = booking.estimatedValue;
-    if (!rate || !value || !unit || unit === "custom") return null;
-    const num = parseFloat(value);
-    return {
-      num,
-      unit,
-      rate,
-      currency: booking.currency,
-      total: num * rate,
-      suffix:
-        { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "",
-    };
-  })();
+  // Is SOS active right now?
+  const sosActive = !!booking.sosActivatedAt && !booking.sosResolvedAt;
 
-  // GPS derived values
+  // GPS presence
   const hasCheckInGps =
     booking.checkInLat != null && booking.checkInLng != null;
   const hasCheckOutGps =
@@ -221,7 +308,6 @@ export default function BookingDetail() {
           booking.longitude,
         )
       : null;
-
   const checkOutDistKm =
     hasCheckOutGps && booking.latitude && booking.longitude
       ? haversineKm(
@@ -231,6 +317,67 @@ export default function BookingDetail() {
           booking.longitude,
         )
       : null;
+
+  // ── Estimated total (what the hirer will pay) ─────────────────────────────────
+  // If payment exists, show the actual charged amount.
+  // If not, estimate from rate × duration. Include platform fee when available.
+  const feeBreakdown = (() => {
+    // ── Actual payment exists — show real figures ──────────────────────────
+    if (payment?.amount) {
+      return {
+        label: "Payment breakdown",
+        subtotal: payment.amount - (payment.platformFee || 0),
+        total: payment.amount,
+        platformFee: payment.platformFee ?? null,
+        workerPayout: payment.workerPayout ?? null,
+        currency: payment.currency || booking.currency,
+        isActual: true,
+      };
+    }
+
+    // ── No payment yet — need at least an agreed rate ──────────────────────
+    const rate = booking.agreedRate;
+    if (!rate) return null;
+
+    const unit = booking.estimatedUnit;
+    const value = booking.estimatedValue;
+
+    if (value && unit && unit !== "custom") {
+      // Has duration → show full estimate
+      const num = parseFloat(value);
+      const subtotal = num * rate;
+      const suffix =
+        { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
+      return {
+        label: `Est. total (${num} ${unit} × ${booking.currency} ${rate.toLocaleString()}${suffix})`,
+        subtotal,
+        total: subtotal,
+        platformFee: null,
+        workerPayout: null,
+        currency: booking.currency,
+        isActual: false,
+      };
+    }
+
+    // ── No duration set — show agreed rate + fee estimate ──────────────────
+    // This covers ACCEPTED bookings where only agreedRate is known
+    return {
+      label: "Based on agreed rate",
+      subtotal: rate,
+      total: rate,
+      platformFee: null,
+      workerPayout: null,
+      currency: booking.currency,
+      isActual: false,
+      noDuration: true, // flag to adjust label in the card
+    };
+  })();
+
+  // Payment needs action (no payment yet or payment stuck on PENDING)
+  const paymentRequired =
+    isHirer &&
+    ["ACCEPTED", "IN_PROGRESS"].includes(booking.status) &&
+    (!payment || payment.status === "PENDING");
 
   return (
     <Layout>
@@ -246,10 +393,41 @@ export default function BookingDetail() {
           <Alert type="success" text={success} onClose={() => setSuccess("")} />
         )}
 
+        {/* ── SOS banner — full width, always at top when active ── */}
+        {sosActive && (
+          <div className={styles.sosBanner}>
+            <span className={styles.sosBannerIcon}>🆘</span>
+            <div className={styles.sosBannerBody}>
+              <p className={styles.sosBannerTitle}>SOS Alert Active</p>
+              <p className={styles.sosBannerDesc}>
+                The worker has triggered an emergency alert.
+                {booking.sosActivatedAt && (
+                  <>
+                    {" "}
+                    Activated{" "}
+                    {new Date(booking.sosActivatedAt).toLocaleTimeString()}
+                  </>
+                )}
+              </p>
+            </div>
+            {(isHirer || user?.role === "ADMIN") && (
+              <button
+                className={styles.sosResolveBtn}
+                onClick={handleResolveSOS}
+                disabled={resolvingSOS}
+              >
+                {resolvingSOS ? "Resolving…" : "Mark Resolved"}
+              </button>
+            )}
+          </div>
+        )}
+
         <div className={styles.layout}>
-          {/* ══ MAIN COLUMN ══ */}
+          {/* ════════════════════════════════════════
+              MAIN COLUMN
+          ════════════════════════════════════════ */}
           <div className={styles.main}>
-            {/* Title block */}
+            {/* ── Title + badge ── */}
             <div className={styles.titleBlock}>
               <div className={styles.titleRow}>
                 <h1 className={styles.title}>{booking.title}</h1>
@@ -260,11 +438,18 @@ export default function BookingDetail() {
                 </span>
               </div>
               {booking.category && (
-                <span className={styles.category}>{booking.category.name}</span>
+                <span className={styles.categoryPill}>
+                  {booking.category.name}
+                </span>
+              )}
+              {booking.isNegotiated && (
+                <span className={styles.negotiatedPill}>
+                  💬 Negotiated rate
+                </span>
               )}
             </div>
 
-            {/* Timeline */}
+            {/* ── Timeline ── */}
             {step >= 0 && (
               <div className={styles.timelineWrap}>
                 <div className={styles.timeline}>
@@ -291,7 +476,26 @@ export default function BookingDetail() {
               </div>
             )}
 
-            {/* Description */}
+            {booking.status === "PENDING" && isHirer && (
+              <div className={styles.pendingBanner}>
+                <div className={styles.pendingBannerPulse}>
+                  <span className={styles.pendingBannerDot} />
+                </div>
+                <div className={styles.pendingBannerBody}>
+                  <p className={styles.pendingBannerTitle}>
+                    ⏳ Waiting for {booking.worker?.firstName} to respond
+                  </p>
+                  <p className={styles.pendingBannerDesc}>
+                    Your booking request has been sent.{" "}
+                    {booking.worker?.firstName} hasn't accepted yet — you'll be
+                    notified the moment they do. You can cancel for free until
+                    they accept.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Description ── */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Description</h2>
               <Translator text={booking.description} />
@@ -303,25 +507,54 @@ export default function BookingDetail() {
               )}
             </section>
 
-            {/* Job details */}
+            {/* ── Job details ── */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Job Details</h2>
               <div className={styles.detailGrid}>
+                {/* Scheduled date */}
                 <DetailItem
                   icon="📅"
                   label="Scheduled"
-                  value={`${scheduled.toLocaleDateString("en-GB", {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })} at ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+                  value={
+                    new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    }) +
+                    " at " +
+                    new Date(booking.scheduledAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  }
                 />
-                <DetailItem
-                  icon="📍"
-                  label="Job Site Address"
-                  value={booking.address}
-                />
+
+                {/* Address */}
+                {booking.address && (
+                  <DetailItem
+                    icon="📍"
+                    label="Job Site Address"
+                    value={
+                      <>
+                        {booking.address}
+                        {booking.latitude && booking.longitude && (
+                          <a
+                            href={mapsUrl(booking.latitude, booking.longitude)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.mapLink}
+                          >
+                            {" "}
+                            View map ↗
+                          </a>
+                        )}
+                      </>
+                    }
+                  />
+                )}
+
+                {/* Agreed rate */}
                 <DetailItem
                   icon="💰"
                   label="Agreed Rate"
@@ -329,58 +562,436 @@ export default function BookingDetail() {
                   accent
                 />
 
-                {/* Duration — show only when available, deduped */}
+                {/* Negotiation note */}
+                {booking.isNegotiated && booking.negotiationNote && (
+                  <DetailItem
+                    icon="💬"
+                    label="Negotiation Note"
+                    value={booking.negotiationNote}
+                  />
+                )}
+
+                {/* Estimated duration */}
                 {dur && (
                   <DetailItem
                     icon="⏱️"
                     label="Est. Duration"
                     value={
-                      <span>
+                      <>
                         {dur.main}
                         {dur.sub && (
                           <span className={styles.durationSub}> {dur.sub}</span>
                         )}
+                      </>
+                    }
+                  />
+                )}
+
+                {/* Check-in time */}
+                {booking.checkInAt && (
+                  <DetailItem
+                    icon="✅"
+                    label="Checked In"
+                    value={
+                      <span className={styles.greenText}>
+                        {new Date(booking.checkInAt).toLocaleString("en-NG", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
                       </span>
                     }
                   />
                 )}
 
-                {/* Estimated total row */}
-                {estTotal && (
-                  <div className={styles.totalEstimateRow}>
-                    <span className={styles.totalEstimateLabel}>
-                      Est. Total ({estTotal.num} {estTotal.unit} ×{" "}
-                      {estTotal.currency} {estTotal.rate.toLocaleString()}
-                      {estTotal.suffix})
-                    </span>
-                    <span className={styles.totalEstimateValue}>
-                      {estTotal.currency} {estTotal.total.toLocaleString()}
-                    </span>
-                  </div>
+                {/* Check-out time */}
+                {booking.checkOutAt && (
+                  <DetailItem
+                    icon="🏁"
+                    label="Checked Out"
+                    value={new Date(booking.checkOutAt).toLocaleString(
+                      "en-NG",
+                      {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      },
+                    )}
+                  />
                 )}
 
-                {/* Job site GPS */}
-                {booking.latitude && booking.longitude && (
+                {/* Actual duration */}
+                {booking.checkInAt && booking.checkOutAt && (
                   <DetailItem
-                    icon="🗺️"
-                    label="Job Site GPS"
+                    icon="🕐"
+                    label="Actual Duration"
+                    value={calcDuration(booking.checkInAt, booking.checkOutAt)}
+                  />
+                )}
+
+                {/* Insurance */}
+                {booking.insurancePolicyNumber && (
+                  <DetailItem
+                    icon="🛡️"
+                    label="Insurance"
+                    value={`${booking.insurancePlan || "Insured"} · Policy #${booking.insurancePolicyNumber}`}
+                  />
+                )}
+
+                {/* Job Type */}
+                {booking.jobType && (
+                  <DetailItem
+                    icon={
+                      booking.jobType === "FULL_TIME"
+                        ? "💼"
+                        : booking.jobType === "PART_TIME"
+                          ? "⏰"
+                          : booking.jobType === "CONTRACT"
+                            ? "📄"
+                            : "⏳"
+                    }
+                    label="Job Type"
                     value={
-                      <a
-                        href={mapsUrl(booking.latitude, booking.longitude)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.gpsLink}
-                      >
-                        {booking.latitude.toFixed(5)},{" "}
-                        {booking.longitude.toFixed(5)} →
-                      </a>
+                      booking.jobType === "FULL_TIME"
+                        ? "Full-time"
+                        : booking.jobType === "PART_TIME"
+                          ? "Part-time"
+                          : booking.jobType === "CONTRACT"
+                            ? "Contract"
+                            : "Temporary"
+                    }
+                  />
+                )}
+
+                {/* Location Type */}
+                {booking.locationType && (
+                  <DetailItem
+                    icon={
+                      booking.locationType === "REMOTE"
+                        ? "🌐"
+                        : booking.locationType === "ON_SITE"
+                          ? "📍"
+                          : "🔀"
+                    }
+                    label="Location Type"
+                    value={
+                      booking.locationType === "REMOTE"
+                        ? "Remote"
+                        : booking.locationType === "ON_SITE"
+                          ? "On-site"
+                          : "Hybrid"
                     }
                   />
                 )}
               </div>
+
+              {(booking.jobType || booking.locationType) && (
+                <section className={styles.section}>
+                  <h2 className={styles.sectionTitle}>
+                    Job Type &amp; Location
+                  </h2>
+
+                  {/* Job Type */}
+                  {booking.jobType &&
+                    (() => {
+                      const JOB_TYPES = {
+                        FULL_TIME: {
+                          icon: "💼",
+                          label: "Full-time",
+                          desc: "Regular full-time engagement",
+                        },
+                        PART_TIME: {
+                          icon: "⏰",
+                          label: "Part-time",
+                          desc: "Part-time hours, flexible schedule",
+                        },
+                        CONTRACT: {
+                          icon: "📄",
+                          label: "Contract",
+                          desc: "Fixed-term contract engagement",
+                        },
+                        TEMPORARY: {
+                          icon: "⏳",
+                          label: "Temporary",
+                          desc: "Short-term / one-off engagement",
+                        },
+                      };
+                      const jt = JOB_TYPES[booking.jobType] || {
+                        icon: "💼",
+                        label: booking.jobType,
+                        desc: "",
+                      };
+                      return (
+                        <div className={styles.typeCardGroup}>
+                          <p className={styles.typeCardGroupLabel}>Job Type</p>
+                          <div className={styles.typeCards}>
+                            {Object.entries(JOB_TYPES).map(([key, cfg]) => (
+                              <div
+                                key={key}
+                                className={`${styles.typeCard} ${booking.jobType === key ? styles.typeCardActive : styles.typeCardInactive}`}
+                              >
+                                {booking.jobType === key && (
+                                  <span
+                                    className={styles.typeCardSelectedDot}
+                                  />
+                                )}
+                                <span className={styles.typeCardIcon}>
+                                  {cfg.icon}
+                                </span>
+                                <span className={styles.typeCardLabel}>
+                                  {cfg.label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  {/* Location Type */}
+                  {booking.locationType &&
+                    (() => {
+                      const LOC_TYPES = {
+                        REMOTE: {
+                          icon: "🌐",
+                          label: "Remote",
+                          desc: "Worker operates from their own location",
+                        },
+                        ON_SITE: {
+                          icon: "📍",
+                          label: "On-site",
+                          desc: "Worker must be present at the job site",
+                        },
+                        HYBRID: {
+                          icon: "🔀",
+                          label: "Hybrid",
+                          desc: "Mix of on-site and remote work",
+                        },
+                      };
+                      const lt = LOC_TYPES[booking.locationType] || {
+                        icon: "📍",
+                        label: booking.locationType,
+                        desc: "",
+                      };
+                      return (
+                        <div
+                          className={styles.typeCardGroup}
+                          style={{ marginTop: "1.25rem" }}
+                        >
+                          <p className={styles.typeCardGroupLabel}>
+                            Location Type
+                          </p>
+                          <div className={styles.typeCards}>
+                            {Object.entries(LOC_TYPES).map(([key, cfg]) => (
+                              <div
+                                key={key}
+                                className={`${styles.typeCard} ${styles.typeCardLoc} ${booking.locationType === key ? styles.typeCardActive : styles.typeCardInactive}`}
+                              >
+                                {booking.locationType === key && (
+                                  <span
+                                    className={styles.typeCardSelectedDot}
+                                  />
+                                )}
+                                <span className={styles.typeCardIcon}>
+                                  {cfg.icon}
+                                </span>
+                                <span className={styles.typeCardLabel}>
+                                  {cfg.label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Remote note */}
+                          {booking.locationType === "REMOTE" && (
+                            <div className={styles.locationRemoteNote}>
+                              🌐 This is a remote engagement — no physical job
+                              site attendance required.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                </section>
+              )}
+
+              {/* ── Fee breakdown / estimated total ── */}
+              {feeBreakdown && (
+                <div className={styles.feeBreakdown}>
+                  <p className={styles.feeBreakdownLabel}>
+                    {feeBreakdown.isActual
+                      ? "Payment breakdown"
+                      : feeBreakdown.noDuration
+                        ? "Est. Total (agreed rate × 5% platform fee)"
+                        : feeBreakdown.label}
+                  </p>
+
+                  {feeBreakdown.platformFee != null ? (
+                    <>
+                      <div className={styles.feeRow}>
+                        <span>Subtotal</span>
+                        <span>
+                          {feeBreakdown.currency}{" "}
+                          {(
+                            feeBreakdown.total - feeBreakdown.platformFee
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className={styles.feeRow}>
+                        <span>Platform fee (5%)</span>
+                        <span>
+                          {feeBreakdown.currency}{" "}
+                          {feeBreakdown.platformFee.toLocaleString()}
+                        </span>
+                      </div>
+                    </>
+                  ) : !feeBreakdown.isActual ? (
+                    <>
+                      {/* Estimated — compute 5% fee inline */}
+                      <div className={styles.feeRow}>
+                        <span>
+                          Agreed rate
+                          {feeBreakdown.noDuration ? "" : " (job value)"}
+                        </span>
+                        <span>
+                          {feeBreakdown.currency}{" "}
+                          {feeBreakdown.subtotal.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className={styles.feeRow}>
+                        <span>Platform fee (5%)</span>
+                        <span>
+                          {feeBreakdown.currency}{" "}
+                          {(feeBreakdown.total * 0.05).toLocaleString(
+                            undefined,
+                            { maximumFractionDigits: 2 },
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {feeBreakdown.workerPayout != null && (
+                    <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
+                      <span>Worker payout</span>
+                      <span>
+                        {feeBreakdown.currency}{" "}
+                        {feeBreakdown.workerPayout.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Referral discount row — only when applied */}
+                  {referralDiscount &&
+                    referralApplied &&
+                    booking.currency === "NGN" && (
+                      <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
+                        <span>🎁 Referral bonus</span>
+                        <span>
+                          − ₦{referralDiscount.discount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                  <div className={styles.feeTotal}>
+                    <span>
+                      {feeBreakdown.isActual ? "Total Paid" : "Est. Total"}
+                    </span>
+                    <span className={styles.feeTotalAmount}>
+                      {feeBreakdown.currency}{" "}
+                      {feeBreakdown.isActual
+                        ? feeBreakdown.total.toLocaleString()
+                        : (() => {
+                            const withFee =
+                              feeBreakdown.total + feeBreakdown.total * 0.05;
+                            const discount =
+                              referralApplied &&
+                              referralDiscount &&
+                              booking.currency === "NGN"
+                                ? referralDiscount.discount
+                                : 0;
+                            return Math.max(
+                              0,
+                              withFee - discount,
+                            ).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            });
+                          })()}
+                    </span>
+                  </div>
+
+                  {/* Referral bonus apply section */}
+                  {referralDiscount && !feeBreakdown.isActual && (
+                    <div className={styles.referralPerk}>
+                      {booking.currency !== "NGN" ? (
+                        <p>
+                          🎁 You have a referral bonus — only applicable to ₦
+                          NGN payments.
+                        </p>
+                      ) : referralApplied ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 8,
+                          }}
+                        >
+                          <span>
+                            ✅ Referral bonus applied — saving ₦
+                            {referralDiscount.discount.toLocaleString()}
+                          </span>
+                          <button
+                            onClick={() => setReferralApplied(false)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "var(--green)",
+                              fontWeight: 700,
+                              fontSize: 12,
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 8,
+                          }}
+                        >
+                          <span>
+                            🎁 You have a ₦
+                            {referralDiscount.discount.toLocaleString()}{" "}
+                            referral bonus available
+                          </span>
+                          <button
+                            onClick={() => setReferralApplied(true)}
+                            style={{
+                              flexShrink: 0,
+                              background: "var(--green)",
+                              color: "#000",
+                              border: "none",
+                              borderRadius: 8,
+                              padding: "5px 14px",
+                              fontWeight: 700,
+                              fontSize: 12,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
-            {/* Worker GPS location — both parties */}
+            {/* ── GPS cards ── */}
             {(hasCheckInGps || hasCheckOutGps) && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Worker Location</h2>
@@ -390,125 +1001,32 @@ export default function BookingDetail() {
                 </p>
                 <div className={styles.gpsCards}>
                   {hasCheckInGps && (
-                    <div className={`${styles.gpsCard} ${styles.gpsCardIn}`}>
-                      <div className={styles.gpsCardHeader}>
-                        <span
-                          className={styles.gpsCardDot}
-                          style={{ background: "#16a34a" }}
-                        />
-                        <span className={styles.gpsCardTitle}>
-                          Check-in Location
-                        </span>
-                        <span className={styles.gpsCardTime}>
-                          {booking.checkInAt &&
-                            new Date(booking.checkInAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          {booking.checkInAt &&
-                            ` · ${new Date(booking.checkInAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
-                        </span>
-                      </div>
-                      <div className={styles.gpsCoordRow}>
-                        <span className={styles.gpsCoordLabel}>
-                          Coordinates
-                        </span>
-                        <span className={styles.gpsCoordValue}>
-                          {booking.checkInLat.toFixed(5)},{" "}
-                          {booking.checkInLng.toFixed(5)}
-                        </span>
-                      </div>
-                      {checkInDistKm !== null && (
-                        <div
-                          className={`${styles.gpsDistRow} ${checkInDistKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
-                        >
-                          <span>
-                            {checkInDistKm < 0.1
-                              ? "✅"
-                              : checkInDistKm > 1
-                                ? "⚠️"
-                                : "📏"}
-                          </span>
-                          <span>
-                            {checkInDistKm < 0.1
-                              ? "Worker was at the job site"
-                              : `${checkInDistKm.toFixed(2)} km from job site`}
-                          </span>
-                        </div>
-                      )}
-                      <a
-                        href={mapsUrl(booking.checkInLat, booking.checkInLng)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.gpsMapLink}
-                      >
-                        🗺️ View on Google Maps
-                      </a>
-                    </div>
+                    <GpsCard
+                      title="Check-in Location"
+                      dotColor="#16a34a"
+                      timestamp={booking.checkInAt}
+                      lat={booking.checkInLat}
+                      lng={booking.checkInLng}
+                      distKm={checkInDistKm}
+                      cardClass={styles.gpsCardIn}
+                    />
                   )}
-
                   {hasCheckOutGps && (
-                    <div className={`${styles.gpsCard} ${styles.gpsCardOut}`}>
-                      <div className={styles.gpsCardHeader}>
-                        <span
-                          className={styles.gpsCardDot}
-                          style={{ background: "#dc2626" }}
-                        />
-                        <span className={styles.gpsCardTitle}>
-                          Check-out Location
-                        </span>
-                        <span className={styles.gpsCardTime}>
-                          {booking.checkOutAt &&
-                            new Date(booking.checkOutAt).toLocaleTimeString(
-                              [],
-                              { hour: "2-digit", minute: "2-digit" },
-                            )}
-                          {booking.checkOutAt &&
-                            ` · ${new Date(booking.checkOutAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
-                        </span>
-                      </div>
-                      <div className={styles.gpsCoordRow}>
-                        <span className={styles.gpsCoordLabel}>
-                          Coordinates
-                        </span>
-                        <span className={styles.gpsCoordValue}>
-                          {booking.checkOutLat.toFixed(5)},{" "}
-                          {booking.checkOutLng.toFixed(5)}
-                        </span>
-                      </div>
-                      {checkOutDistKm !== null && (
-                        <div
-                          className={`${styles.gpsDistRow} ${checkOutDistKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
-                        >
-                          <span>
-                            {checkOutDistKm < 0.1
-                              ? "✅"
-                              : checkOutDistKm > 1
-                                ? "⚠️"
-                                : "📏"}
-                          </span>
-                          <span>
-                            {checkOutDistKm < 0.1
-                              ? "Worker was at the job site"
-                              : `${checkOutDistKm.toFixed(2)} km from job site`}
-                          </span>
-                        </div>
-                      )}
-                      <a
-                        href={mapsUrl(booking.checkOutLat, booking.checkOutLng)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.gpsMapLink}
-                      >
-                        🗺️ View on Google Maps
-                      </a>
-                    </div>
+                    <GpsCard
+                      title="Check-out Location"
+                      dotColor="#dc2626"
+                      timestamp={booking.checkOutAt}
+                      lat={booking.checkOutLat}
+                      lng={booking.checkOutLng}
+                      distKm={checkOutDistKm}
+                      cardClass={styles.gpsCardOut}
+                    />
                   )}
                 </div>
               </section>
             )}
 
-            {/* Payment details */}
+            {/* ── Payment section ── */}
             {booking.payment && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Payment</h2>
@@ -554,7 +1072,7 @@ export default function BookingDetail() {
               </section>
             )}
 
-            {/* Reviews */}
+            {/* ── Reviews ── */}
             {booking.status === "COMPLETED" && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Reviews</h2>
@@ -641,7 +1159,7 @@ export default function BookingDetail() {
               </section>
             )}
 
-            {/* Cancellation reason */}
+            {/* ── Cancellation reason ── */}
             {booking.cancelReason && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Cancellation Reason</h2>
@@ -653,11 +1171,126 @@ export default function BookingDetail() {
                 </div>
               </section>
             )}
+
+            {/* ── Bottom action row: invoice + refund ── */}
+            {booking.status === "COMPLETED" && (
+              <div className={styles.bottomActions}>
+                <button
+                  className={styles.invoiceBtn}
+                  onClick={handleDownloadInvoice}
+                  disabled={invoiceLoading}
+                >
+                  {invoiceLoading ? "⏳" : "📄"} Download Invoice
+                </button>
+                {isHirer && payment?.status === "RELEASED" && (
+                  <button
+                    className={styles.refundBtn}
+                    onClick={handleRefund}
+                    disabled={refundLoading}
+                  >
+                    {refundLoading ? "Processing…" : "↩ Request Refund"}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* ══ SIDEBAR ══ */}
+          {/* ════════════════════════════════════════
+              SIDEBAR
+          ════════════════════════════════════════ */}
           <div className={styles.sidebar}>
-            {/* Other party card */}
+            {/* ── Payment required banner ── */}
+            {paymentRequired && (
+              <div className={styles.paymentBanner}>
+                <div className={styles.paymentBannerHeader}>
+                  <span className={styles.paymentBannerIcon}>💳</span>
+                  <div>
+                    <p className={styles.paymentBannerTitle}>
+                      {payment?.status === "PENDING"
+                        ? "Payment Pending"
+                        : "Payment Required"}
+                    </p>
+                    <p className={styles.paymentBannerDesc}>
+                      {payment?.status === "PENDING"
+                        ? "Your previous payment is still processing. Try a different method below."
+                        : "Secure the worker's slot — pay now to confirm."}
+                    </p>
+                  </div>
+                </div>
+
+                {referralDiscount && (
+                  <div className={styles.paymentBannerPerk}>
+                    🎁 <strong>Referral perk:</strong> ₦
+                    {referralDiscount.discount.toLocaleString()} off your first
+                    booking
+                  </div>
+                )}
+
+                {referralDiscount && booking.currency === "NGN" && (
+                  <div className={styles.paymentBannerPerk}>
+                    {referralApplied ? (
+                      <>
+                        ✅ Referral bonus of ₦
+                        {referralDiscount.discount.toLocaleString()} will be
+                        deducted at checkout
+                      </>
+                    ) : (
+                      <>
+                        🎁 Apply your ₦
+                        {referralDiscount.discount.toLocaleString()} referral
+                        bonus in the fee breakdown above
+                      </>
+                    )}
+                  </div>
+                )}
+                {referralDiscount && booking.currency !== "NGN" && (
+                  <div
+                    className={styles.paymentBannerPerk}
+                    style={{
+                      borderColor: "var(--border)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    ℹ️ Referral bonus only applies to ₦ NGN payments
+                  </div>
+                )}
+
+                <button
+                  className={`${styles.payNowBtn} ${showPayOptions ? styles.payNowBtnActive : ""}`}
+                  onClick={() => setShowPayOptions((v) => !v)}
+                >
+                  {showPayOptions
+                    ? "▲ Hide Payment Options"
+                    : payment?.status === "PENDING"
+                      ? "⚡ Choose a Different Method"
+                      : "💳 Pay Now"}
+                </button>
+
+                {showPayOptions && (
+                  <div className={styles.paymentOptionsWrap}>
+                    <Link
+                      to={`/bookings/${booking.id}/pay`}
+                      className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
+                    >
+                      💳 Pay by Card
+                    </Link>
+                    <PaymentOptions
+                      booking={booking}
+                      referralDiscount={referralDiscount}
+                      referralApplied={referralApplied}
+                      onReferralToggle={() => setReferralApplied((v) => !v)}
+                      onSuccess={() => {
+                        setSuccess("Payment submitted successfully.");
+                        setShowPayOptions(false);
+                        refetch();
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Other party card ── */}
             <div className={styles.partyCard}>
               <p className={styles.partyLabel}>
                 {isHirer ? "Worker" : "Hirer"}
@@ -688,14 +1321,13 @@ export default function BookingDetail() {
               </a>
             </div>
 
-            {/* Actions card */}
+            {/* ── Actions card ── */}
             <div className={styles.actionsCard}>
               <p className={styles.actionsTitle}>Actions</p>
 
-              {/* ── WORKER ACTIONS ── */}
+              {/* WORKER ACTIONS */}
               {isWorker && (
                 <>
-                  {/* Emergency contact + SOS — always first for safety */}
                   <EmergencyContact
                     bookingId={booking.id}
                     bookingStatus={booking.status}
@@ -703,19 +1335,16 @@ export default function BookingDetail() {
                     existing={emergencyContact}
                     onSaved={(contact) => setEmergencyContact(contact)}
                   />
-
                   <SOSButton
                     bookingId={booking.id}
                     bookingStatus={booking.status}
                     isWorker={isWorker}
                     sosActivatedAt={booking.sosActivatedAt}
                     sosResolvedAt={booking.sosResolvedAt}
-                    onUpdate={(updatedBooking) =>
-                      setBooking((prev) => ({ ...prev, ...updatedBooking }))
+                    onUpdate={(updated) =>
+                      setBooking((prev) => ({ ...prev, ...updated }))
                     }
                   />
-
-                  {/* Accept when PENDING */}
                   {booking.status === "PENDING" && (
                     <ActionBtn
                       label="Accept Booking"
@@ -724,8 +1353,7 @@ export default function BookingDetail() {
                       onClick={() => updateStatus("ACCEPTED")}
                     />
                   )}
-
-                  {/* GPS check-in — only when ACCEPTED and payment is HELD */}
+                  {/* Check-in: only when ACCEPTED + payment HELD */}
                   {booking.status === "ACCEPTED" &&
                     booking.payment?.status === "HELD" && (
                       <GpsCheckIn
@@ -734,21 +1362,17 @@ export default function BookingDetail() {
                         isWorker={isWorker}
                         jobLatitude={booking.latitude}
                         jobLongitude={booking.longitude}
-                        onSuccess={(updatedBooking) => {
-                          setBooking((prev) => ({
-                            ...prev,
-                            ...updatedBooking,
-                          }));
+                        onSuccess={(updated) => {
+                          setBooking((prev) => ({ ...prev, ...updated }));
                           setSuccess(
-                            updatedBooking.status === "IN_PROGRESS"
+                            updated.status === "IN_PROGRESS"
                               ? "✅ Checked in — job is now in progress."
                               : "✅ Checked out — job marked as completed.",
                           );
                         }}
                       />
                     )}
-
-                  {/* Waiting for payment notice */}
+                  {/* Waiting message when payment not yet received */}
                   {booking.status === "ACCEPTED" &&
                     (!booking.payment ||
                       booking.payment.status === "PENDING") && (
@@ -757,8 +1381,7 @@ export default function BookingDetail() {
                         check in.
                       </div>
                     )}
-
-                  {/* GPS check-out — once IN_PROGRESS */}
+                  {/* Check-out */}
                   {booking.status === "IN_PROGRESS" && (
                     <GpsCheckIn
                       bookingId={booking.id}
@@ -766,14 +1389,12 @@ export default function BookingDetail() {
                       isWorker={isWorker}
                       jobLatitude={booking.latitude}
                       jobLongitude={booking.longitude}
-                      onSuccess={(updatedBooking) => {
-                        setBooking((prev) => ({ ...prev, ...updatedBooking }));
+                      onSuccess={(updated) => {
+                        setBooking((prev) => ({ ...prev, ...updated }));
                         setSuccess("✅ Checked out — job marked as completed.");
                       }}
                     />
                   )}
-
-                  {/* Cancel */}
                   {["PENDING", "ACCEPTED"].includes(booking.status) && (
                     <CancelBox
                       label="Cancel Booking"
@@ -800,63 +1421,43 @@ export default function BookingDetail() {
                 </>
               )}
 
-              {/* ── Emergency Contact — show to HIRER if worker filled it ── */}
-              {isHirer && emergencyContact && (
-                <div className={styles.emergencyCard}>
-                  <p className={styles.emergencyTitle}>
-                    🚨 Worker's Emergency Contact
-                  </p>
-                  <div className={styles.emergencyRow}>
-                    <span className={styles.emergencyLabel}>Name</span>
-                    <span className={styles.emergencyValue}>
-                      {emergencyContact.name}
-                    </span>
-                  </div>
-                  <div className={styles.emergencyRow}>
-                    <span className={styles.emergencyLabel}>Phone</span>
-                    <a
-                      href={`tel:${emergencyContact.phone}`}
-                      className={styles.emergencyPhone}
-                    >
-                      📱 {emergencyContact.phone}
-                    </a>
-                  </div>
-                  {emergencyContact.relationship && (
-                    <div className={styles.emergencyRow}>
-                      <span className={styles.emergencyLabel}>
-                        Relationship
-                      </span>
-                      <span className={styles.emergencyValue}>
-                        {emergencyContact.relationship}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── HIRER ACTIONS ── */}
+              {/* HIRER ACTIONS */}
               {isHirer && (
                 <>
-                  {/* Payment — show options when ACCEPTED and no payment yet */}
-                  {booking.status === "ACCEPTED" && !booking.payment && (
-                    <>
-                      <Link
-                        to={`/bookings/${booking.id}/pay`}
-                        className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
-                      >
-                        💳 Pay with Card
-                      </Link>
-
-                      <PaymentOptions
-                        booking={booking}
-                        onSuccess={() =>
-                          setSuccess("Payment submitted successfully.")
-                        }
-                      />
-                    </>
+                  {/* Show emergency contact if worker has set one */}
+                  {emergencyContact?.name && (
+                    <div className={styles.emergencyCard}>
+                      <p className={styles.emergencyTitle}>
+                        🚨 Worker's Emergency Contact
+                      </p>
+                      <div className={styles.emergencyRow}>
+                        <span className={styles.emergencyLabel}>Name</span>
+                        <span className={styles.emergencyValue}>
+                          {emergencyContact.name}
+                        </span>
+                      </div>
+                      <div className={styles.emergencyRow}>
+                        <span className={styles.emergencyLabel}>Phone</span>
+                        <a
+                          href={`tel:${emergencyContact.phone}`}
+                          className={styles.emergencyPhone}
+                        >
+                          📱 {emergencyContact.phone}
+                        </a>
+                      </div>
+                      {emergencyContact.relationship && (
+                        <div className={styles.emergencyRow}>
+                          <span className={styles.emergencyLabel}>
+                            Relation
+                          </span>
+                          <span className={styles.emergencyValue}>
+                            {emergencyContact.relationship}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
-
-                  {/* Insurance */}
+                  {/* Insurance add-on */}
                   {booking.status === "ACCEPTED" && (
                     <InsuranceAddon
                       bookingId={booking.id}
@@ -864,7 +1465,6 @@ export default function BookingDetail() {
                       onPurchased={() => setSuccess("Insurance activated.")}
                     />
                   )}
-
                   {/* Release payment */}
                   {booking.payment?.status === "HELD" && (
                     <Link
@@ -874,8 +1474,6 @@ export default function BookingDetail() {
                       💸 Release Payment
                     </Link>
                   )}
-
-                  {/* Cancel */}
                   {["PENDING", "ACCEPTED"].includes(booking.status) && (
                     <CancelBox
                       label="Cancel Booking"
@@ -902,7 +1500,7 @@ export default function BookingDetail() {
                 </>
               )}
 
-              {/* ── VIDEO CALL — both roles ── */}
+              {/* VIDEO CALL — both roles */}
               {(isHirer || isWorker) && (
                 <VideoCallButton
                   bookingId={booking.id}
@@ -913,14 +1511,13 @@ export default function BookingDetail() {
                 />
               )}
 
-              {/* ── DISPUTE — both roles ── */}
+              {/* DISPUTE — both roles */}
               {(isHirer || isWorker) &&
                 ["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(
                   booking.status,
                 ) && (
                   <button
-                    className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
-                    style={{ borderColor: "var(--red)", color: "var(--red)" }}
+                    className={`${styles.actionBtn} ${styles.actionBtn_red}`}
                     onClick={() => setShowDispute(true)}
                   >
                     ⚠️ Raise a Dispute
@@ -932,7 +1529,7 @@ export default function BookingDetail() {
               )}
             </div>
 
-            {/* Invoice */}
+            {/* ── Invoice block ── */}
             {booking.status === "COMPLETED" && booking.payment && (
               <BookingInvoice booking={booking} />
             )}
@@ -956,7 +1553,57 @@ export default function BookingDetail() {
   );
 }
 
-/* ── Sub-components ─────────────────────────────────────────────────────────── */
+/* ── Sub-components ──────────────────────────────────────────────────────────── */
+
+function GpsCard({ title, dotColor, timestamp, lat, lng, distKm, cardClass }) {
+  return (
+    <div className={`${styles.gpsCard} ${cardClass}`}>
+      <div className={styles.gpsCardHeader}>
+        <span className={styles.gpsCardDot} style={{ background: dotColor }} />
+        <span className={styles.gpsCardTitle}>{title}</span>
+        {timestamp && (
+          <span className={styles.gpsCardTime}>
+            {new Date(timestamp).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            {" · "}
+            {new Date(timestamp).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
+        )}
+      </div>
+      <div className={styles.gpsCoordRow}>
+        <span className={styles.gpsCoordLabel}>Coordinates</span>
+        <span className={styles.gpsCoordValue}>
+          {lat.toFixed(5)}, {lng.toFixed(5)}
+        </span>
+      </div>
+      {distKm !== null && (
+        <div
+          className={`${styles.gpsDistRow} ${distKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
+        >
+          <span>{distKm < 0.1 ? "✅" : distKm > 1 ? "⚠️" : "📏"}</span>
+          <span>
+            {distKm < 0.1
+              ? "Worker was at the job site"
+              : `${distKm.toFixed(2)} km from job site`}
+          </span>
+        </div>
+      )}
+      <a
+        href={mapsUrl(lat, lng)}
+        target="_blank"
+        rel="noreferrer"
+        className={styles.gpsMapLink}
+      >
+        🗺️ View on Google Maps
+      </a>
+    </div>
+  );
+}
 
 function DetailItem({ icon, label, value, accent }) {
   return (
@@ -980,7 +1627,13 @@ function PayRow({ label, value, muted, green, capitalize, mono, extra }) {
       <span className={styles.payLabel}>{label}</span>
       {extra || (
         <span
-          className={`${styles.payValue} ${muted ? styles.payMuted : ""} ${green ? styles.payGreen : ""} ${capitalize ? styles.payCapitalize : ""} ${mono ? styles.payRef : ""}`}
+          className={[
+            styles.payValue,
+            muted ? styles.payMuted : "",
+            green ? styles.payGreen : "",
+            capitalize ? styles.payCapitalize : "",
+            mono ? styles.payRef : "",
+          ].join(" ")}
         >
           {value}
         </span>
@@ -1003,8 +1656,7 @@ function CancelBox({
   if (!show) {
     return (
       <button
-        className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
-        style={{ borderColor: "var(--red)", color: "var(--red)" }}
+        className={`${styles.actionBtn} ${styles.actionBtn_redOutline}`}
         onClick={onOpen}
       >
         {label}
@@ -1014,11 +1666,11 @@ function CancelBox({
   return (
     <div className={styles.cancelBox}>
       <p className={styles.cancelBoxTitle}>
-        Reason for cancellation <span className={styles.cancelRequired}>*</span>
+        Reason <span className={styles.cancelRequired}>*</span>
       </p>
       <textarea
         className={`${styles.cancelInput} ${reasonError ? styles.cancelInputError : ""}`}
-        placeholder="Please explain why you are cancelling this booking…"
+        placeholder="Please explain why you are cancelling…"
         value={reason}
         onChange={(e) => onChangeReason(e.target.value)}
         rows={3}
@@ -1040,10 +1692,10 @@ function CancelBox({
   );
 }
 
-function ActionBtn({ label, color, outline, loading, onClick }) {
+function ActionBtn({ label, color, loading, onClick }) {
   return (
     <button
-      className={`${styles.actionBtn} ${outline ? styles.actionBtn_outline : styles[`actionBtn_${color}`]}`}
+      className={`${styles.actionBtn} ${styles[`actionBtn_${color}`]}`}
       disabled={loading}
       onClick={onClick}
     >
