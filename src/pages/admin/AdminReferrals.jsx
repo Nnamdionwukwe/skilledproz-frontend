@@ -96,7 +96,7 @@ function AdjustWalletModal({ onClose, onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/referral/admin/adjust-wallet", form);
+      const res = await api.post(`/referral/admin/${form.userId}/wallet`, form);
       onSuccess(res.data.data);
       onClose();
     } catch (err) {

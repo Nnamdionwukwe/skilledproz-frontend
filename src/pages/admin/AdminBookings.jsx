@@ -535,7 +535,15 @@ export default function AdminBookings() {
     setActing(true);
     try {
       // POST /admin/payments/:bookingId/release  OR  POST /admin/payments/:bookingId/refund
-      await api.post(`/admin/payments/${bookingId}/${action}`, { notes });
+      if (action === "release") {
+        await api.post(`/admin/payments/${bookingId}/release`);
+      } else if (action === "refund") {
+        await api.post(`/admin/payments/${bookingId}/refund`);
+      } else if (action === "verify") {
+        await api.patch(`/admin/payments/${bookingId}/verify`);
+      } else if (action === "reject-manual") {
+        await api.patch(`/admin/payments/${bookingId}/reject-manual`);
+      }
       showToast(
         action === "release"
           ? "Payment released to worker ✅"

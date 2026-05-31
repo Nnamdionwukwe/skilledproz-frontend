@@ -59,7 +59,9 @@ export default function JobApplications() {
     setError("");
     setSuccess("");
     try {
-      await api.patch(`/jobs/${id}/applications/${applicationId}`, { status });
+      await api.patch(`/jobs/${id}/applications/${applicationId}/status`, {
+        status,
+      });
       setApplications((prev) =>
         prev.map((a) => (a.id === applicationId ? { ...a, status } : a)),
       );

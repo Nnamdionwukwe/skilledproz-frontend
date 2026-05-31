@@ -310,7 +310,7 @@ export default function AdminInsurance() {
       // Try admin endpoint first; fall back to /my for a limited view
       let allPolicies = [];
       try {
-        const res = await api.get("/admin/insurance/policies", {
+        const res = await api.get("/insurance/my", {
           params: { limit: 1000 },
         });
         allPolicies = res.data.data?.policies || [];
@@ -362,7 +362,7 @@ export default function AdminInsurance() {
           const params = { page: pg, limit: LIMIT };
           if (planFilter) params.planId = planFilter;
           if (search) params.search = search;
-          const res = await api.get("/admin/insurance/policies", { params });
+          const res = await api.get("/insurance/my", { params });
           allPolicies = res.data.data?.policies || [];
           setTotal(res.data.data?.total || 0);
           setPages(res.data.data?.pages || 1);
