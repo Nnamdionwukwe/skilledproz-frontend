@@ -1,0 +1,932 @@
+      ← src/components/hirer/HirerProfile.jsx:33
+  ❓  POST /jobs/${jobId}/apply
+      ← src/components/hirer/HirerPublicProfile.jsx:72
+  ❓  POST /insurance/checkout
+      ← src/components/hirer/InsuranceAddon.jsx:28
+  ❓  GET /jobs/${id}
+      ← src/components/hirer/JobApplications.jsx:43
+  ❓  GET /jobs/${id}/applications
+      ← src/components/hirer/JobApplications.jsx:44
+  ❓  PATCH /jobs/${id}/applications/${applicationId}
+      ← src/components/hirer/JobApplications.jsx:62
+  ❓  POST /jobs/${id}/apply
+      ← src/components/hirer/JobDetail.jsx:52
+  ❓  PATCH /jobs/${id}/status
+      ← src/components/hirer/JobDetail.jsx:68
+  ❓  POST /jobs
+      ← src/components/hirer/PostJob.jsx:160
+  ❓  GET /jobs/hirer/me
+      ← src/components/hirer/hirerjobs/HirerJobBoardManagement.jsx:38
+  ❓  PATCH /jobs/${jobId}/status
+      ← src/components/hirer/hirerjobs/HirerJobBoardManagement.jsx:54
+  ❓  POST /verification/hirer/submit
+      ← src/components/hirer/verification/HirerVerification.jsx:80
+  ❓  GET /verification/hirer/status
+      ← src/components/hirer/verification/HirerVerification.jsx:86
+  ❓  POST /translate
+      ← src/components/messages/Messages.jsx:86
+  ❓  GET /messages/conversations
+      ← src/components/messages/Messages.jsx:170
+      ← src/components/messages/Messages.jsx:233
+  ❓  GET /messages/${convoId}?limit=100
+      ← src/components/messages/Messages.jsx:215
+  ❓  PATCH /messages/${activeConvoId}/read
+      ← src/components/messages/Messages.jsx:229
+  ❓  POST /messages
+      ← src/components/messages/Messages.jsx:320
+      ← src/components/messages/Messages.jsx:372
+  ❓  POST /payments/initiate/${bookingId}
+      ← src/components/payment/FlutterwaveConfirm.jsx:129
+      ← src/components/payment/InitiatePayment.jsx:148
+  ❓  POST /payments/bank-transfer/${bookingId}
+      ← src/components/payment/InitiatePayment.jsx:167
+  ❓  POST /payments/crypto/${bookingId}
+      ← src/components/payment/InitiatePayment.jsx:182
+  ❓  PATCH /payments/bank-transfer/${bookingId}/confirm
+      ← src/components/payment/InitiatePayment.jsx:203
+  ❓  PATCH /payments/crypto/${bookingId}/confirm
+      ← src/components/payment/InitiatePayment.jsx:226
+  ❓  POST /payments/bank-transfer/${booking.id}
+      ← src/components/payment/PaymentOptions.jsx:92
+  ❓  PATCH /payments/bank-transfer/${booking.id}/confirm
+      ← src/components/payment/PaymentOptions.jsx:110
+  ❓  POST /payments/crypto/${booking.id}
+      ← src/components/payment/PaymentOptions.jsx:128
+  ❓  PATCH /payments/crypto/${booking.id}/confirm
+      ← src/components/payment/PaymentOptions.jsx:150
+  ❓  POST /posts
+      ← src/components/posts/CreatePost.jsx:61
+  ❓  POST /posts/${post.id}/react
+      ← src/components/posts/PostCard.jsx:65
+  ❓  POST /posts/${post.id}/comments
+      ← src/components/posts/PostCard.jsx:92
+      ← src/components/posts/PostCard.jsx:110
+  ❓  GET /posts/${post.id}/comments
+      ← src/components/posts/PostCard.jsx:132
+  ❓  POST /posts/${post.id}/repost
+      ← src/components/posts/PostCard.jsx:143
+  ❓  DELETE /posts/${post.id}
+      ← src/components/posts/PostCard.jsx:157
+  ❓  POST /reviews
+      ← src/components/review/LeaveReview.jsx:38
+  ❓  GET /search
+      ← src/components/search/SearchPage.jsx:116
+  ❓  GET /search/nearby
+      ← src/components/search/SearchPage.jsx:186
+  ❓  PATCH /settings/profile
+      ← src/components/settimg/SettingsPage.jsx:346
+      ← src/components/settimg/SettingsPage.jsx:361
+      ← src/context/CurrencyContext.jsx:81
+      ← src/context/CurrencyContext.jsx:94
+      ← src/context/ThemeContext.jsx:82
+  ❓  POST /settings/avatar
+      ← src/components/settimg/SettingsPage.jsx:395
+  ❓  PATCH /settings/worker-profile
+      ← src/components/settimg/SettingsPage.jsx:413
+      ← src/components/settimg/SettingsPage.jsx:425
+      ← src/components/settimg/SettingsPage.jsx:982
+  ❓  PATCH /settings/hirer-profile
+      ← src/components/settimg/SettingsPage.jsx:437
+  ❓  PATCH /settings/password
+      ← src/components/settimg/SettingsPage.jsx:458
+  ❓  PATCH /settings/notifications
+      ← src/components/settimg/SettingsPage.jsx:474
+  ❓  PATCH /settings/privacy
+      ← src/components/settimg/SettingsPage.jsx:487
+  ❓  DELETE /settings/account
+      ← src/components/settimg/SettingsPage.jsx:505
+  ❓  GET /subscriptions/plans?role=${user?.role}
+      ← src/components/subscription/SubscriptionPlans.jsx:28
+  ❓  GET /subscriptions/promo/validate/${code}
+      ← src/components/subscription/SubscriptionPlans.jsx:62
+  ❓  POST /subscriptions/checkout
+      ← src/components/subscription/SubscriptionPlans.jsx:103
+  ❓  POST /subscriptions/cancel
+      ← src/components/subscription/SubscriptionPlans.jsx:118
+  ❓  GET /subscriptions/invoice/${sessionId}
+      ← src/components/subscription/SubscriptionSuccess.jsx:35
+  ❓  PUT /users/me
+      ← src/components/user/EditProfile.jsx:68
+  ❓  PUT /users/me/avatar
+      ← src/components/user/UserProfile.jsx:101
+  ❓  GET /workers/${userId}
+      ← src/components/worker/WorkerPublicProfile.jsx:39
+  ❓  GET /admin/stats
+      ← src/pages/admin/AdminAnalytics.jsx:391
+      ← src/pages/admin/AdminDashboard.jsx:97
+  ❓  GET /admin/analytics/revenue?months=${months}
+      ← src/pages/admin/AdminAnalytics.jsx:392
+  ❓  GET /admin/analytics/users?months=${months}
+      ← src/pages/admin/AdminAnalytics.jsx:393
+  ❓  DELETE /audit/purge
+      ← src/pages/admin/AdminAuditLog.jsx:363
+  ❓  GET /audit
+      ← src/pages/admin/AdminAuditLog.jsx:515
+  ❓  PATCH /admin/bookings/${statusModal.id}/status
+      ← src/pages/admin/AdminBookings.jsx:512
+  ❓  POST /admin/payments/${bookingId}/${action}
+      ← src/pages/admin/AdminBookings.jsx:538
+      ← src/pages/admin/AdminPayments.jsx:433
+  ❓  POST /admin/broadcast
+      ← src/pages/admin/AdminBroadcast.jsx:276
+      ← src/pages/admin/AdminSettings.jsx:19
+  ❓  PATCH /campaign/admin/submissions/${submission.id}/review
+      ← src/pages/admin/AdminCampaign.jsx:194
+  ❓  PATCH /campaign/admin/withdrawals/${wd.id}/reject
+      ← src/pages/admin/AdminCampaign.jsx:428
+  ❓  GET /campaign/admin/stats
+      ← src/pages/admin/AdminCampaign.jsx:528
+  ❓  GET /campaign/admin/submissions?${params}
+      ← src/pages/admin/AdminCampaign.jsx:545
+  ❓  PATCH /campaign/admin/withdrawals/${wd.id}/approve
+      ← src/pages/admin/AdminCampaign.jsx:584
+  ❓  PATCH /admin/categories/${editing.id}
+      ← src/pages/admin/AdminCategories.jsx:138
+  ❓  POST /admin/categories
+      ← src/pages/admin/AdminCategories.jsx:142
+  ❓  DELETE /admin/categories/${deleteTarget.id}
+      ← src/pages/admin/AdminCategories.jsx:423
+  ❓  GET /admin/bookings?page=1&limit=5
+      ← src/pages/admin/AdminDashboard.jsx:98
+  ❓  GET /admin/disputes?resolved=false
+      ← src/pages/admin/AdminDashboard.jsx:99
+  ❓  GET /admin/verifications/stats
+      ← src/pages/admin/AdminDashboard.jsx:100
+  ❓  PATCH /admin/disputes/${d.id}/resolve
+      ← src/pages/admin/AdminDisputes.jsx:134
+  ❓  DELETE /admin/featured/${listing.id}
+      ← src/pages/admin/AdminFeatured.jsx:158
+  ❓  GET /admin/featured
+      ← src/pages/admin/AdminFeatured.jsx:513
+  ❓  GET /admin/insurance/policies
+      ← src/pages/admin/AdminInsurance.jsx:313
+      ← src/pages/admin/AdminInsurance.jsx:365
+  ❓  GET /insurance/my
+      ← src/pages/admin/AdminInsurance.jsx:318
+      ← src/pages/admin/AdminInsurance.jsx:371
+  ❓  PATCH /admin/jobs/${job.id}/status
+      ← src/pages/admin/AdminJobs.jsx:448
+  ❓  DELETE /admin/jobs/${job.id}
+      ← src/pages/admin/AdminJobs.jsx:537
+  ❓  GET /admin/jobs
+      ← src/pages/admin/AdminJobs.jsx:761
+  ❓  PATCH /admin/payments/${bookingId}/verify
+      ← src/pages/admin/AdminManualPayments.jsx:732
+  ❓  GET /admin/conversations
+      ← src/pages/admin/AdminMessages.jsx:502
+  ❓  GET /admin/conversations/${convId}
+      ← src/pages/admin/AdminMessages.jsx:528
+  ❓  PATCH /admin/withdrawals/${withdrawalId}/approve
+      ← src/pages/admin/AdminPayments.jsx:703
+  ❓  PATCH /admin/withdrawals/${rejectTarget.id}/reject
+      ← src/pages/admin/AdminPayments.jsx:719
+  ❓  DELETE /admin/posts/${post.id}
+      ← src/pages/admin/AdminPosts.jsx:176
+  ❓  DELETE /admin/posts/comments/${comment.id}
+      ← src/pages/admin/AdminPosts.jsx:281
+  ❓  GET /admin/posts
+      ← src/pages/admin/AdminPosts.jsx:601
+  ❓  PATCH /subscriptions/admin/promo-codes/${initial.id}
+      ← src/pages/admin/AdminPromoCodes.jsx:171
+  ❓  POST /subscriptions/admin/promo-codes
+      ← src/pages/admin/AdminPromoCodes.jsx:174
+  ❓  DELETE /subscriptions/admin/promo-codes/${promo.id}
+      ← src/pages/admin/AdminPromoCodes.jsx:513
+  ❓  GET /subscriptions/admin/promo-codes
+      ← src/pages/admin/AdminPromoCodes.jsx:600
+  ❓  POST /referral/admin/adjust-wallet
+      ← src/pages/admin/AdminReferrals.jsx:99
+  ❓  PATCH /referral/admin/${referral.id}/flag
+      ← src/pages/admin/AdminReferrals.jsx:282
+  ❓  PATCH /referral/admin/${id}/expire
+      ← src/pages/admin/AdminReferrals.jsx:407
+  ❓  PATCH /reports/admin/${report.id}/resolve
+      ← src/pages/admin/AdminReports.jsx:160
+  ❓  PATCH /reports/admin/${report.id}/dismiss
+      ← src/pages/admin/AdminReports.jsx:254
+  ❓  PATCH /reports/admin/${reportId}/review
+      ← src/pages/admin/AdminReports.jsx:327
+  ❓  GET /reports/admin/stats
+      ← src/pages/admin/AdminReports.jsx:652
+  ❓  GET /reports/admin?${params}
+      ← src/pages/admin/AdminReports.jsx:672
+  ❓  PATCH /reports/admin/bulk-dismiss
+      ← src/pages/admin/AdminReports.jsx:707
+  ❓  GET /admin/reviews
+      ← src/pages/admin/AdminReviews.jsx:23
+  ❓  DELETE /admin/reviews/${id}
+      ← src/pages/admin/AdminReviews.jsx:43
+  ❓  PATCH /admin/subscriptions/${sub.id}/cancel
+      ← src/pages/admin/AdminSubscriptions.module.jsx:323
+  ❓  GET /admin/subscriptions
+      ← src/pages/admin/AdminSubscriptions.module.jsx:537
+  ❓  PATCH /admin/users/${userId}/unban
+      ← src/pages/admin/AdminUsers.jsx:449
+  ❓  PATCH /admin/users/${userId}/ban
+      ← src/pages/admin/AdminUsers.jsx:452
+  ❓  PATCH /admin/users/${userId}/verify
+      ← src/pages/admin/AdminUsers.jsx:468
+  ❓  PATCH /admin/users/${userId}/role
+      ← src/pages/admin/AdminUsers.jsx:487
+  ❓  DELETE /admin/users/${userId}
+      ← src/pages/admin/AdminUsers.jsx:501
+  ❓  PATCH /admin/users/${u.id}/verify
+      ← src/pages/admin/AdminVerifications.jsx:184
+      ← src/pages/admin/AdminVerifications.jsx:199
+  ❓  PATCH /verification/admin/certifications/${certId}/verify
+      ← src/pages/admin/AdminVerifications.jsx:216
+  ❓  PATCH /verification/admin/${u.id}/background-check
+      ← src/pages/admin/AdminVerifications.jsx:233
+  ❓  PATCH /verification/admin/hirers/${u.id}/review
+      ← src/pages/admin/AdminVerifications.jsx:508
+      ← src/pages/admin/AdminVerifications.jsx:524
+  ❓  GET /admin/video-calls
+      ← src/pages/admin/AdminVideoCalls.jsx:456
+  ❓  PATCH /admin/withdrawals/${withdrawal.id}/approve
+      ← src/pages/admin/AdminWithdrawals.jsx:140
+  ❓  PATCH /admin/withdrawals/${withdrawal.id}/reject
+      ← src/pages/admin/AdminWithdrawals.jsx:249
+  ❓  GET /admin/withdrawals
+      ← src/pages/admin/AdminWithdrawals.jsx:527
+  ❓  POST /auth/forgot-password
+      ← src/pages/auth/ForgotPassword.jsx:16
+  ❓  POST /auth/register
+      ← src/pages/auth/RegisterWorker.jsx:253
+      ← src/store/authStore.js:66
+  ❓  POST /auth/reset-password
+      ← src/pages/auth/ResetPassword.jsx:37
+  ❓  POST /auth/resend-verification
+      ← src/pages/auth/VerifyEmail.jsx:39
+  ❓  GET /posts/feed
+      ← src/pages/feed/FeedPage.jsx:38
+  ❓  GET /posts/my
+      ← src/pages/feed/MyPosts.jsx:19
+  ❓  POST /campaign/withdraw
+      ← src/pages/referral/CampaignDashboard.jsx:262
+  ❓  GET /campaign/status
+      ← src/pages/referral/CampaignDashboard.jsx:444
+  ❓  GET /campaign/referrals?limit=50
+      ← src/pages/referral/CampaignDashboard.jsx:445
+  ❓  GET /campaign/submissions?limit=30
+      ← src/pages/referral/CampaignDashboard.jsx:446
+  ❓  GET /campaign/my-tasks
+      ← src/pages/referral/CampaignDashboard.jsx:447
+  ❓  POST /campaign/submit
+      ← src/pages/referral/CampaignDashboard.jsx:485
+  ❓  POST /campaign/my-tasks/social
+      ← src/pages/referral/CampaignDashboard.jsx:499
+  ❓  POST /referral/withdraw
+      ← src/pages/referral/ReferralDashboard.jsx:195
+  ❓  GET /referral/dashboard
+      ← src/pages/referral/ReferralDashboard.jsx:308
+  ❓  DELETE /reports/${report.id}
+      ← src/pages/reports/MyReports.jsx:105
+  ❓  GET /reports/my
+      ← src/pages/reports/MyReports.jsx:391
+  ❓  POST /reports
+      ← src/pages/reports/ReportButton.jsx:53
+  ❓  POST /workers/video-intro
+      ← src/pages/worker/VideoIntro.jsx:35
+      ← src/pages/worker/dashboard/portfolio/Portfolio.jsx:32
+  ❓  DELETE /workers/video-intro
+      ← src/pages/worker/VideoIntro.jsx:51
+      ← src/pages/worker/dashboard/portfolio/Portfolio.jsx:48
+  ❓  PUT /workers/availability
+      ← src/pages/worker/availability/Availability.jsx:122
+  ❓  GET /workers/${user.id}
+      ← src/pages/worker/categories/Categories.jsx:21
+  ❓  POST /workers/categories
+      ← src/pages/worker/categories/Categories.jsx:48
+      ← src/pages/worker/categories/Categories.jsx:81
+  ❓  DELETE /workers/categories/${categoryId}
+      ← src/pages/worker/categories/Categories.jsx:68
+  ❓  GET /workers/${user?.id}
+      ← src/pages/worker/certifications/Certifications.jsx:21
+      ← src/pages/worker/certifications/Certifications.jsx:24
+      ← src/pages/worker/dashboard/profile/Profile.jsx:17
+  ❓  POST /payments/verify-account
+      ← src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx:819
+  ❓  POST /payments/withdraw
+      ← src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx:911
+  ❓  GET /payments/withdrawals?page=${p}&limit=15
+      ← src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx:1375
+  ❓  GET /payments/earnings?limit=1
+      ← src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx:1382
+  ❓  GET /notifications?${params}
+      ← src/pages/worker/dashboard/notifications/Notifications.jsx:151
+  ❓  PATCH /notifications/${notif.id}/read
+      ← src/pages/worker/dashboard/notifications/Notifications.jsx:169
+  ❓  PATCH /notifications/read-all
+      ← src/pages/worker/dashboard/notifications/Notifications.jsx:178
+  ❓  DELETE /notifications/clear-all
+      ← src/pages/worker/dashboard/notifications/Notifications.jsx:185
+  ❓  DELETE /notifications/${id}
+      ← src/pages/worker/dashboard/notifications/Notifications.jsx:193
+  ❓  POST /workers/portfolio
+      ← src/pages/worker/dashboard/portfolio/Portfolio.jsx:157
+  ❓  DELETE /workers/portfolio/${id}
+      ← src/pages/worker/dashboard/portfolio/Portfolio.jsx:175
+  ❓  PUT /workers/profile
+      ← src/pages/worker/dashboard/profile/Profile.jsx:62
+  ❓  POST /notifications/request
+      ← src/pages/worker/verification/BackgroundCheck.jsx:54
+  ❓  POST /verification/submit-id
+      ← src/pages/worker/verification/WorkerVerification.jsx:76
+  ❓  GET /verification/status
+      ← src/pages/worker/verification/WorkerVerification.jsx:82
+      ← src/pages/worker/verification/WorkerVerification.jsx:116
+      ← src/pages/worker/verification/WorkerVerification.jsx:129
+  ❓  POST /verification/submit-certification
+      ← src/pages/worker/verification/WorkerVerification.jsx:107
+  ❓  DELETE /verification/certifications/${certId}
+      ← src/pages/worker/verification/WorkerVerification.jsx:128
+  ❓  GET /auth/me
+      ← src/store/authStore.js:34
+  ❓  POST /auth/login
+      ← src/store/authStore.js:44
+  ❓  POST /auth/logout
+      ← src/store/authStore.js:58
+
+════════════════════════════════════════════════════════════════════════════════
+  § 5  CSS MODULE AUDIT
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─ src/app/LandingPage.module.css
+  │   ❌ USED but NOT DEFINED (10): filter, json, label, value, num, title, desc, length, slice, map
+  │   ⚠️  DEFINED but UNUSED (4): 5rem, 75rem, footerColTitle, footerLinks
+  └────────────────────────────────────────────────────────────
+  ┌─ src/app/auth/login/AuthLayout.module.css
+  │   ❌ USED but NOT DEFINED (24): shell, brand, noise, grid, brandInner, logo, logoMark, logoName, taglines, tagline…
+  │   ⚠️  DEFINED but UNUSED (1): roleCardActive
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/auth/CategorySuggest.module.css
+  │   ❌ USED but NOT DEFINED (3): data, id, length
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/auth/form.module.css
+  │   ❌ USED but NOT DEFINED (9): get, api, firstName, fieldError, lastName, email, password, confirmPassword, agree
+  │   ⚠️  DEFINED but UNUSED (3): 18s, select, sectionLabel
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/BookingDetail.module.css
+  │   ❌ USED but NOT DEFINED (4): data, toLowerCase, map, cancelReasonIcon
+  │   ⚠️  DEFINED but UNUSED (24): alert_error, alert_success, badge_yellow, badge_orange, badge_indigo, badge_green, badge_red, badge_rose…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/BookingInvoice.module.css
+  │   ⚠️  DEFINED but UNUSED (1): 2s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/BookingList.module.css
+  │   ❌ USED but NOT DEFINED (5): status, data, length, map, toLowerCase
+  │   ⚠️  DEFINED but UNUSED (18): 15s, accent_yellow, accent_orange, accent_indigo, accent_green, accent_red, accent_rose, badge_yellow…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/CreateBooking.module.css
+  │   ❌ USED but NOT DEFINED (5): get, data, slice, length, subtotal
+  │   ⚠️  DEFINED but UNUSED (2): 15s, row2
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/GpsCheckIn.module.css
+  │   ❌ USED but NOT DEFINED (5): json, coords, latitude, longitude, data
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/SOSButton.module.css
+  │   ❌ USED but NOT DEFINED (2): coords, data
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/booking/VideoCallButton.module.css
+  │   ❌ USED but NOT DEFINED (1): data
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/categories/CategoriesBrowse.module.css
+  │   ❌ USED but NOT DEFINED (5): data, filter, title, sub, length
+  │   ⚠️  DEFINED but UNUSED (3): error, subcategories, subcat
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/categories/CategoryDetail.module.css
+  │   ❌ USED but NOT DEFINED (3): data, length, map
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/common/DurationBadge.module.css
+  │   ❌ USED but NOT DEFINED (1): equivalents
+  │   ⚠️  DEFINED but UNUSED (3): md, sm, lg
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/common/Translator.module.css
+  │   ❌ USED but NOT DEFINED (1): data
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/disputes/Disputes.module.css
+  │   ❌ USED but NOT DEFINED (70): module, cls, data, filter, toast, statCard, statIcon, statValue, statLabel, partyCard…
+  │   ⚠️  DEFINED but UNUSED (10): 15s, icon_open, icon_under_review, icon_resolved, icon_cancelled, statusOpen, statusReview, statusResolved…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/featured/FeaturedBoost.module.css
+  │   ❌ USED but NOT DEFINED (5): data, find, reference, expiresAt, map
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/AIJobAssistant.module.css
+  │   ❌ USED but NOT DEFINED (1): map
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/HirerDashboard.module.css
+  │   ❌ USED but NOT DEFINED (8): data, totalBookings, activeBookings, completedBookings, totalSpent, length, map, replace
+  │   ⚠️  DEFINED but UNUSED (10): 15s, statCard_orange, statCard_green, badge_pending, badge_accepted, badge_inprogress, badge_completed, badge_cancelled…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/HirerJobs.module.css
+  │   ❌ USED but NOT DEFINED (4): module, data, filter, length
+  │   ⚠️  DEFINED but UNUSED (42): pageHeader, badge, title, sub, newBtn, filterTabs, filterTab, 15s…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/HirerPaymentHistory.module.css
+  │   ❌ USED but NOT DEFINED (8): status, currency, data, filter, length, map, cls, label
+  │   ⚠️  DEFINED but UNUSED (5): escrow, released, pending, refunded, failed
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/HirerProfile.module.css
+  │   ❌ USED but NOT DEFINED (1): data
+  │   ⚠️  DEFINED but UNUSED (1): skeletonBase
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/HirerPublicProfile.module.css
+  │   ❌ USED but NOT DEFINED (10): data, name, verifiedBadge, totalHires, openJobs, avgRating, totalReviews, length, map, split
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/HirerReviews.module.css
+  │   ❌ USED but NOT DEFINED (5): module, data, length, reduce, map
+  │   ⚠️  DEFINED but UNUSED (1): 2s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/InsuranceAddon.module.css
+  │   ❌ USED but NOT DEFINED (3): data, find, map
+  │   ⚠️  DEFINED but UNUSED (9): 2s, successState, successIcon, successTitle, successPlan, receiptBox, receiptRow, receiptRef…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/JobDetail.module.css
+  │   ❌ USED but NOT DEFINED (4): data, toLowerCase, length, map
+  │   ⚠️  DEFINED but UNUSED (7): alert_error, alert_success, status_green, status_indigo, status_red, 15s, sk
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/PostJob.module.css
+  │   ❌ USED but NOT DEFINED (5): data, filter, find, length, map
+  │   ⚠️  DEFINED but UNUSED (11): 15s, matchedGrid, matchedCard, matchedAvatar, matchedInfo, matchedName, matchedTitle, matchedMeta…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/hirerjobs/HirerJobBoard.module.css
+  │   ❌ USED but NOT DEFINED (5): get, data, set, map, length
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/hirer/hirerjobs/HirerJobBoardManagement.module.css
+  │   ❌ USED but NOT DEFINED (6): status, data, toLowerCase, filter, length, map
+  │   ⚠️  DEFINED but UNUSED (13): 15s, alert_error, alert_success, pill_green, pill_indigo, pill_red, pill_dim, accent_green…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/layout/AdminLayout.module.css
+  │   ❌ USED but NOT DEFINED (4): newUsersToday, disputedBookings, activeBookings, map
+  │   ⚠️  DEFINED but UNUSED (4): 4, 2, 12s, 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/layout/HirerLayout.module.css
+  │   ❌ USED but NOT DEFINED (2): data, map
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/layout/WorkerLayout.module.css
+  │   ❌ USED but NOT DEFINED (2): data, map
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/messages/Messages.module.css
+  │   ❌ USED but NOT DEFINED (123): module, data, get, find, filter, reduce, length, map, jsx, join…
+  │   ⚠️  DEFINED but UNUSED (5): convoCount, 2s, avatar_xs, avatar_sm, avatar_md
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/payment/Payment.module.css
+  │   ❌ USED but NOT DEFINED (8): get, data, summaryIcon, currency, agreedRate, hirerFee, workerPayout, totalCharged
+  │   ⚠️  DEFINED but UNUSED (5): 15s, 1s, stripeForm, stripeElementWrap, stripeSummary
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/payment/PaymentOptions.module.css
+  │   ❌ USED but NOT DEFINED (10): module, data, bankName, accountNumber, accountName, narration, currency, network, wallet, note
+  │   ⚠️  DEFINED but UNUSED (1): summaryNote
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/posts/CreatePost.module.css
+  │   ❌ USED but NOT DEFINED (4): length, map, forEach, data
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/posts/PostCard.module.css
+  │   ❌ USED but NOT DEFINED (4): data, map, length, filter
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/review/Review.module.css
+  │   ❌ USED but NOT DEFINED (5): data, reduce, length, filter, map
+  │   ⚠️  DEFINED but UNUSED (2): 1s, 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/search/SearchPage.module.css
+  │   ❌ USED but NOT DEFINED (20): get, data, coords, radius, category, language, gender, verification, categories, workers…
+  │   ⚠️  DEFINED but UNUSED (3): 15s, 2s, verifiedBadge
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/search/VoiceSearch.module.css
+  │   ❌ USED but NOT DEFINED (1): icon
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/settimg/SettingsPage.module.css
+  │   ❌ USED but NOT DEFINED (4): data, defaultEstimatedUnit, defaultEstimatedValue, map
+  │   ⚠️  DEFINED but UNUSED (2): toast_success, toast_error
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/subscription/SubscriptionPlans.module.css
+  │   ❌ USED but NOT DEFINED (3): module, data, map
+  │   ⚠️  DEFINED but UNUSED (1): 2s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/subscription/SubscriptionSuccess.module.css
+  │   ❌ USED but NOT DEFINED (4): module, get, data, map
+  │   ⚠️  DEFINED but UNUSED (1): 2s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/ui/ui.module.css
+  │   ❌ USED but NOT DEFINED (45): data, length, map, page, statsRow, earningsCard, earningsLabel, earningsValue, thisMonth, earningsMeta…
+  │   ⚠️  DEFINED but UNUSED (46): card, cardHeader, cardTitle, cardLink, statCard, statCardLabel, statCardValue, statCardSub…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/user/EditProfile.module.css
+  │   ⚠️  DEFINED but UNUSED (29): wrap, header, backBtn, eyebrow, title, alertError, alertSuccess, form…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/user/UserProfile.module.css
+  │   ❌ USED but NOT DEFINED (9): data, totalHires, totalSpent, avgRating, totalReviews, websiteLink, map, length, reduce
+  │   ⚠️  DEFINED but UNUSED (19): infoIcon, 18s, editPage, editHeader, editTitle, editForm, editSection, editSectionTitle…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/worker/VideoIntroSection.module.css
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/components/worker/WorkerPublicProfile.module.css
+  │   ❌ USED but NOT DEFINED (6): data, slice, length, map, badge, badgeGreen
+  │   ⚠️  DEFINED but UNUSED (7): verifiedBadge, 15s, sk, portfolioCardClickable, portfolioExpand, certCardClickable, certViewHint
+  └────────────────────────────────────────────────────────────
+  ┌─ src/index.css
+  │   ❌ USED but NOT DEFINED (1): isHydrated
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/Terms pages/About.module.css
+  │   ❌ USED but NOT DEFINED (3): map, value, label
+  │   ⚠️  DEFINED but UNUSED (3): 5rem, 8rem, 2s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/Terms pages/Contact.module.css
+  │   ❌ USED but NOT DEFINED (14): card, cardHeader, cardIcon, cardTitle, editBtn, contactRow, contactLabel, contactValue, contactPhone, cancelBtn…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/Terms pages/Legal.module.css
+  │   ❌ USED but NOT DEFINED (2): map, content
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/Admin.module.css
+  │   ❌ USED but NOT DEFINED (3): data, length, map
+  │   ⚠️  DEFINED but UNUSED (95): liveTag, primaryBtn, 15s, btnGreen, iconBtn, iconBtnRed, alert_error, alert_success…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminAnalytics.module.css
+  │   ❌ USED but NOT DEFINED (4): module, length, map, data
+  │   ⚠️  DEFINED but UNUSED (8): 25rem, accent_orange, accent_green, accent_red, accent_amber, 125rem, 4, 2
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminAuditLog.module.css
+  │   ❌ USED but NOT DEFINED (14): map, data, search, action, severity, result, from, to, set, toString…
+  │   ⚠️  DEFINED but UNUSED (11): toast_success, toast_error, accent_orange, accent_green, accent_red, accent_yellow, badge_green, badge_red…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminBookings.module.css
+  │   ❌ USED but NOT DEFINED (9): module, length, slice, get, status, search, from, to, map
+  │   ⚠️  DEFINED but UNUSED (14): toast_success, toast_warn, toast_error, 25rem, chipAccent_orange, chipAccent_green, chipAccent_red, badge_yellow…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminBroadcast.module.css
+  │   ❌ USED but NOT DEFINED (2): length, trim
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminCampaign.module.css
+  │   ❌ USED but NOT DEFINED (9): map, set, accent, icon, val, label, topReferrers, pendingWithdrawals, length
+  │   ⚠️  DEFINED but UNUSED (26): accent_orange, accent_green, accent_yellow, accent_blue, accent_red, accent_indigo, 5vw, subCard_PENDING…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminCategories.module.css
+  │   ❌ USED but NOT DEFINED (8): module, filter, map, get, search, reduce, toLocaleString, length
+  │   ⚠️  DEFINED but UNUSED (8): toast_success, toast_error, toast_warn, 25rem, 15s, chipAccent_orange, chipAccent_green, chipAccent_red
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminDashboard.module.css
+  │   ❌ USED but NOT DEFINED (6): cls, label, data, map, length, slice
+  │   ⚠️  DEFINED but UNUSED (11): 15s, accent_orange, accent_green, accent_amber, 4, 2, accepted, active…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminDisputes.module.css
+  │   ❌ USED but NOT DEFINED (8): module, key, cls, sub, label, get, length, map
+  │   ⚠️  DEFINED but UNUSED (13): toast_success, toast_error, toast_warn, accent_red, payStatus_HELD, payStatus_RELEASED, payStatus_REFUNDED, payStatus_FAILED…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminFeatured.module.css
+  │   ❌ USED but NOT DEFINED (6): type, search, data, filter, length, map
+  │   ⚠️  DEFINED but UNUSED (25): toast_success, toast_error, accent_orange, accent_green, accent_yellow, accent_red, 15s, type_orange…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminInsurance.module.css
+  │   ❌ USED but NOT DEFINED (8): map, total, revenue, data, forEach, length, planId, search
+  │   ⚠️  DEFINED but UNUSED (2): alert_success, alert_error
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminJobs.module.css
+  │   ❌ USED but NOT DEFINED (14): jsx, module, total, pending, accepted, map, toLowerCase, status, search, categoryId…
+  │   ⚠️  DEFINED but UNUSED (11): toast_success, toast_error, accent_orange, accent_green, accent_indigo, accent_yellow, badge_green, badge_indigo…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminManualPayments.module.css
+  │   ❌ USED but NOT DEFINED (8): jsx, module, copyPillMono, length, map, checkItemDone, payCardCrypto, data
+  │   ⚠️  DEFINED but UNUSED (7): toast_success, toast_error, accent_yellow, accent_orange, accent_indigo, 15s, 12s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminMessages.module.css
+  │   ❌ USED but NOT DEFINED (9): jsx, module, map, length, filter, join, slice, reduce, data
+  │   ⚠️  DEFINED but UNUSED (12): toast_success, toast_error, 5vw, accent_orange, accent_indigo, accent_green, accent_yellow, 15s…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminPayments.module.css
+  │   ❌ USED but NOT DEFINED (8): module, get, status, provider, from, to, length, map
+  │   ⚠️  DEFINED but UNUSED (14): toast_success, toast_warn, toast_error, 25rem, accent_orange, accent_green, accent_amber, badge_yellow…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminPosts.module.css
+  │   ❌ USED but NOT DEFINED (10): jsx, module, slice, length, map, type, search, data, reduce, filter
+  │   ⚠️  DEFINED but UNUSED (17): toast_success, toast_error, accent_orange, accent_gold, accent_indigo, accent_green, 15s, type_dim…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminPromoCodes.module.css
+  │   ❌ USED but NOT DEFINED (8): module, map, search, isActive, data, filter, totalUses, length
+  │   ⚠️  DEFINED but UNUSED (8): alert_success, alert_error, 5vw, 15s, status_green, status_yellow, status_red, status_dim
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminReferrals.module.css
+  │   ❌ USED but NOT DEFINED (11): module, data, status, search, overview, byStatus, topReferrers, recentConversions, tierBreakdown, length…
+  │   ⚠️  DEFINED but UNUSED (6): alert_success, alert_error, 15s, lbRank1, lbRank2, lbRank3
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminReports.module.css
+  │   ❌ USED but NOT DEFINED (7): jsx, module, targetContent, set, map, topReportedUsers, length
+  │   ⚠️  DEFINED but UNUSED (26): accent_yellow, accent_blue, accent_green, accent_red, accent_orange, accent_dim, 5vw, badge_yellow…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminSubscriptions.module.css
+  │   ❌ USED but NOT DEFINED (12): jsx, module, map, status, tier, role, search, data, filter, reduce…
+  │   ⚠️  DEFINED but UNUSED (22): toast_success, toast_error, accent_orange, accent_green, accent_indigo, accent_gold, breakdownCard_dim, breakdownCard_indigo…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminUsers.module.css
+  │   ❌ USED but NOT DEFINED (13): module, cls, label, get, role, search, isBanned, isActive, isEmailVerified, find…
+  │   ⚠️  DEFINED but UNUSED (13): toast_success, toast_warn, toast_error, role_worker, role_hirer, role_admin, mbStatus_COMPLETED, mbStatus_PENDING…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminVerifications.module.css
+  │   ❌ USED but NOT DEFINED (7): module, statCardActive, cls, label, map, length, get
+  │   ⚠️  DEFINED but UNUSED (8): toast_success, toast_warn, toast_error, 25rem, accent_amber, accent_green, accent_red, 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminVideoCalls.module.css
+  │   ❌ USED but NOT DEFINED (9): jsx, module, length, map, timelineDone, timelineNeg, data, filter, reduce
+  │   ⚠️  DEFINED but UNUSED (18): toast_success, toast_error, accent_orange, accent_green, accent_indigo, accent_yellow, statusChip_yellow, statusChip_green…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/admin/AdminWithdrawals.module.css
+  │   ❌ USED but NOT DEFINED (10): jsx, module, status, search, data, filter, pendingCount, pendingTotal, length, map
+  │   ⚠️  DEFINED but UNUSED (11): toast_success, toast_error, accent_yellow, accent_indigo, accent_orange, accent_green, badge_yellow, badge_indigo…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/auth/WorkerRegister.module.css
+  │   ❌ USED but NOT DEFINED (11): data, filter, get, length, map, id, stepActive, stepDone, icon, slice…
+  │   ⚠️  DEFINED but UNUSED (4): logo, logoIcon, logoText, errMsg
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/feed/FeedPage.module.css
+  │   ❌ USED but NOT DEFINED (3): data, length, map
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/referral/CampaignDashboard.module.css
+  │   ❌ USED but NOT DEFINED (18): status, value, data, filter, accent, icon, val, label, length, step…
+  │   ⚠️  DEFINED but UNUSED (15): toast_success, toast_error, 15s, accent_green, accent_orange, submissionCard_APPROVED, submissionCard_REJECTED, submissionCard_PARTIAL…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/referral/ReferralDashboard.module.css
+  │   ❌ USED but NOT DEFINED (13): color, bg, border, emoji, data, accent, icon, val, label, slice…
+  │   ⚠️  DEFINED but UNUSED (13): toast_success, toast_error, 15s, accent_green, accent_orange, badge_yellow, badge_indigo, badge_blue…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/reports/MyReports.module.css
+  │   ❌ USED but NOT DEFINED (7): jsx, module, status, data, filter, length, map
+  │   ⚠️  DEFINED but UNUSED (11): toast_success, toast_error, 15s, badge_yellow, badge_blue, badge_green, badge_dim, statusHero_yellow…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/reports/Reports.module.css
+  │   ❌ USED but NOT DEFINED (192): jsx, module, toast, badge, avatar, avatarMd, avatarOrange, statCard, statIcon, statVal…
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/MyJobApplications/MyJobApplications.module.css
+  │   ❌ USED but NOT DEFINED (7): module, status, data, reduce, length, map, split
+  │   ⚠️  DEFINED but UNUSED (9): badge_PENDING, badge_ACCEPTED, badge_REJECTED, jobOpen, jobFilled, jobCancelled, pending, accepted…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/VideoIntro.module.css
+  │   ❌ USED but NOT DEFINED (1): data
+  │   ⚠️  DEFINED but UNUSED (2): 2s, 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/availability/Availability.module.css
+  │   ❌ USED but NOT DEFINED (2): data, map
+  │   ⚠️  DEFINED but UNUSED (2): 2s, 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/categories/Categories.module.css
+  │   ❌ USED but NOT DEFINED (81): module, toast, statChip, chipIcon, chipVal, chipLabel, backdrop, modal, modalHeader, modalTitle…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/WorkerDashboard.module.css
+  │   ❌ USED but NOT DEFINED (9): data, thisMonth, lastMonth, pendingPayout, active, pending, length, map, slice
+  │   ⚠️  DEFINED but UNUSED (7): earningsLeft, earningsTrend, bookingRight, bookingPay, 4, 2, completionHint
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/earnings/Earnings.module.css
+  │   ❌ USED but NOT DEFINED (4): jsx, module, map, length
+  │   ⚠️  DEFINED but UNUSED (4): 25rem, 2rem, 9rem, filterSelect
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/earnings/WorkerWithdrawals.module.css
+  │   ❌ USED but NOT DEFINED (8): jsx, module, filter, find, length, map, forEach, data
+  │   ⚠️  DEFINED but UNUSED (9): toast_success, toast_error, 4rem, 15s, pending, processing, paid, failed…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/notifications/Notifications.module.css
+  │   ❌ USED but NOT DEFINED (6): module, toUpperCase, set, data, length, map
+  │   ⚠️  DEFINED but UNUSED (1): 15s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/portfolio/Portfolio.module.css
+  │   ❌ USED but NOT DEFINED (1): data
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/profile/Profile.module.css
+  │   ❌ USED but NOT DEFINED (253): data, header, eyebrow, title, successBanner, layout, identityCard, avatarWrap, avatar, avatarGlow…
+  │   ⚠️  DEFINED but UNUSED (7): sectionDesc, grid2, checkRow, checked, checkbox, checkLabel, formFooter
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/dashboard/reviews/Reviews.module.css
+  │   ❌ USED but NOT DEFINED (50): module, stars, starOn, starOff, data, pageHeader, badge, title, sub, switchBtn…
+  │   ⚠️  DEFINED but UNUSED (23): summaryRow, ratingNumber, ratingStars, distribution, distTitle, distRow, distStar, distStarIcon…
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/verification/BackgroundCheck.module.css
+  │   ❌ USED but NOT DEFINED (3): data, n, desc
+  │   ⚠️  DEFINED but UNUSED (1): 2s
+  └────────────────────────────────────────────────────────────
+  ┌─ src/pages/worker/verification/Verification.module.css
+  │   ❌ USED but NOT DEFINED (9): cls, data, statusMessage, latestSubmission, latestReview, verificationStatus, lastSubmittedAt, backgroundCheck, certifications
+  │   ⚠️  DEFINED but UNUSED (3): badgeDefault, badgeRejected, 2s
+  └────────────────────────────────────────────────────────────
+
+  Total undefined class usages : 1368
+  Total unused class definitions: 804
+
+════════════════════════════════════════════════════════════════════════════════
+  § 6  IMPORT AUDIT
+════════════════════════════════════════════════════════════════════════════════
+
+  ✅  All relative imports resolve.
+
+════════════════════════════════════════════════════════════════════════════════
+  § 7  STORE AUDIT
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─ src/store/authStore.js
+  │   ✅  setAuth  ← 2 component(s)
+  │   ✅  updateUser  ← 3 component(s)
+  │   ⚠️  clearAuth  ← unused
+  │   ⚠️  fetchMe  ← unused
+  │   ✅  login  ← 19 component(s)
+  │   ✅  logout  ← 3 component(s)
+  │   ✅  register  ← 8 component(s)
+  │   ⚠️  partialize  ← unused
+  │   ⚠️  onRehydrateStorage  ← unused
+  └────────────────────────────────────────────────────────────
+
+════════════════════════════════════════════════════════════════════════════════
+  § 8  REACT ROUTER AUDIT
+════════════════════════════════════════════════════════════════════════════════
+
+  Declared routes  : 98
+    *
+    /
+    /about
+    /admin
+    /admin/FeatueredBoosts
+    /admin/Posts
+    /admin/analytics
+    /admin/audit-logs
+    /admin/bookings
+    /admin/broadcast
+    /admin/campaigns
+    /admin/categories
+    /admin/disputes
+    /admin/featured
+    /admin/insurance
+    /admin/jobs
+    /admin/manual-payments
+    /admin/messages
+    /admin/payments
+    /admin/promocodes
+    /admin/referrals
+    /admin/reports
+    /admin/reviews
+    /admin/settings
+    /admin/subscriptions
+    /admin/users
+    /admin/verifications
+    /admin/video-calls
+    /admin/withdrawals
+    /bookings
+    /bookings/:bookingId/pay
+    /bookings/:bookingId/release
+    /bookings/:bookingId/review
+    /bookings/:bookingId/stripe-confirm
+    /bookings/:id
+    /bookings/create
+    /campaign
+    /categories
+    /categories/:slug
+    /contact
+    /dashboard
+    /dashboard/hirer
+    /dashboard/hirer/featured
+    /dashboard/hirer/jobs-management
+    /dashboard/hirer/notifications
+    /dashboard/hirer/payment-history
+    /dashboard/hirer/post-job
+    /dashboard/hirer/profile
+    /dashboard/hirer/reviews/given
+    /dashboard/hirer/reviews/received
+    /dashboard/hirer/saved-workers
+    /dashboard/hirer/subscription
+    /dashboard/hirer/verification
+    /dashboard/worker
+    /dashboard/worker/applications
+    /dashboard/worker/availability
+    /dashboard/worker/background-check
+    /dashboard/worker/categories
+    /dashboard/worker/certifications
+    /dashboard/worker/earnings
+    /dashboard/worker/featured
+    /dashboard/worker/notifications
+    /dashboard/worker/portfolio
+    /dashboard/worker/profile
+    /dashboard/worker/reviews
+    /dashboard/worker/subscription
+    /dashboard/worker/verification
+    /dashboard/worker/withdrawals
+    /disputes
+    /featured/success
+    /feed
+    /forgot-password
+    /hirers/:userId
+    /insurance/success
+    /jobs
+    /jobs/:id
+    /jobs/:id/applications
+    /landingpage
+    /login
+    /messages
+    /my-posts
+    /my-reports
+    /payments/verify/paystack
+    /privacy
+    /profile/:id
+    /profile/edit
+    /profile/me
+    /referrals
+    /register
+    /register/hirer
+    /register/worker
+    /reset-password
+    /search
+    /settings
+    /subscription/success
+    /terms
+    /verify-email
+    /workers/:userId
+
+  ✅  All navigate() / Link paths have matching Route declarations.
+
+════════════════════════════════════════════════════════════════════════════════
+  § 9  AUTH GUARD AUDIT
+════════════════════════════════════════════════════════════════════════════════
+
+  ⚠️  29 page(s) fetch data but may lack auth checks:
+
+  ?  src/pages/admin/AdminAnalytics.jsx
+  ?  src/pages/admin/AdminAuditLog.jsx
+  ?  src/pages/admin/AdminBookings.jsx
+  ?  src/pages/admin/AdminBroadcast.jsx
+  ?  src/pages/admin/AdminCampaign.jsx
+  ?  src/pages/admin/AdminCategories.jsx
+  ?  src/pages/admin/AdminDashboard.jsx
+  ?  src/pages/admin/AdminDisputes.jsx
+  ?  src/pages/admin/AdminFeatured.jsx
+  ?  src/pages/admin/AdminInsurance.jsx
+  ?  src/pages/admin/AdminJobs.jsx
+  ?  src/pages/admin/AdminManualPayments.jsx
+  ?  src/pages/admin/AdminMessages.jsx
+  ?  src/pages/admin/AdminPayments.jsx
+  ?  src/pages/admin/AdminPosts.jsx
+  ?  src/pages/admin/AdminPromoCodes.jsx
+  ?  src/pages/admin/AdminReferrals.jsx
+  ?  src/pages/admin/AdminReports.jsx
+  ?  src/pages/admin/AdminReviews.jsx
+  ?  src/pages/admin/AdminSubscriptions.module.jsx
+  ?  src/pages/admin/AdminUsers.jsx
+  ?  src/pages/admin/AdminVerifications.jsx
+  ?  src/pages/admin/AdminVideoCalls.jsx
+  ?  src/pages/admin/AdminWithdrawals.jsx
+  ?  src/pages/reports/ReportButton.jsx
+  ?  src/pages/worker/VideoIntro.jsx
+  ?  src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx
+  ?  src/pages/worker/verification/BackgroundCheck.jsx
+  ?  src/pages/worker/verification/WorkerVerification.jsx
+
+════════════════════════════════════════════════════════════════════════════════
+  §10  SUMMARY & PRIORITY ACTION LIST
+════════════════════════════════════════════════════════════════════════════════
+
+  Backend route coverage : 0/249 (0%)
+  Total API calls        : 219
+  Orphan API calls       : 185
+  Broken imports         : 0
+  CSS undefined classes  : 1368
+  CSS unused classes     : 804
+  Unguarded pages        : 29
+  Orphan nav targets     : 0
+
+  CRITICAL — needs immediate attention:
+  🔴  1368 CSS class(es) used but not defined — invisible in UI
+  🔴  185 API call(s) with no matching backend route
+
+  HIGH — missing backend coverage by area:
+  🟠  bookings: 9 endpoint(s) not yet called from frontend
+  🟠  payments: 19 endpoint(s) not yet called from frontend
+  🟠  messages: 4 endpoint(s) not yet called from frontend
+  🟠  notifications: 7 endpoint(s) not yet called from frontend
+  🟠  settings: 14 endpoint(s) not yet called from frontend
+  🟠  verification: 6 endpoint(s) not yet called from frontend
+
+  MEDIUM — admin area coverage:
+  🟡  63 admin endpoint(s) not yet called from frontend
+
+  RECOMMENDED — add frontend for these high-value uncovered endpoints:
+  💡  POST    /api/auth/register
+  💡  POST    /api/auth/login
+  💡  GET     /api/auth/verify-email
+  💡  POST    /api/auth/resend-verification
+  💡  POST    /api/auth/forgot-password
+  💡  POST    /api/auth/reset-password
+  💡  POST    /api/auth/refresh
+  💡  POST    /api/auth/logout
+  💡  GET     /api/auth/me
+  💡  POST    /api/auth/logout-all
+  💡  PUT     /api/users/me
+  💡  PUT     /api/users/me/avatar
+
+════════════════════════════════════════════════════════════════════════════════
+ Audit complete — 5/31/2026, 1:32:16 PM
+════════════════════════════════════════════════════════════════════════════════
+
+onwukwennamdi@Onwukwes-MacBook-Pro skilledproz-frontend % 
