@@ -1,16 +1,34 @@
 // src/pages/admin/AdminManualPayments.jsx
-// Admin verification panel for manual bank-transfer and crypto payments
-// API: GET  /admin/payments?provider=bank_transfer|crypto&status=PENDING
-//      PATCH /admin/payments/:bookingId/verify
-//      PATCH /admin/payments/:bookingId/reject-manual
+// Complete admin manual-payment verification panel.
+//
+// Features:
+//   • All payment attempts per booking (retries, failures, pending, verified)
+//   • Bank transfer + crypto — unified list with per-tab filtering
+//   • Referral-discount badge when discount was applied
+//   • Proof-of-payment image viewer for BOTH bank and crypto
+//   • Status filter: All / Pending / Verified (HELD) / Failed / Released / Refunded
+//   • Date range + search (ref, hash, name, title)
+//   • Payment-attempt history drawer per payment card
+//   • Stats bar with live counts per status
+//   • Reject modal with preset reasons
+//   • Audit-friendly checklist before approving
+//   • Pagination
+//   • CSV export of visible payments
+//
+// API:
+//   GET  /admin/payments?provider&status&from&to&search&page&limit
+//   GET  /admin/payments/booking/:bookingId/attempts
+//   GET  /admin/payments/stats
+//   PATCH /admin/payments/:bookingId/verify
+//   PATCH /admin/payments/:bookingId/reject-manual
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import styles from "./AdminManualPayments.module.css";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmtAmt = (n, cur = "NGN") =>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt = (n, cur = "NGN") =>
   `${cur} ${Number(n || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -35,19 +53,54 @@ const timeAgo = (d) => {
   return `${Math.floor(m / 1440)}d ago`;
 };
 
+const STATUS_COLORS = {
+  PENDING: {
+    bg: "rgba(234,179,8,.12)",
+    text: "#eab308",
+    border: "rgba(234,179,8,.4)",
+  },
+  HELD: {
+    bg: "rgba(129,140,248,.12)",
+    text: "#818cf8",
+    border: "rgba(129,140,248,.4)",
+  },
+  RELEASED: {
+    bg: "rgba(34,197,94,.12)",
+    text: "var(--green)",
+    border: "rgba(34,197,94,.35)",
+  },
+  FAILED: {
+    bg: "rgba(239,68,68,.12)",
+    text: "var(--red)",
+    border: "rgba(239,68,68,.35)",
+  },
+  REFUNDED: {
+    bg: "rgba(239,68,68,.08)",
+    text: "#f87171",
+    border: "rgba(239,68,68,.25)",
+  },
+};
+
+const STATUS_LABELS = {
+  PENDING: "⏳ Pending",
+  HELD: "🔒 In Escrow",
+  RELEASED: "✅ Released",
+  FAILED: "❌ Failed",
+  REFUNDED: "↩ Refunded",
+};
+
 function explorerUrl(hash, network) {
-  if (!hash || !network) return null;
-  const n = network.toLowerCase();
+  if (!hash) return null;
+  const n = (network || "").toLowerCase();
   if (n.includes("bitcoin")) return `https://blockstream.info/tx/${hash}`;
   if (n.includes("ethereum") || n.includes("erc20"))
     return `https://etherscan.io/tx/${hash}`;
   if (n.includes("tron") || n.includes("trc20"))
     return `https://tronscan.org/#/transaction/${hash}`;
-  // Default: BSC (most common for USDC/USDT on SkilledProz)
   return `https://bscscan.com/tx/${hash}`;
 }
 
-async function copyToClipboard(text) {
+async function copy(text) {
   try {
     await navigator.clipboard.writeText(text);
     return true;
@@ -56,7 +109,7 @@ async function copyToClipboard(text) {
   }
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
   return (
@@ -66,21 +119,149 @@ function Toast({ toast }) {
   );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, accent }) {
+function StatusBadge({ status }) {
+  const c = STATUS_COLORS[status] || STATUS_COLORS.PENDING;
   return (
-    <div
-      className={`${styles.statCard} ${accent ? styles[`accent_${accent}`] : ""}`}
+    <span
+      className={styles.statusBadge}
+      style={{ background: c.bg, color: c.text, borderColor: c.border }}
     >
-      <span className={styles.statIcon}>{icon}</span>
-      <p className={styles.statVal}>{value}</p>
-      <p className={styles.statLabel}>{label}</p>
-      {sub && <p className={styles.statSub}>{sub}</p>}
+      {STATUS_LABELS[status] || status}
+    </span>
+  );
+}
+
+function ReferralBadge({ amount, currency }) {
+  if (!amount || amount <= 0) return null;
+  return (
+    <span className={styles.referralBadge}>
+      🎁 ₦{Number(amount).toLocaleString()} referral
+    </span>
+  );
+}
+
+function CopyPill({ text, display, mono }) {
+  const [ok, setOk] = useState(false);
+  async function handle() {
+    if (await copy(text)) {
+      setOk(true);
+      setTimeout(() => setOk(false), 1600);
+    }
+  }
+  return (
+    <span
+      className={`${styles.copyPill} ${mono ? styles.copyPillMono : ""} ${ok ? styles.copyPillOk : ""}`}
+    >
+      <span className={styles.copyPillText}>{display ?? text}</span>
+      <button className={styles.copyPillBtn} onClick={handle} title="Copy">
+        {ok ? "✓" : "⎘"}
+      </button>
+    </span>
+  );
+}
+
+function ProofViewer({ url, label = "Payment Proof" }) {
+  const [err, setErr] = useState(false);
+  if (!url)
+    return (
+      <div className={styles.proofEmpty}>
+        <span>📎</span>
+        <p>No proof uploaded</p>
+        <small>Verify via bank statement or blockchain explorer.</small>
+      </div>
+    );
+  const isPdf = url.toLowerCase().includes(".pdf");
+  return (
+    <div className={styles.proofBlock}>
+      <p className={styles.proofBlockLabel}>{label}</p>
+      {isPdf ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.proofOpenBtn}
+        >
+          📄 Open PDF Receipt ↗
+        </a>
+      ) : err ? (
+        <div className={styles.proofImgErr}>
+          <span>🖼️</span>
+          <p>Image failed to load</p>
+        </div>
+      ) : (
+        <div className={styles.proofImgWrap}>
+          <img
+            src={url}
+            alt="Payment proof"
+            className={styles.proofImg}
+            onError={() => setErr(true)}
+          />
+        </div>
+      )}
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className={styles.proofOpenBtn}
+      >
+        🔍 Open Full Size ↗
+      </a>
     </div>
   );
 }
 
-// ─── User Chip ────────────────────────────────────────────────────────────────
+function Checklist({ items }) {
+  const [checked, setChecked] = useState(() =>
+    new Array(items.length).fill(false),
+  );
+  const allChecked = checked.every(Boolean);
+  return (
+    <div
+      className={`${styles.checklist} ${allChecked ? styles.checklistComplete : ""}`}
+    >
+      <p className={styles.checklistTitle}>Before approving, confirm all:</p>
+      {items.map((item, i) => (
+        <label
+          key={i}
+          className={`${styles.checkItem} ${checked[i] ? styles.checkItemDone : ""}`}
+        >
+          <input
+            type="checkbox"
+            checked={checked[i]}
+            onChange={() =>
+              setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)))
+            }
+            className={styles.checkbox}
+          />
+          <span>{item}</span>
+        </label>
+      ))}
+      {allChecked && (
+        <p className={styles.checklistAllDone}>
+          ✅ All checks passed — safe to approve
+        </p>
+      )}
+    </div>
+  );
+}
+
+function FeeRow({ label, value, cur, highlight, green, muted }) {
+  return (
+    <div className={styles.feeRow}>
+      <span
+        className={`${styles.feeLabel} ${muted ? styles.feeLabelMuted : ""}`}
+      >
+        {label}
+      </span>
+      <span
+        className={`${styles.feeVal} ${highlight ? styles.feeValHighlight : ""} ${green ? styles.feeValGreen : ""}`}
+      >
+        {fmt(value, cur)}
+      </span>
+    </div>
+  );
+}
+
 function UserChip({ label, user }) {
   const initials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase() ||
@@ -105,123 +286,125 @@ function UserChip({ label, user }) {
   );
 }
 
-// ─── Copy Pill ────────────────────────────────────────────────────────────────
-function CopyPill({ text, display, mono }) {
-  const [ok, setOk] = useState(false);
-  async function handle() {
-    if (await copyToClipboard(text)) {
-      setOk(true);
-      setTimeout(() => setOk(false), 1600);
-    }
-  }
-  return (
-    <span
-      className={`${styles.copyPill} ${mono ? styles.copyPillMono : ""} ${ok ? styles.copyPillOk : ""}`}
-    >
-      <span className={styles.copyPillText}>{display ?? text}</span>
-      <button className={styles.copyPillBtn} onClick={handle} title="Copy">
-        {ok ? "✓" : "⎘"}
-      </button>
-    </span>
-  );
-}
+// ── Attempts Drawer ────────────────────────────────────────────────────────────
+function AttemptsDrawer({ bookingId, onClose }) {
+  const [attempts, setAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-// ─── Fee Row ──────────────────────────────────────────────────────────────────
-function FeeRow({ label, value, cur, highlight }) {
-  return (
-    <div className={styles.feeRow}>
-      <span className={styles.feeLabel}>{label}</span>
-      <span
-        className={`${styles.feeVal} ${highlight ? styles.feeValHighlight : ""}`}
-      >
-        {fmtAmt(value, cur)}
-      </span>
-    </div>
-  );
-}
+  useEffect(() => {
+    api
+      .get(`/admin/payments/booking/${bookingId}/attempts`)
+      .then((r) => setAttempts(r.data.data.attempts || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [bookingId]);
 
-// ─── Proof Viewer ─────────────────────────────────────────────────────────────
-function ProofViewer({ url }) {
-  const [err, setErr] = useState(false);
-  if (!url) {
-    return (
-      <div className={styles.proofEmpty}>
-        <span>⚠️</span>
-        <p>No proof screenshot uploaded</p>
-        <small>Verify via bank statement or contact the hirer directly.</small>
+  return (
+    <div className={styles.attemptsDrawer}>
+      <div className={styles.attemptsDrawerHeader}>
+        <p className={styles.attemptsDrawerTitle}>📋 All Payment Attempts</p>
+        <button className={styles.attemptsDrawerClose} onClick={onClose}>
+          ×
+        </button>
       </div>
-    );
-  }
-  return (
-    <div className={styles.proofBlock}>
-      <div className={styles.proofImgWrap}>
-        {err ? (
-          <div className={styles.proofImgErr}>
-            <span>🖼️</span>
-            <p>Image failed to load</p>
-          </div>
-        ) : (
-          <img
-            src={url}
-            alt="Payment proof"
-            className={styles.proofImg}
-            onError={() => setErr(true)}
-          />
-        )}
-      </div>
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className={styles.proofOpenBtn}
-      >
-        🔍 Open Full Screenshot ↗
-      </a>
+      {loading ? (
+        <div className={styles.attemptsLoading}>
+          <span className={styles.spin} /> Loading…
+        </div>
+      ) : attempts.length === 0 ? (
+        <p className={styles.attemptsEmpty}>No payment attempts found.</p>
+      ) : (
+        <div className={styles.attemptsList}>
+          {attempts.map((a, i) => (
+            <div
+              key={a.id}
+              className={`${styles.attemptRow} ${i === 0 ? styles.attemptRowLatest : ""}`}
+            >
+              <div className={styles.attemptRowLeft}>
+                <span className={styles.attemptNum}>#{a.attemptNumber}</span>
+                <div>
+                  <div className={styles.attemptProvider}>
+                    {a.provider === "bank_transfer" ? "🏦" : "₿"}{" "}
+                    {a.provider.replace("_", " ")}
+                    <ReferralBadge
+                      amount={a.referralDiscount}
+                      currency={a.currency}
+                    />
+                  </div>
+                  <p className={styles.attemptDate}>{fmtDate(a.createdAt)}</p>
+                  {a.providerRef && (
+                    <p className={styles.attemptRef}>{a.providerRef}</p>
+                  )}
+                  {a.cryptoTxHash && (
+                    <p
+                      className={styles.attemptRef}
+                      style={{ fontFamily: "monospace" }}
+                    >
+                      {a.cryptoTxHash.slice(0, 20)}…
+                    </p>
+                  )}
+                  {a.notes &&
+                    (() => {
+                      try {
+                        const n = JSON.parse(a.notes);
+                        return n.reason ? (
+                          <p className={styles.attemptRejReason}>
+                            Rejected: {n.reason}
+                          </p>
+                        ) : null;
+                      } catch {
+                        return null;
+                      }
+                    })()}
+                </div>
+              </div>
+              <div className={styles.attemptRowRight}>
+                <span className={styles.attemptAmt}>
+                  {fmt(a.amount, a.currency)}
+                </span>
+                <StatusBadge status={a.status} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Checklist ────────────────────────────────────────────────────────────────
-function Checklist({ items }) {
-  const [checked, setChecked] = useState(() =>
-    new Array(items.length).fill(false),
-  );
-  const toggle = (i) =>
-    setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
-  return (
-    <div className={styles.checklist}>
-      <p className={styles.checklistTitle}>Before approving, confirm:</p>
-      {items.map((item, i) => (
-        <label
-          key={i}
-          className={`${styles.checkItem} ${checked[i] ? styles.checkItemDone : ""}`}
-        >
-          <input
-            type="checkbox"
-            checked={checked[i]}
-            onChange={() => toggle(i)}
-            className={styles.checkbox}
-          />
-          <span>{item}</span>
-        </label>
-      ))}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BANK TRANSFER CARD
-// ─────────────────────────────────────────────────────────────────────────────
-function BankTransferCard({ payment, onVerify, onReject, verifying }) {
+// ── Payment Card ───────────────────────────────────────────────────────────────
+function PaymentCard({ payment, onVerify, onReject, verifying }) {
   const [expanded, setExpanded] = useState(false);
+  const [showAttempts, setShowAttempts] = useState(false);
+
   const b = payment.booking;
   const busy = verifying === payment.id;
+  const isCrypto = payment.provider === "crypto";
+  const isBank = payment.provider === "bank_transfer";
+  const isPending = payment.status === "PENDING";
+  const explorerLink = explorerUrl(payment.cryptoTxHash, payment.cryptoNetwork);
+  const hasReferral = payment.referralDiscount > 0;
+
+  const bankChecklist = [
+    "Reference number matches the booking exactly",
+    "Amount matches the booking total shown above",
+    "Sender name matches the hirer's registered name",
+    "Screenshot is genuine and unedited",
+  ];
+
+  const cryptoChecklist = [
+    "Open explorer link and confirm the tx is confirmed (not pending)",
+    `Recipient wallet matches our platform wallet`,
+    `Amount: ${payment.cryptoAmount || "—"} ${payment.cryptoCurrency} is correct`,
+    `Network matches: ${payment.cryptoNetwork}`,
+    `Reference ${payment.providerRef} appears in the memo / note`,
+  ];
 
   return (
     <article
-      className={`${styles.payCard} ${expanded ? styles.payCardOpen : ""}`}
+      className={`${styles.payCard} ${expanded ? styles.payCardOpen : ""} ${isCrypto ? styles.payCardCrypto : ""}`}
     >
-      {/* ── Collapsed top row ── */}
+      {/* Collapsed top row */}
       <div
         className={styles.payCardTop}
         onClick={() => setExpanded((o) => !o)}
@@ -231,10 +414,25 @@ function BankTransferCard({ payment, onVerify, onReject, verifying }) {
       >
         <div className={styles.payCardTopLeft}>
           <div className={styles.payCardMeta}>
-            <span className={styles.refTag}>🏦 {payment.providerRef}</span>
+            <span
+              className={`${styles.refTag} ${isCrypto ? styles.refTagCrypto : ""}`}
+            >
+              {isBank ? "🏦" : "₿"} {payment.providerRef}
+            </span>
+            {hasReferral && (
+              <ReferralBadge
+                amount={payment.referralDiscount}
+                currency={payment.currency}
+              />
+            )}
             <span className={styles.timeDim}>{timeAgo(payment.createdAt)}</span>
             {payment.bankName && (
               <span className={styles.bankTag}>{payment.bankName}</span>
+            )}
+            {isCrypto && payment.cryptoCurrency && (
+              <span className={styles.cryptoTag}>
+                {payment.cryptoCurrency} · {payment.cryptoNetwork}
+              </span>
             )}
           </div>
           <p className={styles.payCardTitle}>
@@ -247,274 +445,144 @@ function BankTransferCard({ payment, onVerify, onReject, verifying }) {
         </div>
         <div className={styles.payCardTopRight}>
           <p className={styles.payCardAmt}>
-            {fmtAmt(payment.amount, payment.currency)}
+            {fmt(payment.amount, payment.currency)}
           </p>
-          <span className={styles.badgePending}>⏳ Pending Verification</span>
-          <span className={styles.chevron}>{expanded ? "▲" : "▼"}</span>
-        </div>
-      </div>
-
-      {/* ── Expanded body ── */}
-      {expanded && (
-        <div className={styles.payCardBody}>
-          {/* Parties */}
-          <div className={styles.section}>
-            <p className={styles.sectionLabel}>PARTIES</p>
-            <div className={styles.partiesRow}>
-              <UserChip
-                label="Hirer (Sent payment)"
-                user={{ ...b?.hirer, email: b?.hirer?.email }}
-              />
-              <span className={styles.arrow}>→</span>
-              <UserChip label="Worker (Will receive)" user={b?.worker} />
-            </div>
-          </div>
-
-          {/* Details + Proof side by side */}
-          <div className={styles.twoCol}>
-            {/* Transfer details */}
-            <div className={styles.infoPanel}>
-              <p className={styles.sectionLabel}>🏦 TRANSFER DETAILS</p>
-
-              <div className={styles.infoRows}>
-                {[
-                  { k: "Bank", v: payment.bankName || "—" },
-                  { k: "Account Name", v: payment.accountName || "—" },
-                ].map((r) => (
-                  <div key={r.k} className={styles.infoRow}>
-                    <span className={styles.infoKey}>{r.k}</span>
-                    <span className={styles.infoVal}>{r.v}</span>
-                  </div>
-                ))}
-                <div className={styles.infoRow}>
-                  <span className={styles.infoKey}>Reference</span>
-                  <CopyPill text={payment.providerRef} mono />
-                </div>
-              </div>
-
-              <div className={styles.feeTable}>
-                <FeeRow
-                  label="Total Paid by Hirer"
-                  value={payment.amount}
-                  cur={payment.currency}
-                  highlight
-                />
-                <FeeRow
-                  label="Platform Fee"
-                  value={payment.platformFee}
-                  cur={payment.currency}
-                />
-                <FeeRow
-                  label="Worker Payout"
-                  value={payment.workerPayout}
-                  cur={payment.currency}
-                />
-              </div>
-
-              <div className={styles.infoRow} style={{ marginTop: 10 }}>
-                <span className={styles.infoKey}>Submitted</span>
-                <span className={styles.infoVal}>
-                  {fmtDate(payment.createdAt)}
-                </span>
-              </div>
-            </div>
-
-            {/* Proof screenshot */}
-            <div className={styles.infoPanel}>
-              <p className={styles.sectionLabel}>📎 PAYMENT PROOF</p>
-              <ProofViewer url={payment.bankTransferProof} />
-            </div>
-          </div>
-
-          {/* Checklist */}
-          <Checklist
-            items={[
-              "Reference number matches the booking exactly",
-              "Amount received matches the booking total shown above",
-              "Sender name matches the hirer's name",
-              "Screenshot is genuine and not edited",
-            ]}
-          />
-
-          {/* Actions */}
-          <div className={styles.actionRow}>
-            <button
-              className={styles.approveBtn}
-              onClick={() => onVerify(payment.bookingId, payment.id)}
-              disabled={busy}
-            >
-              {busy ? (
-                <>
-                  <span className={styles.spin} /> Verifying…
-                </>
-              ) : (
-                "✅ Approve — Move to Escrow"
-              )}
-            </button>
-            <button
-              className={styles.rejectBtn}
-              onClick={() => onReject(payment.bookingId, payment.id, b?.title)}
-              disabled={busy}
-            >
-              ❌ Reject
-            </button>
-          </div>
-        </div>
-      )}
-    </article>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CRYPTO PAYMENT CARD
-// ─────────────────────────────────────────────────────────────────────────────
-function CryptoCard({ payment, onVerify, onReject, verifying }) {
-  const [expanded, setExpanded] = useState(false);
-  const b = payment.booking;
-  const busy = verifying === payment.id;
-  const url = explorerUrl(payment.cryptoTxHash, payment.cryptoNetwork);
-
-  return (
-    <article
-      className={`${styles.payCard} ${styles.payCardCrypto} ${expanded ? styles.payCardOpen : ""}`}
-    >
-      {/* ── Collapsed top row ── */}
-      <div
-        className={styles.payCardTop}
-        onClick={() => setExpanded((o) => !o)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && setExpanded((o) => !o)}
-      >
-        <div className={styles.payCardTopLeft}>
-          <div className={styles.payCardMeta}>
-            <span className={`${styles.refTag} ${styles.refTagCrypto}`}>
-              ₿ {payment.cryptoCurrency} · {payment.cryptoNetwork}
-            </span>
-            <span className={styles.timeDim}>{timeAgo(payment.createdAt)}</span>
-          </div>
-          <p className={styles.payCardTitle}>
-            {b?.title || "Untitled Booking"}
-          </p>
-          <p className={styles.payCardSub}>
-            {b?.hirer?.firstName} {b?.hirer?.lastName} → {b?.worker?.firstName}{" "}
-            {b?.worker?.lastName}
-          </p>
-        </div>
-        <div className={styles.payCardTopRight}>
-          <p className={styles.payCardAmt}>
-            {fmtAmt(payment.amount, payment.currency)}
-          </p>
-          {payment.cryptoAmount && (
-            <p className={styles.cryptoSubAmt}>
-              {payment.cryptoAmount} {payment.cryptoCurrency}
+          {hasReferral && (
+            <p className={styles.referralSaving}>
+              🎁 saved ₦{Number(payment.referralDiscount).toLocaleString()}
             </p>
           )}
-          <span className={styles.badgePending}>⏳ Pending Verification</span>
+          <StatusBadge status={payment.status} />
           <span className={styles.chevron}>{expanded ? "▲" : "▼"}</span>
         </div>
       </div>
 
-      {/* ── Expanded body ── */}
+      {/* Expanded body */}
       {expanded && (
         <div className={styles.payCardBody}>
           {/* Parties */}
           <div className={styles.section}>
             <p className={styles.sectionLabel}>PARTIES</p>
             <div className={styles.partiesRow}>
-              <UserChip label="Hirer (Sent crypto)" user={b?.hirer} />
+              <UserChip label="Hirer (paid)" user={b?.hirer} />
               <span className={styles.arrow}>→</span>
-              <UserChip label="Worker (Will receive)" user={b?.worker} />
+              <UserChip label="Worker (receives)" user={b?.worker} />
             </div>
           </div>
 
-          {/* Details side by side */}
+          {/* Detail columns */}
           <div className={styles.twoCol}>
-            {/* Transaction details */}
+            {/* Left: Transfer / Crypto details + fee table */}
             <div className={styles.infoPanel}>
-              <p className={styles.sectionLabel}>₿ TRANSACTION DETAILS</p>
+              <p className={styles.sectionLabel}>
+                {isBank ? "🏦 TRANSFER DETAILS" : "₿ TRANSACTION DETAILS"}
+              </p>
+
               <div className={styles.infoRows}>
-                {[
-                  { k: "Currency", v: payment.cryptoCurrency },
-                  { k: "Network", v: payment.cryptoNetwork },
-                ].map((r) => (
-                  <div key={r.k} className={styles.infoRow}>
-                    <span className={styles.infoKey}>{r.k}</span>
-                    <span className={styles.infoVal}>{r.v || "—"}</span>
-                  </div>
-                ))}
-                <div className={styles.infoRow}>
-                  <span className={styles.infoKey}>Crypto Amount</span>
-                  <span className={`${styles.infoVal} ${styles.cryptoVal}`}>
-                    {payment.cryptoAmount || "—"} {payment.cryptoCurrency}
-                  </span>
-                </div>
+                {isBank &&
+                  [
+                    ["Bank", payment.bankName || "—"],
+                    ["Account Name", payment.accountName || "—"],
+                  ].map(([k, v]) => (
+                    <div key={k} className={styles.infoRow}>
+                      <span className={styles.infoKey}>{k}</span>
+                      <span className={styles.infoVal}>{v}</span>
+                    </div>
+                  ))}
+                {isCrypto &&
+                  [
+                    ["Currency", payment.cryptoCurrency || "—"],
+                    ["Network", payment.cryptoNetwork || "—"],
+                    [
+                      "Crypto Amount",
+                      `${payment.cryptoAmount || "—"} ${payment.cryptoCurrency || ""}`,
+                    ],
+                  ].map(([k, v]) => (
+                    <div key={k} className={styles.infoRow}>
+                      <span className={styles.infoKey}>{k}</span>
+                      <span
+                        className={`${styles.infoVal} ${isCrypto ? styles.cryptoVal : ""}`}
+                      >
+                        {v}
+                      </span>
+                    </div>
+                  ))}
                 <div className={styles.infoRow}>
                   <span className={styles.infoKey}>Reference</span>
                   <CopyPill text={payment.providerRef} mono />
                 </div>
+                {isCrypto && payment.cryptoTxHash && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoKey}>TX Hash</span>
+                    <CopyPill
+                      text={payment.cryptoTxHash}
+                      display={`${payment.cryptoTxHash.slice(0, 10)}…${payment.cryptoTxHash.slice(-6)}`}
+                      mono
+                    />
+                  </div>
+                )}
               </div>
 
+              {/* Fee breakdown */}
               <div className={styles.feeTable}>
+                {payment.referralDiscount > 0 && (
+                  <FeeRow
+                    label="Gross (before discount)"
+                    value={
+                      (payment.workerPayout || 0) + (payment.platformFee || 0)
+                    }
+                    cur={payment.currency}
+                    muted
+                  />
+                )}
+                {payment.referralDiscount > 0 && (
+                  <FeeRow
+                    label="🎁 Referral discount"
+                    value={-payment.referralDiscount}
+                    cur={payment.currency}
+                    green
+                  />
+                )}
                 <FeeRow
-                  label="Fiat Equivalent"
+                  label="Hirer paid"
                   value={payment.amount}
                   cur={payment.currency}
                   highlight
                 />
                 <FeeRow
-                  label="Platform Fee"
+                  label="Platform fee"
                   value={payment.platformFee}
                   cur={payment.currency}
                 />
                 <FeeRow
-                  label="Worker Payout"
+                  label="Worker payout"
                   value={payment.workerPayout}
                   cur={payment.currency}
+                  green
                 />
               </div>
 
-              <div className={styles.infoRow} style={{ marginTop: 10 }}>
+              <div className={styles.infoRow} style={{ marginTop: 8 }}>
                 <span className={styles.infoKey}>Submitted</span>
                 <span className={styles.infoVal}>
                   {fmtDate(payment.createdAt)}
                 </span>
               </div>
-            </div>
 
-            {/* TX hash + wallet */}
-            <div className={styles.infoPanel}>
-              <p className={styles.sectionLabel}>🔗 ON-CHAIN VERIFICATION</p>
-
-              {/* Platform wallet */}
-              <div className={styles.walletBox}>
-                <p className={styles.walletBoxLabel}>
-                  Platform Wallet (Recipient)
-                </p>
-                <CopyPill
-                  text={payment.cryptoWallet || "—"}
-                  mono
-                  display={
-                    payment.cryptoWallet
-                      ? `${payment.cryptoWallet.slice(0, 8)}…${payment.cryptoWallet.slice(-6)}`
-                      : "—"
-                  }
-                />
-              </div>
-
-              {/* TX hash */}
-              {payment.cryptoTxHash ? (
-                <div className={styles.hashBox}>
-                  <p className={styles.walletBoxLabel}>Transaction Hash</p>
-                  <div className={styles.hashDisplay}>
-                    <code className={styles.hashCode}>
-                      {payment.cryptoTxHash}
-                    </code>
-                    <CopyPill text={payment.cryptoTxHash} display="Copy" />
-                  </div>
-                  {url && (
+              {/* Platform wallet for crypto */}
+              {isCrypto && payment.cryptoWallet && (
+                <div className={styles.walletBox}>
+                  <p className={styles.walletBoxLabel}>
+                    Platform Wallet (recipient)
+                  </p>
+                  <CopyPill
+                    text={payment.cryptoWallet}
+                    display={`${payment.cryptoWallet.slice(0, 8)}…${payment.cryptoWallet.slice(-6)}`}
+                    mono
+                  />
+                  {explorerLink && (
                     <a
-                      href={url}
+                      href={explorerLink}
                       target="_blank"
                       rel="noreferrer"
                       className={styles.explorerBtn}
@@ -523,70 +591,107 @@ function CryptoCard({ payment, onVerify, onReject, verifying }) {
                     </a>
                   )}
                 </div>
-              ) : (
-                <div className={styles.proofEmpty}>
-                  <span>⚠️</span>
-                  <p>No transaction hash provided</p>
-                </div>
               )}
+            </div>
+
+            {/* Right: Proof of payment (bank receipt OR crypto screenshot) */}
+            <div className={styles.infoPanel}>
+              <p className={styles.sectionLabel}>📎 PROOF OF PAYMENT</p>
+              {/* Bank uses bankTransferProof; crypto screenshot is also stored in bankTransferProof */}
+              <ProofViewer
+                url={payment.bankTransferProof}
+                label={
+                  isBank
+                    ? "Bank Transfer Receipt"
+                    : "Crypto Transaction Screenshot"
+                }
+              />
             </div>
           </div>
 
-          {/* Checklist */}
-          <Checklist
-            items={[
-              `Open explorer and confirm the tx hash is valid and confirmed (not pending)`,
-              `Confirm recipient wallet matches our platform wallet shown above`,
-              `Confirm amount: ${payment.cryptoAmount || "—"} ${payment.cryptoCurrency} matches`,
-              `Check the booking reference ${payment.providerRef} appears in the tx memo/note`,
-              `Verify the network matches: ${payment.cryptoNetwork}`,
-            ]}
-          />
+          {/* Checklist — only for PENDING payments */}
+          {isPending && (
+            <Checklist items={isBank ? bankChecklist : cryptoChecklist} />
+          )}
+
+          {/* View all attempts button */}
+          <button
+            className={styles.attemptsBtn}
+            onClick={() => setShowAttempts((o) => !o)}
+          >
+            {showAttempts
+              ? "▲ Hide payment history"
+              : "🕐 View all payment attempts for this booking"}
+          </button>
+
+          {showAttempts && (
+            <AttemptsDrawer
+              bookingId={payment.bookingId}
+              onClose={() => setShowAttempts(false)}
+            />
+          )}
 
           {/* Actions */}
-          <div className={styles.actionRow}>
-            <button
-              className={styles.approveBtn}
-              onClick={() => onVerify(payment.bookingId, payment.id)}
-              disabled={busy}
-            >
-              {busy ? (
-                <>
-                  <span className={styles.spin} /> Verifying…
-                </>
-              ) : (
-                "✅ Approve — Move to Escrow"
-              )}
-            </button>
-            <button
-              className={styles.rejectBtn}
-              onClick={() => onReject(payment.bookingId, payment.id, b?.title)}
-              disabled={busy}
-            >
-              ❌ Reject
-            </button>
-          </div>
+          {isPending && (
+            <div className={styles.actionRow}>
+              <button
+                className={styles.approveBtn}
+                onClick={() => onVerify(payment.bookingId, payment.id)}
+                disabled={busy}
+              >
+                {busy ? (
+                  <>
+                    <span className={styles.spin} /> Verifying…
+                  </>
+                ) : (
+                  "✅ Approve — Move to Escrow"
+                )}
+              </button>
+              <button
+                className={styles.rejectBtn}
+                onClick={() =>
+                  onReject(payment.bookingId, payment.id, b?.title)
+                }
+                disabled={busy}
+              >
+                ❌ Reject
+              </button>
+            </div>
+          )}
+
+          {!isPending && (
+            <div className={styles.readonlyStatus}>
+              <StatusBadge status={payment.status} />
+              <span className={styles.readonlyNote}>
+                {payment.status === "HELD" && "Funds are held in escrow."}
+                {payment.status === "RELEASED" &&
+                  "Payment has been released to the worker."}
+                {payment.status === "FAILED" &&
+                  "This payment was rejected or failed."}
+                {payment.status === "REFUNDED" &&
+                  "Payment was refunded to the hirer."}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </article>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// REJECT MODAL
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Reject Modal ───────────────────────────────────────────────────────────────
+const REJECT_PRESETS = [
+  "Transaction hash not found on blockchain",
+  "Amount does not match the booking total",
+  "Reference number missing from transfer / memo",
+  "Screenshot appears edited or invalid",
+  "Recipient wallet address does not match our wallet",
+  "Transaction is still pending, not confirmed on-chain",
+  "Bank statement does not show matching transfer",
+];
+
 function RejectModal({ target, onClose, onConfirm, loading }) {
   const [reason, setReason] = useState("");
-
-  const PRESETS = [
-    "Transaction hash not found on blockchain",
-    "Amount does not match the booking total",
-    "Reference number missing from transfer / memo",
-    "Screenshot appears to have been edited",
-    "Recipient wallet address does not match our wallet",
-    "Transaction is pending, not confirmed on-chain",
-  ];
-
   return (
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -604,15 +709,14 @@ function RejectModal({ target, onClose, onConfirm, loading }) {
                 Rejecting: "{target?.title}"
               </p>
               <p className={styles.rejectAlertText}>
-                The hirer will be notified with your reason and prompted to
-                re-submit or contact support. Payment will be marked as FAILED.
+                The hirer will be notified with your reason and may retry with
+                another method. Payment will be marked FAILED.
               </p>
             </div>
           </div>
-
           <p className={styles.presetsLabel}>Quick reasons:</p>
           <div className={styles.presets}>
-            {PRESETS.map((p) => (
+            {REJECT_PRESETS.map((p) => (
               <button
                 key={p}
                 className={`${styles.preset} ${reason === p ? styles.presetActive : ""}`}
@@ -622,18 +726,14 @@ function RejectModal({ target, onClose, onConfirm, loading }) {
               </button>
             ))}
           </div>
-
-          <label className={styles.textareaLabel}>
-            Or write a custom reason *
-          </label>
+          <label className={styles.textareaLabel}>Custom reason *</label>
           <textarea
             className={styles.textarea}
-            rows={4}
+            rows={3}
             placeholder="Describe exactly what didn't match so the hirer can fix it…"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
-
           <div className={styles.modalActions}>
             <button className={styles.cancelBtn} onClick={onClose}>
               Cancel
@@ -658,81 +758,81 @@ function RejectModal({ target, onClose, onConfirm, loading }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function AdminManualPayments() {
-  const [tab, setTab] = useState("bank");
-  const [bankList, setBankList] = useState([]);
-  const [cryptoList, setCryptoList] = useState([]);
-  const [bankMeta, setBankMeta] = useState({ total: 0, pages: 1, summary: {} });
-  const [cryptoMeta, setCryptoMeta] = useState({
-    total: 0,
-    pages: 1,
-    summary: {},
-  });
-  const [bankPage, setBankPage] = useState(1);
-  const [cryptoPage, setCryptoPage] = useState(1);
+  const [payments, setPayments] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
-  const [verifying, setVerifying] = useState(null); // payment.id being verified
-  const [rejectTarget, setRejectTarget] = useState(null); // { bookingId, paymentId, title }
+  const [verifying, setVerifying] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
   const [rejecting, setRejecting] = useState(false);
-  const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null);
+
+  // Filters
+  const [providerTab, setProviderTab] = useState("ALL"); // ALL | bank_transfer | crypto
+  const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
+
+  const searchTimer = useRef(null);
 
   function notify(msg, type = "success") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   }
 
-  // ── Data fetch ──────────────────────────────────────────────────────────────
-  const fetchBank = useCallback(async () => {
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  const fetchPayments = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.get(
-        `/admin/payments?provider=bank_transfer&status=PENDING&page=${bankPage}&limit=15`,
-      );
-      const d = res.data.data;
-      setBankList(d.payments || []);
-      setBankMeta({
-        total: d.total || 0,
-        pages: d.pages || 1,
-        summary: d.summary || {},
+      const params = new URLSearchParams({
+        page,
+        limit: 20,
+        ...(providerTab !== "ALL" ? { provider: providerTab } : {}),
+        ...(statusFilter !== "ALL" ? { status: statusFilter } : {}),
+        ...(search ? { search } : {}),
+        ...(from ? { from } : {}),
+        ...(to ? { to } : {}),
       });
-    } catch {
-      notify("Failed to load bank transfers", "error");
-    }
-  }, [bankPage]);
-
-  const fetchCrypto = useCallback(async () => {
-    try {
-      const res = await api.get(
-        `/admin/payments?provider=crypto&status=PENDING&page=${cryptoPage}&limit=15`,
-      );
+      const res = await api.get(`/admin/payments?${params}`);
       const d = res.data.data;
-      setCryptoList(d.payments || []);
-      setCryptoMeta({
-        total: d.total || 0,
-        pages: d.pages || 1,
-        summary: d.summary || {},
-      });
+      setPayments(d.payments || []);
+      setTotal(d.total || 0);
+      setPages(d.pages || 1);
+      setSummary(d.summary || {});
     } catch {
-      notify("Failed to load crypto payments", "error");
+      notify("Failed to load payments", "error");
+    } finally {
+      setLoading(false);
     }
-  }, [cryptoPage]);
+  }, [page, providerTab, statusFilter, search, from, to]);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([fetchBank(), fetchCrypto()]).finally(() => setLoading(false));
-  }, [fetchBank, fetchCrypto]);
+    fetchPayments();
+  }, [fetchPayments]);
 
-  // ── Verify ──────────────────────────────────────────────────────────────────
+  // Debounced search
+  function handleSearchChange(val) {
+    setSearchInput(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setSearch(val);
+      setPage(1);
+    }, 400);
+  }
+
+  // ── Verify ─────────────────────────────────────────────────────────────────
   async function handleVerify(bookingId, paymentId) {
     setVerifying(paymentId);
     try {
-      await api.patch(`/admin/payments/${bookingId}/verify`, {});
-      notify("Payment verified — funds are now held in escrow ✅");
-      fetchBank();
-      fetchCrypto();
+      await api.patch(`/admin/payments/${bookingId}/verify`);
+      notify("Payment verified — funds held in escrow ✅");
+      fetchPayments();
     } catch (e) {
       notify(e.response?.data?.message || "Verification failed", "error");
     } finally {
@@ -740,7 +840,7 @@ export default function AdminManualPayments() {
     }
   }
 
-  // ── Reject ──────────────────────────────────────────────────────────────────
+  // ── Reject ─────────────────────────────────────────────────────────────────
   function openReject(bookingId, paymentId, title) {
     setRejectTarget({ bookingId, paymentId, title });
   }
@@ -753,10 +853,9 @@ export default function AdminManualPayments() {
         `/admin/payments/${rejectTarget.bookingId}/reject-manual`,
         { reason },
       );
-      notify("Payment rejected — hirer has been notified");
+      notify("Payment rejected — hirer notified");
       setRejectTarget(null);
-      fetchBank();
-      fetchCrypto();
+      fetchPayments();
     } catch (e) {
       notify(e.response?.data?.message || "Rejection failed", "error");
     } finally {
@@ -764,27 +863,64 @@ export default function AdminManualPayments() {
     }
   }
 
-  // ── Search filter (client-side) ─────────────────────────────────────────────
-  const q = search.toLowerCase().trim();
-  const filter = (list) =>
-    !q
-      ? list
-      : list.filter(
-          (p) =>
-            p.providerRef?.toLowerCase().includes(q) ||
-            p.booking?.title?.toLowerCase().includes(q) ||
-            p.booking?.hirer?.firstName?.toLowerCase().includes(q) ||
-            p.booking?.hirer?.lastName?.toLowerCase().includes(q) ||
-            p.bankName?.toLowerCase().includes(q) ||
-            p.cryptoTxHash?.toLowerCase().includes(q) ||
-            p.cryptoCurrency?.toLowerCase().includes(q),
-        );
+  // ── CSV Export ──────────────────────────────────────────────────────────────
+  function handleExport() {
+    const rows = [
+      [
+        "Date",
+        "Booking",
+        "Hirer",
+        "Worker",
+        "Provider",
+        "Ref / TX Hash",
+        "Amount",
+        "Currency",
+        "Status",
+        "Referral Discount",
+      ],
+      ...payments.map((p) => [
+        fmtDate(p.createdAt),
+        p.booking?.title || "",
+        `${p.booking?.hirer?.firstName || ""} ${p.booking?.hirer?.lastName || ""}`.trim(),
+        `${p.booking?.worker?.firstName || ""} ${p.booking?.worker?.lastName || ""}`.trim(),
+        p.provider,
+        p.provider === "crypto"
+          ? p.cryptoTxHash || p.providerRef
+          : p.providerRef,
+        p.amount,
+        p.currency,
+        p.status,
+        p.referralDiscount || 0,
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `manual-payments-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
-  const visibleBank = filter(bankList);
-  const visibleCrypto = filter(cryptoList);
-  const totalPending = bankMeta.total + cryptoMeta.total;
-  const totalGMV =
-    (bankMeta.summary.totalGMV || 0) + (cryptoMeta.summary.totalGMV || 0);
+  // ── Stats ───────────────────────────────────────────────────────────────────
+  const totalPending = summary.PENDING?.count || 0;
+  const totalHeld = summary.HELD?.count || 0;
+  const totalFailed = summary.FAILED?.count || 0;
+  const totalReleased = summary.RELEASED?.count || 0;
+  const totalGMV = Object.values(summary).reduce(
+    (s, v) => s + (v?.gmv || 0),
+    0,
+  );
+
+  const STATUS_FILTER_OPTS = [
+    "ALL",
+    "PENDING",
+    "HELD",
+    "RELEASED",
+    "FAILED",
+    "REFUNDED",
+  ];
 
   return (
     <AdminLayout>
@@ -797,247 +933,204 @@ export default function AdminManualPayments() {
             <p className={styles.eyebrow}>Admin · Payments</p>
             <h1 className={styles.title}>Manual Payment Verification</h1>
             <p className={styles.subtitle}>
-              Review bank transfers and crypto transactions before releasing
-              funds to escrow. Always verify on your bank statement or
-              blockchain explorer before approving.
+              Review bank transfers and crypto transactions. Verify on bank
+              statements or blockchain before approving. All attempts —
+              including retries and failures — are shown.
             </p>
           </div>
-          {totalPending > 0 && (
-            <div className={styles.alertPill}>
-              ⚠️ {totalPending} pending review{totalPending !== 1 ? "s" : ""}
-            </div>
-          )}
+          <div className={styles.headerRight}>
+            {totalPending > 0 && (
+              <div className={styles.alertPill}>⚠️ {totalPending} pending</div>
+            )}
+            <button
+              className={styles.exportBtn}
+              onClick={handleExport}
+              disabled={payments.length === 0}
+            >
+              ⬇ Export CSV
+            </button>
+          </div>
         </div>
 
         {/* ── Stats bar ── */}
         <div className={styles.statsBar}>
-          <StatCard
-            icon="⏳"
-            label="Total Pending"
-            value={loading ? "—" : totalPending}
-            sub={totalPending > 0 ? "Needs your attention" : "All clear"}
-            accent={totalPending > 0 ? "yellow" : ""}
-          />
-          <StatCard
-            icon="🏦"
-            label="Bank Transfers"
-            value={loading ? "—" : bankMeta.total}
-            sub={
-              bankMeta.total > 0
-                ? `GMV ₦${Math.round(bankMeta.summary.totalGMV || 0).toLocaleString()}`
-                : "None pending"
-            }
-          />
-          <StatCard
-            icon="₿"
-            label="Crypto Payments"
-            value={loading ? "—" : cryptoMeta.total}
-            sub={cryptoMeta.total > 0 ? "Verify on-chain" : "None pending"}
-            accent={cryptoMeta.total > 0 ? "indigo" : ""}
-          />
-          <StatCard
-            icon="💰"
-            label="Total Value Pending"
-            value={loading ? "—" : `₦${Math.round(totalGMV).toLocaleString()}`}
-            accent="orange"
-          />
+          {[
+            {
+              icon: "⏳",
+              label: "Pending",
+              value: totalPending,
+              accent: totalPending > 0 ? "yellow" : "",
+            },
+            {
+              icon: "🔒",
+              label: "In Escrow",
+              value: totalHeld,
+              accent: totalHeld > 0 ? "indigo" : "",
+            },
+            { icon: "✅", label: "Released", value: totalReleased, accent: "" },
+            {
+              icon: "❌",
+              label: "Failed",
+              value: totalFailed,
+              accent: totalFailed > 0 ? "red" : "",
+            },
+            {
+              icon: "💰",
+              label: "Total GMV",
+              value: `₦${Math.round(totalGMV).toLocaleString()}`,
+              accent: "orange",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
+            >
+              <span className={styles.statIcon}>{s.icon}</span>
+              <p className={styles.statVal}>{s.value}</p>
+              <p className={styles.statLabel}>{s.label}</p>
+            </div>
+          ))}
         </div>
 
-        {/* ── Panel ── */}
-        <div className={styles.panel}>
-          {/* Tab bar + search */}
-          <div className={styles.panelHeader}>
-            <div className={styles.tabBar}>
+        {/* ── Filter bar ── */}
+        <div className={styles.filterBar}>
+          {/* Provider tabs */}
+          <div className={styles.tabBar}>
+            {[
+              { id: "ALL", label: "All", icon: "📋" },
+              { id: "bank_transfer", label: "Bank Transfer", icon: "🏦" },
+              { id: "crypto", label: "Crypto", icon: "₿" },
+            ].map((t) => (
               <button
-                className={`${styles.tab} ${tab === "bank" ? styles.tabActive : ""}`}
-                onClick={() => setTab("bank")}
+                key={t.id}
+                className={`${styles.tab} ${providerTab === t.id ? styles.tabActive : ""}`}
+                onClick={() => {
+                  setProviderTab(t.id);
+                  setPage(1);
+                }}
               >
-                🏦 Bank Transfers
-                {bankMeta.total > 0 && (
-                  <span className={styles.tabBadge}>{bankMeta.total}</span>
-                )}
+                {t.icon} {t.label}
               </button>
-              <button
-                className={`${styles.tab} ${tab === "crypto" ? styles.tabActive : ""}`}
-                onClick={() => setTab("crypto")}
-              >
-                ₿ Crypto
-                {cryptoMeta.total > 0 && (
-                  <span
-                    className={`${styles.tabBadge} ${styles.tabBadgeCrypto}`}
-                  >
-                    {cryptoMeta.total}
-                  </span>
-                )}
-              </button>
-            </div>
+            ))}
+          </div>
 
-            <div className={styles.searchBar}>
+          <div className={styles.filterRight}>
+            {/* Status filter */}
+            <select
+              className={styles.statusSelect}
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              {STATUS_FILTER_OPTS.map((s) => (
+                <option key={s} value={s}>
+                  {s === "ALL" ? "All Statuses" : s}
+                </option>
+              ))}
+            </select>
+
+            {/* Date range */}
+            <input
+              type="date"
+              className={styles.dateInput}
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
+              title="From date"
+            />
+            <input
+              type="date"
+              className={styles.dateInput}
+              value={to}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
+              title="To date"
+            />
+
+            {/* Search */}
+            <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>🔍</span>
               <input
                 className={styles.searchInput}
-                placeholder="Search ref, booking, name, tx hash…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Ref, hash, name, title…"
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
-              {search && (
+              {searchInput && (
                 <button
                   className={styles.clearBtn}
-                  onClick={() => setSearch("")}
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearch("");
+                    setPage(1);
+                  }}
                 >
                   ×
                 </button>
               )}
             </div>
           </div>
+        </div>
 
-          {/* ── BANK TRANSFERS TAB ── */}
-          {tab === "bank" && (
-            <div className={styles.tabContent}>
-              {!loading && visibleBank.length > 0 && (
-                <div className={styles.howTo}>
-                  <span>ℹ️</span>
-                  <p>
-                    <strong>How to verify:</strong> Check your bank statement
-                    for the reference number and exact amount. Open the proof
-                    screenshot. If everything matches, click Approve.
-                  </p>
-                </div>
-              )}
-
-              {loading ? (
-                [1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className={styles.skeleton}
-                    style={{ animationDelay: `${i * 80}ms` }}
-                  />
-                ))
-              ) : visibleBank.length === 0 ? (
-                <div className={styles.empty}>
-                  <span>🏦</span>
-                  <p className={styles.emptyTitle}>
-                    {search
-                      ? "No results match your search"
-                      : "No pending bank transfers"}
-                  </p>
-                  <p className={styles.emptySub}>
-                    {search
-                      ? "Try a different reference or name."
-                      : "All bank transfers have been reviewed."}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {visibleBank.map((p) => (
-                    <BankTransferCard
-                      key={p.id}
-                      payment={p}
-                      onVerify={handleVerify}
-                      onReject={openReject}
-                      verifying={verifying}
-                    />
-                  ))}
-                  {bankMeta.pages > 1 && (
-                    <div className={styles.pagination}>
-                      <button
-                        className={styles.pageBtn}
-                        onClick={() => setBankPage((v) => Math.max(1, v - 1))}
-                        disabled={bankPage === 1}
-                      >
-                        ← Prev
-                      </button>
-                      <span className={styles.pageInfo}>
-                        Page {bankPage} / {bankMeta.pages}
-                      </span>
-                      <button
-                        className={styles.pageBtn}
-                        onClick={() => setBankPage((v) => v + 1)}
-                        disabled={bankPage >= bankMeta.pages}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
+        {/* ── Payment list ── */}
+        <div className={styles.list}>
+          {loading ? (
+            [1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={styles.skeleton}
+                style={{ animationDelay: `${i * 80}ms` }}
+              />
+            ))
+          ) : payments.length === 0 ? (
+            <div className={styles.empty}>
+              <span>{providerTab === "crypto" ? "₿" : "🏦"}</span>
+              <p className={styles.emptyTitle}>No payments found</p>
+              <p className={styles.emptySub}>
+                Try adjusting your filters or date range.
+              </p>
             </div>
-          )}
-
-          {/* ── CRYPTO TAB ── */}
-          {tab === "crypto" && (
-            <div className={styles.tabContent}>
-              {!loading && visibleCrypto.length > 0 && (
-                <div className={`${styles.howTo} ${styles.howToCrypto}`}>
-                  <span>ℹ️</span>
-                  <p>
-                    <strong>How to verify:</strong> Click the explorer link to
-                    confirm the tx hash on-chain. Verify the recipient wallet
-                    matches ours, the amount is correct, and the transaction is
-                    fully confirmed (not just pending).
-                  </p>
-                </div>
-              )}
-
-              {loading ? (
-                [1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className={styles.skeleton}
-                    style={{ animationDelay: `${i * 80}ms` }}
-                  />
-                ))
-              ) : visibleCrypto.length === 0 ? (
-                <div className={styles.empty}>
-                  <span>₿</span>
-                  <p className={styles.emptyTitle}>
-                    {search
-                      ? "No results match your search"
-                      : "No pending crypto payments"}
-                  </p>
-                  <p className={styles.emptySub}>
-                    {search
-                      ? "Try a different tx hash or email."
-                      : "All crypto payments have been reviewed."}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {visibleCrypto.map((p) => (
-                    <CryptoCard
-                      key={p.id}
-                      payment={p}
-                      onVerify={handleVerify}
-                      onReject={openReject}
-                      verifying={verifying}
-                    />
-                  ))}
-                  {cryptoMeta.pages > 1 && (
-                    <div className={styles.pagination}>
-                      <button
-                        className={styles.pageBtn}
-                        onClick={() => setCryptoPage((v) => Math.max(1, v - 1))}
-                        disabled={cryptoPage === 1}
-                      >
-                        ← Prev
-                      </button>
-                      <span className={styles.pageInfo}>
-                        Page {cryptoPage} / {cryptoMeta.pages}
-                      </span>
-                      <button
-                        className={styles.pageBtn}
-                        onClick={() => setCryptoPage((v) => v + 1)}
-                        disabled={cryptoPage >= cryptoMeta.pages}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+          ) : (
+            payments.map((p) => (
+              <PaymentCard
+                key={p.id}
+                payment={p}
+                onVerify={handleVerify}
+                onReject={openReject}
+                verifying={verifying}
+              />
+            ))
           )}
         </div>
+
+        {/* ── Pagination ── */}
+        {pages > 1 && (
+          <div className={styles.pagination}>
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage((v) => Math.max(1, v - 1))}
+              disabled={page === 1}
+            >
+              ← Prev
+            </button>
+            <span className={styles.pageInfo}>
+              {page} / {pages} · {total} total
+            </span>
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage((v) => v + 1)}
+              disabled={page >= pages}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
 
       {rejectTarget && (
