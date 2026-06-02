@@ -130,12 +130,14 @@ function StatusBadge({ status }) {
     </span>
   );
 }
-
-function ReferralBadge({ amount, currency }) {
+function ReferralBadge({ amount, currency = "NGN" }) {
   if (!amount || amount <= 0) return null;
   return (
-    <span className={styles.referralBadge}>
-      🎁 ₦{Number(amount).toLocaleString()} referral
+    <span
+      className={styles.referralBadge}
+      title={`Referral discount applied: ${currency} ${Number(amount).toLocaleString()} off the gross total`}
+    >
+      🎁 −{currency} {Number(amount).toLocaleString()} referral
     </span>
   );
 }
@@ -469,6 +471,44 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
               <UserChip label="Worker (receives)" user={b?.worker} />
             </div>
           </div>
+
+          {/* ── Referral discount banner ── */}
+          {hasReferral && (
+            <div className={styles.referralBanner}>
+              <span className={styles.referralBannerIcon}>🎁</span>
+              <div className={styles.referralBannerBody}>
+                <p className={styles.referralBannerTitle}>
+                  Referral Discount Applied
+                </p>
+                <p className={styles.referralBannerText}>
+                  The hirer had an active referral bonus.{" "}
+                  <strong>
+                    {payment.currency}{" "}
+                    {Number(payment.referralDiscount).toLocaleString()}
+                  </strong>{" "}
+                  was deducted from the gross total before payment. This is why{" "}
+                  <em>Hirer paid</em> is less than{" "}
+                  <em>Platform fee + Worker payout</em>.
+                </p>
+                <div className={styles.referralBannerMath}>
+                  <span>
+                    Gross: {payment.currency}{" "}
+                    {Number(
+                      (payment.workerPayout || 0) + (payment.platformFee || 0),
+                    ).toLocaleString()}
+                  </span>
+                  <span className={styles.referralBannerMinus}>
+                    − Referral: {payment.currency}{" "}
+                    {Number(payment.referralDiscount).toLocaleString()}
+                  </span>
+                  <span className={styles.referralBannerResult}>
+                    = Charged: {payment.currency}{" "}
+                    {Number(payment.amount).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Detail columns */}
           <div className={styles.twoCol}>
