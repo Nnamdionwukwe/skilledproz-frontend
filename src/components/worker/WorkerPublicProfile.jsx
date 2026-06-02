@@ -7,6 +7,7 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import { ShieldCheck } from "lucide-react";
 import VideoIntroSection from "./VideoIntroSection";
+import ReportButton from "../../pages/reports/ReportButton";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -266,6 +267,11 @@ export default function WorkerPublicProfile() {
                 >
                   💬
                 </button>
+                <ReportButton
+                  targetType="USER"
+                  targetId={worker.userId}
+                  targetName={`${worker.firstName} ${worker.lastName}`}
+                />
               </div>
             )}
 

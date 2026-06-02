@@ -6,7 +6,6 @@ import WorkerLayout from "../layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./Messages.module.css";
 
-// All platform languages
 const LANGUAGES = [
   { code: "en", label: "English" },
   { code: "fr", label: "French" },
@@ -73,7 +72,6 @@ function formatDateDivider(dateStr) {
   });
 }
 
-// Inline translate button for each message
 function TranslateButton({ text }) {
   const [translated, setTranslated] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +81,10 @@ function TranslateButton({ text }) {
     setShowPicker(false);
     setLoading(true);
     try {
-      const res = await api.post("/translate", { text, targetLang: langCode });
+      const res = await api.post("/translate", {
+        text,
+        targetLanguage: langCode,
+      });
       setTranslated(res.data.data.translated);
     } catch {
       setTranslated("Translation failed.");
@@ -149,38 +150,52 @@ export default function Messages() {
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  // REPLACE the initial state declaration for mobileView:
-  const [mobileView, setMobileView] = useState(() => {
-    // On mobile, always start on list regardless of URL
-    if (window.innerWidth <= 768) return "list";
-    // On desktop, if there's a convo in URL, "chat" pane is always visible anyway
-    return "list";
-  });
+  const [mobileView, setMobileView] = useState(() =>
+    window.innerWidth <= 768 ? "list" : "list",
+  );
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const bottomRef = useRef(null);
+  const messagesAreaRef = useRef(null); // ref on the scrollable messages div
   const textareaRef = useRef(null);
   const msgPollRef = useRef(null);
   const convoPollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isAtBottomRef = useRef(true); // tracks whether user is near bottom
+  const justSentRef = useRef(false); // true immediately after the user sends
 
-  // REPLACE the existing loadConversations with this merge version:
+  // ── Track whether the user is near the bottom of the message list ──────────
+  const handleMessagesScroll = useCallback(() => {
+    const el = messagesAreaRef.current;
+    if (!el) return;
+    // Consider "at bottom" if within 150px of the end
+    isAtBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+  }, []);
+
+  // ── Scroll to bottom only when appropriate ─────────────────────────────────
+  // Fires when messages change.
+  // Scrolls if: user was already at the bottom, OR the user just sent a message.
+  useEffect(() => {
+    if (isAtBottomRef.current || justSentRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    justSentRef.current = false;
+  }, [messages]);
+
+  // ── Conversations ─────────────────────────────────────────────────────────
   const loadConversations = useCallback(async (justReadConvoId = null) => {
     try {
-      const res = await api.get("/messages/conversations");
+      const res = await api.get(`/messages/conversations?_t=${Date.now()}`);
       const fresh = res.data.data.conversations || [];
       setConversations((prev) => {
         const prevUnread = {};
         prev.forEach((c) => {
           prevUnread[c.id] = c.unreadCount || 0;
         });
-
         return fresh.map((f) => {
-          // If this is the convo we just marked as read — trust server (should be 0)
-          if (f.id === justReadConvoId) {
+          if (f.id === justReadConvoId)
             return { ...f, unreadCount: f.unreadCount ?? 0 };
-          }
-          // All other convos: take higher of server vs local to avoid badge flicker
           return {
             ...f,
             unreadCount: Math.max(f.unreadCount ?? 0, prevUnread[f.id] ?? 0),
@@ -194,54 +209,67 @@ export default function Messages() {
     loadConversations().finally(() => setLoadingConvos(false));
   }, []);
 
-  // REPLACE the useEffect that reads the convo URL param:
-  // REPLACE the URL param useEffect:
-  useEffect(() => {
-    const convoParam = searchParams.get("convo");
-    if (convoParam) {
-      setActiveConvoId(convoParam);
-      // Only auto-open chat on desktop
-      if (window.innerWidth > 768) {
-        setMobileView("chat");
-      }
-      // Mobile: stays on "list" — user taps a card to open chat
-    }
-  }, []); // eslint-disable-line
-
   const loadMessages = useCallback(async (convoId, silent = false) => {
     if (!convoId) return;
     if (!silent) setLoadingMessages(true);
     try {
-      const res = await api.get(`/messages/${convoId}?limit=100`);
-      setMessages(res.data.data.messages || []);
+      const res = await api.get(
+        `/messages/${convoId}?limit=100&_t=${Date.now()}`,
+      );
+      const fetched = res.data.data.messages || [];
+
+      if (silent) {
+        setMessages((prev) => {
+          const serverIds = new Set(fetched.map((m) => m.id));
+          const notYetOnServer = prev.filter((m) => !serverIds.has(m.id));
+          if (notYetOnServer.length === 0) return fetched;
+          return [...fetched, ...notYetOnServer].sort(
+            (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+          );
+        });
+      } else {
+        setMessages(fetched);
+      }
     } catch {}
     if (!silent) setLoadingMessages(false);
   }, []);
 
   useEffect(() => {
+    const convoParam = searchParams.get("convo");
+    if (convoParam) {
+      setActiveConvoId(convoParam);
+      if (window.innerWidth > 768) setMobileView("chat");
+      // Load messages immediately on mount — don't wait for activeConvoId state to settle
+      loadMessages(convoParam);
+    }
+  }, [loadMessages]); // eslint-disable-line
+
+  // ── Messages — MERGE on silent polls, never wipe ──────────────────────────
+  // BUG FIX: silent polls used to call setMessages(fetched) which replaced the
+  // whole array. If the poll request started before the POST completed (or the
+  // browser returned a 304 stale response), the just-sent message disappeared.
+  //
+  // Fix: for silent polls, keep any local message whose ID isn't in the server
+  // response — those are messages newer than what the poll captured.
+
+  useEffect(() => {
     if (!activeConvoId) return;
 
-    // Load messages (no longer marks as read)
     loadMessages(activeConvoId);
-
-    // Mark this conversation as read explicitly — separate API call
-    // This is what zeros out the unread badge for the active convo
     api.patch(`/messages/${activeConvoId}/read`).catch(() => {});
 
-    // After mark-as-read completes, sync sidebar counts
     const syncTimer = setTimeout(async () => {
-      const res = await api.get("/messages/conversations").catch(() => null);
+      const res = await api
+        .get(`/messages/conversations?_t=${Date.now()}`)
+        .catch(() => null);
       if (!res) return;
       const fresh = res.data.data.conversations || [];
       setConversations((prev) =>
         prev.map((c) => {
           const fromServer = fresh.find((f) => f.id === c.id);
           if (!fromServer) return c;
-          if (c.id === activeConvoId) {
-            // Active convo: trust server (mark-as-read just ran)
+          if (c.id === activeConvoId)
             return { ...fromServer, unreadCount: fromServer.unreadCount ?? 0 };
-          }
-          // Other convos: take higher of server vs local to avoid badge flicker
           return {
             ...fromServer,
             unreadCount: Math.max(
@@ -253,13 +281,11 @@ export default function Messages() {
       );
     }, 600);
 
-    // Fast poll — messages only (3s), does NOT mark as read
     clearInterval(msgPollRef.current);
     msgPollRef.current = setInterval(() => {
-      loadMessages(activeConvoId, true);
+      loadMessages(activeConvoId, true); // silent = merge, never wipe
     }, 3000);
 
-    // Slow poll — sidebar conversation list (12s)
     clearInterval(convoPollRef.current);
     convoPollRef.current = setInterval(() => {
       loadConversations();
@@ -273,27 +299,20 @@ export default function Messages() {
   }, [activeConvoId, loadMessages, loadConversations]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // REPLACE the useEffect that syncs activeConvoId to URL:
-  useEffect(() => {
-    // Only sync URL on desktop — on mobile, mobileView state controls navigation
     if (activeConvoId && window.innerWidth > 768) {
       setSearchParams({ convo: activeConvoId }, { replace: true });
     }
   }, [activeConvoId]);
 
-  // REPLACE selectConversation:
-  // REPLACE selectConversation:
   const selectConversation = (convoId) => {
     if (convoId === activeConvoId) {
-      // Already selected — on mobile just open the pane
       setMobileView("chat");
       return;
     }
     setActiveConvoId(convoId);
-    setMobileView("chat"); // ← this is intentional: user tapped a card
+    setMobileView("chat");
+    // Reset to bottom when opening a new conversation
+    isAtBottomRef.current = true;
     setConversations((prev) =>
       prev.map((c) => (c.id === convoId ? { ...c, unreadCount: 0 } : c)),
     );
@@ -302,6 +321,7 @@ export default function Messages() {
   const getOtherUser = (convo) =>
     convo.users?.find((u) => u.userId !== user?.id)?.user;
 
+  // ── Send message ──────────────────────────────────────────────────────────
   const handleSend = async (e) => {
     e?.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -326,11 +346,12 @@ export default function Messages() {
 
       if (!activeConvoId || conversationId !== activeConvoId) {
         setActiveConvoId(conversationId);
+        isAtBottomRef.current = true;
         await loadConversations();
-        // In handleSend, REPLACE the else block after message is sent:
       } else {
+        // Mark that the user just sent — scroll will follow even if they scrolled up
+        justSentRef.current = true;
         setMessages((prev) => [...prev, message]);
-        // Optimistic sidebar update — don't trigger a full conversation reload
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConvoId
@@ -342,13 +363,12 @@ export default function Messages() {
               : c,
           ),
         );
-        // No loadConversations() call here — avoids wiping other convos' unread counts
+        // NOTE: no setTimeout reload here — the merge poll handles confirmation
       }
     } catch {}
     setSending(false);
   };
 
-  // Handle file/image/video upload
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -366,7 +386,7 @@ export default function Messages() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("receiverId", receiverId);
-      formData.append("content", file.name); // filename as content
+      formData.append("content", file.name);
       if (activeConvoId) formData.append("conversationId", activeConvoId);
 
       const res = await api.post("/messages", formData, {
@@ -376,8 +396,10 @@ export default function Messages() {
 
       if (!activeConvoId || conversationId !== activeConvoId) {
         setActiveConvoId(conversationId);
+        isAtBottomRef.current = true;
         await loadConversations();
       } else {
+        justSentRef.current = true;
         setMessages((prev) => [...prev, message]);
       }
     } catch {}
@@ -409,7 +431,6 @@ export default function Messages() {
     return groups;
   }, {});
 
-  // Total unread across all conversations (for nav badge)
   const totalUnread = conversations.reduce(
     (sum, c) => sum + (c.unreadCount || 0),
     0,
@@ -472,7 +493,6 @@ export default function Messages() {
                   >
                     <div className={styles.convoAvatarWrap}>
                       <Avatar user={other} size="md" />
-                      {/* Online indicator could go here */}
                     </div>
                     <div className={styles.convoInfo}>
                       <div className={styles.convoTop}>
@@ -562,8 +582,12 @@ export default function Messages() {
                 )}
               </div>
 
-              {/* Messages area */}
-              <div className={styles.messagesArea}>
+              {/* Messages area — attach scroll listener here */}
+              <div
+                ref={messagesAreaRef}
+                className={styles.messagesArea}
+                onScroll={handleMessagesScroll}
+              >
                 {loadingMessages ? (
                   <div className={styles.loadingMessages}>
                     <div className={styles.spinner} />
@@ -601,7 +625,6 @@ export default function Messages() {
                             key={msg.id}
                             className={`${styles.messageRow} ${isMine ? styles.messageRowMine : ""}`}
                           >
-                            {/* Sender avatar — shown for other person's messages */}
                             {!isMine && (
                               <div
                                 className={`${styles.messageAvatar} ${showAvatar ? "" : styles.avatarHidden}`}
@@ -615,14 +638,12 @@ export default function Messages() {
                             <div
                               className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
                             >
-                              {/* Sender name on first message in a group */}
                               {!isMine && showAvatar && (
                                 <span className={styles.senderName}>
                                   {msg.sender?.firstName} {msg.sender?.lastName}
                                 </span>
                               )}
 
-                              {/* Media content */}
                               {isMedia && (
                                 <a
                                   href={msg.fileUrl}
@@ -652,14 +673,12 @@ export default function Messages() {
                                 </a>
                               )}
 
-                              {/* Text content — don't show filename if it's just a media message */}
                               {(!msg.fileUrl || (!isMedia && !isVideo)) && (
                                 <p className={styles.bubbleText}>
                                   {msg.content}
                                 </p>
                               )}
 
-                              {/* Translate button for received messages */}
                               {!isMine && msg.content && (
                                 <TranslateButton text={msg.content} />
                               )}
@@ -684,7 +703,6 @@ export default function Messages() {
 
               {/* Input area */}
               <div className={styles.inputArea}>
-                {/* Hidden file inputs */}
                 <input
                   ref={fileInputRef}
                   type="file"

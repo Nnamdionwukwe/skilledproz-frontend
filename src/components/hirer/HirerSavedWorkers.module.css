@@ -1,0 +1,461 @@
+/* HirerSavedWorkers.module.css */
+
+.page {
+  padding: 24px 20px 80px;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeUp 0.3s ease both;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 9999;
+  padding: 0.625rem 1.125rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  pointer-events: none;
+  animation: slideIn 0.2s ease;
+}
+.toast_success {
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: var(--green);
+}
+.toast_error {
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--red);
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+.pageSubtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+.browseBtn {
+  padding: 9px 18px;
+  background: var(--orange);
+  color: #000;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.browseBtn:hover {
+  opacity: 0.85;
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  width: fit-content;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.tab:hover {
+  color: var(--text);
+  background: var(--bg-card);
+}
+.tabActive {
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange-glow);
+}
+.tabBadge {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--orange);
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+.tabActive .tabBadge {
+  background: var(--orange);
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Avatar */
+.avatar {
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 2px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--orange);
+  font-size: 14px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardInfo {
+  flex: 1;
+  min-width: 0;
+}
+.cardName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardTitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.location {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.available {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.rating {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange);
+  flex-shrink: 0;
+}
+
+/* Categories */
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.categoryPill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+/* Stats row */
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.statVal {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.statLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.verifiedBadge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  margin-left: auto;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 7px;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.lastHired {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.lastHired strong {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.savedAt {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Actions */
+.cardActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.viewBtn {
+  flex: 1;
+  text-align: center;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.12s;
+}
+.viewBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.bookBtn {
+  padding: 8px 14px;
+  background: var(--orange);
+  color: #000;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.bookBtn:hover {
+  opacity: 0.85;
+}
+.unsaveBtn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 9px;
+  color: var(--red);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  transition: all 0.12s;
+}
+.unsaveBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--red);
+}
+.unsaveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Empty state ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 20px;
+  background: var(--bg-panel);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  text-align: center;
+}
+.emptyIcon {
+  font-size: 2.5rem;
+  opacity: 0.3;
+}
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.emptySub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 320px;
+}
+.emptyBtn {
+  margin-top: 4px;
+  padding: 8px 20px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange-glow);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.12s;
+}
+.emptyBtn:hover {
+  background: rgba(249, 115, 22, 0.15);
+}
+
+/* ── Skeleton ── */
+.skeleton {
+  height: 200px;
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.04) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation:
+    shimmer 1.4s infinite,
+    fadeUp 0.3s ease both;
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .browseBtn {
+    text-align: center;
+  }
+  .tabs {
+    width: 100%;
+  }
+  .tab {
+    flex: 1;
+    justify-content: center;
+  }
+}

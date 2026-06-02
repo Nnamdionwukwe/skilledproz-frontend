@@ -5,6 +5,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import DurationBadge from "../common/DurationBadge";
 import { formatJobDurationParts } from "../utils/formatDuration";
+import ReportButton from "../../pages/reports/ReportButton";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -282,6 +283,11 @@ export default function JobDetail() {
                   🚀 Apply Now
                 </button>
               )}
+              <ReportButton
+                targetType="JOB_POST"
+                targetId={job.id}
+                targetName={job.title}
+              />
             </section>
           )}
 
