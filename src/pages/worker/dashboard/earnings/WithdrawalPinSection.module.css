@@ -1,0 +1,238 @@
+ 
+
+ 
+  section: {
+    marginTop: 28,
+    gap: 12,
+  },
+  sectionHeader: {
+    gap: 3,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#f5f5f5",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  sectionSub: {
+    fontSize: 12,
+    color: "#888",
+  },
+
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  loadingText: {
+    fontSize: 13,
+    color: "#888",
+  },
+
+  // Success banner
+  successBanner: {
+    backgroundColor: "rgba(34,197,94,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.25)",
+    borderRadius: 10,
+    padding: 12,
+  },
+  successBannerText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#22c55e",
+  },
+
+  // Locked card
+  lockedCard: {
+    backgroundColor: "rgba(239,68,68,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.2)",
+    borderRadius: 14,
+    padding: 20,
+    alignItems: "center",
+    gap: 8,
+  },
+  lockedIcon: { fontSize: 36 },
+  lockedTitle: { fontSize: 15, fontWeight: "800", color: "#ef4444" },
+  lockedSub: {
+    fontSize: 13,
+    color: "#aaa",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  // Card wrapper
+  card: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    borderRadius: 16,
+    padding: 18,
+    gap: 16,
+  },
+
+  // No PIN set
+  noPin: { alignItems: "center", gap: 6 },
+  noPinIcon: { fontSize: 40, marginBottom: 2 },
+  noPinTitle: { fontSize: 16, fontWeight: "800", color: "#f5f5f5" },
+  noPinSub: {
+    fontSize: 13,
+    color: "#888",
+    textAlign: "center",
+    lineHeight: 20,
+    maxWidth: 300,
+  },
+
+  // PIN set row
+  pinSetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  pinSetLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  pinSetIcon: { fontSize: 28 },
+  pinSetTitle: { fontSize: 14, fontWeight: "700", color: "#f5f5f5" },
+  pinSetSub: { fontSize: 12, color: "#888", marginTop: 2 },
+  pinActiveBadge: {
+    backgroundColor: "rgba(34,197,94,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.2)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pinActiveBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#22c55e",
+  },
+
+  changePinTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#f5f5f5",
+  },
+
+  // PIN row (label + boxes)
+  pinRow: { gap: 8 },
+  pinFieldLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#aaa",
+  },
+
+  // PIN boxes
+  pinBoxesWrap: { alignItems: "flex-start" },
+  pinBoxes: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  pinBox: {
+    width: 52,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pinBoxActive: {
+    borderColor: ORANGE,
+    shadowColor: ORANGE,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+    backgroundColor: "rgba(249,115,22,0.08)",
+  },
+  pinBoxFilled: {
+    borderColor: ORANGE,
+    backgroundColor: "rgba(249,115,22,0.1)",
+  },
+  pinBoxError: {
+    borderColor: "#ef4444",
+    backgroundColor: "rgba(239,68,68,0.08)",
+  },
+  pinDot: {
+    fontSize: 20,
+    color: "transparent",
+    fontWeight: "900",
+  },
+  pinDotFilled: {
+    color: ORANGE,
+  },
+
+  // Hidden input that captures keyboard
+  pinHiddenInput: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    opacity: 0,
+    pointerEvents: "none",
+  },
+
+  // Error text
+  errorText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#ef4444",
+  },
+
+  // Buttons
+  btnRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  btnFlex: { flex: 1 },
+  btn: {
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 46,
+  },
+  btnPrimary: {
+    backgroundColor: ORANGE,
+  },
+  btnPrimaryText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#000",
+  },
+  btnOutline: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "transparent",
+  },
+  btnOutlineText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#ccc",
+  },
+  btnDisabled: {
+    opacity: 0.4,
+  },
+
+  // Attempts hint
+  attemptsHint: {
+    fontSize: 11,
+    color: "#666",
+    paddingHorizontal: 4,
+  },
+ 

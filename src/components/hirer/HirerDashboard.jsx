@@ -82,7 +82,7 @@ export default function HirerDashboard() {
           />
           <StatCard
             label="Total Spent"
-            value={`₦${(stats.totalSpent || 0).toLocaleString()}`}
+            value={fmt(stats.totalSpent || 0, dashboardCurrency)}
             icon="💳"
             delay={0.15}
           />
@@ -182,11 +182,27 @@ function BookingRow({ booking, delay }) {
           </p>
         </div>
       </div>
-      <span
-        className={`${styles.badge} ${styles[`badge_${statusMap[booking.status]}`]}`}
-      >
-        {booking.status.replace("_", " ")}
-      </span>
+
+      <div className={styles.bookingRowRight}>
+        {booking.agreedRate > 0 && (
+          <span className={styles.bookingRate}>
+            {booking.currency} {booking.agreedRate.toLocaleString()}
+          </span>
+        )}
+        <span
+          className={`${styles.badge} ${styles[`badge_${statusMap[booking.status]}`]}`}
+        >
+          {booking.status.replace("_", " ")}
+        </span>
+      </div>
+
+      <p className={styles.bookingDate}>
+        {new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })}
+      </p>
     </Link>
   );
 }

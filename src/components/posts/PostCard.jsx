@@ -4,6 +4,7 @@ import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./PostCard.module.css";
 import { ShieldCheck } from "lucide-react";
+import ReportButton from "../../pages/reports/ReportButton";
 
 const REACTIONS = [
   { type: "LIKE", emoji: "👍", label: "Like" },
@@ -328,6 +329,12 @@ export default function PostCard({ post: initialPost, onDelete }) {
                 {totalReposts} repost{totalReposts !== 1 ? "s" : ""}
               </span>
             )}
+            <ReportButton
+              targetType="POST"
+              targetId={post.id}
+              targetName={post.title}
+              variant="menu-item"
+            />
           </div>
         </div>
       )}

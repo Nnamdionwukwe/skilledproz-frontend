@@ -254,6 +254,10 @@ export default function SettingsPage() {
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
 
+  const [pin, setPin] = useState({ new: "", confirm: "", current: "" });
+  const [pinStatus, setPinStatus] = useState(null); // { pinSet, isLocked, attemptsRemaining }
+  const [pinError, setPinError] = useState("");
+
   // Activity
   const [activity, setActivity] = useState(null);
   const [security, setSecurity] = useState(null);
@@ -468,6 +472,58 @@ export default function SettingsPage() {
     }
   }
 
+  async function setPins() {
+    if (pin.new !== pin.confirm) {
+      setPinError("PINs do not match");
+      return;
+    }
+    if (!/^\d{4}$/.test(pin.new)) {
+      setPinError("PIN must be exactly 4 digits");
+      return;
+    }
+    setPinError("");
+    setSaving("pin");
+    try {
+      await api.post("/payments/pin/set", { pin: pin.new });
+      setPinStatus((p) => ({ ...p, pinSet: true }));
+      setPin({ new: "", confirm: "", current: "" });
+      showToast("Withdrawal PIN set");
+    } catch (e) {
+      setPinError(e.response?.data?.message || "Failed to set PIN");
+    } finally {
+      setSaving("");
+    }
+  }
+
+  async function changePin() {
+    if (pin.new !== pin.confirm) {
+      setPinError("New PINs do not match");
+      return;
+    }
+    if (!/^\d{4}$/.test(pin.new)) {
+      setPinError("New PIN must be exactly 4 digits");
+      return;
+    }
+    if (!pin.current) {
+      setPinError("Current PIN is required");
+      return;
+    }
+    setPinError("");
+    setSaving("pin");
+    try {
+      await api.post("/payments/pin/change", {
+        currentPin: pin.current,
+        newPin: pin.new,
+      });
+      setPin({ new: "", confirm: "", current: "" });
+      showToast("Withdrawal PIN changed");
+    } catch (e) {
+      setPinError(e.response?.data?.message || "Failed to change PIN");
+    } finally {
+      setSaving("");
+    }
+  }
+
   async function saveNotifs() {
     setSaving("notifs");
     try {
@@ -521,6 +577,12 @@ export default function SettingsPage() {
       api
         .get("/settings/security")
         .then((r) => setSecurity(r.data.data))
+        .catch(() => {});
+    }
+    if (tab === "security" && pinStatus === null) {
+      api
+        .get("/payments/pin/status")
+        .then((r) => setPinStatus(r.data.data))
         .catch(() => {});
     }
   }, [tab]);
@@ -1327,6 +1389,226 @@ export default function SettingsPage() {
                     onClick={savePassword}
                   />
                 </Card>
+
+                {isWorker && (
+                  <Card
+                    title="Withdrawal PIN"
+                    icon="🔐"
+                    desc="4-digit PIN required to authorise every withdrawal"
+                  >
+                    {pinStatus === null ? (
+                      <Skeleton />
+                    ) : (
+                      <>
+                        {/* Status banner */}
+                        <div className={styles.pinStatusRow}>
+                          {pinStatus.pinSet ? (
+                            <div
+                              className={styles.pinStatusBadge}
+                              style={{
+                                background: "var(--green-dim)",
+                                border: "1px solid var(--green)",
+                                color: "var(--green)",
+                              }}
+                            >
+                              ✅ PIN is set — required for all withdrawals
+                            </div>
+                          ) : (
+                            <div
+                              className={styles.pinStatusBadge}
+                              style={{
+                                background: "var(--red-dim)",
+                                border: "1px solid var(--red)",
+                                color: "var(--red)",
+                              }}
+                            >
+                              ⚠️ No PIN set — you must set one before
+                              withdrawing
+                            </div>
+                          )}
+                          {pinStatus.isLocked && (
+                            <div
+                              className={styles.pinStatusBadge}
+                              style={{
+                                background: "rgba(251,191,36,0.12)",
+                                border: "1px solid rgba(251,191,36,0.4)",
+                                color: "#fbbf24",
+                                marginTop: 6,
+                              }}
+                            >
+                              🔒 PIN locked — too many wrong attempts
+                            </div>
+                          )}
+                          {!pinStatus.isLocked &&
+                            pinStatus.pinSet &&
+                            pinStatus.attemptsRemaining < 3 && (
+                              <p className={styles.pinAttemptsNote}>
+                                ⚠️ {pinStatus.attemptsRemaining} attempt
+                                {pinStatus.attemptsRemaining !== 1
+                                  ? "s"
+                                  : ""}{" "}
+                                remaining before lockout
+                              </p>
+                            )}
+                        </div>
+
+                        {/* Set PIN form */}
+                        {!pinStatus.pinSet && (
+                          <>
+                            <p className={styles.sectionNote}>
+                              Set a 4-digit PIN to secure your withdrawals.
+                              You'll enter this every time you request a payout.
+                            </p>
+                            <div className={styles.pinFields}>
+                              <div className={styles.field}>
+                                <label className={styles.label}>
+                                  New PIN{" "}
+                                  <span style={{ color: "var(--red)" }}>*</span>
+                                </label>
+                                <input
+                                  className={`${styles.input} ${styles.pinInput}`}
+                                  type="password"
+                                  inputMode="numeric"
+                                  maxLength={4}
+                                  placeholder="••••"
+                                  value={pin.new}
+                                  onChange={(e) => {
+                                    setPin((p) => ({
+                                      ...p,
+                                      new: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 4),
+                                    }));
+                                    setPinError("");
+                                  }}
+                                />
+                              </div>
+                              <div className={styles.field}>
+                                <label className={styles.label}>
+                                  Confirm PIN{" "}
+                                  <span style={{ color: "var(--red)" }}>*</span>
+                                </label>
+                                <input
+                                  className={`${styles.input} ${styles.pinInput}`}
+                                  type="password"
+                                  inputMode="numeric"
+                                  maxLength={4}
+                                  placeholder="••••"
+                                  value={pin.confirm}
+                                  onChange={(e) => {
+                                    setPin((p) => ({
+                                      ...p,
+                                      confirm: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 4),
+                                    }));
+                                    setPinError("");
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            {pinError && (
+                              <p className={styles.fieldErr}>{pinError}</p>
+                            )}
+                            <SaveBtn
+                              label="Set Withdrawal PIN"
+                              loading={saving === "pin"}
+                              onClick={setPin}
+                            />
+                          </>
+                        )}
+
+                        {/* Change PIN form */}
+                        {pinStatus.pinSet && (
+                          <>
+                            <p className={styles.sectionNote}>
+                              Enter your current PIN then choose a new one.
+                            </p>
+                            <div className={styles.pinFields}>
+                              <div className={styles.field}>
+                                <label className={styles.label}>
+                                  Current PIN{" "}
+                                  <span style={{ color: "var(--red)" }}>*</span>
+                                </label>
+                                <input
+                                  className={`${styles.input} ${styles.pinInput}`}
+                                  type="password"
+                                  inputMode="numeric"
+                                  maxLength={4}
+                                  placeholder="••••"
+                                  value={pin.current}
+                                  onChange={(e) => {
+                                    setPin((p) => ({
+                                      ...p,
+                                      current: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 4),
+                                    }));
+                                    setPinError("");
+                                  }}
+                                />
+                              </div>
+                              <div className={styles.field}>
+                                <label className={styles.label}>
+                                  New PIN{" "}
+                                  <span style={{ color: "var(--red)" }}>*</span>
+                                </label>
+                                <input
+                                  className={`${styles.input} ${styles.pinInput}`}
+                                  type="password"
+                                  inputMode="numeric"
+                                  maxLength={4}
+                                  placeholder="••••"
+                                  value={pin.new}
+                                  onChange={(e) => {
+                                    setPin((p) => ({
+                                      ...p,
+                                      new: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 4),
+                                    }));
+                                    setPinError("");
+                                  }}
+                                />
+                              </div>
+                              <div className={styles.field}>
+                                <label className={styles.label}>
+                                  Confirm New PIN{" "}
+                                  <span style={{ color: "var(--red)" }}>*</span>
+                                </label>
+                                <input
+                                  className={`${styles.input} ${styles.pinInput}`}
+                                  type="password"
+                                  inputMode="numeric"
+                                  maxLength={4}
+                                  placeholder="••••"
+                                  value={pin.confirm}
+                                  onChange={(e) => {
+                                    setPin((p) => ({
+                                      ...p,
+                                      confirm: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 4),
+                                    }));
+                                    setPinError("");
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            {pinError && (
+                              <p className={styles.fieldErr}>{pinError}</p>
+                            )}
+                            <SaveBtn
+                              label="Change PIN"
+                              loading={saving === "pin"}
+                              onClick={changePin}
+                            />
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Card>
+                )}
 
                 <Card
                   title="Account Info"

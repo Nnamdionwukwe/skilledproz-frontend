@@ -1639,3 +1639,253 @@
     justify-content: flex-end;
   }
 }
+
+/* ─── PIN additions ───────────────────────────────────────────────────────── */
+
+/* Hidden real input */
+.pinHiddenInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* PIN field wrapper */
+.pinField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pinLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* 4 boxes row */
+.pinBoxes {
+  display: flex;
+  gap: 10px;
+  cursor: text;
+  position: relative;
+}
+
+.pinBoxesDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pinBox {
+  width: 52px;
+  height: 56px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--text);
+  font-weight: 700;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+  user-select: none;
+}
+
+.pinBoxActive {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  background: var(--bg-panel);
+}
+
+.pinBoxFilled {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+
+.pinBoxError {
+  border-color: var(--red) !important;
+  background: var(--red-dim) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.pinError {
+  font-size: 12px;
+  color: var(--red);
+  font-weight: 600;
+  margin: 0;
+  animation: shake 0.3s ease;
+}
+
+/* Attempts hint next to section label */
+.pinAttemptsHint {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 8px;
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Forgot PIN link */
+.pinForgotBtn {
+  background: none;
+  border: none;
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  padding: 0;
+  text-align: left;
+  width: fit-content;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.pinForgotBtn:hover {
+  opacity: 1;
+}
+
+/* PIN status loading bar */
+.pinStatusLoading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* PIN setup screen */
+.pinSetupBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.pinSetupIcon {
+  font-size: 48px;
+}
+
+.pinSetupTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.pinSetupSub {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0;
+}
+
+/* Pin boxes centered in setup screen */
+.pinSetupBox .pinBoxes {
+  justify-content: center;
+}
+
+.pinSetupBtn {
+  width: 100%;
+  max-width: 280px;
+  padding: 13px;
+  background: var(--orange);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+  margin-top: 4px;
+}
+.pinSetupBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+.pinSetupBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* PIN locked screen */
+.pinLockedBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.pinLockedIcon {
+  font-size: 52px;
+}
+
+.pinLockedTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--red);
+  margin: 0;
+}
+
+.pinLockedSub {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  max-width: 300px;
+  margin: 0;
+}
+
+/* Shake animation for wrong pin */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Responsive — larger PIN boxes on tablet+ */
+@media (min-width: 640px) {
+  .pinBox {
+    width: 60px;
+    height: 64px;
+    font-size: 24px;
+  }
+  .pinBoxes {
+    gap: 12px;
+  }
+}

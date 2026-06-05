@@ -3,6 +3,7 @@ import WorkerLayout from "../../components/layout/WorkerLayout";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import styles from "./Review.module.css";
+import ReportButton from "../../pages/reports/ReportButton";
 
 function Stars({ rating, size = "md" }) {
   return (
@@ -89,6 +90,12 @@ export default function WorkerReviewsPage() {
             ))}
           </div>
         </div>
+
+        <ReportButton
+          targetType="REVIEW"
+          targetId={reviews.id}
+          variant="icon"
+        />
 
         {/* ── Reviews list ── */}
         <div className={styles.reviewsList}>

@@ -162,6 +162,19 @@ export default function WorkerDashboard() {
             </div>
           </div>
 
+          <div className={ui.card}>
+            <div className={ui.statCardLabel}>Total Bookings</div>
+            <div className={ui.statCardValue}>{bookings.total}</div>
+            <div className={ui.statCardSub}>
+              {bookings.completed} completed · {bookings.cancelled} cancelled
+              {bookings.disputed > 0 && (
+                <span style={{ color: "var(--red)", marginLeft: 6 }}>
+                  · {bookings.disputed} disputed
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Messages */}
           <div className={ui.card}>
             <div className={ui.statCardLabel}>Messages</div>
@@ -192,6 +205,14 @@ export default function WorkerDashboard() {
                   <div className={styles.barLabel}>{m.month.split(" ")[0]}</div>
                 </div>
               ))}
+            </div>{" "}
+            <div className={styles.earningsMeta} style={{ marginTop: 6 }}>
+              <span>
+                This year: {fmt(earnings.thisYear, dashboardCurrency)}
+              </span>
+              <span style={{ marginLeft: 12 }}>
+                All time: {fmt(earnings.allTime, dashboardCurrency)}
+              </span>
             </div>
           </div>
 
@@ -227,6 +248,52 @@ export default function WorkerDashboard() {
                   >
                     Update now →
                   </Link>
+                </p>
+              )}
+
+              {profile?.title && (
+                <p
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    marginTop: "0.5rem",
+                  }}
+                >
+                  <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>
+                    {profile.title}
+                  </span>
+                  {profile.verificationStatus === "VERIFIED" && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        color: "var(--green)",
+                        background: "var(--green-dim)",
+                        padding: "2px 8px",
+                        borderRadius: 10,
+                        border: "1px solid var(--green)",
+                      }}
+                    >
+                      ✓ Verified
+                    </span>
+                  )}
+                  {profile.verificationStatus === "PENDING" && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        color: "#fbbf24",
+                        background: "rgba(251,191,36,0.1)",
+                        padding: "2px 8px",
+                        borderRadius: 10,
+                        border: "1px solid rgba(251,191,36,0.3)",
+                      }}
+                    >
+                      ⏳ Verification pending
+                    </span>
+                  )}
                 </p>
               )}
             </div>
@@ -329,7 +396,7 @@ export default function WorkerDashboard() {
                     }}
                   >
                     <span className={statusBadge(b.status)}>{b.status}</span>
-                    {b.payment && (
+                    {b.payments?.[0] && (
                       <span
                         style={{
                           fontSize: "0.75rem",
@@ -337,7 +404,10 @@ export default function WorkerDashboard() {
                           color: "var(--green)",
                         }}
                       >
-                        {fmt(b.payment.workerPayout, b.payment.currency)}
+                        {fmt(
+                          b.payments[0].workerPayout,
+                          b.payments[0].currency,
+                        )}
                       </span>
                     )}
                   </div>

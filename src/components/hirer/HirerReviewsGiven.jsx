@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import HirerLayout from "../layout/HirerLayout";
 import api from "../../lib/api";
 import styles from "./HirerReviews.module.css";
+import ReportButton from "../../pages/reports/ReportButton";
 
 function Stars({ rating }) {
   return (
@@ -58,6 +59,12 @@ export default function HirerReviewsGiven() {
             See Reviews Received →
           </Link>
         </div>
+
+        <ReportButton
+          targetType="REVIEW"
+          targetId={reviews.id}
+          variant="icon"
+        />
 
         {/* Stats bar */}
         {!loading && total > 0 && (

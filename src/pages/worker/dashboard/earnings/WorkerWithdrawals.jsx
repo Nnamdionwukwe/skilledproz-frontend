@@ -6,6 +6,7 @@
 //   - Live bank account name resolution before submit
 //   - Method options filtered by selected currency
 //   - Mobile money, bank transfer, crypto all unified
+//   - 4-digit withdrawal PIN verification before every payout
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
@@ -14,11 +15,8 @@ import s from "./WorkerWithdrawals.module.css";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NIGERIAN BANKS — complete static list (50+ institutions)
-// Sorted A→Z. Codes match Paystack's /bank endpoint.
-// Used as immediate data while the API call resolves, and as fallback if it fails.
 // ─────────────────────────────────────────────────────────────────────────────
 export const NIGERIAN_BANKS = [
-  // ── Tier 1 commercial banks ──────────────────────────────────────────────
   { name: "Access Bank", code: "044", type: "commercial" },
   { name: "Ecobank Nigeria", code: "050", type: "commercial" },
   { name: "Fidelity Bank", code: "070", type: "commercial" },
@@ -32,8 +30,6 @@ export const NIGERIAN_BANKS = [
   { name: "Unity Bank", code: "215", type: "commercial" },
   { name: "Wema Bank / ALAT", code: "035", type: "commercial" },
   { name: "Zenith Bank", code: "057", type: "commercial" },
-
-  // ── Other licensed commercial banks ─────────────────────────────────────
   { name: "Citibank Nigeria", code: "023", type: "commercial" },
   { name: "Coronation Merchant Bank", code: "559", type: "merchant" },
   { name: "FBNQuest Merchant Bank", code: "060002", type: "merchant" },
@@ -53,8 +49,6 @@ export const NIGERIAN_BANKS = [
   { name: "Suntrust Bank", code: "100", type: "commercial" },
   { name: "TAJ Bank", code: "302", type: "commercial" },
   { name: "Titan Trust Bank", code: "102", type: "commercial" },
-
-  // ── Digital banks & payment service banks ───────────────────────────────
   { name: "9PSB (9 Payment Service Bank)", code: "120001", type: "digital" },
   { name: "Carbon (Paylater)", code: "565", type: "digital" },
   { name: "Eyowo", code: "50126", type: "digital" },
@@ -71,8 +65,6 @@ export const NIGERIAN_BANKS = [
   { name: "Sparkle MFB", code: "090325", type: "digital" },
   { name: "VBank (VFD Microfinance Bank)", code: "090110", type: "digital" },
   { name: "Airtel Smartcash PSB", code: "120004", type: "digital" },
-
-  // ── Microfinance banks ───────────────────────────────────────────────────
   { name: "AB Microfinance Bank", code: "090270", type: "microfinance" },
   { name: "Accion Microfinance Bank", code: "090134", type: "microfinance" },
   { name: "Baobab Microfinance Bank", code: "070012", type: "microfinance" },
@@ -117,13 +109,11 @@ export const NIGERIAN_BANKS = [
   { name: "UNAAB Microfinance Bank", code: "090191", type: "microfinance" },
   { name: "Unical Microfinance Bank", code: "090193", type: "microfinance" },
   { name: "YCT Microfinance Bank", code: "090143", type: "microfinance" },
-].sort((a, b) => a.name.localeCompare(b.name)); // keep alphabetical
+].sort((a, b) => a.name.localeCompare(b.name));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
-
-// Methods available per currency
 const CURRENCY_METHODS = {
   NGN: [
     {
@@ -307,7 +297,6 @@ const CURRENCY_METHODS = {
   ],
 };
 
-// International (USD, EUR, GBP, AUD, CAD, etc.)
 const INTL_METHODS = [
   {
     key: "intl_bank",
@@ -345,7 +334,6 @@ const STATUS_META = {
   CANCELLED: { label: "Cancelled", cls: "cancelled" },
 };
 
-// Currency flags + symbols
 const CURRENCY_META = {
   NGN: { flag: "🇳🇬", symbol: "₦", name: "Naira" },
   GHS: { flag: "🇬🇭", symbol: "₵", name: "Cedi" },
@@ -394,23 +382,128 @@ function getMethodsForCurrency(currency) {
   return CURRENCY_METHODS[currency?.toUpperCase()] ?? INTL_METHODS;
 }
 
-function isAfricanCurrency(c) {
-  return [
-    "NGN",
-    "GHS",
-    "KES",
-    "ZAR",
-    "TZS",
-    "UGX",
-    "RWF",
-    "XOF",
-    "MAD",
-    "EGP",
-  ].includes((c ?? "").toUpperCase());
+// ─────────────────────────────────────────────────────────────────────────────
+// PIN INPUT — 4 individual digit boxes, backed by a hidden input
+// ─────────────────────────────────────────────────────────────────────────────
+function PinInput({ value, onChange, disabled, label, error }) {
+  const hiddenRef = useRef();
+
+  return (
+    <div className={s.pinField}>
+      {label && <label className={s.pinLabel}>{label}</label>}
+      <div
+        className={`${s.pinBoxes} ${disabled ? s.pinBoxesDisabled : ""}`}
+        onClick={() => !disabled && hiddenRef.current?.focus()}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={[
+              s.pinBox,
+              value.length > i ? s.pinBoxFilled : "",
+              value.length === i ? s.pinBoxActive : "",
+              error ? s.pinBoxError : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {value.length > i ? "●" : ""}
+          </div>
+        ))}
+        {/* Hidden actual input */}
+        <input
+          ref={hiddenRef}
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          maxLength={4}
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+            onChange(v);
+          }}
+          disabled={disabled}
+          className={s.pinHiddenInput}
+        />
+      </div>
+      {error && <p className={s.pinError}>{error}</p>}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BANK DROPDOWN — searchable, 70+ Nigerian banks with type labels
+// PIN SETUP SCREEN — shown inside the modal when worker hasn't set a PIN yet
+// ─────────────────────────────────────────────────────────────────────────────
+function PinSetupScreen({ onDone }) {
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  async function handleSetPin() {
+    setError("");
+    if (newPin.length < 4) return setError("Enter a 4-digit PIN.");
+    if (newPin !== confirmPin) return setError("PINs don't match.");
+    setLoading(true);
+    try {
+      await api.post("/payments/pin/set", { pin: newPin });
+      setSuccess(true);
+      setTimeout(onDone, 1200); // brief success flash then back to form
+    } catch (err) {
+      setError(err.response?.data?.message ?? "Failed to set PIN.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (success) {
+    return (
+      <div className={s.pinSetupBox}>
+        <span className={s.pinSetupIcon}>✅</span>
+        <h3 className={s.pinSetupTitle}>PIN Set!</h3>
+        <p className={s.pinSetupSub}>Returning to withdrawal form…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={s.pinSetupBox}>
+      <span className={s.pinSetupIcon}>🔐</span>
+      <h3 className={s.pinSetupTitle}>Set a Withdrawal PIN</h3>
+      <p className={s.pinSetupSub}>
+        You need a 4-digit PIN to authorise withdrawals. Set it once — you'll
+        use it every time you request a payout.
+      </p>
+
+      <PinInput
+        label="Choose 4-digit PIN"
+        value={newPin}
+        onChange={setNewPin}
+        disabled={loading}
+      />
+      <PinInput
+        label="Confirm PIN"
+        value={confirmPin}
+        onChange={setConfirmPin}
+        disabled={loading}
+        error={error}
+      />
+
+      <button
+        className={s.pinSetupBtn}
+        onClick={handleSetPin}
+        disabled={loading || newPin.length < 4 || confirmPin.length < 4}
+      >
+        {loading ? <span className={s.spinnerSm} /> : "Set PIN & Continue"}
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BANK DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const BANK_TYPE_LABELS = {
   commercial: { label: "Commercial", color: "#818cf8" },
@@ -431,9 +524,8 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
   );
   const selected = banks.find((b) => b.code === value);
 
-  // Group filtered results by type when no search active
   const grouped = search.trim()
-    ? null // flat list when searching
+    ? null
     : ["digital", "commercial", "microfinance", "merchant"].reduce(
         (acc, type) => {
           const items = filtered.filter(
@@ -506,15 +598,12 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
               </button>
             )}
           </div>
-
-          {/* Result count when searching */}
           {search && (
             <div className={s.bankResultCount}>
               {filtered.length} result{filtered.length !== 1 ? "s" : ""} for "
               {search}"
             </div>
           )}
-
           <div className={s.bankList}>
             {filtered.length === 0 ? (
               <div className={s.bankNoResults}>
@@ -525,7 +614,6 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
                 </p>
               </div>
             ) : search.trim() ? (
-              // Flat list when searching
               filtered.map((b) => (
                 <BankOption
                   key={b.code}
@@ -539,7 +627,6 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
                 />
               ))
             ) : (
-              // Grouped by type when not searching
               grouped?.map(({ type, items }) => (
                 <div key={type} className={s.bankGroup}>
                   <div
@@ -607,8 +694,6 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
     label: withdrawal.status,
     cls: "pending",
   };
-
-  // Use fee config from server; fall back to 0 (Phase 1 default)
   const feeRate = feeConfig?.withdrawalFeeRate ?? 0;
   const feeAmt = parseFloat((withdrawal.amount * feeRate).toFixed(2));
   const netAmt = parseFloat((withdrawal.amount - feeAmt).toFixed(2));
@@ -631,12 +716,10 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
             ✕
           </button>
         </div>
-
         <div className={s.receiptTitle}>
           <h2 className={s.receiptHeading}>Withdrawal Receipt</h2>
           <span className={`${s.pill} ${s[sm.cls]}`}>{sm.label}</span>
         </div>
-
         <div className={s.receiptGrid}>
           <MetaItem label="Reference" value={`#${withdrawal.reference}`} />
           <MetaItem
@@ -661,14 +744,12 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
           )}
           <MetaItem label="Currency" value={withdrawal.currency} />
         </div>
-
         <div className={s.receiptDivider} />
         <div className={s.receiptDest}>
           <span className={s.metaLabel}>Paid to</span>
           <span className={s.receiptDestVal}>{withdrawal.destination}</span>
         </div>
         <div className={s.receiptDivider} />
-
         <div className={s.receiptBreakdown}>
           <div className={s.breakRow}>
             <span>Withdrawal amount</span>
@@ -692,7 +773,6 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
             </span>
           </div>
         </div>
-
         <div className={s.receiptFooter}>
           <span>SkilledProz · Global Skills Marketplace</span>
           <button className={s.printBtn} onClick={() => window.print()}>
@@ -714,7 +794,7 @@ function MetaItem({ label, value }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WITHDRAWAL FORM MODAL
+// WITHDRAWAL FORM MODAL — with PIN gate
 // ─────────────────────────────────────────────────────────────────────────────
 function WithdrawalModal({
   onClose,
@@ -724,7 +804,6 @@ function WithdrawalModal({
   feeConfig,
   onSuccess,
 }) {
-  // Step state
   const [currency, setCurrency] = useState(
     defaultCurrency ?? Object.keys(currencyBalances)[0] ?? "NGN",
   );
@@ -740,9 +819,30 @@ function WithdrawalModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // ── PIN state ─────────────────────────────────────────────────────────────
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinStatus, setPinStatus] = useState(null); // { pinSet, isLocked, attemptsRemaining }
+  const [pinStatusLoading, setPinStatusLoading] = useState(true);
+  const [showPinSetup, setShowPinSetup] = useState(false);
+
+  // Load pin status once on mount
+  useEffect(() => {
+    api
+      .get("/payments/pin/status")
+      .then((r) => {
+        const data = r.data.data;
+        setPinStatus(data);
+        if (!data.pinSet) setShowPinSetup(true);
+      })
+      .catch(() =>
+        setPinStatus({ pinSet: true, isLocked: false, attemptsRemaining: 3 }),
+      )
+      .finally(() => setPinStatusLoading(false));
+  }, []);
+
   const methods = getMethodsForCurrency(currency);
 
-  // Pick first method when currency changes
   useEffect(() => {
     setSelMethod(methods[0]);
     setForm({});
@@ -750,26 +850,20 @@ function WithdrawalModal({
     setVerifyErr("");
   }, [currency]);
 
-  // Load banks when method requires a bank list
   useEffect(() => {
     if (!selMethod?.hasBankList) {
       setBanks([]);
       return;
     }
     const country = selMethod.country ?? "NG";
-
-    // Nigerian banks — use full static list immediately (no latency)
-    // Then try to merge any extras the API returns
     if (country === "NG") {
-      setBanks(NIGERIAN_BANKS); // instant — 70+ banks available right away
+      setBanks(NIGERIAN_BANKS);
       setBanksLoading(false);
-      // Background merge: pick up any banks Paystack has that aren't in our list
       api
         .get("/payments/banks?country=NG")
         .then((r) => {
           const apibanks = r.data.data?.banks ?? [];
           if (!apibanks.length) return;
-          // Merge: deduplicate by code, API name wins for existing codes
           const merged = new Map(NIGERIAN_BANKS.map((b) => [b.code, b]));
           apibanks.forEach((b) =>
             merged.set(b.code, {
@@ -782,13 +876,9 @@ function WithdrawalModal({
             [...merged.values()].sort((a, b) => a.name.localeCompare(b.name)),
           );
         })
-        .catch(() => {
-          /* already have static list — ignore */
-        });
+        .catch(() => {});
       return;
     }
-
-    // For all other countries — fetch from API (Flutterwave)
     setBanksLoading(true);
     api
       .get(`/payments/banks?country=${country}`)
@@ -797,7 +887,6 @@ function WithdrawalModal({
       .finally(() => setBanksLoading(false));
   }, [selMethod]);
 
-  // Clear verification when account/bank changes
   useEffect(() => {
     setVerifiedName(null);
     setVerifyErr("");
@@ -837,6 +926,8 @@ function WithdrawalModal({
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setPinError("");
+
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return setError("Enter a valid amount.");
     if (amt < 1) return setError("Minimum withdrawal is 1 unit.");
@@ -846,7 +937,14 @@ function WithdrawalModal({
       );
     if (!selMethod) return setError("Select a payout method.");
 
-    // Validate required fields per method type
+    // ── PIN validation ─────────────────────────────────────────────────────
+    if (!pin || pin.length < 4)
+      return setPinError("Enter your 4-digit withdrawal PIN.");
+    if (pinStatus?.isLocked)
+      return setPinError(
+        "Too many wrong attempts. Please wait before trying again.",
+      );
+
     const m = selMethod.method;
     if (m === "bank_transfer" && !selMethod.isInternational) {
       if (!form.bankCode) return setError("Select a bank.");
@@ -868,8 +966,8 @@ function WithdrawalModal({
       if (!form.cryptoNetwork) return setError("Select network.");
     }
 
-    // Build payload
     const payload = {
+      pin, // ← PIN included
       amount: amt,
       currency: currency.toUpperCase(),
       method: m,
@@ -885,7 +983,7 @@ function WithdrawalModal({
       });
     } else if (m === "bank_transfer" && selMethod.isInternational) {
       Object.assign(payload, {
-        bankCode: form.swiftBic, // FLW uses SWIFT as bank code for intl
+        bankCode: form.swiftBic,
         bankName: form.bankName,
         accountNumber: form.accountNumber,
         accountName: form.accountName,
@@ -914,19 +1012,31 @@ function WithdrawalModal({
       );
       onSuccess();
     } catch (err) {
-      setError(
-        err.response?.data?.message ?? "Withdrawal failed. Please try again.",
-      );
+      const msg =
+        err.response?.data?.message ?? "Withdrawal failed. Please try again.";
+      // If wrong PIN, show in pin error slot and update attempts remaining
+      if (err.response?.status === 401 || msg.toLowerCase().includes("pin")) {
+        setPinError(msg);
+        setPin("");
+        // Refresh lock status
+        api
+          .get("/payments/pin/status")
+          .then((r) => setPinStatus(r.data.data))
+          .catch(() => {});
+      } else if (err.response?.status === 429) {
+        setPinError(msg);
+        setPinStatus((prev) => ({ ...prev, isLocked: true }));
+      } else {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Available currencies to withdraw (only those with balance)
   const withdrawableCurrencies = Object.entries(currencyBalances)
     .filter(([, bal]) => bal > 0)
     .map(([cur]) => cur);
-
   const currMeta = CURRENCY_META[currency] ?? {
     flag: "💱",
     symbol: currency,
@@ -941,7 +1051,6 @@ function WithdrawalModal({
       }}
     >
       <div className={s.formModal}>
-        {/* Header */}
         <div className={s.formModalHeader}>
           <h2 className={s.formModalTitle}>Request Payout</h2>
           <button className={s.modalClose} onClick={onClose}>
@@ -949,411 +1058,476 @@ function WithdrawalModal({
           </button>
         </div>
 
-        {success ? (
-          <div className={s.successBox}>
-            <span className={s.successIcon}>🎉</span>
-            <h3 className={s.successTitle}>Withdrawal Submitted!</h3>
-            <p className={s.successMsg}>{success}</p>
+        {/* PIN status loading */}
+        {pinStatusLoading && (
+          <div className={s.pinStatusLoading}>
+            <span className={s.spinnerSm} /> Checking PIN status…
+          </div>
+        )}
+
+        {/* PIN setup screen */}
+        {!pinStatusLoading && showPinSetup && (
+          <PinSetupScreen
+            onDone={() => {
+              setShowPinSetup(false);
+              setPinStatus((p) => ({ ...p, pinSet: true }));
+            }}
+          />
+        )}
+
+        {/* Locked screen */}
+        {!pinStatusLoading && !showPinSetup && pinStatus?.isLocked && (
+          <div className={s.pinLockedBox}>
+            <span className={s.pinLockedIcon}>🔒</span>
+            <h3 className={s.pinLockedTitle}>PIN Locked</h3>
+            <p className={s.pinLockedSub}>
+              Too many wrong PIN attempts. Your withdrawal PIN is temporarily
+              locked for 30 minutes. Please try again later.
+            </p>
             <button
-              className={s.doneBtn}
-              onClick={() => {
-                onClose();
+              className={s.modalClose}
+              style={{
+                alignSelf: "center",
+                padding: "8px 24px",
+                width: "auto",
               }}
+              onClick={onClose}
             >
-              Done
+              Close
             </button>
           </div>
-        ) : (
-          <form className={s.payoutForm} onSubmit={handleSubmit}>
-            {/* ── Currency selector ─────────────────────────────────────── */}
-            <div className={s.formSection}>
-              <p className={s.formSectionLabel}>Withdraw from Wallet</p>
-              <div className={s.currencyTabs}>
-                {withdrawableCurrencies.map((cur) => {
-                  const cm = CURRENCY_META[cur] ?? {
-                    flag: "💱",
-                    symbol: cur,
-                    name: cur,
-                  };
-                  const bal = currencyBalances[cur] ?? 0;
-                  return (
-                    <button
-                      key={cur}
-                      type="button"
-                      className={`${s.currencyTab} ${currency === cur ? s.currencyTabActive : ""}`}
-                      onClick={() => setCurrency(cur)}
-                    >
-                      <span className={s.currencyTabFlag}>{cm.flag}</span>
-                      <div className={s.currencyTabInfo}>
-                        <span className={s.currencyTabCode}>{cur}</span>
-                        <span className={s.currencyTabBal}>
-                          {fmt(bal, cur)}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+        )}
 
-              {/* Selected currency balance display */}
-              <div className={s.selectedCurrencyBar}>
-                <div className={s.selectedCurrencyLeft}>
-                  <span className={s.selectedCurrencyFlag}>
-                    {currMeta.flag}
-                  </span>
-                  <div>
-                    <span className={s.selectedCurrencyName}>
-                      {currMeta.name} Wallet
+        {/* Normal form */}
+        {!pinStatusLoading &&
+          !showPinSetup &&
+          !pinStatus?.isLocked &&
+          (success ? (
+            <div className={s.successBox}>
+              <span className={s.successIcon}>🎉</span>
+              <h3 className={s.successTitle}>Withdrawal Submitted!</h3>
+              <p className={s.successMsg}>{success}</p>
+              <button className={s.doneBtn} onClick={onClose}>
+                Done
+              </button>
+            </div>
+          ) : (
+            <form className={s.payoutForm} onSubmit={handleSubmit}>
+              {/* Currency selector */}
+              <div className={s.formSection}>
+                <p className={s.formSectionLabel}>Withdraw from Wallet</p>
+                <div className={s.currencyTabs}>
+                  {withdrawableCurrencies.map((cur) => {
+                    const cm = CURRENCY_META[cur] ?? {
+                      flag: "💱",
+                      symbol: cur,
+                      name: cur,
+                    };
+                    const bal = currencyBalances[cur] ?? 0;
+                    return (
+                      <button
+                        key={cur}
+                        type="button"
+                        className={`${s.currencyTab} ${currency === cur ? s.currencyTabActive : ""}`}
+                        onClick={() => setCurrency(cur)}
+                      >
+                        <span className={s.currencyTabFlag}>{cm.flag}</span>
+                        <div className={s.currencyTabInfo}>
+                          <span className={s.currencyTabCode}>{cur}</span>
+                          <span className={s.currencyTabBal}>
+                            {fmt(bal, cur)}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={s.selectedCurrencyBar}>
+                  <div className={s.selectedCurrencyLeft}>
+                    <span className={s.selectedCurrencyFlag}>
+                      {currMeta.flag}
                     </span>
-                    <span className={s.selectedCurrencyCode}>{currency}</span>
+                    <div>
+                      <span className={s.selectedCurrencyName}>
+                        {currMeta.name} Wallet
+                      </span>
+                      <span className={s.selectedCurrencyCode}>{currency}</span>
+                    </div>
+                  </div>
+                  <div className={s.selectedCurrencyBalance}>
+                    <span className={s.selectedCurrencyBalLabel}>
+                      Available
+                    </span>
+                    <span className={s.selectedCurrencyBalAmt}>
+                      {fmt(availableForCurrency, currency)}
+                    </span>
                   </div>
                 </div>
-                <div className={s.selectedCurrencyBalance}>
-                  <span className={s.selectedCurrencyBalLabel}>Available</span>
-                  <span className={s.selectedCurrencyBalAmt}>
-                    {fmt(availableForCurrency, currency)}
-                  </span>
+              </div>
+
+              {/* Method selector */}
+              <div className={s.formSection}>
+                <p className={s.formSectionLabel}>Payout Method</p>
+                <div className={s.methodGrid}>
+                  {methods.map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className={`${s.methodCard} ${selMethod?.key === m.key ? s.methodCardActive : ""}`}
+                      onClick={() => {
+                        setSelMethod(m);
+                        setForm({});
+                        setVerifiedName(null);
+                      }}
+                    >
+                      <span className={s.methodCardIcon}>{m.icon}</span>
+                      <span className={s.methodCardLabel}>{m.label}</span>
+                      <span className={s.methodCardDesc}>{m.desc}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
 
-            {/* ── Method selector ───────────────────────────────────────── */}
-            <div className={s.formSection}>
-              <p className={s.formSectionLabel}>Payout Method</p>
-              <div className={s.methodGrid}>
-                {methods.map((m) => (
-                  <button
-                    key={m.key}
-                    type="button"
-                    className={`${s.methodCard} ${selMethod?.key === m.key ? s.methodCardActive : ""}`}
-                    onClick={() => {
-                      setSelMethod(m);
-                      setForm({});
-                      setVerifiedName(null);
-                    }}
-                  >
-                    <span className={s.methodCardIcon}>{m.icon}</span>
-                    <span className={s.methodCardLabel}>{m.label}</span>
-                    <span className={s.methodCardDesc}>{m.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Dynamic fields */}
+              {selMethod && (
+                <div className={s.formSection}>
+                  <p className={s.formSectionLabel}>Payout Details</p>
 
-            {/* ── Dynamic fields per method ──────────────────────────────── */}
-            {selMethod && (
-              <div className={s.formSection}>
-                <p className={s.formSectionLabel}>Payout Details</p>
+                  {selMethod.method === "bank_transfer" &&
+                    !selMethod.isInternational && (
+                      <div className={s.fieldsStack}>
+                        <div className={s.formField}>
+                          <label className={s.formLabel}>
+                            Bank / Fintech *
+                          </label>
+                          <BankDropdown
+                            banks={banks}
+                            loading={banksLoading}
+                            value={form.bankCode}
+                            onChange={(b) => {
+                              setF("bankCode", b.code);
+                              setF("bankName", b.name);
+                            }}
+                            placeholder="Select bank, Kuda, OPay…"
+                          />
+                        </div>
+                        <div className={s.formField}>
+                          <label className={s.formLabel}>
+                            Account Number *
+                          </label>
+                          <input
+                            className={s.formInput}
+                            placeholder="0123456789"
+                            value={form.accountNumber ?? ""}
+                            onChange={(e) =>
+                              setF("accountNumber", e.target.value)
+                            }
+                            maxLength={12}
+                            required
+                          />
+                        </div>
+                        <div className={s.verifyRow}>
+                          <div className={s.verifyStatus}>
+                            {verifiedName ? (
+                              <div className={s.verifiedTag}>
+                                ✅ {verifiedName}
+                              </div>
+                            ) : verifyErr ? (
+                              <div className={s.verifyErrTag}>
+                                ❌ {verifyErr}
+                              </div>
+                            ) : (
+                              <span className={s.verifyHint}>
+                                Verify to confirm account holder name
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className={s.verifyBtn}
+                            onClick={verifyAccount}
+                            disabled={
+                              verifying || !form.accountNumber || !form.bankCode
+                            }
+                          >
+                            {verifying ? (
+                              <span className={s.spinnerSm} />
+                            ) : (
+                              "Verify"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
-                {/* ── Local bank transfer (NGN, GHS, KES, etc.) ─────────── */}
-                {selMethod.method === "bank_transfer" &&
-                  !selMethod.isInternational && (
+                  {selMethod.method === "bank_transfer" &&
+                    selMethod.isInternational && (
+                      <div className={s.fieldsGrid}>
+                        {[
+                          {
+                            key: "bankName",
+                            label: "Bank Name *",
+                            placeholder: "e.g. Bank of America",
+                          },
+                          {
+                            key: "accountNumber",
+                            label: "Account / IBAN *",
+                            placeholder: "IBAN or account number",
+                          },
+                          {
+                            key: "swiftBic",
+                            label: "SWIFT / BIC *",
+                            placeholder: "e.g. BOFAUS3N",
+                          },
+                          {
+                            key: "routingNumber",
+                            label: "Routing (US/CA)",
+                            placeholder: "9-digit routing",
+                          },
+                          {
+                            key: "accountName",
+                            label: "Account Holder Name *",
+                            placeholder: "Full name on account",
+                          },
+                          {
+                            key: "bankCountry",
+                            label: "Bank Country *",
+                            placeholder: "e.g. United States",
+                          },
+                        ].map(({ key, label, placeholder }) => (
+                          <div key={key} className={s.formField}>
+                            <label className={s.formLabel}>{label}</label>
+                            <input
+                              className={s.formInput}
+                              placeholder={placeholder}
+                              value={form[key] ?? ""}
+                              onChange={(e) => setF(key, e.target.value)}
+                              required={label.includes("*")}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                  {selMethod.method === "mobile_money" && (
                     <div className={s.fieldsStack}>
                       <div className={s.formField}>
-                        <label className={s.formLabel}>Bank / Fintech *</label>
-                        <BankDropdown
-                          banks={banks}
-                          loading={banksLoading}
-                          value={form.bankCode}
-                          onChange={(b) => {
-                            setF("bankCode", b.code);
-                            setF("bankName", b.name);
-                          }}
-                          placeholder="Select bank, Kuda, OPay…"
-                        />
-                      </div>
-
-                      <div className={s.formField}>
-                        <label className={s.formLabel}>Account Number *</label>
+                        <label className={s.formLabel}>Mobile Number *</label>
                         <input
                           className={s.formInput}
-                          placeholder="0123456789"
-                          value={form.accountNumber ?? ""}
-                          onChange={(e) =>
-                            setF("accountNumber", e.target.value)
-                          }
-                          maxLength={12}
+                          placeholder="+234 800 000 0000"
+                          value={form.mobileNumber ?? ""}
+                          onChange={(e) => setF("mobileNumber", e.target.value)}
                           required
                         />
                       </div>
-
-                      {/* Account name verification */}
-                      <div className={s.verifyRow}>
-                        <div className={s.verifyStatus}>
-                          {verifiedName ? (
-                            <div className={s.verifiedTag}>
-                              ✅ {verifiedName}
-                            </div>
-                          ) : verifyErr ? (
-                            <div className={s.verifyErrTag}>❌ {verifyErr}</div>
-                          ) : (
-                            <span className={s.verifyHint}>
-                              Verify to confirm account holder name
-                            </span>
-                          )}
+                      <div className={s.formField}>
+                        <label className={s.formLabel}>
+                          Account Name (optional)
+                        </label>
+                        <input
+                          className={s.formInput}
+                          placeholder="Name on mobile account"
+                          value={form.mobileName ?? ""}
+                          onChange={(e) => setF("mobileName", e.target.value)}
+                        />
+                      </div>
+                      {selMethod.provider && (
+                        <div className={s.providerChip}>
+                          <span>{selMethod.icon}</span>
+                          <span>
+                            Provider: <strong>{selMethod.provider}</strong>
+                          </span>
                         </div>
-                        <button
-                          type="button"
-                          className={s.verifyBtn}
-                          onClick={verifyAccount}
-                          disabled={
-                            verifying || !form.accountNumber || !form.bankCode
-                          }
-                        >
-                          {verifying ? (
-                            <span className={s.spinnerSm} />
-                          ) : (
-                            "Verify"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                {/* ── International bank transfer ────────────────────────── */}
-                {selMethod.method === "bank_transfer" &&
-                  selMethod.isInternational && (
-                    <div className={s.fieldsGrid}>
-                      {[
-                        {
-                          key: "bankName",
-                          label: "Bank Name *",
-                          placeholder: "e.g. Bank of America",
-                        },
-                        {
-                          key: "accountNumber",
-                          label: "Account / IBAN *",
-                          placeholder: "IBAN or account number",
-                        },
-                        {
-                          key: "swiftBic",
-                          label: "SWIFT / BIC *",
-                          placeholder: "e.g. BOFAUS3N",
-                        },
-                        {
-                          key: "routingNumber",
-                          label: "Routing (US/CA)",
-                          placeholder: "9-digit routing",
-                        },
-                        {
-                          key: "accountName",
-                          label: "Account Holder Name *",
-                          placeholder: "Full name on account",
-                        },
-                        {
-                          key: "bankCountry",
-                          label: "Bank Country *",
-                          placeholder: "e.g. United States",
-                        },
-                      ].map(({ key, label, placeholder }) => (
-                        <div key={key} className={s.formField}>
-                          <label className={s.formLabel}>{label}</label>
-                          <input
-                            className={s.formInput}
-                            placeholder={placeholder}
-                            value={form[key] ?? ""}
-                            onChange={(e) => setF(key, e.target.value)}
-                            required={label.includes("*")}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                {/* ── Mobile money ───────────────────────────────────────── */}
-                {selMethod.method === "mobile_money" && (
-                  <div className={s.fieldsStack}>
-                    <div className={s.formField}>
-                      <label className={s.formLabel}>Mobile Number *</label>
-                      <input
-                        className={s.formInput}
-                        placeholder="+234 800 000 0000"
-                        value={form.mobileNumber ?? ""}
-                        onChange={(e) => setF("mobileNumber", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className={s.formField}>
-                      <label className={s.formLabel}>
-                        Account Name (optional)
-                      </label>
-                      <input
-                        className={s.formInput}
-                        placeholder="Name on mobile account"
-                        value={form.mobileName ?? ""}
-                        onChange={(e) => setF("mobileName", e.target.value)}
-                      />
-                    </div>
-                    {selMethod.provider && (
-                      <div className={s.providerChip}>
-                        <span>{selMethod.icon}</span>
-                        <span>
-                          Provider: <strong>{selMethod.provider}</strong>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Crypto ─────────────────────────────────────────────── */}
-                {selMethod.method === "crypto" && (
-                  <div className={s.fieldsStack}>
-                    {/* Token selector */}
-                    <div className={s.formField}>
-                      <label className={s.formLabel}>Token *</label>
-                      <div className={s.tokenGrid}>
-                        {CRYPTO_TOKENS.map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            className={`${s.tokenBtn} ${form.cryptoToken === t ? s.tokenBtnActive : ""}`}
-                            onClick={() => setF("cryptoToken", t)}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Network selector */}
-                    <div className={s.formField}>
-                      <label className={s.formLabel}>Network *</label>
-                      <div className={s.networkGrid}>
-                        {CRYPTO_NETWORKS.map((n) => (
-                          <button
-                            key={n.value}
-                            type="button"
-                            className={`${s.networkBtn} ${form.cryptoNetwork === n.value ? s.networkBtnActive : ""}`}
-                            onClick={() => setF("cryptoNetwork", n.value)}
-                          >
-                            {n.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className={s.formField}>
-                      <label className={s.formLabel}>Wallet Address *</label>
-                      <input
-                        className={`${s.formInput} ${s.monoInput}`}
-                        placeholder="0x… or TRC20 address"
-                        value={form.cryptoAddress ?? ""}
-                        onChange={(e) => setF("cryptoAddress", e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className={s.cryptoWarning}>
-                      <span>⚠️</span>
-                      <p>
-                        Double-check the network matches your wallet. Sending to
-                        the wrong network will result in permanent loss of
-                        funds.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Amount ────────────────────────────────────────────────── */}
-            <div className={s.formSection}>
-              <p className={s.formSectionLabel}>Amount ({currency})</p>
-              <div className={s.amountWrap}>
-                <span className={s.amountCurrency}>{currMeta.symbol}</span>
-                <input
-                  className={s.amountInput}
-                  type="number"
-                  placeholder="0.00"
-                  min="1"
-                  step="0.01"
-                  max={availableForCurrency}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                />
-              </div>
-              <div className={s.quickAmounts}>
-                {[0.25, 0.5, 0.75, 1].map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    className={s.quickBtn}
-                    onClick={() =>
-                      setAmount((availableForCurrency * f).toFixed(2))
-                    }
-                  >
-                    {f === 1 ? "Max" : `${f * 100}%`}
-                  </button>
-                ))}
-              </div>
-              {amount &&
-                parseFloat(amount) > 0 &&
-                (() => {
-                  const feeRate = feeConfig?.withdrawalFeeRate ?? 0;
-                  const feeAmt = parseFloat(amount) * feeRate;
-                  const netAmt = parseFloat(amount) - feeAmt;
-                  const isFree = feeRate === 0;
-                  return (
-                    <div className={s.amountPreview}>
-                      {isFree ? (
-                        <>
-                          You receive{" "}
-                          <strong className={s.amountPreviewFull}>
-                            {fmt(netAmt, currency)} — no fee 🎉
-                          </strong>
-                        </>
-                      ) : (
-                        <>
-                          You receive approx.{" "}
-                          <strong>{fmt(netAmt, currency)}</strong> after{" "}
-                          {(feeRate * 100).toFixed(0)}% fee
-                        </>
                       )}
                     </div>
-                  );
-                })()}
-            </div>
+                  )}
 
-            {error && <div className={s.errorBox}>⚠️ {error}</div>}
-
-            <div className={s.formInfo}>
-              <span>ℹ️</span>
-              <p>
-                Payouts processed within 1–3 business days ·{" "}
-                {(feeConfig?.withdrawalFeeRate ?? 0) === 0 ? (
-                  <strong>
-                    No withdrawal fee — you keep 100% of your earnings 🎉
-                  </strong>
-                ) : (
-                  `${((feeConfig?.withdrawalFeeRate ?? 0) * 100).toFixed(0)}% withdrawal fee applies`
-                )}{" "}
-                · Crypto is USDC/USDT equivalent · Minimum: 1 {currency}
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              className={s.submitBtn}
-              disabled={submitting || !amount || !selMethod}
-            >
-              {submitting ? (
-                <>
-                  <span className={s.spinner} /> Processing…
-                </>
-              ) : (
-                `↑ Withdraw ${amount ? fmt(parseFloat(amount) || 0, currency) : ""}`
+                  {selMethod.method === "crypto" && (
+                    <div className={s.fieldsStack}>
+                      <div className={s.formField}>
+                        <label className={s.formLabel}>Token *</label>
+                        <div className={s.tokenGrid}>
+                          {CRYPTO_TOKENS.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              className={`${s.tokenBtn} ${form.cryptoToken === t ? s.tokenBtnActive : ""}`}
+                              onClick={() => setF("cryptoToken", t)}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={s.formField}>
+                        <label className={s.formLabel}>Network *</label>
+                        <div className={s.networkGrid}>
+                          {CRYPTO_NETWORKS.map((n) => (
+                            <button
+                              key={n.value}
+                              type="button"
+                              className={`${s.networkBtn} ${form.cryptoNetwork === n.value ? s.networkBtnActive : ""}`}
+                              onClick={() => setF("cryptoNetwork", n.value)}
+                            >
+                              {n.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={s.formField}>
+                        <label className={s.formLabel}>Wallet Address *</label>
+                        <input
+                          className={`${s.formInput} ${s.monoInput}`}
+                          placeholder="0x… or TRC20 address"
+                          value={form.cryptoAddress ?? ""}
+                          onChange={(e) =>
+                            setF("cryptoAddress", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div className={s.cryptoWarning}>
+                        <span>⚠️</span>
+                        <p>
+                          Double-check the network matches your wallet. Sending
+                          to the wrong network will result in permanent loss of
+                          funds.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </button>
-          </form>
-        )}
+
+              {/* Amount */}
+              <div className={s.formSection}>
+                <p className={s.formSectionLabel}>Amount ({currency})</p>
+                <div className={s.amountWrap}>
+                  <span className={s.amountCurrency}>{currMeta.symbol}</span>
+                  <input
+                    className={s.amountInput}
+                    type="number"
+                    placeholder="0.00"
+                    min="1"
+                    step="0.01"
+                    max={availableForCurrency}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className={s.quickAmounts}>
+                  {[0.25, 0.5, 0.75, 1].map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      className={s.quickBtn}
+                      onClick={() =>
+                        setAmount((availableForCurrency * f).toFixed(2))
+                      }
+                    >
+                      {f === 1 ? "Max" : `${f * 100}%`}
+                    </button>
+                  ))}
+                </div>
+                {amount &&
+                  parseFloat(amount) > 0 &&
+                  (() => {
+                    const feeRate = feeConfig?.withdrawalFeeRate ?? 0;
+                    const feeAmt = parseFloat(amount) * feeRate;
+                    const netAmt = parseFloat(amount) - feeAmt;
+                    const isFree = feeRate === 0;
+                    return (
+                      <div className={s.amountPreview}>
+                        {isFree ? (
+                          <>
+                            You receive{" "}
+                            <strong className={s.amountPreviewFull}>
+                              {fmt(netAmt, currency)} — no fee 🎉
+                            </strong>
+                          </>
+                        ) : (
+                          <>
+                            You receive approx.{" "}
+                            <strong>{fmt(netAmt, currency)}</strong> after{" "}
+                            {(feeRate * 100).toFixed(0)}% fee
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+              </div>
+
+              {/* ── 4-DIGIT PIN SECTION ──────────────────────────────────── */}
+              <div className={s.formSection}>
+                <p className={s.formSectionLabel}>
+                  Withdrawal PIN
+                  {pinStatus && !pinStatus.isLocked && (
+                    <span className={s.pinAttemptsHint}>
+                      {pinStatus.attemptsRemaining} attempt
+                      {pinStatus.attemptsRemaining !== 1 ? "s" : ""} remaining
+                    </span>
+                  )}
+                </p>
+                <PinInput
+                  value={pin}
+                  onChange={(v) => {
+                    setPin(v);
+                    if (pinError) setPinError("");
+                  }}
+                  disabled={submitting}
+                  error={pinError}
+                />
+                <button
+                  type="button"
+                  className={s.pinForgotBtn}
+                  onClick={() => setShowPinSetup(true)}
+                >
+                  Forgot PIN? Reset it
+                </button>
+              </div>
+              {/* ── END PIN SECTION ───────────────────────────────────────── */}
+
+              {error && <div className={s.errorBox}>⚠️ {error}</div>}
+
+              <div className={s.formInfo}>
+                <span>ℹ️</span>
+                <p>
+                  Payouts processed within 1–3 business days ·{" "}
+                  {(feeConfig?.withdrawalFeeRate ?? 0) === 0 ? (
+                    <strong>
+                      No withdrawal fee — you keep 100% of your earnings 🎉
+                    </strong>
+                  ) : (
+                    `${((feeConfig?.withdrawalFeeRate ?? 0) * 100).toFixed(0)}% withdrawal fee applies`
+                  )}{" "}
+                  · Crypto is USDC/USDT equivalent · Minimum: 1 {currency}
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                className={s.submitBtn}
+                disabled={submitting || !amount || !selMethod || pin.length < 4}
+              >
+                {submitting ? (
+                  <>
+                    <span className={s.spinner} /> Processing…
+                  </>
+                ) : (
+                  `↑ Withdraw ${amount ? fmt(parseFloat(amount) || 0, currency) : ""}`
+                )}
+              </button>
+            </form>
+          ))}
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
+// MAIN COMPONENT — unchanged except passing pinStatus awareness down
 // ─────────────────────────────────────────────────────────────────────────────
 export default function WorkerWithdrawals() {
   const [balance, setBalance] = useState(null);
@@ -1367,22 +1541,18 @@ export default function WorkerWithdrawals() {
   const [pages, setPages] = useState(1);
   const [toast, setToast] = useState(null);
 
-  // ── Load wallet data ───────────────────────────────────────────────────────
   const loadData = useCallback(async (p = 1) => {
     setLoading(true);
     try {
-      // 1. Get withdrawal history + total balance
       const wdRes = await api.get(`/payments/withdrawals?page=${p}&limit=15`);
       setHistory(wdRes.data.data.withdrawals);
       setBalance(wdRes.data.data.balance);
       setPages(wdRes.data.data.pages);
       setPage(p);
 
-      // 2. Get available currencies from earnings
       const earnRes = await api.get("/payments/earnings?limit=1");
       const currencies = earnRes.data.data.availableCurrencies ?? ["NGN"];
 
-      // 3. Fetch per-currency earnings to build currency balance map
       const balMap = {};
       await Promise.all(
         currencies.map(async (cur) => {
@@ -1391,7 +1561,6 @@ export default function WorkerWithdrawals() {
               `/payments/earnings?currency=${cur}&limit=1`,
             );
             const earned = r.data.data.summary?.totalEarned ?? 0;
-            // Deduct pending withdrawals for this currency
             const pending = wdRes.data.data.withdrawals
               .filter(
                 (w) =>
@@ -1407,8 +1576,6 @@ export default function WorkerWithdrawals() {
       );
 
       setCurrencyBalances(balMap);
-
-      // Default selected currency to highest balance
       const topCur = Object.entries(balMap).sort(
         ([, a], [, b]) => b - a,
       )[0]?.[0];
@@ -1429,10 +1596,6 @@ export default function WorkerWithdrawals() {
     setTimeout(() => setToast(null), 4000);
   }
 
-  function handleWithdrawalSuccess() {
-    loadData(1);
-  }
-
   const currenciesWithBalance = Object.entries(currencyBalances)
     .filter(([, v]) => v > 0)
     .sort(([, a], [, b]) => b - a);
@@ -1440,7 +1603,6 @@ export default function WorkerWithdrawals() {
   return (
     <WorkerLayout>
       <div className={s.page}>
-        {/* Toast */}
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
             <span>
@@ -1452,7 +1614,6 @@ export default function WorkerWithdrawals() {
           </div>
         )}
 
-        {/* Header */}
         <div className={s.header}>
           <div>
             <div className={s.eyebrow}>Earnings & Payouts</div>
@@ -1470,7 +1631,6 @@ export default function WorkerWithdrawals() {
           </button>
         </div>
 
-        {/* ── Currency wallet cards ──────────────────────────────────────── */}
         {!loading && currenciesWithBalance.length > 0 && (
           <div className={s.currencyWallets}>
             <p className={s.walletSectionLabel}>💳 Your Currency Wallets</p>
@@ -1510,7 +1670,6 @@ export default function WorkerWithdrawals() {
           </div>
         )}
 
-        {/* Summary cards */}
         <div className={s.summaryGrid}>
           <div className={`${s.summaryCard} ${s.summaryAccent}`}>
             <span className={s.summaryLabel}>Total Available</span>
@@ -1549,13 +1708,11 @@ export default function WorkerWithdrawals() {
           </div>
         </div>
 
-        {/* History table */}
         <div className={s.tableWrap}>
           <div className={s.tableHeader}>
             <h2 className={s.tableTitle}>Withdrawal History</h2>
             <span className={s.tableCount}>{history.length} records</span>
           </div>
-
           <div className={s.tableHead}>
             <span>Reference</span>
             <span>Method</span>
@@ -1565,7 +1722,6 @@ export default function WorkerWithdrawals() {
             <span>Status</span>
             <span />
           </div>
-
           <div className={s.tableBody}>
             {loading ? (
               [...Array(3)].map((_, i) => <div key={i} className={s.skRow} />)
@@ -1590,7 +1746,6 @@ export default function WorkerWithdrawals() {
                     className={s.tableRow}
                     style={{ animationDelay: `${i * 35}ms` }}
                   >
-                    {/* Mobile: stacked */}
                     <div className={s.rowMobileTop}>
                       <div className={s.refCell}>
                         <span className={s.refText}>
@@ -1604,23 +1759,15 @@ export default function WorkerWithdrawals() {
                         {sm.label}
                       </span>
                     </div>
-
-                    {/* Method cell */}
                     <div className={s.methodCell}>
                       <span className={s.methodName}>
                         {cm.flag} {w.method?.replace(/_/g, " ")}
                       </span>
                     </div>
-
-                    {/* Destination */}
                     <div className={s.destCell}>{w.destination}</div>
-
-                    {/* Date (desktop) */}
                     <div className={s.dateCellDesktop}>
                       {timeAgo(w.createdAt)}
                     </div>
-
-                    {/* Amount */}
                     <div className={s.amountCell}>
                       <span className={s.amountVal}>
                         {fmt(w.amount, w.currency)}
@@ -1642,14 +1789,11 @@ export default function WorkerWithdrawals() {
                           );
                         })()}
                     </div>
-
-                    {/* Status (desktop) */}
                     <div className={s.statusCellDesktop}>
                       <span className={`${s.pill} ${s[sm.cls]}`}>
                         {sm.label}
                       </span>
                     </div>
-
                     <div className={s.actionsCell}>
                       <button
                         className={s.receiptBtn}
@@ -1663,7 +1807,6 @@ export default function WorkerWithdrawals() {
               })
             )}
           </div>
-
           {pages > 1 && (
             <div className={s.pager}>
               <button
@@ -1688,7 +1831,6 @@ export default function WorkerWithdrawals() {
         </div>
       </div>
 
-      {/* Modals */}
       {showForm && (
         <WithdrawalModal
           onClose={() => setShowForm(false)}
@@ -1698,7 +1840,7 @@ export default function WorkerWithdrawals() {
           feeConfig={balance}
           onSuccess={() => {
             setShowForm(false);
-            handleWithdrawalSuccess();
+            loadData(1);
             showToast("success", "Withdrawal submitted!");
           }}
         />
