@@ -19,6 +19,7 @@ export default function JobDetail() {
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
 
   const isWorker = user?.role === "WORKER";
   const isHirer = user?.role === "HIRER";
@@ -36,6 +37,7 @@ export default function JobDetail() {
       .get(`/jobs/${id}`)
       .then((res) => {
         setJob(res.data.data);
+        setIsSaved(res.data.data.isSaved || false);
         setLoading(false);
       })
       .catch(() => {
@@ -71,6 +73,22 @@ export default function JobDetail() {
       setSuccess(`Job marked as ${status.toLowerCase()}.`);
     } catch {
       setError("Failed to update status.");
+    }
+  }
+
+  async function handleSave() {
+    try {
+      if (isSaved) {
+        await api.delete(`/jobs/${id}/save`);
+        setIsSaved(false);
+        setSuccess("Job removed from your saved list.");
+      } else {
+        await api.post(`/jobs/${id}/save`);
+        setIsSaved(true);
+        setSuccess("Job saved to your list.");
+      }
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to update saved status.");
     }
   }
 
@@ -129,9 +147,57 @@ export default function JobDetail() {
               >
                 {sm.label}
               </span>
+
+              {isWorker && !isOwner && (
+                <button
+                  className={`${styles.saveJobBtn} ${isSaved ? styles.saveJobBtnActive : ""}`}
+                  onClick={handleSave}
+                >
+                  {isSaved ? "🔖 Saved" : "🔖 Save Job"}
+                </button>
+              )}
             </div>
 
             <h1 className={styles.jobTitle}>{jobPost.title}</h1>
+
+            {/* Job type / location type / budget type pills */}
+            {(jobPost.jobType ||
+              jobPost.locationType ||
+              jobPost.budgetType) && (
+              <div className={styles.typePillRow}>
+                {jobPost.jobType && (
+                  <span className={styles.typePill}>
+                    {jobPost.jobType === "FULL_TIME"
+                      ? "💼 Full-time"
+                      : jobPost.jobType === "PART_TIME"
+                        ? "⏰ Part-time"
+                        : jobPost.jobType === "CONTRACT"
+                          ? "📄 Contract"
+                          : "⏳ Temporary"}
+                  </span>
+                )}
+                {jobPost.locationType && (
+                  <span className={styles.typePill}>
+                    {jobPost.locationType === "REMOTE"
+                      ? "🌐 Remote"
+                      : jobPost.locationType === "ON_SITE"
+                        ? "📍 On-site"
+                        : "🔀 Hybrid"}
+                  </span>
+                )}
+                {jobPost.budgetType && jobPost.budgetType !== "FIXED" && (
+                  <span className={styles.typePill}>
+                    {{
+                      HOURLY: "🕐 Hourly",
+                      DAILY: "🌤 Daily",
+                      WEEKLY: "📅 Weekly",
+                      MONTHLY: "📆 Monthly",
+                      CUSTOM: "✏️ Custom",
+                    }[jobPost.budgetType] ?? jobPost.budgetType}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className={styles.metaRow}>
               <MetaItem
@@ -170,6 +236,19 @@ export default function JobDetail() {
               </div>
             )}
           </section>
+
+          {jobPost.skills?.length > 0 && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Required Skills</h2>
+              <div className={styles.skillsWrap}>
+                {jobPost.skills.map((skill, i) => (
+                  <span key={i} className={styles.skillChip}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Details grid */}
           <section className={styles.section}>
@@ -224,6 +303,64 @@ export default function JobDetail() {
               )}
               <DetailCard icon="📍" label="Location" value={jobPost.address} />
               <DetailCard icon="🏷️" label="Status" value={sm.label} />
+
+              {jobPost.jobType && (
+                <DetailCard
+                  icon="💼"
+                  label="Job Type"
+                  value={
+                    jobPost.jobType === "FULL_TIME"
+                      ? "Full-time"
+                      : jobPost.jobType === "PART_TIME"
+                        ? "Part-time"
+                        : jobPost.jobType === "CONTRACT"
+                          ? "Contract"
+                          : "Temporary"
+                  }
+                />
+              )}
+              {jobPost.locationType && (
+                <DetailCard
+                  icon={
+                    jobPost.locationType === "REMOTE"
+                      ? "🌐"
+                      : jobPost.locationType === "ON_SITE"
+                        ? "📍"
+                        : "🔀"
+                  }
+                  label="Work Style"
+                  value={
+                    jobPost.locationType === "REMOTE"
+                      ? "Remote"
+                      : jobPost.locationType === "ON_SITE"
+                        ? "On-site"
+                        : "Hybrid"
+                  }
+                />
+              )}
+              {jobPost.budgetType && (
+                <DetailCard
+                  icon="💳"
+                  label="Payment Type"
+                  value={
+                    {
+                      FIXED: "Fixed Price",
+                      HOURLY: "Per Hour",
+                      DAILY: "Per Day",
+                      WEEKLY: "Per Week",
+                      MONTHLY: "Per Month",
+                      CUSTOM: "Custom",
+                    }[jobPost.budgetType] ?? jobPost.budgetType
+                  }
+                />
+              )}
+              {jobPost.durationValue && jobPost.durationType && (
+                <DetailCard
+                  icon="📐"
+                  label="Job Duration"
+                  value={`${jobPost.durationValue} ${jobPost.durationType.toLowerCase()}`}
+                />
+              )}
             </div>
           </section>
 
@@ -408,6 +545,49 @@ export default function JobDetail() {
                 {sm.label}
               </span>
             </div>
+
+            {jobPost.jobType && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Job Type</span>
+                <span className={styles.factValue}>
+                  {jobPost.jobType === "FULL_TIME"
+                    ? "Full-time"
+                    : jobPost.jobType === "PART_TIME"
+                      ? "Part-time"
+                      : jobPost.jobType === "CONTRACT"
+                        ? "Contract"
+                        : "Temporary"}
+                </span>
+              </div>
+            )}
+            {jobPost.locationType && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Work Style</span>
+                <span className={styles.factValue}>
+                  {jobPost.locationType === "REMOTE"
+                    ? "Remote"
+                    : jobPost.locationType === "ON_SITE"
+                      ? "On-site"
+                      : "Hybrid"}
+                </span>
+              </div>
+            )}
+            {jobPost.skills?.length > 0 && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Skills</span>
+                <span className={styles.factValue}>
+                  {jobPost.skills.length} required
+                </span>
+              </div>
+            )}
+            {jobPost.durationValue && jobPost.durationType && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Duration</span>
+                <span className={styles.factValue}>
+                  {jobPost.durationValue} {jobPost.durationType.toLowerCase()}
+                </span>
+              </div>
+            )}
             {formatJobDurationParts(jobPost) && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Duration</span>
