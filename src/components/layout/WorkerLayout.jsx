@@ -93,10 +93,16 @@ const NAV = [
     items: [
       {
         label: "Subscriptions",
-        path: "/dashboard/hirer/subscription",
+        path: "/dashboard/worker/subscription",
         icon: "💎",
       },
-      { label: "Boost Listing", path: "/dashboard/hirer/featured", icon: "🚀" },
+
+      // TO BE ADDED AT 10K USERS
+      // {
+      //   label: "Boost Listing",
+      //   path: "/dashboard/worker/featured",
+      //   icon: "🚀",
+      // },
       { label: "Settings", path: "/settings", icon: "⚙️" },
     ],
   },
