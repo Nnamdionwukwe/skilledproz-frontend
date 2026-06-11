@@ -67,8 +67,9 @@ export default function WorkerEarningsPage() {
     if (to) q.set("to", to);
     if (activeCurrency !== "ALL") q.set("currency", activeCurrency);
 
+    api;
     api
-      .get(`/workers/dashboard/earnings?${q}`)
+      .get(`/payments/earnings?${q}`)
       .then((r) => setData(r.data.data))
       .catch((e) =>
         setError(e.response?.data?.message ?? "Failed to load earnings"),
