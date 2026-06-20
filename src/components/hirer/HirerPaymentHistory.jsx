@@ -1,3 +1,4 @@
+// HirerPaymentHistory.jsx - Updated with correct fee display
 import { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./HirerPaymentHistory.module.css";
@@ -80,10 +81,12 @@ function ReceiptModal({ payment, onClose }) {
     cls: "pending",
   };
 
-  const platformFeePercent =
-    payment.amount > 0
-      ? ((payment.platformFee / payment.amount) * 100).toFixed(1)
-      : "0.0";
+  // Platform fee is 5% of the total amount
+  // Worker gets 100% of the agreed rate (workerPayout)
+  // Hirer pays amount = workerPayout + platformFee
+  const platformFeePercent = 5; // Fixed at 5%
+  const workerPayout = payment.workerPayout ?? payment.amount * 0.95;
+  const platformFee = payment.platformFee ?? payment.amount * 0.05;
 
   return (
     <div className={styles.backdrop} onMouseDown={handleBackdrop}>
@@ -92,7 +95,7 @@ function ReceiptModal({ payment, onClose }) {
         <div className={styles.modalHeader}>
           <div className={styles.modalLogo}>
             <span className={styles.logoMark}>SP</span>
-            <span className={styles.logoText}>SkilledPro</span>
+            <span className={styles.logoText}>SkilledProz</span>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>
             ✕
@@ -189,28 +192,35 @@ function ReceiptModal({ payment, onClose }) {
 
         <div className={styles.receiptDivider} />
 
-        {/* Breakdown */}
+        {/* Breakdown - Worker gets 100%, Platform fee is 5% */}
         <div className={styles.breakdown}>
           <div className={styles.breakdownRow}>
-            <span>Job total</span>
-            <span>{fmt(payment.amount, payment.currency)}</span>
-          </div>
-          <div className={styles.breakdownRow}>
-            <span>Platform fee ({platformFeePercent}%)</span>
-            <span className={styles.feeAmount}>
-              − {fmt(payment.platformFee, payment.currency)}
+            <span>Worker's earnings</span>
+            <span className={styles.workerEarnings}>
+              {fmt(workerPayout, payment.currency)}
             </span>
           </div>
           <div className={styles.breakdownRow}>
-            <span>Worker payout</span>
-            <span>{fmt(payment.workerPayout, payment.currency)}</span>
+            <span>Platform fee (5%)</span>
+            <span className={styles.feeAmount}>
+              + {fmt(platformFee, payment.currency)}
+            </span>
           </div>
           <div className={`${styles.breakdownRow} ${styles.breakdownTotal}`}>
-            <span>You paid</span>
+            <span>Total you paid</span>
             <span className={styles.totalAmount}>
               {fmt(payment.amount, payment.currency)}
             </span>
           </div>
+        </div>
+
+        {/* Worker gets 100% note */}
+        <div className={styles.workerNote}>
+          <span className={styles.workerNoteIcon}>✅</span>
+          <span className={styles.workerNoteText}>
+            Worker receives <strong>100%</strong> of the job amount (
+            {fmt(workerPayout, payment.currency)})
+          </span>
         </div>
 
         {/* Escrow release timestamp */}
@@ -371,7 +381,7 @@ export default function HirerPaymentHistory() {
       })
       .catch(() => setError("Failed to load payment history."))
       .finally(() => setLoading(false));
-  }, [page, statusFilter, currencyFilter]); // ← currencyFilter added
+  }, [page, statusFilter, currencyFilter]);
 
   // ── Release escrow ──────────────────────────────────────────────────────────
   async function handleRelease(bookingId) {
@@ -466,58 +476,8 @@ export default function HirerPaymentHistory() {
             sub="Returned to you"
           />
         </div>
+
         {/* ── Filters ── */}
-        {/* <div className={styles.filters}>
-          <div className={styles.searchWrap}>
-            <svg
-              className={styles.searchIcon}
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-            >
-              <circle
-                cx="7"
-                cy="7"
-                r="5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <line
-                x1="11"
-                y1="11"
-                x2="14"
-                y2="14"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-            <input
-              className={styles.searchInput}
-              type="text"
-              placeholder="Search by job, worker, or ID…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <div className={styles.statusTabs}>
-            {["ALL", "HELD", "RELEASED", "REFUNDED", "FAILED"].map((s) => (
-              <button
-                key={s}
-                className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ""}`}
-                onClick={() => {
-                  setStatus(s);
-                  setPage(1);
-                }}
-              >
-                {s === "ALL" ? "All" : (STATUS_META[s]?.label ?? s)}
-              </button>
-            ))}
-          </div>
-        </div> */}
-
         <div className={styles.filters}>
           <div className={styles.searchWrap}>
             <svg
@@ -699,8 +659,17 @@ export default function HirerPaymentHistory() {
                             {fmt(payment.amount, payment.currency)}
                           </span>
                           <span className={styles.amountSub}>
-                            Worker gets{" "}
-                            {fmt(payment.workerPayout, payment.currency)}
+                            Worker gets <strong>100%</strong> (
+                            {fmt(payment.workerPayout, payment.currency)})
+                          </span>
+                          <span
+                            className={styles.amountSub}
+                            style={{
+                              color: "var(--orange)",
+                              fontSize: "0.6rem",
+                            }}
+                          >
+                            Platform fee: 5%
                           </span>
                         </div>
 
@@ -743,6 +712,7 @@ export default function HirerPaymentHistory() {
             </>
           )}
         </div>
+
         {/* ── Pagination ── */}
         {!loading && totalPages > 1 && (
           <div className={styles.pagination}>
@@ -765,6 +735,7 @@ export default function HirerPaymentHistory() {
             </button>
           </div>
         )}
+
         {/* ── Receipt modal ── */}
         {receipt && (
           <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />

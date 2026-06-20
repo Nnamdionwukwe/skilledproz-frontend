@@ -793,3 +793,54 @@
     padding: 1.5rem 1rem 3rem;
   }
 }
+
+/* Add to HirerPaymentHistory.module.css */
+
+/* Worker Note - Shows 100% payout */
+.workerNote {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.workerNoteIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.workerNoteText {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.workerNoteText strong {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Worker Earnings in breakdown */
+.workerEarnings {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Platform fee display in amount cell */
+.amountSub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.amountSub strong {
+  color: var(--green);
+}
+
+/* Green color variable if not defined */
+:root {
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.12);
+}
