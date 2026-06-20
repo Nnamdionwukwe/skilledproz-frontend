@@ -1,5 +1,5 @@
 .page {
-  padding: 32px 24px;
+  padding: 16px;
   max-width: 1200px;
   margin: 0 auto;
   animation: fadeUp 0.4s ease both;
@@ -9,23 +9,30 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
   flex-wrap: wrap;
 }
 
 .eyebrow {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--orange);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.5px;
@@ -34,13 +41,13 @@
 .ctaBtn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 6px;
+  padding: 8px 14px;
   background: var(--orange);
   color: var(--bg);
   border: none;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -54,7 +61,7 @@
 }
 
 .ctaBtnIcon {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   font-weight: 300;
 }
@@ -63,19 +70,20 @@
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .statCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 14px;
   position: relative;
   overflow: hidden;
   animation: fadeUp 0.45s ease both;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .statCard:hover {
   border-color: var(--border-hover);
@@ -110,21 +118,22 @@
 }
 
 .statIcon {
-  font-size: 22px;
+  font-size: 18px;
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .statValue {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.5px;
-  line-height: 1;
-  margin-bottom: 4px;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  word-break: break-all;
 }
 .statLabel {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
   font-weight: 500;
 }
@@ -133,14 +142,14 @@
 .grid2 {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 14px;
 }
 
 /* ── Panel ─────────────────────────────────────────────────── */
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   animation: fadeUp 0.5s ease both;
 }
@@ -149,19 +158,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px 14px;
+  padding: 14px 16px 12px;
   border-bottom: 1px solid var(--border);
 }
 
 .panelTitle {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
 }
 
 .panelLink {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--orange);
   transition: opacity 0.15s;
@@ -180,13 +189,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 13px 20px;
+  gap: 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
   animation: fadeUp 0.4s ease both;
   cursor: pointer;
   text-decoration: none;
+  flex-wrap: wrap;
 }
 .bookingRow:last-child {
   border-bottom: none;
@@ -198,20 +208,26 @@
 .bookingRowLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
+  flex: 1;
+}
+
+.bookingInfo {
+  min-width: 0;
+  flex: 1;
 }
 
 .bookingAvatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--orange);
   overflow: hidden;
@@ -224,7 +240,7 @@
 }
 
 .bookingTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -232,16 +248,25 @@
   text-overflow: ellipsis;
 }
 .bookingMeta {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-dim);
-  margin-top: 2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookingDate {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 1px;
 }
 
 /* ── Badges ────────────────────────────────────────────────── */
 .badge {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 20px;
   white-space: nowrap;
   letter-spacing: 0.04em;
@@ -273,6 +298,21 @@
   color: #f87171;
 }
 
+.bookingRowRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.bookingRate {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--orange);
+  white-space: nowrap;
+}
+
 /* ── Worker rows ───────────────────────────────────────────── */
 .workerList {
   display: flex;
@@ -282,8 +322,8 @@
 .workerRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 20px;
+  gap: 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
   animation: fadeUp 0.4s ease both;
@@ -297,15 +337,15 @@
 }
 
 .workerAvatar {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(129, 140, 248, 0.12);
   border: 1px solid rgba(129, 140, 248, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #818cf8;
   overflow: hidden;
@@ -322,21 +362,24 @@
   min-width: 0;
 }
 .workerName {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
 }
 .workerTitle {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-dim);
-  margin-top: 2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .workerRating {
   display: flex;
   align-items: center;
-  gap: 3px;
-  font-size: 12px;
+  gap: 2px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-dim);
   flex-shrink: 0;
@@ -346,9 +389,9 @@
 }
 
 .empty {
-  padding: 32px 20px;
+  padding: 24px 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
@@ -374,52 +417,184 @@
 }
 .skeletonHeader {
   composes: skeletonBase;
-  height: 48px;
-  width: 240px;
-  margin-bottom: 32px;
+  height: 40px;
+  width: 200px;
+  margin-bottom: 24px;
 }
 .skeletonCard {
   composes: skeletonBase;
-  height: 110px;
-  border-radius: 14px;
+  height: 90px;
+  border-radius: 12px;
 }
 .skeletonPanel {
   composes: skeletonBase;
-  height: 320px;
-  border-radius: 16px;
+  height: 280px;
+  border-radius: 14px;
+}
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Responsive ────────────────────────────────────────────── */
-@media (min-width: 640px) {
-  .statsGrid {
-    grid-template-columns: repeat(4, 1fr);
+
+/* Small phones (portrait) */
+@media (min-width: 360px) {
+  .page {
+    padding: 12px;
+  }
+  .statValue {
+    font-size: 18px;
+  }
+  .statCard {
+    padding: 12px;
   }
 }
+
+/* Medium phones and small tablets */
+@media (min-width: 480px) {
+  .page {
+    padding: 16px;
+  }
+  .statValue {
+    font-size: 20px;
+  }
+  .statCard {
+    padding: 14px;
+  }
+  .title {
+    font-size: 24px;
+  }
+}
+
+/* Tablets and small desktops */
+@media (min-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .statValue {
+    font-size: 22px;
+  }
+  .page {
+    padding: 20px;
+  }
+}
+
+/* Large tablets */
+@media (min-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .statValue {
+    font-size: 24px;
+  }
+  .statCard {
+    padding: 18px;
+  }
+  .title {
+    font-size: 26px;
+  }
+  .page {
+    padding: 24px;
+  }
+}
+
+/* Desktops */
 @media (min-width: 900px) {
   .grid2 {
     grid-template-columns: 1fr 1fr;
+    gap: 20px;
   }
+  .page {
+    padding: 32px 24px;
+  }
+  .statValue {
+    font-size: 26px;
+  }
+  .title {
+    font-size: 28px;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1200px) {
   .page {
     padding: 40px 32px;
   }
+  .statValue {
+    font-size: 28px;
+  }
 }
 
-.bookingDate {
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 2px;
+/* Fix for very small screens */
+@media (max-width: 359px) {
+  .page {
+    padding: 8px;
+  }
+  .statCard {
+    padding: 10px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .statIcon {
+    font-size: 16px;
+  }
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .headerActions {
+    justify-content: stretch;
+  }
+  .ctaBtn {
+    justify-content: center;
+    flex: 1;
+  }
+  .bookingRow {
+    padding: 8px 10px;
+  }
+  .bookingAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  .workerAvatar {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
 }
 
-.bookingRowRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.bookingRate {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--orange);
+/* Fix for landscape phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .page {
+    padding: 8px 16px;
+  }
+  .statsGrid {
+    gap: 8px;
+  }
+  .statCard {
+    padding: 10px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .statIcon {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .header {
+    margin-bottom: 12px;
+  }
 }

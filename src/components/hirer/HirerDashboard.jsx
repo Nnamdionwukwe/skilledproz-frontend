@@ -10,7 +10,7 @@ import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
 export default function HirerDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { fmt, dashboardCurrency } = useCurrency();
+  const { fmt, dashboardCurrency, getSymbol } = useCurrency();
 
   useEffect(() => {
     api
@@ -39,6 +39,11 @@ export default function HirerDashboard() {
 
   const { stats, recentBookings, recentWorkers } = data;
 
+  // Get currency symbol for display
+  const currencySymbol = getSymbol
+    ? getSymbol(dashboardCurrency)
+    : dashboardCurrency || "$";
+
   return (
     <HirerLayout>
       <div className={styles.page}>
@@ -47,9 +52,7 @@ export default function HirerDashboard() {
             <p className={styles.eyebrow}>Overview</p>
             <h1 className={styles.title}>Your Dashboard</h1>
           </div>
-          <div
-            style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}
-          >
+          <div className={styles.headerActions}>
             <DashboardCurrencySwitch />
             <Link to="/dashboard/hirer/post-job" className={styles.ctaBtn}>
               <span className={styles.ctaBtnIcon}>+</span>
@@ -85,6 +88,7 @@ export default function HirerDashboard() {
             value={fmt(stats.totalSpent || 0, dashboardCurrency)}
             icon="💳"
             delay={0.15}
+            currencySymbol={currencySymbol}
           />
         </div>
 
@@ -135,14 +139,43 @@ export default function HirerDashboard() {
   );
 }
 
-function StatCard({ label, value, icon, accent, delay }) {
+function StatCard({ label, value, icon, accent, delay, currencySymbol }) {
+  // If value contains the currency code, replace with symbol
+  let displayValue = value;
+  if (currencySymbol && typeof value === "string") {
+    // Check if value contains currency code like "USD 1,000.00"
+    const currencyCodes = [
+      "USD",
+      "EUR",
+      "GBP",
+      "NGN",
+      "GHS",
+      "KES",
+      "ZAR",
+      "INR",
+      "CAD",
+      "AUD",
+      "JPY",
+      "CNY",
+      "BRL",
+      "AED",
+      "SAR",
+    ];
+    for (const code of currencyCodes) {
+      if (value.includes(code)) {
+        displayValue = value.replace(code, currencySymbol);
+        break;
+      }
+    }
+  }
+
   return (
     <div
       className={`${styles.statCard} ${accent ? styles[`statCard_${accent}`] : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
       <span className={styles.statIcon}>{icon}</span>
-      <p className={styles.statValue}>{value}</p>
+      <p className={styles.statValue}>{displayValue}</p>
       <p className={styles.statLabel}>{label}</p>
     </div>
   );
@@ -157,6 +190,29 @@ function BookingRow({ booking, delay }) {
     CANCELLED: "cancelled",
     DISPUTED: "disputed",
   };
+
+  // Get currency symbol
+  const currencySymbol = (currency) => {
+    const symbols = {
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      NGN: "₦",
+      GHS: "₵",
+      KES: "KSh",
+      ZAR: "R",
+      INR: "₹",
+      CAD: "CA$",
+      AUD: "A$",
+      JPY: "¥",
+      CNY: "¥",
+      BRL: "R$",
+      AED: "د.إ",
+      SAR: "﷼",
+    };
+    return symbols[currency] || currency;
+  };
+
   return (
     <Link
       to={`/bookings/${booking.id}`}
@@ -174,11 +230,18 @@ function BookingRow({ booking, delay }) {
             </span>
           )}
         </div>
-        <div>
+        <div className={styles.bookingInfo}>
           <p className={styles.bookingTitle}>{booking.title}</p>
           <p className={styles.bookingMeta}>
             {booking.worker?.firstName} {booking.worker?.lastName} ·{" "}
             {booking.category?.name}
+          </p>
+          <p className={styles.bookingDate}>
+            {new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
           </p>
         </div>
       </div>
@@ -186,7 +249,8 @@ function BookingRow({ booking, delay }) {
       <div className={styles.bookingRowRight}>
         {booking.agreedRate > 0 && (
           <span className={styles.bookingRate}>
-            {booking.currency} {booking.agreedRate.toLocaleString()}
+            {currencySymbol(booking.currency)}
+            {booking.agreedRate.toLocaleString()}
           </span>
         )}
         <span
@@ -195,14 +259,6 @@ function BookingRow({ booking, delay }) {
           {booking.status.replace("_", " ")}
         </span>
       </div>
-
-      <p className={styles.bookingDate}>
-        {new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}
-      </p>
     </Link>
   );
 }
