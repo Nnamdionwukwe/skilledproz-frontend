@@ -67,6 +67,19 @@ function formatDateForInput(date) {
   return d.toISOString().slice(0, 10);
 }
 
+// ─── Toast Component ──────────────────────────────────────────────────────
+function Toast({ toast, onClose }) {
+  if (!toast) return null;
+  return (
+    <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
+      {toast.msg}
+      <button className={s.toastClose} onClick={onClose}>
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export default function AdminJobPost() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -74,6 +87,12 @@ export default function AdminJobPost() {
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // ── New category state ──────────────────────────────────────────────────
+  const [newCategory, setNewCategory] = useState({ name: "", description: "" });
+  const [addingCategory, setAddingCategory] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -102,13 +121,42 @@ export default function AdminJobPost() {
     isActive: true,
   });
 
+  function showToast(msg, type = "success") {
+    if (window.toastTimeout) clearTimeout(window.toastTimeout);
+    setToast({ msg, type });
+    window.toastTimeout = setTimeout(() => setToast(null), 3500);
+  }
+
+  function closeToast() {
+    if (window.toastTimeout) clearTimeout(window.toastTimeout);
+    setToast(null);
+  }
+
+  // ── Load categories (public endpoint) ──────────────────────────────────
+  const loadCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      // Use the public endpoint – it has a higher limit (1000) and returns all categories
+      const res = await api.get("/categories", {
+        params: { limit: 1000 },
+      });
+      const cats = res.data.data?.categories || [];
+      setCategories(cats);
+      return cats;
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+      showToast("Failed to load categories", "error");
+      return [];
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api
-      .get("/categories")
-      .then((res) => setCategories(res.data.data?.categories || []))
-      .catch(() => {});
+    loadCategories();
   }, []);
 
+  // ── If editing, load job data ────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -149,6 +197,7 @@ export default function AdminJobPost() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -166,6 +215,51 @@ export default function AdminJobPost() {
     }));
   };
 
+  // ── Add new category ──────────────────────────────────────────────────────
+  const handleAddCategory = async () => {
+    if (!newCategory.name.trim()) return;
+    setAddingCategory(true);
+    setError("");
+    try {
+      const res = await api.post("/categories/suggest", {
+        name: newCategory.name.trim(),
+        description:
+          newCategory.description.trim() ||
+          `${newCategory.name.trim()} category`,
+      });
+      const data = res.data.data;
+
+      if (data.alreadyExists) {
+        const cat = data.category;
+        if (!form.categoryIds.includes(cat.id)) {
+          setForm((prev) => ({
+            ...prev,
+            categoryIds: [...prev.categoryIds, cat.id],
+          }));
+        }
+        showToast(`✅ "${cat.name}" already exists – selected`, "info");
+        setNewCategory({ name: "", description: "" });
+      } else {
+        const newCat = data.category;
+        // Reload categories to include the new one
+        await loadCategories();
+        // Select the new category
+        setForm((prev) => ({
+          ...prev,
+          categoryIds: [...prev.categoryIds, newCat.id],
+        }));
+        showToast(`✅ "${newCat.name}" added successfully!`, "success");
+        setNewCategory({ name: "", description: "" });
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to add category.");
+      showToast("❌ Failed to add category. Please try again.", "error");
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
+  // ── Submit form ──────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -217,6 +311,8 @@ export default function AdminJobPost() {
   return (
     <AdminLayout>
       <div className={s.page}>
+        <Toast toast={toast} onClose={closeToast} />
+
         <div className={s.header}>
           <h1 className={s.title}>
             {id ? "Edit External Job" : "Create New External Job"}
@@ -228,9 +324,11 @@ export default function AdminJobPost() {
             ← Back
           </button>
         </div>
+
         {error && <div className={s.errorBanner}>{error}</div>}
+
         <form onSubmit={handleSubmit} className={s.form}>
-          {/* Row 1: Basic info */}
+          {/* ── Row 1: Basic info ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Job Title *</label>
@@ -281,7 +379,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Row 2: Job Type & Experience Level */}
+          {/* ── Row 2: Job Type & Experience Level ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Job Type</label>
@@ -313,7 +411,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Row 3: Salary (structured) */}
+          {/* ── Row 3: Salary ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Salary Amount</label>
@@ -358,7 +456,7 @@ export default function AdminJobPost() {
               </select>
             </div>
             <div className={s.field}>
-              <label>Salary Text (optional display)</label>
+              <label>Salary Text (optional)</label>
               <input
                 name="salaryText"
                 value={form.salaryText}
@@ -368,7 +466,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Row 4: Education Level & Language */}
+          {/* ── Row 4: Education & Language ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Education Level</label>
@@ -395,7 +493,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Row 5: Experience Length & Working Hours */}
+          {/* ── Row 5: Experience Length & Working Hours ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Experience Length</label>
@@ -417,7 +515,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Row 6: Applicant Location & Min Qualification */}
+          {/* ── Row 6: Applicant Location & Min Qualification ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Applicant Location</label>
@@ -439,7 +537,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Row 7: Application URL & Source Platform */}
+          {/* ── Row 7: URL & Source ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Application URL *</label>
@@ -484,7 +582,7 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Responsibilities & Requirements */}
+          {/* ── Responsibilities & Requirements ── */}
           <div className={s.row}>
             <div className={s.field}>
               <label>Responsibilities</label>
@@ -508,27 +606,69 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* Categories */}
+          {/* ── Categories ── */}
           <div className={s.field}>
             <label>Categories</label>
-            <div className={s.categoryGrid}>
-              {categories.map((cat) => (
-                <label key={cat.id} className={s.categoryChip}>
+            {categoriesLoading ? (
+              <div className={s.loadingCategories}>Loading categories…</div>
+            ) : (
+              <>
+                <div className={s.categoryGrid}>
+                  {categories.map((cat) => (
+                    <label key={cat.id} className={s.categoryChip}>
+                      <input
+                        type="checkbox"
+                        checked={form.categoryIds.includes(cat.id)}
+                        onChange={() => handleCategoryToggle(cat.id)}
+                      />
+                      {cat.icon || "📁"} {cat.name}
+                    </label>
+                  ))}
+                  {categories.length === 0 && (
+                    <span className={s.noCategories}>No categories found</span>
+                  )}
+                </div>
+
+                {/* ── Add New Category ── */}
+                <div className={s.addCategoryRow}>
                   <input
-                    type="checkbox"
-                    checked={form.categoryIds.includes(cat.id)}
-                    onChange={() => handleCategoryToggle(cat.id)}
+                    className={s.addCategoryInput}
+                    placeholder="New category name..."
+                    value={newCategory.name}
+                    onChange={(e) =>
+                      setNewCategory((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    disabled={addingCategory}
                   />
-                  {cat.icon || "📁"} {cat.name}
-                </label>
-              ))}
-              {categories.length === 0 && (
-                <span className={s.noCategories}>No categories found</span>
-              )}
-            </div>
+                  <input
+                    className={s.addCategoryInput}
+                    placeholder="Description (optional)"
+                    value={newCategory.description}
+                    onChange={(e) =>
+                      setNewCategory((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    disabled={addingCategory}
+                  />
+                  <button
+                    type="button"
+                    className={s.addCategoryBtn}
+                    onClick={handleAddCategory}
+                    disabled={addingCategory || !newCategory.name.trim()}
+                  >
+                    {addingCategory ? "Adding..." : "＋ Add"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Active toggle */}
+          {/* ── Active toggle ── */}
           <div className={s.field}>
             <label className={s.checkboxLabel}>
               <input
@@ -541,6 +681,7 @@ export default function AdminJobPost() {
             </label>
           </div>
 
+          {/* ── Submit ── */}
           <div className={s.actions}>
             <button
               type="button"
