@@ -108,6 +108,8 @@ import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
 import AdminPlatformJobs from "./pages/admin/AdminPlatformJobs.jsx";
 import AdminExternalJobs from "./pages/admin/AdminExternalJobs.jsx";
 import AdminJobPost from "./pages/admin/AdminJobPost.jsx";
+import ExternalJobBoard from "./pages/worker/ExternalJobBoard/ExternalJobBoard.jsx";
+import ExternalJobDetail from "./pages/worker/ExternalJobBoard/ExternalJobDetail.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -588,6 +590,27 @@ export default function App() {
             </RequireWorker>
           }
         />
+        <Route
+          path="/external-jobs"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <ExternalJobBoard />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/external-jobs/:id"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <ExternalJobDetail />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+
         <Route
           path="/dashboard/worker/verification"
           element={

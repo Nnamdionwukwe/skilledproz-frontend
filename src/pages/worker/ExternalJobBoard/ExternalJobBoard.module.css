@@ -1,0 +1,327 @@
+/* src/pages/worker/ExternalJobBoard.module.css */
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.heroTitle {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.heroSub {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.heroNote {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.2rem 1rem;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ── Filters ── */
+.filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.searchWrap {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 0.8rem;
+  transition: border-color 0.15s;
+}
+.searchWrap:focus-within {
+  border-color: var(--orange);
+}
+.searchIcon {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-right: 0.5rem;
+}
+.searchInput {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0.6rem 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+}
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+.clearBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+.clearBtn:hover {
+  color: var(--text);
+}
+
+.categorySelect {
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-width: 160px;
+  outline: none;
+}
+.categorySelect:focus {
+  border-color: var(--orange);
+}
+
+/* ── Stats ── */
+.stats {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.2rem 1.2rem 1rem;
+  transition:
+    border-color 0.2s,
+    transform 0.1s;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.card:hover {
+  border-color: var(--orange);
+  transform: translateY(-2px);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cardCompany {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.cardCompanyIcon {
+  font-size: 1.1rem;
+}
+.cardCompanyName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.cardPlatform {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardDesc {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardMeta {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.cardLocation {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.cardType {
+  background: var(--bg-secondary);
+  padding: 0.1rem 0.6rem;
+  border-radius: 12px;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+.cardTags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: var(--bg-secondary);
+  padding: 0.1rem 0.6rem;
+  border-radius: 10px;
+  color: var(--text-dim);
+}
+.tagSalary {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.cardDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── Empty ── */
+.empty {
+  text-align: center;
+  padding: 3rem 0;
+}
+.emptyIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+.emptyTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.emptySub {
+  color: var(--text-muted);
+}
+
+/* ── Skeleton ── */
+.skeleton {
+  height: 220px;
+  background: var(--bg-card);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ── Pagination ── */
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+.pageBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 1.2rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pageBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pageInfo {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .page {
+    padding: 1rem;
+  }
+  .heroTitle {
+    font-size: 1.6rem;
+  }
+  .filters {
+    flex-direction: column;
+  }
+  .searchWrap {
+    min-width: 100%;
+  }
+  .categorySelect {
+    width: 100%;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

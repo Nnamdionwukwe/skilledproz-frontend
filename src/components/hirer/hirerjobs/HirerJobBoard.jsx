@@ -1,3 +1,4 @@
+// src/pages/worker/HirerJobBoard.jsx (or wherever this file lives)
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import styles from "./HirerJobBoard.module.css";
@@ -62,7 +63,20 @@ export default function HirerJobBoard() {
   return (
     <WorkerLayout>
       <div className={styles.page}>
-        {/* Search bar */}
+        {/* ── External Jobs CTA (worker only) ── */}
+        {user?.role === "WORKER" && (
+          <div className={styles.externalCta}>
+            <Link to="/external-jobs" className={styles.externalLink}>
+              🌐 Browse External Jobs
+              <span className={styles.externalBadge}>New</span>
+            </Link>
+            <p className={styles.externalNote}>
+              Discover jobs posted on partner platforms
+            </p>
+          </div>
+        )}
+
+        {/* ── Search bar ── */}
         <form onSubmit={handleSearch} className={styles.searchBar}>
           <input
             className={styles.searchInput}
@@ -90,7 +104,7 @@ export default function HirerJobBoard() {
           </button>
         </form>
 
-        {/* Results header */}
+        {/* ── Results header ── */}
         <div className={styles.resultsHeader}>
           <p className={styles.resultsCount}>
             {loading
@@ -99,7 +113,7 @@ export default function HirerJobBoard() {
           </p>
         </div>
 
-        {/* Job grid */}
+        {/* ── Job grid ── */}
         {loading ? (
           <div className={styles.grid}>
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -126,7 +140,7 @@ export default function HirerJobBoard() {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* ── Pagination ── */}
         {pages > 1 && (
           <div className={styles.pagination}>
             <button
