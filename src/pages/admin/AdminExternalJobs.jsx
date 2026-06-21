@@ -65,9 +65,18 @@ function truncate(str, n = 120) {
 }
 
 function formatSalary(job) {
+  if (
+    job.salaryMin != null &&
+    job.salaryMax != null &&
+    job.salaryCurrency &&
+    job.salaryPeriod
+  ) {
+    const periodLabel = SALARY_PERIOD_LABELS[job.salaryPeriod] || "";
+    return `${job.salaryCurrency} ${job.salaryMin} – ${job.salaryMax}${periodLabel}`;
+  }
   if (job.salaryAmount && job.salaryCurrency && job.salaryPeriod) {
     const periodLabel = SALARY_PERIOD_LABELS[job.salaryPeriod] || "";
-    return `${job.salaryCurrency} ${Number(job.salaryAmount).toLocaleString()}${periodLabel}`;
+    return `${job.salaryCurrency} ${job.salaryAmount}${periodLabel}`;
   }
   return job.salaryText || "—";
 }

@@ -101,6 +101,8 @@ export default function AdminJobPost() {
     jobType: "FULL_TIME",
     salaryText: "",
     salaryAmount: "",
+    salaryMin: "",
+    salaryMax: "",
     salaryCurrency: "USD",
     salaryPeriod: "MONTHLY",
     educationLevel: "BACHELOR",
@@ -171,6 +173,8 @@ export default function AdminJobPost() {
           jobType: job.jobType || "FULL_TIME",
           salaryText: job.salaryText || "",
           salaryAmount: job.salaryAmount || "",
+          salaryMin: job.salaryMin || "",
+          salaryMax: job.salaryMax || "",
           salaryCurrency: job.salaryCurrency || "USD",
           salaryPeriod: job.salaryPeriod || "MONTHLY",
           educationLevel: job.educationLevel || "BACHELOR",
@@ -411,19 +415,33 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* ── Row 3: Salary ── */}
+          {/* ── Salary Section ── */}
           <div className={s.row}>
             <div className={s.field}>
-              <label>Salary Amount</label>
+              <label>Salary Min</label>
               <input
-                name="salaryAmount"
+                name="salaryMin"
                 type="number"
                 step="0.01"
-                value={form.salaryAmount}
+                value={form.salaryMin}
                 onChange={handleChange}
-                placeholder="e.g. 50000"
+                placeholder="e.g. 200"
               />
             </div>
+            <div className={s.field}>
+              <label>Salary Max (optional)</label>
+              <input
+                name="salaryMax"
+                type="number"
+                step="0.01"
+                value={form.salaryMax}
+                onChange={handleChange}
+                placeholder="e.g. 300"
+              />
+            </div>
+          </div>
+
+          <div className={s.row}>
             <div className={s.field}>
               <label>Currency</label>
               <select
@@ -438,9 +456,6 @@ export default function AdminJobPost() {
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className={s.row}>
             <div className={s.field}>
               <label>Salary Period</label>
               <select
@@ -455,6 +470,9 @@ export default function AdminJobPost() {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className={s.row}>
             <div className={s.field}>
               <label>Salary Text (optional)</label>
               <input
