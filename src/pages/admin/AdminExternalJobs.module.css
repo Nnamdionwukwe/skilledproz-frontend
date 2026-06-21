@@ -135,6 +135,13 @@
 .accent_yellow .statValue {
   color: #eab308;
 }
+.accent_blue {
+  border-color: rgba(59, 130, 246, 0.2);
+  background: rgba(59, 130, 246, 0.06);
+}
+.accent_blue .statValue {
+  color: #3b82f6;
+}
 
 .statIcon {
   font-size: 18px;
@@ -291,7 +298,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 2.4fr 1.6fr 0.9fr 1.1fr 0.5fr 1fr 1fr;
+  grid-template-columns: 2.4fr 1.6fr 1.2fr 1fr 1fr 1.4fr;
   align-items: center;
   gap: 10px;
   padding: 13px 18px;
@@ -336,57 +343,52 @@
   white-space: nowrap;
 }
 
-/* Hirer cell */
-.tdHirer {
+/* Company cell */
+.tdCompany {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
   min-width: 0;
 }
-.avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--orange-dim);
-  border: 1px solid rgba(249, 115, 22, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--orange);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.avatarLg {
-  width: 42px;
-  height: 42px;
-  font-size: 15px;
-}
-.tdHirerInfo {
-  min-width: 0;
-}
-.tdHirerName {
+.companyName {
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
-  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tdHirerEmail {
+.companyLocation {
   font-size: 10px;
   color: var(--text-muted);
-  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Platform cell */
+.tdPlatform {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.platformBadge {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px 8px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.applyLink {
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--orange);
+  transition: opacity 0.15s;
+}
+.applyLink:hover {
+  opacity: 0.7;
 }
 
 /* Generic meta cell */
@@ -396,27 +398,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Budget cell */
-.tdBudget {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-/* Applications count */
-.tdApps {
-  text-align: center;
-}
-.appsCount {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-.appsCountActive {
-  color: var(--orange);
 }
 
 /* Status cell */
@@ -441,7 +422,8 @@
 .fillBtn,
 .cancelBtn,
 .reopenBtn,
-.deleteBtn {
+.deleteBtn,
+.editBtn {
   width: 28px;
   height: 28px;
   border-radius: 7px;
@@ -453,6 +435,8 @@
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  text-decoration: none;
+  color: var(--text);
 }
 .viewBtn:hover {
   border-color: var(--orange);
@@ -473,6 +457,10 @@
 .deleteBtn:hover {
   border-color: var(--red);
   background: var(--red-dim);
+}
+.editBtn:hover {
+  border-color: #818cf8;
+  background: rgba(129, 140, 248, 0.1);
 }
 
 /* ─── Badges ──────────────────────────────────────────────────────────────── */
@@ -681,48 +669,6 @@
   border-color: var(--border-hover);
 }
 
-/* Modal tabs */
-.modalTabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-panel);
-  padding: 0 20px;
-  position: sticky;
-  top: 57px;
-  z-index: 1;
-}
-.modalTab {
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dim);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  font-family: var(--font-body);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.15s;
-}
-.modalTab:hover {
-  color: var(--text);
-}
-.modalTabActive {
-  color: var(--orange);
-  border-bottom-color: var(--orange);
-}
-.tabCount {
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--orange-dim);
-  color: var(--orange);
-  border-radius: 10px;
-  padding: 1px 7px;
-}
-
 .modalBody {
   padding: 18px 20px;
   display: flex;
@@ -737,40 +683,37 @@
   margin: 0;
 }
 
-/* ─── Hirer card ──────────────────────────────────────────────────────────── */
-.hirerCard {
+/* ─── External meta rows ──────────────────────────────────────────────────── */
+.externalMeta {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+}
+.metaRow {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
 }
-.hirerInfo {
-  flex: 1;
-  min-width: 0;
+.metaLabel {
+  font-weight: 600;
+  color: var(--text-muted);
 }
-.hirerName {
-  font-size: 14px;
-  font-weight: 700;
+.metaValue {
   color: var(--text);
-  margin: 0 0 2px;
-  display: block;
+  text-align: right;
+  max-width: 70%;
 }
-.hirerEmail {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-  display: block;
+.externalLink {
+  color: var(--orange);
+  text-decoration: none;
+  font-weight: 600;
 }
-.hirerLabel {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  flex-shrink: 0;
+.externalLink:hover {
+  text-decoration: underline;
 }
 
 /* ─── Chip row ────────────────────────────────────────────────────────────── */
@@ -823,30 +766,10 @@
   margin: 0;
 }
 
-/* ─── Detail row ──────────────────────────────────────────────────────────── */
-.detailRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-.detailRowIcon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-.detailRowVal {
-  font-size: 13px;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-
 /* ─── Mini stats ──────────────────────────────────────────────────────────── */
 .miniStats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 .miniStat {
@@ -887,9 +810,10 @@
 .btnStatusFill,
 .btnStatusCancel,
 .btnStatusReopen,
-.btnDelete {
+.btnDelete,
+.btnEdit {
   flex: 1;
-  min-width: 120px;
+  min-width: 80px;
   padding: 10px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -902,6 +826,7 @@
   gap: 6px;
   transition: all 0.15s;
   border: 1px solid transparent;
+  text-decoration: none;
 }
 .btnStatusFill {
   background: var(--green-dim);
@@ -939,48 +864,14 @@
   background: var(--red);
   color: #fff;
 }
-
-/* ─── Applications list ───────────────────────────────────────────────────── */
-.appList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.btnEdit {
+  background: rgba(129, 140, 248, 0.1);
+  border-color: rgba(129, 140, 248, 0.3);
+  color: #818cf8;
 }
-.appCard {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  animation: fadeUp 0.3s ease both;
-  transition: border-color 0.15s;
-}
-.appCard:hover {
-  border-color: var(--border-hover);
-}
-.appInfo {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.appName {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-.appMessage {
-  font-size: 12px;
-  color: var(--text-dim);
-  line-height: 1.5;
-  font-style: italic;
-}
-.appDate {
-  font-size: 10px;
-  color: var(--text-muted);
+.btnEdit:hover {
+  background: #818cf8;
+  color: #fff;
 }
 
 /* ─── Job summary card (status + delete modals) ───────────────────────────── */
@@ -1220,7 +1111,7 @@
     justify-content: space-between;
   }
   .miniStats {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   .backdrop {
     align-items: center;
@@ -1243,7 +1134,7 @@
   }
   .tableHead {
     display: grid;
-    grid-template-columns: 2.4fr 1.6fr 0.9fr 1.1fr 0.5fr 1fr 1fr;
+    grid-template-columns: 2.4fr 1.6fr 1.2fr 1fr 1fr 1.4fr;
     padding: 9px 18px;
     font-size: 10px;
     text-transform: uppercase;
@@ -1253,26 +1144,7 @@
   }
 }
 
-.editBtn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  text-decoration: none;
-  color: var(--text);
-}
-.editBtn:hover {
-  border-color: #818cf8;
-  background: rgba(129, 140, 248, 0.1);
-}
-
+/* ─── Additional external-specific styles ────────────────────────────────── */
 .primaryBtn {
   background: var(--primary);
   color: #fff;
@@ -1285,4 +1157,31 @@
 }
 .primaryBtn:hover {
   background: var(--primary-dark);
+}
+
+.btnEdit {
+  composes: editBtn; /* reuse existing editBtn */
+}
+
+/* Salary & Education chips in the table */
+.salaryChip {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  color: var(--text);
+  margin-right: 4px;
+}
+.eduChip {
+  font-size: 10px;
+  font-weight: 500;
+  background: rgba(129, 140, 248, 0.08);
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  color: #818cf8;
 }

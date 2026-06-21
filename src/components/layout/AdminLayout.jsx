@@ -4,16 +4,65 @@ import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./AdminLayout.module.css";
 
+// const NAV = [
+//   {
+//     group: "Overview",
+//     items: [
+//       { label: "Dashboard", path: "/admin", icon: "◈" },
+//       { label: "Analytics", path: "/admin/analytics", icon: "📊" },
+//     ],
+//   },
+//   {
+//     group: "Users",
+//     items: [
+//       { label: "All Users", path: "/admin/users", icon: "👥" },
+//       { label: "Verifications", path: "/admin/verifications", icon: "🛡️" },
+//       { label: "Disputes", path: "/admin/disputes", icon: "⚖️" },
+//     ],
+//   },
+
+//   {
+//     group: "Content",
+//     items: [
+//       { label: "Bookings", path: "/admin/bookings", icon: "📋" },
+//       { label: "Categories", path: "/admin/categories", icon: "🔧" },
+//       { label: "Reviews", path: "/admin/reviews", icon: "⭐" },
+//       { label: "Payments", path: "/admin/payments", icon: "💳" },
+//       { label: "Manual Payments", path: "/admin/manual-payments", icon: "💵" },
+//       { label: "Withdrawals", path: "/admin/withdrawals", icon: "💸" },
+//       { label: "jobs", path: "/admin/jobs", icon: "💼" },
+//       { label: "subscriptions", path: "/admin/subscriptions", icon: "💎" },
+//       { label: "featured", path: "/admin/featured", icon: "🚀" },
+//       { label: "posts", path: "/admin/posts", icon: "✍️" },
+//       { label: "messages", path: "/admin/messages", icon: "💬" },
+//       { label: "video calls", path: "/admin/video-calls", icon: "📹" },
+//       { label: "campaigns", path: "/admin/campaigns", icon: "�" },
+//       { label: "referrals", path: "/admin/referrals", icon: "🔗" },
+//       { label: "reports", path: "/admin/reports", icon: "🚩" },
+//       { label: "audit logs", path: "/admin/audit-logs", icon: "�" },
+//       { label: "insurance claims", path: "/admin/insurance", icon: "🛡️" },
+//       { label: "promo codes", path: "/admin/promocodes", icon: "🏷️" },
+//     ],
+//   },
+//   {
+//     group: "System",
+//     items: [
+//       { label: "Broadcast", path: "/admin/broadcast", icon: "📢" },
+//       { label: "Settings", path: "/admin/settings", icon: "⚙️" },
+//     ],
+//   },
+// ];
+
 const NAV = [
   {
-    group: "Overview",
+    group: "Dashboard",
     items: [
-      { label: "Dashboard", path: "/admin", icon: "◈" },
+      { label: "Overview", path: "/admin", icon: "◈" },
       { label: "Analytics", path: "/admin/analytics", icon: "📊" },
     ],
   },
   {
-    group: "Users",
+    group: "User Management",
     items: [
       { label: "All Users", path: "/admin/users", icon: "👥" },
       { label: "Verifications", path: "/admin/verifications", icon: "🛡️" },
@@ -21,26 +70,46 @@ const NAV = [
     ],
   },
   {
-    group: "Content",
+    group: "Job Management",
     items: [
-      { label: "Bookings", path: "/admin/bookings", icon: "📋" },
-      { label: "Categories", path: "/admin/categories", icon: "🔧" },
-      { label: "Reviews", path: "/admin/reviews", icon: "⭐" },
+      { label: "Platform Jobs", path: "/admin/platform/jobs", icon: "💼" },
+      {
+        label: "Admin External Jobs",
+        path: "/admin/external/jobs",
+        icon: "🔗",
+      },
+    ],
+  },
+  {
+    group: "Financials",
+    items: [
       { label: "Payments", path: "/admin/payments", icon: "💳" },
       { label: "Manual Payments", path: "/admin/manual-payments", icon: "💵" },
       { label: "Withdrawals", path: "/admin/withdrawals", icon: "💸" },
-      { label: "jobs", path: "/admin/jobs", icon: "💼" },
-      { label: "subscriptions", path: "/admin/subscriptions", icon: "💎" },
-      { label: "featured", path: "/admin/featured", icon: "🚀" },
-      { label: "posts", path: "/admin/posts", icon: "✍️" },
-      { label: "messages", path: "/admin/messages", icon: "💬" },
-      { label: "video calls", path: "/admin/video-calls", icon: "📹" },
-      { label: "campaigns", path: "/admin/campaigns", icon: "�" },
-      { label: "referrals", path: "/admin/referrals", icon: "🔗" },
-      { label: "reports", path: "/admin/reports", icon: "🚩" },
-      { label: "audit logs", path: "/admin/audit-logs", icon: "�" },
-      { label: "insurance claims", path: "/admin/insurance", icon: "🛡️" },
-      { label: "promo codes", path: "/admin/promocodes", icon: "🏷️" },
+      { label: "Subscriptions", path: "/admin/subscriptions", icon: "💎" },
+      { label: "Promo Codes", path: "/admin/promocodes", icon: "🏷️" },
+      { label: "Featured", path: "/admin/featured", icon: "🚀" },
+      { label: "Insurance Claims", path: "/admin/insurance", icon: "🛡️" },
+    ],
+  },
+  {
+    group: "Content & Community",
+    items: [
+      { label: "Posts", path: "/admin/posts", icon: "✍️" },
+      { label: "Reviews", path: "/admin/reviews", icon: "⭐" },
+      { label: "Categories", path: "/admin/categories", icon: "🔧" },
+    ],
+  },
+  {
+    group: "Engagement & Support",
+    items: [
+      { label: "Bookings", path: "/admin/bookings", icon: "📋" },
+      { label: "Messages", path: "/admin/messages", icon: "💬" },
+      { label: "Video Calls", path: "/admin/video-calls", icon: "📹" },
+      { label: "Reports", path: "/admin/reports", icon: "🚩" },
+      { label: "Campaigns", path: "/admin/campaigns", icon: "📣" },
+      { label: "Referrals", path: "/admin/referrals", icon: "🔗" },
+      { label: "Audit Logs", path: "/admin/audit-logs", icon: "📝" },
     ],
   },
   {

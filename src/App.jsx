@@ -87,7 +87,7 @@ import MyPostsPage from "./pages/feed/MyPosts";
 import FeedPage from "./pages/feed/FeedPage";
 import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
 import SettingsPage from "./components/settimg/SettingsPage";
-import AdminJobs from "./pages/admin/AdminJobs";
+import AdminJobs from "./pages/admin/AdminPlatformJobs.jsx";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
 import AdminPosts from "./pages/admin/AdminPosts";
@@ -105,6 +105,9 @@ import AdminReports from "./pages/admin/AdminReports";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminInsurance from "./pages/admin/AdminInsurance";
 import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
+import AdminPlatformJobs from "./pages/admin/AdminPlatformJobs.jsx";
+import AdminExternalJobs from "./pages/admin/AdminExternalJobs.jsx";
+import AdminJobPost from "./pages/admin/AdminJobPost.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -373,13 +376,40 @@ export default function App() {
           }
         />
         <Route
-          path="/admin/jobs"
+          path="/admin/platform/jobs"
           element={
             <RequireAdmin>
-              <AdminJobs />
+              <AdminPlatformJobs />
             </RequireAdmin>
           }
         />
+
+        <Route
+          path="/admin/external/jobs"
+          element={
+            <RequireAdmin>
+              <AdminExternalJobs />
+            </RequireAdmin>
+          }
+        />
+
+        <Route
+          path="/admin/external/jobs/create"
+          element={
+            <RequireAdmin>
+              <AdminJobPost />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/external/jobs/edit/:id"
+          element={
+            <RequireAdmin>
+              <AdminJobPost />
+            </RequireAdmin>
+          }
+        />
+
         <Route
           path="/admin/featured"
           element={

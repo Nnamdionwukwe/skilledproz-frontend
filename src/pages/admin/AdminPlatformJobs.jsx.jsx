@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
-import s from "./AdminJobs.module.css";
+import s from "./AdminPlatformJobs.module.css";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_TABS = [
@@ -175,8 +175,9 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
   const [tab, setTab] = useState("details"); // "details" | "applications"
 
   useEffect(() => {
+    api;
     api
-      .get(`/admin/jobs/${jobId}`)
+      .get(`/admin/platform/jobs/${jobId}`)
       .then((r) => setJob(r.data.data.job))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -445,7 +446,7 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      await api.patch(`/admin/jobs/${job.id}/status`, {
+      await api.patch(`/admin/platform/jobs/${job.id}/status`, {
         status: targetStatus,
         notes,
       });
@@ -534,7 +535,7 @@ function DeleteModal({ job, onClose, onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      await api.delete(`/admin/jobs/${job.id}`, { data: { reason } });
+      await api.delete(`/admin/platform/jobs/${job.id}`, { data: { reason } });
       onSuccess("Job post deleted and hirer notified.");
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to delete job post.");
@@ -728,7 +729,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AdminJobs() {
+export default function AdminPlatformJobs() {
   const [jobs, setJobs] = useState([]);
   const [categories, setCategories] = useState([]);
   const [statsData, setStatsData] = useState(null);
@@ -758,7 +759,7 @@ export default function AdminJobs() {
         if (q.trim()) params.search = q.trim();
         if (catId) params.categoryId = catId;
 
-        const res = await api.get("/admin/jobs", { params });
+        const res = await api.get("/admin/platform/jobs", { params });
         const d = res.data.data;
 
         setJobs(d.jobs);
