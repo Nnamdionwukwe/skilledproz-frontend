@@ -80,11 +80,23 @@ export default function ExternalJobDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleApplyClick = () => {
+  const handleApplyClick = async () => {
+    // ── Track APPLY_CLICK ──────────────────────────────────────────────────────
+    try {
+      await api.post(`/external-jobs/${id}/click`, { type: "APPLY_CLICK" });
+    } catch (err) {
+      // fire-and-forget – don't block UI
+    }
     setShowDisclaimer(true);
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
+    // ── Track PROCEED_CLICK ──────────────────────────────────────────────────
+    try {
+      await api.post(`/external-jobs/${id}/click`, { type: "PROCEED_CLICK" });
+    } catch (err) {
+      // fire-and-forget
+    }
     window.open(job.applicationUrl, "_blank", "noopener,noreferrer");
     setShowDisclaimer(false);
   };
