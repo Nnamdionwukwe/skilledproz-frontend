@@ -441,6 +441,7 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
 }
 
 // ─── Delete Modal ─────────────────────────────────────────────────────────────
+
 function DeleteModal({ job, onClose, onSuccess }) {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -580,6 +581,13 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
           title="Edit job"
         >
           ✏️
+        </Link>
+        <Link
+          to={`/admin/external/jobs/${job.id}/stats`}
+          className={s.statsBtn}
+          title="View click analytics"
+        >
+          📊
         </Link>
         {job.status === "OPEN" ? (
           <>

@@ -1,0 +1,162 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.backLink {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.backLink:hover {
+  color: var(--text);
+}
+
+.jobInfo {
+  margin-bottom: 2rem;
+}
+.jobInfo h2 {
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem 0;
+  color: var(--text);
+}
+.company {
+  color: var(--text-dim);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.2rem;
+  margin-bottom: 2.5rem;
+}
+
+.statCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  text-align: center;
+}
+.statLabel {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.statValue {
+  display: block;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0.2rem 0;
+}
+.statSub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.tableWrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.tableWrapper h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.userTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.userTable th,
+.userTable td {
+  padding: 0.7rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.userTable th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.userTable td {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.userTable tr:last-child td {
+  border-bottom: none;
+}
+
+.noData {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 0;
+}
+
+.loader,
+.error {
+  text-align: center;
+  padding: 3rem 0;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+.error {
+  color: var(--red);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .page {
+    padding: 0.75rem;
+  }
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .title {
+    font-size: 1.4rem;
+  }
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  .statCard {
+    padding: 0.8rem 1rem;
+  }
+  .statValue {
+    font-size: 1.6rem;
+  }
+  .userTable th,
+  .userTable td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.85rem;
+  }
+}

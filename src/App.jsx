@@ -110,6 +110,7 @@ import AdminExternalJobs from "./pages/admin/AdminExternalJobs.jsx";
 import AdminJobPost from "./pages/admin/AdminJobPost.jsx";
 import ExternalJobBoard from "./pages/worker/ExternalJobBoard/ExternalJobBoard.jsx";
 import ExternalJobDetail from "./pages/worker/ExternalJobBoard/ExternalJobDetail.jsx";
+import AdminExternalJobStats from "./pages/admin/AdminExternalJobStats.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -408,6 +409,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminJobPost />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/external/jobs/:id/stats"
+          element={
+            <RequireAdmin>
+              <AdminExternalJobStats />
             </RequireAdmin>
           }
         />

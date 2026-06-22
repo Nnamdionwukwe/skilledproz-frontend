@@ -1185,3 +1185,23 @@
   display: inline-block;
   color: #818cf8;
 }
+
+.statsBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  text-decoration: none;
+  color: var(--text);
+}
+.statsBtn:hover {
+  border-color: #f59e0b; /* amber */
+  background: rgba(245, 158, 11, 0.1);
+}
