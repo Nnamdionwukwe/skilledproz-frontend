@@ -1,12 +1,13 @@
 // src/pages/worker/ExternalJobBoard.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../../lib/api";
 import s from "./ExternalJobBoard.module.css";
 
 const LIMIT = 12;
 
 export default function ExternalJobBoard() {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -39,9 +40,10 @@ export default function ExternalJobBoard() {
     loadJobs();
   }, [loadJobs]);
 
+  // ── Load all categories (including custom ones) ──
   useEffect(() => {
     api
-      .get("/categories")
+      .get("/categories?limit=1000") // ← FIXED: get all 600+
       .then((res) => setCategories(res.data.data?.categories || []))
       .catch(() => {});
   }, []);
@@ -62,6 +64,11 @@ export default function ExternalJobBoard() {
 
   return (
     <div className={s.page}>
+      {/* ── Back Button ── */}
+      <Link to="/jobs" className={s.backBtn}>
+        ← Back to SkilledProz
+      </Link>
+
       <div className={s.hero}>
         <h1 className={s.heroTitle}>External Job Opportunities</h1>
         <p className={s.heroSub}>

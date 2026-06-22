@@ -665,8 +665,11 @@ export default function AdminExternalJobs() {
 
   useEffect(() => {
     api
-      .get("/admin/categories", { params: { limit: 100 } })
-      .then((r) => setCategories(r.data.data.categories ?? []))
+      .get(`/categories?limit=1000`)
+      .then((res) => {
+        const cats = res.data.data;
+        setCategories(Array.isArray(cats) ? cats : cats?.categories || []);
+      })
       .catch(() => {});
   }, []);
 
