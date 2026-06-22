@@ -33,7 +33,7 @@ export default function AdminExternalJobStats() {
     <div className={s.page}>
       <div className={s.header}>
         <h1 className={s.title}>Job Click Analytics</h1>
-        <Link to="/admin/external-jobs" className={s.backLink}>
+        <Link to="/admin/external/jobs" className={s.backLink}>
           ← Back to jobs
         </Link>
       </div>
