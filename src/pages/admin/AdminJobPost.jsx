@@ -283,7 +283,11 @@ export default function AdminJobPost() {
     const payload = {
       ...form,
       salaryAmount: form.salaryAmount ? parseFloat(form.salaryAmount) : null,
-      expiryDate: form.expiryDate || null,
+      salaryMin: form.salaryMin ? parseFloat(form.salaryMin) : null, // ← ADD THIS
+      salaryMax: form.salaryMax ? parseFloat(form.salaryMax) : null, // ← ADD THIS
+      expiryDate: form.expiryDate
+        ? new Date(form.expiryDate).toISOString() // → "2026-06-22T00:00:00.000Z"
+        : null,
       isActive: form.isActive,
     };
 

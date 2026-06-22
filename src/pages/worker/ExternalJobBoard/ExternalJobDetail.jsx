@@ -143,6 +143,55 @@ export default function ExternalJobDetail() {
             <span className={s.detailLabel}>💼 Job Type</span>
             <span>{job.jobType || "N/A"}</span>
           </div>
+          <div className={s.detailsGrid}>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>📍 Location</span>
+              <span>{job.address || job.location || "Remote"}</span>
+            </div>
+            {/* ── NEW: Location Type ── */}
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>📍 Location Type</span>
+              <span>{job.locationType || "Not specified"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>💼 Job Type</span>
+              <span>{job.jobType || "N/A"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>📊 Experience</span>
+              <span>{job.experienceLevel || "Not specified"}</span>
+            </div>
+            {/* ── NEW: Applicant Location ── */}
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>📍 Applicant Location</span>
+              <span>{job.applicantLocation || "Not specified"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>🎓 Education</span>
+              <span>{job.educationLevel || "Not specified"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>🌐 Language</span>
+              <span>{job.languageRequirement || "Not specified"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>🕒 Working Hours</span>
+              <span>{job.workingHours || "Not specified"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>📅 Experience Length</span>
+              <span>{job.experienceLength || "Not specified"}</span>
+            </div>
+            {/* ── NEW: Min Qualification ── */}
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>📜 Min Qualification</span>
+              <span>{job.minQualification || "Not specified"}</span>
+            </div>
+            <div className={s.detailItem}>
+              <span className={s.detailLabel}>💰 Salary</span>
+              <span>{formatSalary(job)}</span>
+            </div>
+          </div>
           <div className={s.detailItem}>
             <span className={s.detailLabel}>📊 Experience</span>
             <span>{job.experienceLevel || "Not specified"}</span>
