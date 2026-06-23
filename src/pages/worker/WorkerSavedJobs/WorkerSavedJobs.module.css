@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 1.5rem;
   animation: fadeUp 0.35s ease;
-  padding: 1rem 0;
+  /* Remove padding: 1rem 0; — WorkerLayout handles spacing */
 }
 
 .pageHeader {
