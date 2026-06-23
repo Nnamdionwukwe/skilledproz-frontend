@@ -770,3 +770,33 @@
   font-size: 0.8rem;
   color: var(--text-dim);
 }
+
+/* ─── Copy button ────────────────────────────────────────────────────────── */
+.methodValueRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
+  margin: 4px 0;
+}
+.methodValue {
+  font-size: 0.85rem;
+  color: var(--text);
+  word-break: break-all;
+  text-align: center;
+}
+.copyBtn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  color: var(--text-muted);
+}
+.copyBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}

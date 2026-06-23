@@ -4,9 +4,15 @@ import api from "../../../lib/api";
 import s from "./ExternalJobDetail.module.css";
 
 // ─── Disclaimer Modal ──────────────────────────────────────────────────────
-function DisclaimerModal({ job, onConfirm, onClose }) {
-  const platformName = job.sourcePlatform || "external job site";
-  const domain = job.applicationUrl ? new URL(job.applicationUrl).hostname : "";
+function DisclaimerModal({ job, method, platformName, onConfirm, onClose }) {
+  const methodLabels = {
+    url: { action: "visit the job listing", button: "Proceed to Website" },
+    email: { action: "send your application via email", button: "Open Email" },
+    whatsapp: { action: "chat on WhatsApp", button: "Open WhatsApp" },
+    phone: { action: "call the hiring team", button: "Make Call" },
+  };
+
+  const label = methodLabels[method] || methodLabels.url;
 
   return (
     <div className={s.backdrop} onClick={onClose}>
@@ -21,8 +27,9 @@ function DisclaimerModal({ job, onConfirm, onClose }) {
         </div>
         <div className={s.modalBody}>
           <p className={s.disclaimerText}>
-            You are about to leave <strong>SkilledProz</strong> and visit the
-            job listing on <strong>{platformName}</strong>.
+            You are about to leave <strong>SkilledProz</strong> to{" "}
+            {label.action}
+            on <strong>{platformName}</strong>.
           </p>
           <div className={s.disclaimerBox}>
             <ul className={s.disclaimerList}>
@@ -49,16 +56,16 @@ function DisclaimerModal({ job, onConfirm, onClose }) {
             </ul>
           </div>
           <p className={s.disclaimerFooter}>
-            By clicking <strong>“Proceed to {platformName}”</strong>, you
-            acknowledge that SkilledProz is not liable for any issues arising
-            from this external job.
+            By clicking <strong>“{label.button}”</strong>, you acknowledge that
+            SkilledProz is not liable for any issues arising from this external
+            job.
           </p>
           <div className={s.modalActions}>
             <button className={s.btnCancel} onClick={onClose}>
               Cancel
             </button>
             <button className={s.btnProceed} onClick={onConfirm}>
-              🚀 Proceed to {platformName}
+              🚀 {label.button}
             </button>
           </div>
         </div>
@@ -75,6 +82,8 @@ export default function ExternalJobDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
 
   useEffect(() => {
     api
@@ -84,44 +93,85 @@ export default function ExternalJobDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // ── Track any apply click ──────────────────────────────────────────────
-  const trackApplyClick = async () => {
-    try {
-      await api.post(`/external-jobs/${id}/click`, { type: "APPLY_CLICK" });
-    } catch (err) {
-      // fire-and-forget
+  // ── Copy to clipboard ────────────────────────────────────────────────────
+  const copyToClipboard = (text, field) => {
+    if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          setCopiedField(field);
+          setTimeout(() => setCopiedField(null), 2000);
+        })
+        .catch(() => {
+          // Fallback
+          fallbackCopy(text, field);
+        });
+    } else {
+      fallbackCopy(text, field);
     }
   };
 
-  // ── URL method: show disclaimer ────────────────────────────────────────
-  const handleUrlApply = () => {
-    setShowDisclaimer(true);
+  const fallbackCopy = (text, field) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error("Copy failed", err);
+    }
+    document.body.removeChild(textarea);
   };
 
-  // ── Proceed after disclaimer ────────────────────────────────────────────
-  const handleProceed = async () => {
-    await trackApplyClick();
+  // ── Track clicks ────────────────────────────────────────────────────────
+  const trackApplyClick = async () => {
+    try {
+      await api.post(`/external-jobs/${id}/click`, { type: "APPLY_CLICK" });
+    } catch (err) {}
+  };
+
+  const trackProceedClick = async () => {
     try {
       await api.post(`/external-jobs/${id}/click`, { type: "PROCEED_CLICK" });
     } catch (err) {}
-    window.open(job.applicationUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const handleMethodClick = (method) => {
+    setSelectedMethod(method);
+    trackApplyClick();
+    setShowDisclaimer(true);
+  };
+
+  const handleProceed = async () => {
+    await trackProceedClick();
+    if (selectedMethod === "url") {
+      window.open(job.applicationUrl, "_blank", "noopener,noreferrer");
+    } else if (selectedMethod === "email") {
+      window.location.href = `mailto:${job.applicationEmail}`;
+    } else if (selectedMethod === "whatsapp") {
+      const number = job.applicationWhatsApp.replace(/[^0-9]/g, "");
+      window.open(`https://wa.me/${number}`, "_blank", "noopener,noreferrer");
+    } else if (selectedMethod === "phone") {
+      window.location.href = `tel:${job.applicationPhone}`;
+    }
     setShowDisclaimer(false);
+    setSelectedMethod(null);
   };
 
-  // ── Other methods (Email, WhatsApp, Phone) ─────────────────────────────
-  const handleOtherApply = async () => {
-    await trackApplyClick();
-    // No modal – direct action handled by the link itself
+  const handleModalClose = () => {
+    setShowDisclaimer(false);
+    setSelectedMethod(null);
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className={s.page}>
         <div className={s.loader}>Loading job details…</div>
       </div>
     );
-  }
-
   if (error || !job) {
     return (
       <div className={s.page}>
@@ -135,9 +185,6 @@ export default function ExternalJobDetail() {
 
   const category = job.categories?.[0]?.category;
   const platformName = job.sourcePlatform || "External Site";
-  const buttonLabel = job.sourcePlatform
-    ? `Apply on ${job.sourcePlatform}`
-    : "Apply on External Site";
 
   return (
     <div className={s.page}>
@@ -146,6 +193,7 @@ export default function ExternalJobDetail() {
       </Link>
 
       <div className={s.content}>
+        {/* Header */}
         <div className={s.header}>
           <div className={s.headerTop}>
             <h1 className={s.title}>{job.title}</h1>
@@ -163,7 +211,7 @@ export default function ExternalJobDetail() {
           </div>
         </div>
 
-        {/* ─── Details Grid ────────────────────────────────────────────────── */}
+        {/* Details Grid */}
         <div className={s.detailsGrid}>
           <div className={s.detailItem}>
             <span className={s.detailLabel}>📍 Location</span>
@@ -220,7 +268,7 @@ export default function ExternalJobDetail() {
           </div>
         )}
 
-        {/* ─── Description ────────────────────────────────────────────────── */}
+        {/* Description */}
         <div className={s.section}>
           <h3>Description</h3>
           <p className={s.descText}>
@@ -246,7 +294,7 @@ export default function ExternalJobDetail() {
           </div>
         )}
 
-        {/* ─── Skills ────────────────────────────────────────────────────── */}
+        {/* Skills */}
         {job.skills && job.skills.length > 0 && (
           <div className={s.section}>
             <h3>Skills Required</h3>
@@ -268,50 +316,75 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>🔗</span>
                 <span className={s.methodLabel}>Website</span>
-                <button className={s.methodBtn} onClick={handleUrlApply}>
-                  {buttonLabel}
+                <button
+                  className={s.methodBtn}
+                  onClick={() => handleMethodClick("url")}
+                >
+                  Apply Online
                 </button>
               </div>
             )}
+
             {job.applicationEmail && (
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📧</span>
                 <span className={s.methodLabel}>Email</span>
-                <a
-                  href={`mailto:${job.applicationEmail}`}
-                  className={s.methodLink}
-                  onClick={handleOtherApply}
+                <div className={s.methodValueRow}>
+                  <span className={s.methodValue}>{job.applicationEmail}</span>
+                  <button
+                    className={s.copyBtn}
+                    onClick={() =>
+                      copyToClipboard(job.applicationEmail, "email")
+                    }
+                    title="Copy email address"
+                  >
+                    {copiedField === "email" ? "✅" : "📋"}
+                  </button>
+                </div>
+                <button
+                  className={s.methodBtn}
+                  onClick={() => handleMethodClick("email")}
                 >
-                  {job.applicationEmail}
-                </a>
+                  Send Email
+                </button>
               </div>
             )}
+
             {job.applicationWhatsApp && (
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>💬</span>
                 <span className={s.methodLabel}>WhatsApp</span>
-                <a
-                  href={`https://wa.me/${job.applicationWhatsApp.replace(/[^0-9]/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={s.methodLink}
-                  onClick={handleOtherApply}
+                <button
+                  className={s.methodBtn}
+                  onClick={() => handleMethodClick("whatsapp")}
                 >
                   Chat on WhatsApp
-                </a>
+                </button>
               </div>
             )}
+
             {job.applicationPhone && (
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📞</span>
                 <span className={s.methodLabel}>Phone</span>
-                <a
-                  href={`tel:${job.applicationPhone}`}
-                  className={s.methodLink}
-                  onClick={handleOtherApply}
+                <div className={s.methodValueRow}>
+                  <span className={s.methodValue}>{job.applicationPhone}</span>
+                  <button
+                    className={s.copyBtn}
+                    onClick={() =>
+                      copyToClipboard(job.applicationPhone, "phone")
+                    }
+                    title="Copy phone number"
+                  >
+                    {copiedField === "phone" ? "✅" : "📋"}
+                  </button>
+                </div>
+                <button
+                  className={s.methodBtn}
+                  onClick={() => handleMethodClick("phone")}
                 >
-                  {job.applicationPhone}
-                </a>
+                  Call Now
+                </button>
               </div>
             )}
           </div>
@@ -327,8 +400,10 @@ export default function ExternalJobDetail() {
       {showDisclaimer && (
         <DisclaimerModal
           job={job}
+          method={selectedMethod}
+          platformName={platformName}
           onConfirm={handleProceed}
-          onClose={() => setShowDisclaimer(false)}
+          onClose={handleModalClose}
         />
       )}
     </div>
@@ -359,3 +434,4 @@ function formatSalary(job) {
   }
   return job.salaryText || "Not specified";
 }
+s;
