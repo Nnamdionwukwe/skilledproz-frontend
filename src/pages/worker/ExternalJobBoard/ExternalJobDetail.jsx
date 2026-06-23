@@ -56,8 +56,7 @@ function DisclaimerModal({
         <div className={s.modalBody}>
           <p className={s.disclaimerText}>
             You are about to leave <strong>SkilledProz</strong> to{" "}
-            {label.action}
-            with <strong>{displayName}</strong>.
+            {label.action} with <strong>{displayName}</strong>.
           </p>
 
           {/* ── Show contact info with copy button (only in modal) ── */}
@@ -373,9 +372,7 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📧</span>
                 <span className={s.methodLabel}>Email</span>
-                <div className={s.methodValueRow}>
-                  <span className={s.methodValue}>{job.applicationEmail}</span>
-                </div>
+                {/* ── No email address displayed here ── */}
                 <button
                   className={s.methodBtn}
                   onClick={() => handleMethodClick("email")}
@@ -402,9 +399,7 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📞</span>
                 <span className={s.methodLabel}>Phone</span>
-                <div className={s.methodValueRow}>
-                  <span className={s.methodValue}>{job.applicationPhone}</span>
-                </div>
+                {/* ── No phone number displayed here ── */}
                 <button
                   className={s.methodBtn}
                   onClick={() => handleMethodClick("phone")}
