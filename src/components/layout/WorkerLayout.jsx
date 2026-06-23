@@ -1,5 +1,32 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import {
+  FiHome,
+  FiCalendar,
+  FiGrid,
+  FiSearch,
+  FiBookmark,
+  FiClipboard,
+  FiAlertCircle,
+  FiFeather,
+  FiEdit,
+  FiDollarSign,
+  FiArrowUp,
+  FiUsers,
+  FiSpeaker,
+  FiImage,
+  FiAward,
+  FiClock,
+  FiShield,
+  FiFlag,
+  FiStar,
+  FiBell,
+  FiMail,
+  FiPackage, // <- replaced FiTrophy with FiPackage
+  FiSettings,
+  FiLogOut,
+  FiMenu,
+} from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -9,79 +36,83 @@ const NAV = [
   {
     group: "Overview",
     items: [
-      { label: "Dashboard", path: "/dashboard/worker", icon: "◈" },
-      { label: "My Bookings", path: "/bookings", icon: "📋" },
-      { label: "Categories", path: "/dashboard/worker/categories", icon: "🔧" },
-      { label: "Browse Jobs", path: "/jobs", icon: "🔍" },
-      { label: "Saved Jobs", path: "/dashboard/worker/saved-jobs", icon: "⭐" },
+      { label: "Dashboard", path: "/dashboard/worker", icon: FiHome },
+      { label: "My Bookings", path: "/bookings", icon: FiCalendar },
+      {
+        label: "Categories",
+        path: "/dashboard/worker/categories",
+        icon: FiGrid,
+      },
+      { label: "Browse Jobs", path: "/jobs", icon: FiSearch },
+      {
+        label: "Saved Jobs",
+        path: "/dashboard/worker/saved-jobs",
+        icon: FiBookmark,
+      },
       {
         label: "My Applications",
         path: "/dashboard/worker/applications",
-        icon: "📝",
+        icon: FiClipboard,
       },
-      { label: "Disputes", path: "/disputes", icon: "⚖️" },
-      { label: "Community Feed", path: "/feed", icon: "📰" },
-      { label: "My Posts", path: "/my-posts", icon: "✍️" },
+      { label: "Disputes", path: "/disputes", icon: FiAlertCircle },
+      { label: "Community Feed", path: "/feed", icon: FiFeather },
+      { label: "My Posts", path: "/my-posts", icon: FiEdit },
     ],
   },
   {
     group: "Payouts",
     items: [
-      { label: "Earnings", path: "/dashboard/worker/earnings", icon: "💸" },
+      {
+        label: "Earnings",
+        path: "/dashboard/worker/earnings",
+        icon: FiDollarSign,
+      },
       {
         label: "Withdrawals",
         path: "/dashboard/worker/withdrawals",
-        icon: "↑",
+        icon: FiArrowUp,
       },
-      {
-        label: "Referrals",
-        path: "/referrals",
-        icon: "👥",
-      },
-      {
-        label: "Campaigns",
-        path: "/campaign",
-        icon: "📢",
-      },
+      { label: "Referrals", path: "/referrals", icon: FiUsers },
+      { label: "Campaigns", path: "/campaign", icon: FiSpeaker },
     ],
   },
   {
     group: "Profile",
     items: [
-      { label: "Portfolio", path: "/dashboard/worker/portfolio", icon: "🖼" },
+      {
+        label: "Portfolio",
+        path: "/dashboard/worker/portfolio",
+        icon: FiImage,
+      },
       {
         label: "Certifications",
         path: "/dashboard/worker/certifications",
-        icon: "🏅",
+        icon: FiAward,
       },
       {
         label: "Availability",
         path: "/dashboard/worker/availability",
-        icon: "📅",
+        icon: FiClock,
       },
       {
         label: "Verification",
         path: "/dashboard/worker/verification",
-        icon: "🛡️",
+        icon: FiShield,
       },
-      {
-        label: "Reports",
-        path: "/my-reports",
-        icon: "🚩",
-      },
+      { label: "Reports", path: "/my-reports", icon: FiFlag },
     ],
   },
   {
     group: "Inbox",
     items: [
-      { label: "Reviews", path: "/dashboard/worker/reviews", icon: "⭐" },
+      { label: "Reviews", path: "/dashboard/worker/reviews", icon: FiStar },
       {
         label: "Notifications",
         path: "/dashboard/worker/notifications",
-        icon: "🔔",
+        icon: FiBell,
         badge: "unread",
       },
-      { label: "Messages", path: "/messages", icon: "💬", badge: "message" },
+      { label: "Messages", path: "/messages", icon: FiMail, badge: "message" },
     ],
   },
   {
@@ -90,13 +121,14 @@ const NAV = [
       {
         label: "Subscriptions",
         path: "/dashboard/worker/subscription",
-        icon: "💎",
+        icon: FiPackage,
       },
-      { label: "Settings", path: "/settings", icon: "⚙️" },
+      { label: "Settings", path: "/settings", icon: FiSettings },
     ],
   },
 ];
 
+// ─── Page titles map ──────────────────────────────────────────────────────
 const PAGE_TITLES = {
   "/dashboard/worker": { title: "Dashboard", sub: "Your work at a glance" },
   "/bookings": { title: "My Bookings", sub: "All your jobs" },
@@ -163,7 +195,7 @@ function isNavActive(itemPath, pathname) {
   return pathname === itemPath;
 }
 
-// ─── Reusable Confirmation Modal ──────────────────────────────────────────
+// ─── Confirmation Modal ──────────────────────────────────────────────────
 function ConfirmationModal({
   isOpen,
   onClose,
@@ -197,7 +229,7 @@ function ConfirmationModal({
   );
 }
 
-// ─── Main Layout ────────────────────────────────────────────────────────────
+// ─── Main Layout ──────────────────────────────────────────────────────────
 export default function WorkerLayout({ children }) {
   const { user, logout } = useAuthStore();
   const location = useLocation();
@@ -343,7 +375,9 @@ export default function WorkerLayout({ children }) {
                   }`}
                   onClick={closeSidebar}
                 >
-                  <span className={styles.navIcon}>{item.icon}</span>
+                  <span className={styles.navIcon}>
+                    <item.icon size={18} />
+                  </span>
                   {item.label}
                   {item.badge === "unread" && unreadCount > 0 && (
                     <span className={styles.navBadge}>
@@ -382,7 +416,9 @@ export default function WorkerLayout({ children }) {
             className={styles.logoutBtn}
             onClick={() => setShowLogoutModal(true)}
           >
-            <span className={styles.navIcon}>🚪</span>
+            <span className={styles.navIcon}>
+              <FiLogOut size={18} />
+            </span>
             Log out
           </button>
         </div>
@@ -395,7 +431,7 @@ export default function WorkerLayout({ children }) {
               className={styles.menuBtn}
               onClick={() => setSidebarOpen((v) => !v)}
             >
-              ☰
+              <FiMenu size={20} />
             </button>
             <div className={styles.headerTitleWrap}>
               <span className={styles.headerTitle}>{pageInfo.title}</span>
@@ -409,7 +445,7 @@ export default function WorkerLayout({ children }) {
               className={styles.headerIconBtn}
               style={{ position: "relative" }}
             >
-              🔔
+              <FiBell size={18} />
               {unreadCount > 0 && (
                 <span className={styles.bellBadge}>
                   {unreadCount > 9 ? "9+" : unreadCount}
