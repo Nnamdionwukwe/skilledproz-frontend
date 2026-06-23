@@ -1,71 +1,116 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
 import HirerLayout from "../../layout/HirerLayout";
 import WorkerLayout from "../../layout/WorkerLayout";
 import RaiseDisputeModal from "../../disputes/RaiseDisputeModal";
-import BookingInvoice from "../BookingInvoice";
-import InsuranceAddon from "../../hirer/InsuranceAddon";
-import PaymentOptions from "../../payment/PaymentOptions";
-import VideoCallButton from "./VideoCallButton"; // keep as is
-import EmergencyContact from "./EmergencyContact"; // keep as is
-import SOSButton from "./SOSButton"; // keep as is
-import Translator from "../../common/Translator";
-import GpsCheckIn from "./GpsCheckIn";
+import BookingDetailPayment from "./BookingDetailPayment";
+import BookingDetailMain from "./BookingDetailMain";
+import BookingDetailSidebar from "./BookingDetailSidebar";
 
-// ── New sub‑components ──────────────────────────────────────
-import SosBanner from "./SosBanner";
-import TitleBlock from "./TitleBlock";
-import Timeline from "./Timeline";
-import PendingBanner from "./PendingBanner";
-import DescriptionSection from "./DescriptionSection";
-import DetailGrid from "./DetailGrid";
-import FeeBreakdown from "./FeeBreakdown";
-import GpsSection from "./GpsSection";
-import PaymentSection from "./PaymentSection";
-import ReviewsSection from "./ReviewsSection";
-import CancelReasonSection from "./CancelReasonSection";
-import BottomActions from "./BottomActions";
-import Sidebar from "./Sidebar";
-import {
-  Alert,
-  Spinner,
-  DetailItem,
-  GpsCard,
-  ActionBtn,
-  CancelBox,
-  PayRow,
-  Skeleton,
-  NotFound,
-} from "./Sidebar";
-
-// ── Helpers (moved to utils or kept here) ──────────────────
+// ── Helpers (inlined) ──────────────────────────────────────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
-  /* same as before */
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
 function mapsUrl(lat, lng) {
-  /* same as before */
+  return `https://www.google.com/maps?q=${lat},${lng}`;
 }
+
 function formatDuration(booking) {
-  /* same as before */
+  if (!booking) return null;
+  const unit = booking.estimatedUnit || "hours";
+  const value = booking.estimatedValue || null;
+  const hours = booking.estimatedHours || null;
+  if (!value && !hours) return null;
+  if (value) {
+    if (unit === "custom") return { main: value, sub: null };
+    const unitLabel = {
+      hours: "hour",
+      days: "day",
+      weeks: "week",
+      months: "month",
+    }[unit];
+    const num = parseFloat(value);
+    const label = unitLabel + (num !== 1 ? "s" : "");
+    const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
+    return { main: `${num} ${label}`, sub: eqv };
+  }
+  return hours ? { main: `${hours} hours`, sub: null } : null;
 }
+
 function calcDuration(start, end) {
-  /* same as before */
+  if (!start || !end) return null;
+  const ms = new Date(end) - new Date(start);
+  const hrs = Math.floor(ms / 3600000);
+  const min = Math.floor((ms % 3600000) / 60000);
+  return hrs > 0 ? `${hrs}h ${min}m` : `${min}m`;
 }
 
 const STATUS_META = {
-  /* same as before */
+  PENDING: { label: "Pending", color: "yellow", step: 0 },
+  ACCEPTED: { label: "Accepted", color: "orange", step: 1 },
+  IN_PROGRESS: { label: "In Progress", color: "indigo", step: 2 },
+  COMPLETED: { label: "Completed", color: "green", step: 3 },
+  CANCELLED: { label: "Cancelled", color: "red", step: -1 },
+  DISPUTED: { label: "Disputed", color: "rose", step: -1 },
 };
-const TIMELINE_STEPS = ["Pending", "Accepted", "In Progress", "Completed"];
+
+// ── Inlined small components ──────────────────────────────────────────────
+function Alert({ type, text, onClose }) {
+  return (
+    <div className={`${styles.alert} ${styles[`alert_${type}`]}`}>
+      <span>
+        {type === "error" ? "⚠️" : "✅"} {text}
+      </span>
+      <button className={styles.alertClose} onClick={onClose}>
+        ×
+      </button>
+    </div>
+  );
+}
+
+function Skeleton() {
+  return (
+    <>
+      <div className={styles.skBack} />
+      <div className={styles.layout}>
+        <div className={styles.skMain} />
+        <div className={styles.skSide} />
+      </div>
+    </>
+  );
+}
+
+function NotFound({ backTo = "/bookings" }) {
+  return (
+    <div className={styles.page}>
+      <div className={styles.notFound}>
+        <span className={styles.notFoundIcon}>🔍</span>
+        <h2 className={styles.notFoundTitle}>Booking not found</h2>
+        <Link to={backTo} className={styles.back}>
+          ← Back to Bookings
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default function BookingDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  // ── State ──────────────────────────────────────────────────
+  // ── State ──────────────────────────────────────────────────────────────
   const [booking, setBooking] = useState(null);
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +138,6 @@ export default function BookingDetail() {
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
 
-  // ── refetch ─────────────────────────────────────────────────
   const refetch = useCallback(() => {
     api
       .get(`/bookings/${id}`)
@@ -101,7 +145,7 @@ export default function BookingDetail() {
       .catch(() => {});
   }, [id]);
 
-  // ── Initial load ──────────────────────────────────────────
+  // ── Initial load ──────────────────────────────────────────────────────
   useEffect(() => {
     api
       .get(`/bookings/${id}`)
@@ -152,14 +196,14 @@ export default function BookingDetail() {
       .finally(() => setLoading(false));
   }, [id, user]);
 
-  // ── Silent refresh every 10 min ──────────────────────────
+  // ── Silent refresh ──────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
     const timer = setInterval(refetch, 600_000);
     return () => clearInterval(timer);
   }, [id, refetch]);
 
-  // ── Status update ──────────────────────────────────────────
+  // ── Status update ────────────────────────────────────────────────────
   async function updateStatus(status, extra = {}) {
     setActing(true);
     setError("");
@@ -191,7 +235,7 @@ export default function BookingDetail() {
     updateStatus("CANCELLED", { cancelReason: cancelReason.trim() });
   }
 
-  // ── SOS ────────────────────────────────────────────────────
+  // ── SOS resolve ──────────────────────────────────────────────────────
   const handleResolveSOS = async () => {
     if (!confirm("Mark this SOS as resolved?")) return;
     setResolvingSOS(true);
@@ -206,7 +250,7 @@ export default function BookingDetail() {
     }
   };
 
-  // ── Refund ──────────────────────────────────────────────────
+  // ── Refund ───────────────────────────────────────────────────────────
   const handleRefund = async () => {
     if (!confirm("Issue a full refund? This cannot be undone.")) return;
     setRefundLoading(true);
@@ -221,7 +265,7 @@ export default function BookingDetail() {
     }
   };
 
-  // ── Invoice ──────────────────────────────────────────────────
+  // ── Invoice ──────────────────────────────────────────────────────────
   const handleDownloadInvoice = async () => {
     setInvoiceLoading(true);
     try {
@@ -243,7 +287,7 @@ export default function BookingDetail() {
     }
   };
 
-  // ── Guards ──────────────────────────────────────────────────
+  // ── Guards ──────────────────────────────────────────────────────────
   if (loading)
     return (
       <Layout>
@@ -252,7 +296,7 @@ export default function BookingDetail() {
     );
   if (!booking) return <NotFound backTo="/bookings" />;
 
-  // ── Derived data ──────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────
   const meta = STATUS_META[booking.status] || {};
   const step = meta.step ?? 0;
   const isHirer = userId === booking.hirerId;
@@ -260,6 +304,7 @@ export default function BookingDetail() {
   const other = isHirer ? booking.worker : booking.hirer;
   const dur = formatDuration(booking);
   const sosActive = !!booking.sosActivatedAt && !booking.sosResolvedAt;
+
   const hasCheckInGps =
     booking.checkInLat != null && booking.checkInLng != null;
   const hasCheckOutGps =
@@ -331,7 +376,6 @@ export default function BookingDetail() {
     ["ACCEPTED", "IN_PROGRESS"].includes(booking.status) &&
     (!payment || payment.status === "PENDING");
 
-  // ── Render ──────────────────────────────────────────────────
   return (
     <Layout>
       <div className={styles.page}>
@@ -347,115 +391,124 @@ export default function BookingDetail() {
         )}
 
         {sosActive && (
-          <SosBanner
-            booking={booking}
-            isHirer={isHirer}
-            resolvingSOS={resolvingSOS}
-            onResolve={handleResolveSOS}
-          />
+          <div className={styles.sosBanner}>
+            <span className={styles.sosBannerIcon}>🆘</span>
+            <div className={styles.sosBannerBody}>
+              <p className={styles.sosBannerTitle}>SOS Alert Active</p>
+              <p className={styles.sosBannerDesc}>
+                The worker has triggered an emergency alert.
+                {booking.sosActivatedAt && (
+                  <>
+                    {" "}
+                    Activated{" "}
+                    {new Date(booking.sosActivatedAt).toLocaleTimeString()}
+                  </>
+                )}
+              </p>
+            </div>
+            {(isHirer || user?.role === "ADMIN") && (
+              <button
+                className={styles.sosResolveBtn}
+                onClick={handleResolveSOS}
+                disabled={resolvingSOS}
+              >
+                {resolvingSOS ? "Resolving…" : "Mark Resolved"}
+              </button>
+            )}
+          </div>
         )}
 
         <div className={styles.layout}>
-          {/* ── MAIN COLUMN ── */}
           <div className={styles.main}>
-            <TitleBlock booking={booking} />
-            {step >= 0 && <Timeline step={step} />}
-            {booking.status === "PENDING" && isHirer && (
-              <PendingBanner workerName={booking.worker?.firstName} />
-            )}
-
-            <DescriptionSection
-              description={booking.description}
-              notes={booking.notes}
-            />
-
-            <DetailGrid
+            <BookingDetailMain
               booking={booking}
+              step={step}
               dur={dur}
               mapsUrl={mapsUrl}
               calcDuration={calcDuration}
-              feeBreakdown={feeBreakdown}
-              referralDiscount={referralDiscount}
-              referralApplied={referralApplied}
-              onReferralToggle={() => setReferralApplied((v) => !v)}
+              hasCheckInGps={hasCheckInGps}
+              hasCheckOutGps={hasCheckOutGps}
+              checkInDistKm={checkInDistKm}
+              checkOutDistKm={checkOutDistKm}
+              reviewCheckDone={reviewCheckDone}
+              hasReviewed={hasReviewed}
+              bookingId={booking.id}
+              invoiceLoading={invoiceLoading}
+              onDownloadInvoice={handleDownloadInvoice}
+              onRefund={handleRefund}
+              refundLoading={refundLoading}
+              isHirer={isHirer}
+              paymentStatus={payment?.status}
+              isWorker={isWorker}
+              workerName={booking.worker?.firstName}
             />
 
-            {(hasCheckInGps || hasCheckOutGps) && (
-              <GpsSection
+            {booking.payment && (
+              <BookingDetailPayment
                 booking={booking}
-                hasCheckInGps={hasCheckInGps}
-                hasCheckOutGps={hasCheckOutGps}
-                checkInDistKm={checkInDistKm}
-                checkOutDistKm={checkOutDistKm}
-                mapsUrl={mapsUrl}
-              />
-            )}
-
-            {booking.payment && <PaymentSection payment={booking.payment} />}
-
-            {booking.status === "COMPLETED" && (
-              <ReviewsSection
-                reviews={booking.reviews}
-                reviewCheckDone={reviewCheckDone}
-                hasReviewed={hasReviewed}
-                bookingId={booking.id}
-              />
-            )}
-
-            {booking.cancelReason && (
-              <CancelReasonSection reason={booking.cancelReason} />
-            )}
-
-            {booking.status === "COMPLETED" && (
-              <BottomActions
-                invoiceLoading={invoiceLoading}
-                onDownloadInvoice={handleDownloadInvoice}
-                onRefund={handleRefund}
-                refundLoading={refundLoading}
-                isHirer={isHirer}
-                paymentStatus={payment?.status}
+                payment={booking.payment}
+                feeBreakdown={feeBreakdown}
+                referralDiscount={referralDiscount}
+                referralApplied={referralApplied}
+                onReferralToggle={() => setReferralApplied((v) => !v)}
+                showPayOptions={showPayOptions}
+                onTogglePayOptions={() => setShowPayOptions((v) => !v)}
+                paymentRequired={paymentRequired}
+                refetch={refetch}
+                onSuccess={setSuccess}
               />
             )}
           </div>
 
-          {/* ── SIDEBAR ── */}
-          <Sidebar
-            booking={booking}
-            payment={payment}
-            isHirer={isHirer}
-            isWorker={isWorker}
-            other={other}
-            userId={userId}
-            acting={acting}
-            emergencyContact={emergencyContact}
-            referralDiscount={referralDiscount}
-            referralApplied={referralApplied}
-            onReferralToggle={() => setReferralApplied((v) => !v)}
-            paymentRequired={paymentRequired}
-            showPayOptions={showPayOptions}
-            onTogglePayOptions={() => setShowPayOptions((v) => !v)}
-            showCancel={showCancel}
-            cancelReason={cancelReason}
-            cancelError={cancelError}
-            onCancelOpen={() => {
-              setShowCancel(true);
-              setCancelError("");
-            }}
-            onCancelClose={() => {
-              setShowCancel(false);
-              setCancelReason("");
-              setCancelError("");
-            }}
-            onCancelReasonChange={(v) => {
-              setCancelReason(v);
-              setCancelError("");
-            }}
-            onCancelSubmit={handleCancelSubmit}
-            onShowDispute={() => setShowDispute(true)}
-            onSuccess={setSuccess}
-            refetch={refetch}
-            updateStatus={updateStatus}
-          />
+          <div className={styles.sidebar}>
+            {paymentRequired && (
+              <BookingDetailPayment
+                booking={booking}
+                payment={payment}
+                feeBreakdown={feeBreakdown}
+                referralDiscount={referralDiscount}
+                referralApplied={referralApplied}
+                onReferralToggle={() => setReferralApplied((v) => !v)}
+                showPayOptions={showPayOptions}
+                onTogglePayOptions={() => setShowPayOptions((v) => !v)}
+                paymentRequired={paymentRequired}
+                refetch={refetch}
+                onSuccess={setSuccess}
+              />
+            )}
+
+            <BookingDetailSidebar
+              booking={booking}
+              payment={payment}
+              isHirer={isHirer}
+              isWorker={isWorker}
+              other={other}
+              userId={userId}
+              acting={acting}
+              emergencyContact={emergencyContact}
+              showCancel={showCancel}
+              cancelReason={cancelReason}
+              cancelError={cancelError}
+              onCancelOpen={() => {
+                setShowCancel(true);
+                setCancelError("");
+              }}
+              onCancelClose={() => {
+                setShowCancel(false);
+                setCancelReason("");
+                setCancelError("");
+              }}
+              onCancelReasonChange={(v) => {
+                setCancelReason(v);
+                setCancelError("");
+              }}
+              onCancelSubmit={handleCancelSubmit}
+              onShowDispute={() => setShowDispute(true)}
+              onSuccess={setSuccess}
+              refetch={refetch}
+              updateStatus={updateStatus}
+            />
+          </div>
         </div>
       </div>
 

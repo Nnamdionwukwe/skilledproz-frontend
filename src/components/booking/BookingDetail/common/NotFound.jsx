@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import styles from "../BookingDetail.module.css";
+
 export default function NotFound({ backTo = "/bookings" }) {
   return (
     <div className={styles.page}>

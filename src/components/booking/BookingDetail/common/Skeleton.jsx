@@ -1,4 +1,5 @@
 import styles from "../BookingDetail.module.css";
+
 export default function Skeleton() {
   return (
     <>

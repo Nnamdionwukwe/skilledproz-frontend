@@ -1,4 +1,5 @@
 import styles from "../BookingDetail.module.css";
+
 export default function Alert({ type, text, onClose }) {
   return (
     <div className={`${styles.alert} ${styles[`alert_${type}`]}`}>

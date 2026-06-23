@@ -1,15 +1,17 @@
-/* BookingDetail.module.css — complete rewrite, zero inline styles */
-
 /* ── Page ──────────────────────────────────────────────────── */
 .page {
-  padding: 24px;
-  max-width: 1000px;
-  margin: 0 auto;
+  padding: 16px;
   animation: fadeUp 0.4s ease both;
+  width: 100%;
 }
 @media (min-width: 900px) {
   .page {
-    padding: 40px 32px;
+    padding: 24px 32px;
+  }
+}
+@media (min-width: 1200px) {
+  .page {
+    padding: 32px 48px;
   }
 }
 
@@ -535,11 +537,6 @@
 }
 .gpsMapLink:hover {
   text-decoration: underline;
-}
-.gpsLink {
-  color: #2563eb;
-  text-decoration: none;
-  font-size: 13px;
 }
 
 /* ── Payment card ──────────────────────────────────────────── */
@@ -1250,10 +1247,8 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PASTE AT THE BOTTOM OF BookingDetail.module.css
+   PENDING ACCEPTANCE BANNER
    ─────────────────────────────────────────────────────────────────────────── */
-
-/* ── PENDING ACCEPTANCE BANNER ─────────────────────────────── */
 .pendingBanner {
   display: flex;
   align-items: flex-start;
@@ -1264,8 +1259,6 @@
   padding: 1rem 1.25rem;
   animation: fadeUp 0.35s ease both;
 }
-
-/* Animated pulsing dot */
 .pendingBannerPulse {
   flex-shrink: 0;
   position: relative;
@@ -1295,7 +1288,6 @@
   left: -3px;
   animation: pendingPulse 1.8s ease infinite;
 }
-
 @keyframes pendingPulse {
   0% {
     transform: scale(0.8);
@@ -1310,7 +1302,6 @@
     opacity: 0;
   }
 }
-
 .pendingBannerBody {
   flex: 1;
 }
@@ -1341,20 +1332,15 @@
   color: var(--orange);
   margin: 0;
 }
-
-/* 2-column grid for job type (4 options), 3-column for location (3 options) */
 .typeCards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.625rem;
 }
-/* Location type has 3 cards — use 3 equal columns */
 .typeCardLoc:first-of-type ~ .typeCardLoc,
 .typeCards:has(.typeCardLoc) {
   grid-template-columns: 1fr 1fr 1fr;
 }
-
-/* Individual card */
 .typeCard {
   position: relative;
   display: flex;
@@ -1369,19 +1355,13 @@
   transition: all 0.15s;
   min-height: 80px;
 }
-
-/* Selected (active) state */
 .typeCardActive {
   border-color: var(--orange);
   background: var(--orange-dim);
 }
-
-/* Unselected (inactive) dimmed */
 .typeCardInactive {
   opacity: 0.45;
 }
-
-/* Selected dot indicator (top-right corner) */
 .typeCardSelectedDot {
   position: absolute;
   top: 8px;
@@ -1391,7 +1371,6 @@
   border-radius: 50%;
   background: var(--orange);
 }
-
 .typeCardIcon {
   font-size: 1.5rem;
   line-height: 1;
@@ -1406,33 +1385,6 @@
   color: var(--orange);
 }
 
-/* ── ADDRESS NOTE (on-site / hybrid) ────────────────────────── */
-.locationAddressNote {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  margin-top: 0.625rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-}
-.locationAddressLabel {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
-  margin: 0 0 2px;
-}
-.locationAddressValue {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-  line-height: 1.4;
-}
-
 /* ── REMOTE NOTE ────────────────────────────────────────────── */
 .locationRemoteNote {
   margin-top: 0.625rem;
@@ -1445,8 +1397,7 @@
   font-weight: 500;
 }
 
-/* Responsive: on small screens, job type grid stays 2-col but location
-   type also collapses to a responsive single or double column */
+/* Responsive */
 @media (max-width: 480px) {
   .typeCards {
     grid-template-columns: 1fr 1fr;

@@ -1,9 +1,3 @@
-export { default as Alert } from "../common/Alert";
-export { default as Spinner } from "../common/Spinner";
-export { default as DetailItem } from "../common/DetailItem";
-export { default as GpsCard } from "../common/GpsCard";
-export { default as ActionBtn } from "../common/ActionBtn";
-export { default as CancelBox } from "../common/CancelBox";
-export { default as PayRow } from "../common/PayRow";
-export { default as Skeleton } from "../common/Skeleton";
-export { default as NotFound } from "../common/NotFound";
+export { default as Alert } from "./Alert";
+export { default as Skeleton } from "./Skeleton";
+export { default as NotFound } from "./NotFound";
