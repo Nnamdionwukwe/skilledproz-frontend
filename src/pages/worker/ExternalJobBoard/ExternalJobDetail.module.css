@@ -693,3 +693,80 @@
     transform: scale(0.97);
   }
 }
+
+/* ─── Application Methods ────────────────────────────────────────────────── */
+.applicationMethods {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+}
+.applicationMethods h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+.methodsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.methodCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+.methodIcon {
+  font-size: 1.8rem;
+}
+.methodLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.methodBtn {
+  background: var(--orange);
+  color: #000;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.methodBtn:hover {
+  background: var(--orange-hover);
+}
+.methodLink {
+  color: var(--orange);
+  text-decoration: none;
+  font-weight: 600;
+  word-break: break-all;
+}
+.methodLink:hover {
+  text-decoration: underline;
+}
+
+/* ─── Skills ────────────────────────────────────────────────────────────── */
+.skillsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.skillTag {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}

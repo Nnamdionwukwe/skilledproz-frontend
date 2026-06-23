@@ -117,6 +117,10 @@ export default function AdminJobPost() {
     workingHours: "",
     applicantLocation: "",
     applicationUrl: "",
+    applicationEmail: "",
+    applicationWhatsApp: "",
+    applicationPhone: "",
+    skills: "",
     sourcePlatform: "",
     categoryIds: [],
     expiryDate: "",
@@ -175,9 +179,9 @@ export default function AdminJobPost() {
           salaryAmount: job.salaryAmount || "",
           salaryMin: job.salaryMin || "",
           salaryMax: job.salaryMax || "",
-          salaryCurrency: job.salaryCurrency || "USD",
+          salaryCurrency: job.salaryCurrency || "NGN",
           salaryPeriod: job.salaryPeriod || "MONTHLY",
-          educationLevel: job.educationLevel || "BACHELOR",
+          educationLevel: job.educationLevel || "OTHER",
           locationType: job.locationType || "REMOTE",
           description: job.description || "",
           responsibilities: job.responsibilities || "",
@@ -189,6 +193,10 @@ export default function AdminJobPost() {
           workingHours: job.workingHours || "",
           applicantLocation: job.applicantLocation || "",
           applicationUrl: job.applicationUrl || "",
+          applicationEmail: job.applicationEmail || "",
+          applicationWhatsApp: job.applicationWhatsApp || "",
+          applicationPhone: job.applicationPhone || "",
+          skills: job.skills ? job.skills.join(", ") : "",
           sourcePlatform: job.sourcePlatform || "",
           categoryIds: job.categories?.map((c) => c.categoryId || c.id) || [],
           expiryDate: formatDateForInput(job.expiryDate),
@@ -273,9 +281,14 @@ export default function AdminJobPost() {
       !form.title ||
       !form.companyName ||
       !form.location ||
-      !form.applicationUrl
+      (!form.applicationUrl &&
+        !form.applicationEmail &&
+        !form.applicationWhatsApp &&
+        !form.applicationPhone)
     ) {
-      setError("Title, Company, Location, and Application URL are required.");
+      setError(
+        "Title, Company, Location, and at least one application method are required.",
+      );
       setSubmitting(false);
       return;
     }
@@ -289,6 +302,12 @@ export default function AdminJobPost() {
         ? new Date(form.expiryDate).toISOString() // → "2026-06-22T00:00:00.000Z"
         : null,
       isActive: form.isActive,
+      skills: form.skills
+        ? form.skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
     };
 
     try {
@@ -560,15 +579,58 @@ export default function AdminJobPost() {
           </div>
 
           {/* ── Row 7: URL & Source ── */}
+          {/* ── Row 7: Application Methods ── */}
           <div className={s.row}>
             <div className={s.field}>
-              <label>Application URL *</label>
+              <label>Application URL</label>
               <input
                 name="applicationUrl"
                 value={form.applicationUrl}
                 onChange={handleChange}
-                placeholder="https://ng.indeed.com/..."
-                required
+                placeholder="https://..."
+              />
+              <small className={s.helperText}>
+                (At least one application method is required)
+              </small>
+            </div>
+            <div className={s.field}>
+              <label>Application Email</label>
+              <input
+                name="applicationEmail"
+                value={form.applicationEmail}
+                onChange={handleChange}
+                placeholder="jobs@company.com"
+              />
+            </div>
+          </div>
+          <div className={s.row}>
+            <div className={s.field}>
+              <label>Application WhatsApp</label>
+              <input
+                name="applicationWhatsApp"
+                value={form.applicationWhatsApp}
+                onChange={handleChange}
+                placeholder="+2348012345678"
+              />
+            </div>
+            <div className={s.field}>
+              <label>Application Phone</label>
+              <input
+                name="applicationPhone"
+                value={form.applicationPhone}
+                onChange={handleChange}
+                placeholder="+2348012345678"
+              />
+            </div>
+          </div>
+          <div className={s.row}>
+            <div className={s.field}>
+              <label>Skills (comma separated)</label>
+              <input
+                name="skills"
+                value={form.skills}
+                onChange={handleChange}
+                placeholder="React, Node.js, PostgreSQL"
               />
             </div>
             <div className={s.field}>
