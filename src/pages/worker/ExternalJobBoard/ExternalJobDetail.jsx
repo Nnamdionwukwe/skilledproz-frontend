@@ -7,6 +7,7 @@ import s from "./ExternalJobDetail.module.css";
 function DisclaimerModal({
   job,
   method,
+  companyName,
   platformName,
   onConfirm,
   onClose,
@@ -21,6 +22,14 @@ function DisclaimerModal({
   };
 
   const label = methodLabels[method] || methodLabels.url;
+
+  // Choose display name based on method
+  let displayName;
+  if (method === "url") {
+    displayName = platformName || "the external site";
+  } else {
+    displayName = companyName || "the hiring company";
+  }
 
   // Determine contact value for copy (only for email/phone)
   let contactValue = null;
@@ -38,7 +47,7 @@ function DisclaimerModal({
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
           <h3 className={s.modalTitle}>
-            ⚠️ Leaving SkilledProz to {platformName}
+            ⚠️ Leaving SkilledProz to {displayName}
           </h3>
           <button className={s.modalClose} onClick={onClose}>
             ✕
@@ -47,7 +56,8 @@ function DisclaimerModal({
         <div className={s.modalBody}>
           <p className={s.disclaimerText}>
             You are about to leave <strong>SkilledProz</strong> to{" "}
-            {label.action} on <strong>{platformName}</strong>.
+            {label.action}
+            with <strong>{displayName}</strong>.
           </p>
 
           {/* ── Show contact info with copy button (only in modal) ── */}
@@ -73,7 +83,7 @@ function DisclaimerModal({
               </li>
               <li>
                 🔹 All applications, communications, and payments are handled{" "}
-                <strong>by {platformName}</strong>.
+                <strong>by {displayName}</strong>.
               </li>
               <li>
                 🔹 SkilledProz does <strong>not</strong> provide escrow or
@@ -217,7 +227,8 @@ export default function ExternalJobDetail() {
   }
 
   const category = job.categories?.[0]?.category;
-  const platformName = job.sourcePlatform || "External Site";
+  const companyName = job.companyName || "the hiring company";
+  const platformName = job.sourcePlatform || "the external site";
 
   return (
     <div className={s.page}>
@@ -362,7 +373,9 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📧</span>
                 <span className={s.methodLabel}>Email</span>
-                {/* ── No email address displayed here ── */}
+                <div className={s.methodValueRow}>
+                  <span className={s.methodValue}>{job.applicationEmail}</span>
+                </div>
                 <button
                   className={s.methodBtn}
                   onClick={() => handleMethodClick("email")}
@@ -389,7 +402,9 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📞</span>
                 <span className={s.methodLabel}>Phone</span>
-                {/* ── No phone number displayed here ── */}
+                <div className={s.methodValueRow}>
+                  <span className={s.methodValue}>{job.applicationPhone}</span>
+                </div>
                 <button
                   className={s.methodBtn}
                   onClick={() => handleMethodClick("phone")}
@@ -412,6 +427,7 @@ export default function ExternalJobDetail() {
         <DisclaimerModal
           job={job}
           method={selectedMethod}
+          companyName={companyName}
           platformName={platformName}
           onConfirm={handleProceed}
           onClose={handleModalClose}
