@@ -47,8 +47,7 @@ function DisclaimerModal({
         <div className={s.modalBody}>
           <p className={s.disclaimerText}>
             You are about to leave <strong>SkilledProz</strong> to{" "}
-            {label.action}
-            on <strong>{platformName}</strong>.
+            {label.action} on <strong>{platformName}</strong>.
           </p>
 
           {/* ── Show contact info with copy button (only in modal) ── */}
