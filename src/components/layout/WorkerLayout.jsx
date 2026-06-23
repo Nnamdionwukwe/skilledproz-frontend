@@ -60,6 +60,16 @@ const NAV = [
     ],
   },
   {
+    group: "History",
+    items: [
+      {
+        label: "Completed Jobs",
+        path: "/dashboard/worker/completed-jobs",
+        icon: FiAward,
+      },
+    ],
+  },
+  {
     group: "Payouts",
     items: [
       {

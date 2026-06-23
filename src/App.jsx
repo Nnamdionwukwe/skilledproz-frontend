@@ -49,7 +49,6 @@ import Terms from "./pages/Terms pages/Terms";
 import InitiatePayment from "./components/payment/InitiatePayment";
 import ReleasePayment from "./components/payment/ReleasePayment";
 import PaystackVerify from "./components/payment/PaystackVerify";
-import StripeConfirm from "./components/payment/FlutterwaveConfirm";
 import LeaveReview from "./components/review/LeaveReview";
 import WorkerReviewsPage from "./components/review/WorkerReviewsPage";
 import HirerReviewsGiven from "./components/hirer/HirerReviewsGiven";
@@ -87,7 +86,6 @@ import MyPostsPage from "./pages/feed/MyPosts";
 import FeedPage from "./pages/feed/FeedPage";
 import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
 import SettingsPage from "./components/settimg/SettingsPage";
-import AdminJobs from "./pages/admin/AdminPlatformJobs.jsx";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
 import AdminPosts from "./pages/admin/AdminPosts";
@@ -112,6 +110,7 @@ import ExternalJobBoard from "./pages/worker/ExternalJobBoard/ExternalJobBoard.j
 import ExternalJobDetail from "./pages/worker/ExternalJobBoard/ExternalJobDetail.jsx";
 import AdminExternalJobStats from "./pages/admin/AdminExternalJobStats.jsx";
 import WorkerSavedJobs from "./pages/worker/WorkerSavedJobs/WorkerSavedJobs.jsx";
+import CompletedJobs from "./pages/worker/CompletedJobs/CompletedJobs.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -662,6 +661,16 @@ export default function App() {
           }
         />
         <Route
+          path="//dashboard/worker/completed-jobs"
+          element={
+            <RequireWorker>
+              <RequireAuth>
+                <CompletedJobs />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        {/* <Route
           path="/dashboard/worker/featured"
           element={
             <RequireWorker>
@@ -670,7 +679,7 @@ export default function App() {
               </RequireAuth>
             </RequireWorker>
           }
-        />
+        /> */}
 
         {/* ════════════════════════════════════════
             HIRER ROUTES
