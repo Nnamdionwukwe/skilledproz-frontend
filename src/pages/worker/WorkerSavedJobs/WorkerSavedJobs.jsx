@@ -5,7 +5,19 @@ import WorkerLayout from "../../../components/layout/WorkerLayout";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
 
-// ─── Helper: format relative time ──────────────────────────────────────────
+function formatCurrency(amount, currency = "NGN") {
+  try {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount || 0);
+  } catch {
+    return `${currency} ${(amount || 0).toFixed(2)}`;
+  }
+}
+
 function timeAgo(date) {
   const diff = Date.now() - new Date(date).getTime();
   const mins = Math.floor(diff / 60000);
@@ -16,6 +28,11 @@ function timeAgo(date) {
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
   return new Date(date).toLocaleDateString();
+}
+
+function initials(u) {
+  if (!u) return "?";
+  return `${u.firstName?.[0] || ""}${u.lastName?.[0] || ""}`.toUpperCase();
 }
 
 // ─── Job Card ────────────────────────────────────────────────────────────────
@@ -33,30 +50,54 @@ function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
   const canApply = job.status === "OPEN" && !hasApplied;
 
   return (
-    <div className={styles.jobCard}>
-      <div className={styles.jobCardHeader}>
-        <h3 className={styles.jobTitle}>
-          <Link to={`/jobs/${job.id}`} className={styles.jobLink}>
-            {job.title}
-          </Link>
-        </h3>
-        <span className={styles.savedDate}>Saved {timeAgo(job.savedAt)}</span>
+    <Link to={`/jobs/${job.id}`} className={styles.card}>
+      {/* Accent bar – blue for saved */}
+      <div className={`${styles.accentBar} ${styles.accent_blue}`} />
+
+      <div className={styles.cardTop}>
+        <div className={styles.avatar}>
+          {job.hirer?.avatar ? (
+            <img src={job.hirer.avatar} alt="" />
+          ) : (
+            <span>{initials(job.hirer)}</span>
+          )}
+        </div>
+        <span className={`${styles.badge} ${styles.badge_blue}`}>
+          {job.status === "OPEN" ? "Open" : "Closed"}
+        </span>
       </div>
 
-      <div className={styles.jobMeta}>
-        <span className={styles.company}>
-          🏢{" "}
-          {job.hirer?.hirerProfile?.companyName || job.companyName || "Unknown"}
-        </span>
-        <span className={styles.location}>
-          📍 {job.address || job.location || "Remote"}
-        </span>
-        {job.jobType && <span className={styles.badge}>{job.jobType}</span>}
-        {job.status === "OPEN" ? (
-          <span className={`${styles.badge} ${styles.badgeGreen}`}>Open</span>
-        ) : (
-          <span className={`${styles.badge} ${styles.badgeDim}`}>Closed</span>
+      <h3 className={styles.cardTitle}>{job.title}</h3>
+
+      <p className={styles.cardParty}>
+        {job.hirer?.firstName} {job.hirer?.lastName}
+        {job.category && (
+          <>
+            {" "}
+            · <span className={styles.cat}>{job.category.name}</span>
+          </>
         )}
+      </p>
+
+      <div className={styles.details}>
+        <div className={styles.detail}>
+          <span className={styles.detailIcon}>📍</span>
+          <span className={`${styles.detailText} ${styles.detailTruncate}`}>
+            {job.address || job.location || "Remote"}
+          </span>
+        </div>
+        {job.jobType && (
+          <div className={styles.detail}>
+            <span className={styles.detailIcon}>💼</span>
+            <span className={styles.detailText}>{job.jobType}</span>
+          </div>
+        )}
+        <div className={styles.detail}>
+          <span className={styles.detailIcon}>📅</span>
+          <span className={styles.detailText}>
+            Saved {timeAgo(job.savedAt)}
+          </span>
+        </div>
         {hasApplied && (
           <span className={`${styles.badge} ${styles.badgeApplied}`}>
             Applied
@@ -64,15 +105,12 @@ function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
         )}
       </div>
 
-      <div className={styles.jobFooter}>
-        <div className={styles.salary}>
-          {job.budget && job.currency && (
-            <span>
-              💰 {job.currency} {job.budget}
-            </span>
-          )}
-          {job.salaryText && <span>{job.salaryText}</span>}
-        </div>
+      <div className={styles.cardFooter}>
+        <span className={styles.rate}>
+          {job.budget && job.currency
+            ? formatCurrency(job.budget, job.currency)
+            : job.salaryText || "—"}
+        </span>
         <div className={styles.actions}>
           {canApply && (
             <Link to={`/jobs/${job.id}`} className={styles.applyLink}>
@@ -84,7 +122,7 @@ function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
           </button>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -95,7 +133,7 @@ export default function WorkerSavedJobs() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const limit = 10;
+  const limit = 12;
   const pages = Math.ceil(total / limit);
 
   useEffect(() => {
@@ -119,35 +157,40 @@ export default function WorkerSavedJobs() {
 
   return (
     <WorkerLayout>
-      <div className={styles.dashPage}>
+      <div className={styles.page}>
         {/* Header */}
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>Saved Jobs</h1>
-          <p className={styles.pageSubtitle}>
-            {total} job{total !== 1 ? "s" : ""} saved
-          </p>
+        <div className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>Bookmarks</p>
+            <h1 className={styles.title}>
+              Saved Jobs
+              {total > 0 && <span className={styles.count}>{total}</span>}
+            </h1>
+          </div>
         </div>
 
-        {/* Job List */}
-        <div className={styles.jobList}>
-          {loading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className={styles.skCard} />
-            ))
-          ) : jobs.length === 0 ? (
-            <div className={styles.emptyState}>
-              <span className={styles.emptyIcon}>📂</span>
-              <p className={styles.emptyTitle}>No saved jobs yet</p>
-              <p className={styles.emptyText}>
-                Browse the job board and save jobs you're interested in –
-                they'll appear here.
-              </p>
-              <Link to="/jobs" className={styles.browseBtn}>
-                Browse Jobs
-              </Link>
-            </div>
-          ) : (
-            jobs.map((job) => (
+        {/* Content */}
+        {loading ? (
+          <div className={styles.grid}>
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} />
+            ))}
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className={styles.empty}>
+            <span className={styles.emptyEmoji}>📂</span>
+            <p className={styles.emptyTitle}>No saved jobs</p>
+            <p className={styles.emptyText}>
+              Browse the job board and save jobs you're interested in – they'll
+              appear here.
+            </p>
+            <Link to="/jobs" className={styles.emptyBtn}>
+              Browse Jobs
+            </Link>
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {jobs.map((job) => (
               <SavedJobCard
                 key={job.savedId}
                 job={job}
@@ -155,13 +198,13 @@ export default function WorkerSavedJobs() {
                 hasApplied={job.hasApplied || false}
                 onUnsave={handleUnsave}
               />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Pagination */}
         {pages > 1 && (
-          <div className={styles.pagination}>
+          <div className={styles.pager}>
             <button
               className={styles.pageBtn}
               disabled={page === 1}
@@ -184,4 +227,8 @@ export default function WorkerSavedJobs() {
       </div>
     </WorkerLayout>
   );
+}
+
+function Skeleton() {
+  return <div className={styles.skeleton} />;
 }
