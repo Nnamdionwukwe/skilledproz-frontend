@@ -111,6 +111,7 @@ import AdminJobPost from "./pages/admin/AdminJobPost.jsx";
 import ExternalJobBoard from "./pages/worker/ExternalJobBoard/ExternalJobBoard.jsx";
 import ExternalJobDetail from "./pages/worker/ExternalJobBoard/ExternalJobDetail.jsx";
 import AdminExternalJobStats from "./pages/admin/AdminExternalJobStats.jsx";
+import WorkerSavedJobs from "./pages/worker/WorkerSavedJobs/WorkerSavedJobs.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -555,6 +556,16 @@ export default function App() {
             <RequireWorker>
               <RequireAuth requireVerified>
                 <WorkerReviewsPage />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/saved-jobs"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerSavedJobs />
               </RequireAuth>
             </RequireWorker>
           }

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 
+// ─── Navigation config ──────────────────────────────────────────────────────
 const NAV = [
   {
     group: "Overview",
@@ -12,6 +13,7 @@ const NAV = [
       { label: "My Bookings", path: "/bookings", icon: "📋" },
       { label: "Categories", path: "/dashboard/worker/categories", icon: "🔧" },
       { label: "Browse Jobs", path: "/jobs", icon: "🔍" },
+      { label: "Saved Jobs", path: "/dashboard/worker/saved-jobs", icon: "⭐" },
       {
         label: "My Applications",
         path: "/dashboard/worker/applications",
@@ -41,17 +43,11 @@ const NAV = [
         path: "/campaign",
         icon: "📢",
       },
-      {
-        label: "Reports",
-        path: "/my-reports",
-        icon: "🚩",
-      },
     ],
   },
   {
     group: "Profile",
     items: [
-      // { label: "Edit Profile", path: "/dashboard/worker/profile", icon: "👤" },
       { label: "Portfolio", path: "/dashboard/worker/portfolio", icon: "🖼" },
       {
         label: "Certifications",
@@ -63,15 +59,15 @@ const NAV = [
         path: "/dashboard/worker/availability",
         icon: "📅",
       },
-      // {
-      //   label: "Background Check",
-      //   path: "/dashboard/worker/background-check",
-      //   icon: "🛡️",
-      // },
       {
         label: "Verification",
         path: "/dashboard/worker/verification",
         icon: "🛡️",
+      },
+      {
+        label: "Reports",
+        path: "/my-reports",
+        icon: "🚩",
       },
     ],
   },
@@ -85,7 +81,7 @@ const NAV = [
         icon: "🔔",
         badge: "unread",
       },
-      { label: "Messages", path: "/messages", icon: "💬" },
+      { label: "Messages", path: "/messages", icon: "💬", badge: "message" },
     ],
   },
   {
@@ -96,13 +92,6 @@ const NAV = [
         path: "/dashboard/worker/subscription",
         icon: "💎",
       },
-
-      // TO BE ADDED AT 10K USERS
-      // {
-      //   label: "Boost Listing",
-      //   path: "/dashboard/worker/featured",
-      //   icon: "🚀",
-      // },
       { label: "Settings", path: "/settings", icon: "⚙️" },
     ],
   },
@@ -113,14 +102,10 @@ const PAGE_TITLES = {
   "/bookings": { title: "My Bookings", sub: "All your jobs" },
   "/bookings/create": { title: "Create Booking", sub: "Post a new job" },
   "/dashboard/worker/earnings": { title: "Earnings", sub: "Track your income" },
-  "/dashboard/worker/payouts": {
-    title: "Cashouts",
-    sub: "Withdraw your earnings",
+  "/dashboard/worker/saved-jobs": {
+    title: "Saved Jobs",
+    sub: "Your saved jobs",
   },
-  // "/dashboard/worker/profile": {
-  //   title: "Edit Profile",
-  //   sub: "Update your information",
-  // },
   "/dashboard/worker/portfolio": {
     title: "Portfolio",
     sub: "Showcase your work",
@@ -146,10 +131,6 @@ const PAGE_TITLES = {
     title: "My Applications",
     sub: "Jobs you applied to",
   },
-  // "/dashboard/worker/background-check": {
-  //   title: "Background Check",
-  //   sub: "Build hirer trust",
-  // },
   "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
   "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
@@ -162,10 +143,8 @@ const PAGE_TITLES = {
     title: "Featured Boost",
     sub: "Boost your listing",
   },
-  "/dashboard/worker/disputes": {
-    title: "My Disputes",
-    sub: "Track and manage your disputes",
-  },
+  "/my-reports": { title: "My Reports", sub: "Track your reports" },
+  "/settings": { title: "Settings", sub: "Manage your preferences" },
 };
 
 function getPageInfo(pathname) {
@@ -174,15 +153,51 @@ function getPageInfo(pathname) {
     return { title: "Booking Detail", sub: "Job details and actions" };
   if (pathname.startsWith("/profile/")) return { title: "Profile", sub: "" };
   if (pathname.startsWith("/jobs/")) return { title: "Job Detail", sub: "" };
-  return { title: "SkilledProz", sub: "" };
+  return { title: "Worker Portal", sub: "Manage your work" };
 }
 
 function isNavActive(itemPath, pathname) {
-  if (itemPath === "/bookings")
-    return pathname === "/bookings" || pathname.startsWith("/bookings/");
+  if (itemPath === "/bookings" && pathname.startsWith("/bookings/"))
+    return true;
+  if (itemPath === "/jobs" && pathname.startsWith("/jobs/")) return true;
   return pathname === itemPath;
 }
 
+// ─── Reusable Confirmation Modal ──────────────────────────────────────────
+function ConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Are you sure?",
+  message = "This action cannot be undone.",
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  confirmVariant = "danger",
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <h3 className={styles.modalTitle}>{title}</h3>
+        <p className={styles.modalMessage}>{message}</p>
+        <div className={styles.modalActions}>
+          <button className={styles.modalCancelBtn} onClick={onClose}>
+            {cancelLabel}
+          </button>
+          <button
+            className={`${styles.modalConfirmBtn} ${styles[`modalConfirm_${confirmVariant}`]}`}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Layout ────────────────────────────────────────────────────────────
 export default function WorkerLayout({ children }) {
   const { user, logout } = useAuthStore();
   const location = useLocation();
@@ -190,13 +205,75 @@ export default function WorkerLayout({ children }) {
   const [available, setAvailable] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [loadingAvailability, setLoadingAvailability] = useState(true);
+  const isFirstRender = useRef(true);
 
+  // ── Fetch unread notifications ──────────────────────────────────────────
+  const fetchUnread = useCallback(async () => {
+    try {
+      const res = await api.get("/notifications?limit=1");
+      setUnreadCount(res.data.data?.unreadCount || 0);
+    } catch (e) {
+      // Silent fail
+    }
+  }, []);
+
+  // ── Fetch unread messages ──────────────────────────────────────────────
+  const fetchUnreadMessages = useCallback(async () => {
+    try {
+      const res = await api.get("/messages/conversations");
+      const conversations = res.data.data?.conversations || [];
+      const total = conversations.reduce(
+        (sum, c) => sum + (c.unreadCount || 0),
+        0,
+      );
+      setUnreadMessageCount(total);
+    } catch (e) {
+      setUnreadMessageCount(0);
+    }
+  }, []);
+
+  // ── Fetch worker availability on mount ──────────────────────────────────
   useEffect(() => {
+    if (!user?.id) return;
     api
-      .get("/notifications?limit=1")
-      .then((res) => setUnreadCount(res.data.data?.unreadCount || 0))
-      .catch(() => {});
-  }, [location.pathname]);
+      .get("/workers/dashboard")
+      .then((res) => {
+        const profile = res.data.data?.profile;
+        if (profile && typeof profile.isAvailable === "boolean") {
+          setAvailable(profile.isAvailable);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingAvailability(false));
+  }, [user?.id]);
+
+  // ── Sync availability toggle to backend ──────────────────────────────────
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!user?.id || loadingAvailability) return;
+
+    api.put("/workers/profile", { isAvailable: available }).catch(() => {
+      // Revert on error
+      setAvailable((prev) => !prev);
+    });
+  }, [available, user?.id, loadingAvailability]);
+
+  // ── Periodic fetch for notifications & messages ──────────────────────────
+  useEffect(() => {
+    fetchUnread();
+    fetchUnreadMessages();
+    const interval = setInterval(() => {
+      fetchUnread();
+      fetchUnreadMessages();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnread, fetchUnreadMessages]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -204,6 +281,12 @@ export default function WorkerLayout({ children }) {
 
   const pageInfo = getPageInfo(location.pathname);
   const closeSidebar = () => setSidebarOpen(false);
+
+  const handleLogout = async () => {
+    setShowLogoutModal(false);
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <div className={styles.shell}>
@@ -253,7 +336,11 @@ export default function WorkerLayout({ children }) {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`${styles.navItem} ${isNavActive(item.path, location.pathname) ? styles.active : ""}`}
+                  className={`${styles.navItem} ${
+                    isNavActive(item.path, location.pathname)
+                      ? styles.active
+                      : ""
+                  }`}
                   onClick={closeSidebar}
                 >
                   <span className={styles.navIcon}>{item.icon}</span>
@@ -261,6 +348,11 @@ export default function WorkerLayout({ children }) {
                   {item.badge === "unread" && unreadCount > 0 && (
                     <span className={styles.navBadge}>
                       {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                  {item.badge === "message" && unreadMessageCount > 0 && (
+                    <span className={styles.navBadge}>
+                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                     </span>
                   )}
                 </Link>
@@ -272,21 +364,23 @@ export default function WorkerLayout({ children }) {
         <div className={styles.sidebarFooter}>
           <div className={styles.availToggle}>
             <span className={styles.availLabel}>
-              {available ? "🟢 Available" : "⚫ Offline"}
+              {loadingAvailability
+                ? "⏳ Loading..."
+                : available
+                  ? "🟢 Available"
+                  : "⚫ Offline"}
             </span>
             <button
               className={`${styles.toggle} ${available ? styles.on : ""}`}
               onClick={() => setAvailable((v) => !v)}
+              disabled={loadingAvailability}
             >
               <span className={styles.toggleThumb} />
             </button>
           </div>
           <button
             className={styles.logoutBtn}
-            onClick={async () => {
-              await logout();
-              navigate("/login");
-            }}
+            onClick={() => setShowLogoutModal(true)}
           >
             <span className={styles.navIcon}>🚪</span>
             Log out
@@ -345,6 +439,17 @@ export default function WorkerLayout({ children }) {
 
         <div className={styles.content}>{children}</div>
       </div>
+
+      {/* ─── Logout Confirmation Modal ─── */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Log out of SkilledProz?"
+        message="You will need to sign in again to access your account."
+        confirmLabel="Log out"
+        confirmVariant="danger"
+      />
     </div>
   );
 }
