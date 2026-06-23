@@ -24,12 +24,11 @@
   position: fixed;
   top: 0;
   left: 0;
-  height: 100vh;
+  height: 100vh; /* fallback */
+  height: 100dvh; /* dynamic viewport height for mobile */
   z-index: 50;
   transition: transform 0.25s ease;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 /* ── Logo ── */
@@ -204,8 +203,7 @@
   gap: 0.25rem;
   flex-shrink: 0;
   background: var(--bg-panel);
-  position: sticky; /* ← ADD */
-  bottom: 0;
+  /* REMOVE: position: sticky; bottom: 0; */
 }
 
 .availToggle {
