@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import styles from "./WorkerSavedJobs.module.css";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
+import ConfirmationModal from "../../../components/context/ConfirmationModal";
 
 function formatCurrency(amount, currency = "NGN") {
   try {
@@ -37,8 +38,20 @@ function initials(u) {
 
 // ─── Job Card ────────────────────────────────────────────────────────────────
 function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
-  const handleUnsave = async () => {
-    if (!window.confirm("Remove this job from your saved list?")) return;
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+
+  const handleCardClick = () => {
+    navigate(`/jobs/${job.id}`);
+  };
+
+  const handleUnsaveClick = (e) => {
+    e.stopPropagation();
+    setShowModal(true);
+  };
+
+  const handleConfirmUnsave = async () => {
+    setShowModal(false);
     try {
       await api.delete(`/jobs/${job.id}/save`);
       onUnsave(job.id);
@@ -50,79 +63,100 @@ function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
   const canApply = job.status === "OPEN" && !hasApplied;
 
   return (
-    <Link to={`/jobs/${job.id}`} className={styles.card}>
-      {/* Accent bar – blue for saved */}
-      <div className={`${styles.accentBar} ${styles.accent_blue}`} />
+    <>
+      <div className={styles.card} onClick={handleCardClick}>
+        {/* Accent bar – blue for saved */}
+        <div className={`${styles.accentBar} ${styles.accent_blue}`} />
 
-      <div className={styles.cardTop}>
-        <div className={styles.avatar}>
-          {job.hirer?.avatar ? (
-            <img src={job.hirer.avatar} alt="" />
-          ) : (
-            <span>{initials(job.hirer)}</span>
-          )}
-        </div>
-        <span className={`${styles.badge} ${styles.badge_blue}`}>
-          {job.status === "OPEN" ? "Open" : "Closed"}
-        </span>
-      </div>
-
-      <h3 className={styles.cardTitle}>{job.title}</h3>
-
-      <p className={styles.cardParty}>
-        {job.hirer?.firstName} {job.hirer?.lastName}
-        {job.category && (
-          <>
-            {" "}
-            · <span className={styles.cat}>{job.category.name}</span>
-          </>
-        )}
-      </p>
-
-      <div className={styles.details}>
-        <div className={styles.detail}>
-          <span className={styles.detailIcon}>📍</span>
-          <span className={`${styles.detailText} ${styles.detailTruncate}`}>
-            {job.address || job.location || "Remote"}
-          </span>
-        </div>
-        {job.jobType && (
-          <div className={styles.detail}>
-            <span className={styles.detailIcon}>💼</span>
-            <span className={styles.detailText}>{job.jobType}</span>
+        <div className={styles.cardTop}>
+          <div className={styles.avatar}>
+            {job.hirer?.avatar ? (
+              <img src={job.hirer.avatar} alt="" />
+            ) : (
+              <span>{initials(job.hirer)}</span>
+            )}
           </div>
-        )}
-        <div className={styles.detail}>
-          <span className={styles.detailIcon}>📅</span>
-          <span className={styles.detailText}>
-            Saved {timeAgo(job.savedAt)}
+          <span className={`${styles.badge} ${styles.badge_blue}`}>
+            {job.status === "OPEN" ? "Open" : "Closed"}
           </span>
         </div>
-        {hasApplied && (
-          <span className={`${styles.badge} ${styles.badgeApplied}`}>
-            Applied
+
+        <h3 className={styles.cardTitle}>{job.title}</h3>
+
+        <p className={styles.cardParty}>
+          {job.hirer?.firstName} {job.hirer?.lastName}
+          {job.category && (
+            <>
+              {" "}
+              · <span className={styles.cat}>{job.category.name}</span>
+            </>
+          )}
+        </p>
+
+        <div className={styles.details}>
+          <div className={styles.detail}>
+            <span className={styles.detailIcon}>📍</span>
+            <span className={`${styles.detailText} ${styles.detailTruncate}`}>
+              {job.address || job.location || "Remote"}
+            </span>
+          </div>
+          {job.jobType && (
+            <div className={styles.detail}>
+              <span className={styles.detailIcon}>💼</span>
+              <span className={styles.detailText}>{job.jobType}</span>
+            </div>
+          )}
+          <div className={styles.detail}>
+            <span className={styles.detailIcon}>📅</span>
+            <span className={styles.detailText}>
+              Saved {timeAgo(job.savedAt)}
+            </span>
+          </div>
+          {hasApplied && (
+            <span className={`${styles.badge} ${styles.badgeApplied}`}>
+              Applied
+            </span>
+          )}
+        </div>
+
+        <div className={styles.cardFooter}>
+          <span className={styles.rate}>
+            {job.budget && job.currency
+              ? formatCurrency(job.budget, job.currency)
+              : job.salaryText || "—"}
           </span>
-        )}
+          <div className={styles.actions}>
+            {canApply && (
+              <Link
+                to={`/jobs/${job.id}`}
+                className={styles.applyLink}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Apply Now
+              </Link>
+            )}
+            <button
+              className={styles.unsaveBtn}
+              onClick={handleUnsaveClick}
+              type="button"
+            >
+              ✕ Unsave
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className={styles.cardFooter}>
-        <span className={styles.rate}>
-          {job.budget && job.currency
-            ? formatCurrency(job.budget, job.currency)
-            : job.salaryText || "—"}
-        </span>
-        <div className={styles.actions}>
-          {canApply && (
-            <Link to={`/jobs/${job.id}`} className={styles.applyLink}>
-              Apply Now
-            </Link>
-          )}
-          <button className={styles.unsaveBtn} onClick={handleUnsave}>
-            ✕ Unsave
-          </button>
-        </div>
-      </div>
-    </Link>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleConfirmUnsave}
+        title="Remove saved job?"
+        message={`Are you sure you want to remove "${job.title}" from your saved list?`}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+      />
+    </>
   );
 }
 
