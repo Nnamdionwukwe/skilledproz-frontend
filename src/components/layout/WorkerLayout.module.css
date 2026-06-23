@@ -14,7 +14,7 @@
   backdrop-filter: blur(2px);
 }
 
-/* ── Sidebar ── */
+/* ── Sidebar (fixed) ── */
 .sidebar {
   width: 260px;
   background: var(--bg-panel);
@@ -24,8 +24,8 @@
   position: fixed;
   top: 0;
   left: 0;
-  height: 100vh; /* fallback */
-  height: 100dvh; /* dynamic viewport height for mobile */
+  height: 100vh;
+  height: 100dvh;
   z-index: 50;
   transition: transform 0.25s ease;
   overflow: hidden;
@@ -104,14 +104,13 @@
   display: inline-block;
 }
 
-/* ── Nav — scrollable, fills remaining space ── */
+/* ── Nav — scrollable ── */
 .sidebarNav {
   flex: 1;
   padding: 1rem 0.75rem;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
-  /* Critical fix: allows flex child to shrink below its content height */
   min-height: 0;
 }
 .sidebarNav::-webkit-scrollbar {
@@ -194,7 +193,7 @@
   text-align: center;
 }
 
-/* ── Footer — pinned to bottom, never hidden ── */
+/* ── Footer — always visible at bottom ── */
 .sidebarFooter {
   padding: 0.875rem 0.75rem;
   border-top: 1px solid var(--border);
@@ -203,7 +202,6 @@
   gap: 0.25rem;
   flex-shrink: 0;
   background: var(--bg-panel);
-  /* REMOVE: position: sticky; bottom: 0; */
 }
 
 .availToggle {
@@ -272,19 +270,24 @@
   background: var(--red-dim);
 }
 
-/* ── Main area ── */
+/* ─── Main area ───────────────────────────────────────────────────────────── */
 .main {
   margin-left: 260px;
   flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow-y: auto;
+  height: 100dvh;
+  overflow: hidden; /* prevent whole main from scrolling; only content scrolls */
+  position: relative;
 }
 
-/* ── Header — sticks to top of scrolling .main ── */
+/* ─── Header — fixed at top of main area ───────────────────────────────── */
 .header {
+  position: fixed;
+  top: 0;
+  left: 260px; /* aligns with sidebar */
+  right: 0;
   height: 60px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
@@ -292,12 +295,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 2rem;
-  position: sticky;
-  top: 0;
   z-index: 40;
   gap: 1rem;
   flex-shrink: 0;
 }
+
 .headerLeft {
   display: flex;
   flex-direction: row;
@@ -412,7 +414,11 @@
 /* ── Page content ── */
 .content {
   padding: 2rem;
+  margin-top: 60px; /* offset for fixed header */
   flex: 1;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
   animation: fadeUp 0.3s ease;
 }
 
@@ -427,6 +433,9 @@
   }
   .main {
     margin-left: 0;
+  }
+  .header {
+    left: 0; /* full width on mobile */
   }
   .menuBtn {
     display: flex;
@@ -548,6 +557,16 @@
   from {
     opacity: 0;
     transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
