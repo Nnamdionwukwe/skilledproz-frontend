@@ -292,13 +292,19 @@ export default function BookingDetailMain({
               value={calcDuration(booking.checkInAt, booking.checkOutAt)}
             />
           )}
-          {booking.insurancePolicyNumber && (
+
+          {/*
+            ── FIXED: use insuranceRef (backend field) instead of insurancePolicyNumber ──
+            ── Also keep insurancePlan as fallback for the plan name              ──
+          */}
+          {booking.insuranceRef && (
             <DetailItem
               icon="🛡️"
               label="Insurance"
-              value={`${booking.insurancePlan || "Insured"} · Policy #${booking.insurancePolicyNumber}`}
+              value={`${booking.insurancePlan || "Insured"} · Policy #${booking.insuranceRef}`}
             />
           )}
+
           {booking.jobType && (
             <DetailItem
               icon={
