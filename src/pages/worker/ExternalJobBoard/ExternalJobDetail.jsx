@@ -4,7 +4,15 @@ import api from "../../../lib/api";
 import s from "./ExternalJobDetail.module.css";
 
 // ─── Disclaimer Modal ──────────────────────────────────────────────────────
-function DisclaimerModal({ job, method, platformName, onConfirm, onClose }) {
+function DisclaimerModal({
+  job,
+  method,
+  platformName,
+  onConfirm,
+  onClose,
+  onCopy,
+  copiedField,
+}) {
   const methodLabels = {
     url: { action: "visit the job listing", button: "Proceed to Website" },
     email: { action: "send your application via email", button: "Open Email" },
@@ -13,6 +21,17 @@ function DisclaimerModal({ job, method, platformName, onConfirm, onClose }) {
   };
 
   const label = methodLabels[method] || methodLabels.url;
+
+  // Determine contact value for copy (only for email/phone)
+  let contactValue = null;
+  let contactLabel = "";
+  if (method === "email" && job.applicationEmail) {
+    contactValue = job.applicationEmail;
+    contactLabel = "Email";
+  } else if (method === "phone" && job.applicationPhone) {
+    contactValue = job.applicationPhone;
+    contactLabel = "Phone";
+  }
 
   return (
     <div className={s.backdrop} onClick={onClose}>
@@ -31,6 +50,22 @@ function DisclaimerModal({ job, method, platformName, onConfirm, onClose }) {
             {label.action}
             on <strong>{platformName}</strong>.
           </p>
+
+          {/* ── Show contact info with copy button (only in modal) ── */}
+          {contactValue && (
+            <div className={s.contactCopyRow}>
+              <span className={s.contactLabel}>{contactLabel}:</span>
+              <span className={s.contactValue}>{contactValue}</span>
+              <button
+                className={s.copyBtn}
+                onClick={() => onCopy(contactValue, method)}
+                title={`Copy ${contactLabel}`}
+              >
+                {copiedField === method ? "✅" : "📋"}
+              </button>
+            </div>
+          )}
+
           <div className={s.disclaimerBox}>
             <ul className={s.disclaimerList}>
               <li>
@@ -103,7 +138,6 @@ export default function ExternalJobDetail() {
           setTimeout(() => setCopiedField(null), 2000);
         })
         .catch(() => {
-          // Fallback
           fallbackCopy(text, field);
         });
     } else {
@@ -329,18 +363,7 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📧</span>
                 <span className={s.methodLabel}>Email</span>
-                <div className={s.methodValueRow}>
-                  <span className={s.methodValue}>{job.applicationEmail}</span>
-                  <button
-                    className={s.copyBtn}
-                    onClick={() =>
-                      copyToClipboard(job.applicationEmail, "email")
-                    }
-                    title="Copy email address"
-                  >
-                    {copiedField === "email" ? "✅" : "📋"}
-                  </button>
-                </div>
+                {/* ── No email address displayed here ── */}
                 <button
                   className={s.methodBtn}
                   onClick={() => handleMethodClick("email")}
@@ -367,18 +390,7 @@ export default function ExternalJobDetail() {
               <div className={s.methodCard}>
                 <span className={s.methodIcon}>📞</span>
                 <span className={s.methodLabel}>Phone</span>
-                <div className={s.methodValueRow}>
-                  <span className={s.methodValue}>{job.applicationPhone}</span>
-                  <button
-                    className={s.copyBtn}
-                    onClick={() =>
-                      copyToClipboard(job.applicationPhone, "phone")
-                    }
-                    title="Copy phone number"
-                  >
-                    {copiedField === "phone" ? "✅" : "📋"}
-                  </button>
-                </div>
+                {/* ── No phone number displayed here ── */}
                 <button
                   className={s.methodBtn}
                   onClick={() => handleMethodClick("phone")}
@@ -404,6 +416,8 @@ export default function ExternalJobDetail() {
           platformName={platformName}
           onConfirm={handleProceed}
           onClose={handleModalClose}
+          onCopy={copyToClipboard}
+          copiedField={copiedField}
         />
       )}
     </div>
@@ -434,4 +448,3 @@ function formatSalary(job) {
   }
   return job.salaryText || "Not specified";
 }
-s;

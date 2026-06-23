@@ -771,22 +771,30 @@
   color: var(--text-dim);
 }
 
-/* ─── Copy button ────────────────────────────────────────────────────────── */
-.methodValueRow {
+/* ─── Contact copy row inside modal ──────────────────────────────────────── */
+.contactCopyRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  justify-content: center;
-  margin: 4px 0;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
-.methodValue {
+.contactLabel {
+  font-weight: 600;
+  color: var(--text-muted);
   font-size: 0.85rem;
-  color: var(--text);
-  word-break: break-all;
-  text-align: center;
 }
-.copyBtn {
+.contactValue {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 0.95rem;
+  flex: 1;
+  word-break: break-all;
+}
+.contactCopyRow .copyBtn {
   background: none;
   border: none;
   font-size: 1rem;
@@ -796,7 +804,7 @@
   transition: background 0.15s;
   color: var(--text-muted);
 }
-.copyBtn:hover {
+.contactCopyRow .copyBtn:hover {
   background: var(--bg-hover);
   color: var(--text);
 }
