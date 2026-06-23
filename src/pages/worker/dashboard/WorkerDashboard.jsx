@@ -9,6 +9,21 @@ import FeatureGate from "../../../components/subscription/FeatureGate";
 import DashboardCurrencySwitch from "../../../components/common/DashboardCurrencySwitch";
 import { useCurrency } from "../../../context/CurrencyContext";
 
+// ─── Local currency formatter (symbol-based, always 2 decimals) ──────────
+function formatCurrency(amount, currency = "NGN") {
+  try {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount || 0);
+  } catch {
+    // Fallback if currency is not supported
+    return `${currency} ${(amount || 0).toFixed(2)}`;
+  }
+}
+
 function statusBadge(status) {
   const map = {
     PENDING: ui.badgePending,
@@ -21,14 +36,6 @@ function statusBadge(status) {
   };
   return `${ui.badge} ${map[status] || ui.badgePending}`;
 }
-
-// function fmt(amount, currency = "NGN") {
-//   return new Intl.NumberFormat("en-NG", {
-//     style: "currency",
-//     currency,
-//     maximumFractionDigits: 0,
-//   }).format(amount || 0);
-// }
 
 function initials(u) {
   if (!u) return "?";
@@ -53,7 +60,7 @@ export default function WorkerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const { fmt, dashboardCurrency } = useCurrency();
+  const { dashboardCurrency } = useCurrency();
 
   useEffect(() => {
     api
@@ -118,18 +125,19 @@ export default function WorkerDashboard() {
             <div>
               <div className={styles.earningsLabel}>This Month</div>
               <div className={styles.earningsValue}>
-                {fmt(earnings.thisMonth, dashboardCurrency)}
+                {formatCurrency(earnings.thisMonth, dashboardCurrency)}
               </div>
               <div className={styles.earningsMeta}>
                 <span>
-                  Last month: {fmt(earnings.lastMonth, dashboardCurrency)}
+                  Last month:{" "}
+                  {formatCurrency(earnings.lastMonth, dashboardCurrency)}
                 </span>
               </div>
             </div>
             <div className={styles.earningsPending}>
               <div className={styles.pendingLabel}>In Escrow</div>
               <div className={styles.pendingValue}>
-                {fmt(earnings.pendingPayout, dashboardCurrency)}
+                {formatCurrency(earnings.pendingPayout, dashboardCurrency)}
               </div>
               <div className={styles.pendingSub}>Awaiting release</div>
             </div>
@@ -200,7 +208,7 @@ export default function WorkerDashboard() {
                     style={{
                       height: `${Math.max(4, (m.earnings / maxEarning) * 100)}%`,
                     }}
-                    title={`${m.month}: ${fmt(m.earnings)}`}
+                    title={`${m.month}: ${formatCurrency(m.earnings, dashboardCurrency)}`}
                   />
                   <div className={styles.barLabel}>{m.month.split(" ")[0]}</div>
                 </div>
@@ -208,10 +216,11 @@ export default function WorkerDashboard() {
             </div>{" "}
             <div className={styles.earningsMeta} style={{ marginTop: 6 }}>
               <span>
-                This year: {fmt(earnings.thisYear, dashboardCurrency)}
+                This year:{" "}
+                {formatCurrency(earnings.thisYear, dashboardCurrency)}
               </span>
               <span style={{ marginLeft: 12 }}>
-                All time: {fmt(earnings.allTime, dashboardCurrency)}
+                All time: {formatCurrency(earnings.allTime, dashboardCurrency)}
               </span>
             </div>
           </div>
@@ -378,7 +387,20 @@ export default function WorkerDashboard() {
                   className={styles.bookingItem}
                 >
                   <div className={styles.bookingAvatar}>
-                    {initials(b.hirer)}
+                    {b.hirer?.avatar ? (
+                      <img
+                        src={b.hirer.avatar}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    ) : (
+                      initials(b.hirer)
+                    )}
                   </div>
                   <div className={styles.bookingInfo}>
                     <div className={styles.bookingTitle}>{b.title}</div>
@@ -404,7 +426,7 @@ export default function WorkerDashboard() {
                           color: "var(--green)",
                         }}
                       >
-                        {fmt(
+                        {formatCurrency(
                           b.payments[0].workerPayout,
                           b.payments[0].currency,
                         )}
@@ -432,9 +454,27 @@ export default function WorkerDashboard() {
               recentReviews.map((r) => (
                 <div key={r.id} className={styles.reviewItem}>
                   <div className={styles.reviewHeader}>
-                    <span className={styles.reviewerName}>
-                      {r.giver?.firstName} {r.giver?.lastName}
-                    </span>
+                    <div className={styles.reviewerInfo}>
+                      <div className={styles.reviewAvatar}>
+                        {r.giver?.avatar ? (
+                          <img
+                            src={r.giver.avatar}
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: "50%",
+                            }}
+                          />
+                        ) : (
+                          initials(r.giver)
+                        )}
+                      </div>
+                      <span className={styles.reviewerName}>
+                        {r.giver?.firstName} {r.giver?.lastName}
+                      </span>
+                    </div>
                     <span className={ui.stars}>
                       {"★".repeat(r.rating)}
                       {"☆".repeat(5 - r.rating)}
