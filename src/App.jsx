@@ -661,7 +661,7 @@ export default function App() {
           }
         />
         <Route
-          path="//dashboard/worker/completed-jobs"
+          path="/dashboard/worker/completed-jobs"
           element={
             <RequireWorker>
               <RequireAuth>
