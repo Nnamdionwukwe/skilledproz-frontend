@@ -181,9 +181,9 @@ const PAGE_TITLES = {
     title: "Subscriptions",
     sub: "Manage your subscription",
   },
-  "/dashboard/worker/featured": {
-    title: "Featured Boost",
-    sub: "Boost your listing",
+  "/dashboard/worker/completed-jobs": {
+    title: "Jobs Done",
+    sub: "View your Jobs Done",
   },
   "/my-reports": { title: "My Reports", sub: "Track your reports" },
   "/settings": { title: "Settings", sub: "Manage your preferences" },
