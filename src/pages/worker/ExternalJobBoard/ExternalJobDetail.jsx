@@ -187,8 +187,8 @@ export default function ExternalJobDetail() {
     setShowDisclaimer(true);
   };
 
-  const handleProceed = async () => {
-    await trackProceedClick();
+  const handleProceed = () => {
+    // 1. Open immediately (synchronous, user‑gesture triggered)
     if (selectedMethod === "url") {
       window.open(job.applicationUrl, "_blank", "noopener,noreferrer");
     } else if (selectedMethod === "email") {
@@ -199,6 +199,11 @@ export default function ExternalJobDetail() {
     } else if (selectedMethod === "phone") {
       window.location.href = `tel:${job.applicationPhone}`;
     }
+
+    // 2. Track asynchronously (fire‑and‑forget)
+    trackProceedClick().catch(() => {});
+
+    // 3. Close modal and reset state
     setShowDisclaimer(false);
     setSelectedMethod(null);
   };
