@@ -22,7 +22,7 @@ import {
   FiStar,
   FiBell,
   FiMail,
-  FiPackage, // <- replaced FiTrophy with FiPackage
+  FiPackage,
   FiSettings,
   FiLogOut,
   FiMenu,
@@ -440,6 +440,7 @@ export default function WorkerLayout({ children }) {
           </div>
 
           <div className={styles.headerRight}>
+            {/* ── Notification Bell ── */}
             <Link
               to="/dashboard/worker/notifications"
               className={styles.headerIconBtn}
@@ -452,6 +453,22 @@ export default function WorkerLayout({ children }) {
                 </span>
               )}
             </Link>
+
+            {/* ── Message Icon ── */}
+            <Link
+              to="/messages"
+              className={styles.headerIconBtn}
+              style={{ position: "relative" }}
+            >
+              <FiMail size={18} />
+              {unreadMessageCount > 0 && (
+                <span className={styles.bellBadge}>
+                  {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                </span>
+              )}
+            </Link>
+
+            {/* ── User Avatar ── */}
             <Link to="/profile/me" className={styles.headerIconBtn}>
               <div className={styles.headerAvatar}>
                 {user?.avatar ? (
