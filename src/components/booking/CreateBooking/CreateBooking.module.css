@@ -778,6 +778,11 @@
   }
 }
 @media (max-width: 480px) {
+  .page {
+    padding: 12px 12px 32px;
+    max-width: 100%;
+  }
+
   .rateLockedRow {
     grid-template-columns: 1fr;
   }
