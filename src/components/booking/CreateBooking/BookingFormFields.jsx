@@ -189,7 +189,7 @@ export default function BookingFormFields({
                 );
               })}
             </div>
-            <div className={styles.field} style={{ marginTop: "0.75rem" }}>
+            {/* <div className={styles.field} style={{ marginTop: "0.75rem" }}>
               <label className={styles.label}>
                 Number of {currentDuration?.label || "Units"}
               </label>
@@ -204,7 +204,7 @@ export default function BookingFormFields({
                   onChange={(e) => setDurationValue(e.target.value)}
                 />
               </div>
-            </div>
+            </div> */}
           </fieldset>
 
           {/* ── Category ── */}
