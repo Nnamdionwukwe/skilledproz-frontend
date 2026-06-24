@@ -6,17 +6,32 @@ import {
   Lock,
   Star,
   MapPin,
-  Circle,
   MessageSquare,
   Calendar,
   Clock,
   AlertTriangle,
-  User,
-  Building,
-  Home,
 } from "lucide-react";
 import styles from "./CreateBooking.module.css";
+import { useState, useEffect } from "react";
 
+// ── Currency symbol map ──────────────────────────────────────────────────
+const CURRENCY_SYMBOLS = {
+  NGN: "#",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  // add more as needed
+};
+
+// ── Format price with symbol and 2 decimals ────────────────────────────
+function formatPrice(amount, currency = "NGN") {
+  const symbol = CURRENCY_SYMBOLS[currency] || currency;
+  return `${symbol}${Number(amount)
+    .toFixed(2)
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+}
+
+// ── Duration options ────────────────────────────────────────────────────
 const DURATION_OPTIONS = [
   {
     unit: "hours",
@@ -87,6 +102,22 @@ export default function BookingWorkerInfo({
   form,
   set,
 }) {
+  // Format helper using the current currency
+  const format = (amount) => formatPrice(amount, lockedCurrency);
+
+  // Get currency symbol for display (used in price formatting)
+  const currencySymbol = CURRENCY_SYMBOLS[lockedCurrency] || lockedCurrency;
+
+  // ── Local state for custom quantity input ──
+  const [quantityInput, setQuantityInput] = useState(
+    String(form.quantity || 1),
+  );
+
+  // Sync local input when form.quantity changes from outside
+  useEffect(() => {
+    setQuantityInput(String(form.quantity || 1));
+  }, [form.quantity]);
+
   return (
     <>
       {!propWorkerId && (
@@ -176,8 +207,6 @@ export default function BookingWorkerInfo({
                 {worker.completedJobs} jobs done
               </span>
             </div>
-
-            {/* ── ALL categories – now displayed in a compact grid ── */}
             {worker.categories?.length > 0 && (
               <div className={styles.workerCardCats}>
                 {worker.categories.map((wc) => (
@@ -208,7 +237,7 @@ export default function BookingWorkerInfo({
                   Agreed Budget (from job)
                 </span>
                 <span className={styles.rateLockedValue}>
-                  {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                  {format(lockedRate)}
                 </span>
                 <span className={styles.rateLockedNote}>
                   <Lock size={12} /> Set from the job post budget
@@ -216,7 +245,9 @@ export default function BookingWorkerInfo({
               </div>
               <div className={styles.rateLockedBox}>
                 <span className={styles.rateLockedLabel}>Currency</span>
-                <span className={styles.rateLockedValue}>{lockedCurrency}</span>
+                <span className={styles.rateLockedValue}>
+                  {lockedCurrency} {/* ← code, not symbol */}
+                </span>
                 <span className={styles.rateLockedNote}>
                   <Lock size={12} /> Job's currency
                 </span>
@@ -252,7 +283,7 @@ export default function BookingWorkerInfo({
                         </span>
                         {hasRate ? (
                           <span className={styles.unitCardRate}>
-                            {lockedCurrency} {Number(rate).toLocaleString()}
+                            {format(rate)}
                             {opt.suffix}
                           </span>
                         ) : (
@@ -270,7 +301,7 @@ export default function BookingWorkerInfo({
                 <div className={styles.rateLockedBox}>
                   <span className={styles.rateLockedLabel}>Agreed Rate</span>
                   <span className={styles.rateLockedValue}>
-                    {lockedCurrency} {Number(lockedRate).toLocaleString()}
+                    {format(lockedRate)}
                     {currentOption?.suffix}
                   </span>
                   <span className={styles.rateLockedNote}>
@@ -280,7 +311,7 @@ export default function BookingWorkerInfo({
                 <div className={styles.rateLockedBox}>
                   <span className={styles.rateLockedLabel}>Currency</span>
                   <span className={styles.rateLockedValue}>
-                    {lockedCurrency}
+                    {lockedCurrency} {/* ← code, not symbol */}
                   </span>
                   <span className={styles.rateLockedNote}>
                     <Lock size={12} /> Worker's currency
@@ -288,12 +319,105 @@ export default function BookingWorkerInfo({
                 </div>
               </div>
 
-              {currentOption && (
+              {/* ── Custom Engagement ── */}
+              {selectedUnit === "custom" && (
+                <div className={styles.customEngagement}>
+                  <div className={styles.row2}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        Rate per {currentOption?.label?.toLowerCase()}{" "}
+                        <span className={styles.req}>*</span>
+                      </label>
+                      <div className={styles.iconInputWrap}>
+                        <span className={styles.iconInputIcon}>
+                          {currencySymbol}
+                        </span>
+                        <input
+                          className={styles.iconInput}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={form.rate || worker.customRate || 0}
+                          disabled
+                          readOnly
+                        />
+                      </div>
+                      <span className={styles.hint}>
+                        Rate set by worker – cannot be modified
+                      </span>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Custom Label</label>
+                      <input
+                        className={styles.input}
+                        type="text"
+                        value={form.customLabel || worker.customLabel || ""}
+                        disabled
+                        readOnly
+                        placeholder="No custom label provided"
+                      />
+                      <span className={styles.hint}>
+                        Label provided by the worker
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      Number of {currentOption?.label?.toLowerCase()}{" "}
+                      <span className={styles.req}>*</span>
+                    </label>
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={quantityInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setQuantityInput(val);
+                        // Only update form if it's a valid number >= 1
+                        if (val === "") {
+                          // Leave form.quantity unchanged
+                          return;
+                        }
+                        const num = parseFloat(val);
+                        if (!isNaN(num) && num >= 1) {
+                          set("quantity", num);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (
+                          quantityInput === "" ||
+                          parseFloat(quantityInput) < 1
+                        ) {
+                          setQuantityInput("1");
+                          set("quantity", 1);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className={styles.estimatedTotalBox}>
+                    <span className={styles.estimatedTotalLabel}>
+                      Estimated Total
+                    </span>
+                    <span className={styles.estimatedTotalValue}>
+                      {format(
+                        (form.rate || worker.customRate || 0) *
+                          (form.quantity || 1),
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Non‑custom duration input ── */}
+              {selectedUnit !== "custom" && currentOption && (
                 <div className={styles.field}>
                   <label className={styles.label}>
-                    {currentOption.unit === "custom"
-                      ? "Describe the engagement"
-                      : `Number of ${currentOption.inputLabel}`}
+                    Number of {currentOption.inputLabel}
                     <span className={styles.req}> *</span>
                   </label>
                   <div className={styles.iconInputWrap}>
@@ -378,7 +502,6 @@ export default function BookingWorkerInfo({
                 <div className={styles.negotiatedFields}>
                   <div className={styles.field}>
                     <label className={styles.label}>
-                      Negotiated Rate ({lockedCurrency}){" "}
                       <span className={styles.req}>*</span>
                     </label>
                     <div className={styles.iconInputWrap}>
@@ -391,20 +514,23 @@ export default function BookingWorkerInfo({
                         type="number"
                         step="0.01"
                         min="0"
-                        placeholder={`e.g. ${lockedRate > 0 ? lockedRate : "5000"}`}
+                        placeholder={format(lockedRate)}
                         value={negotiatedRate}
                         onChange={(e) => setNegotiatedRate(e.target.value)}
                       />
                       <span className={styles.negotiatedCurrency}>
-                        {lockedCurrency}
+                        {currencySymbol}
                       </span>
                     </div>
+                    <span className={styles.hint}>
+                      Enter the agreed rate (e.g., for discounts)
+                    </span>
                     {lockedRate > 0 && negotiatedRate && (
                       <p className={styles.negotiatedDiff}>
                         {parseFloat(negotiatedRate) < lockedRate
-                          ? `🟢 ${lockedCurrency} ${(lockedRate - parseFloat(negotiatedRate)).toLocaleString()} below listed rate`
+                          ? `🟢 ${format(lockedRate - parseFloat(negotiatedRate))} below listed rate`
                           : parseFloat(negotiatedRate) > lockedRate
-                            ? `🟡 ${lockedCurrency} ${(parseFloat(negotiatedRate) - lockedRate).toLocaleString()} above listed rate`
+                            ? `🟡 ${format(parseFloat(negotiatedRate) - lockedRate)} above listed rate`
                             : "✅ Same as listed rate"}
                       </p>
                     )}
@@ -426,27 +552,23 @@ export default function BookingWorkerInfo({
                   <div className={styles.negotiatedBanner}>
                     <Lock size={14} className={styles.iconInline} /> Both you
                     and the worker agreed to this rate in the platform Chat.
-                    Make sure the worker aggreed to this price before booking.
+                    Make sure the worker agreed to this price before booking.
                     This replaces the listed rate of{" "}
-                    <strong>
-                      {lockedCurrency} {Number(lockedRate).toLocaleString()}
-                      {currentOption?.suffix}
-                    </strong>{" "}
-                    for this booking only.
+                    <strong>{format(lockedRate)}</strong> for this booking only.
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Estimated total */}
+          {/* Estimated total for non‑custom */}
           {estFees && (
             <div className={styles.estimatedTotalBox}>
               <span className={styles.estimatedTotalLabel}>
                 Estimated Total
               </span>
               <span className={styles.estimatedTotalValue}>
-                {lockedCurrency} {estFees.subtotal.toLocaleString()}
+                {format(estFees.subtotal)}
               </span>
             </div>
           )}

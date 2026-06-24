@@ -54,6 +54,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     notes: "",
     requirements: "",
     responsibilities: "",
+    rate: 0, // per‑unit custom rate (locked)
+    customLabel: "", // custom label (locked)
+    quantity: 1, // number of units (editable by hirer)
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -141,6 +144,14 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       .then((res) => {
         const w = res.data.data.worker;
         setWorker(w);
+
+        // ── Populate custom rate fields ──
+        setForm((prev) => ({
+          ...prev,
+          rate: w.customRate || 0,
+          customLabel: w.customLabel || "",
+        }));
+
         const available = DURATION_OPTIONS.filter((o) =>
           o.rateKey === "customRate" ? w.customRate > 0 : w[o.rateKey] > 0,
         );
@@ -234,6 +245,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         return;
       }
     }
+    // For non‑custom units, ensure a rate exists
     if (lockedRate <= 0 && currentOption?.unit !== "custom") {
       setError("This worker has not set a rate for the selected duration.");
       return;
@@ -241,6 +253,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
     setLoading(true);
     try {
+      // ── Compute estimatedHours ──
       let estimatedHours = null;
       const rawVal = form.estimatedValue
         ? parseFloat(form.estimatedValue)
@@ -253,7 +266,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
           estimatedHours = rawVal * 160;
       }
 
-      const res = await api.post("/bookings", {
+      // ── Build payload ──
+      const payload = {
         workerId: form.workerId,
         categoryId: form.categoryId,
         title: form.title,
@@ -278,7 +292,18 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         durationType: durationType || undefined,
         requirements: form.requirements || undefined,
         responsibilities: form.responsibilities || undefined,
-      });
+        // ── Custom fields ──
+        quantity: form.quantity || 1,
+        customLabel: form.customLabel || null,
+      };
+
+      // ── If budgetType is "CUSTOM", compute estimatedValue = rate * quantity ──
+      if (budgetType === "CUSTOM" && form.rate > 0) {
+        payload.estimatedValue = form.rate * (form.quantity || 1);
+        payload.agreedRate = form.rate; // use the locked rate
+      }
+
+      const res = await api.post("/bookings", payload);
 
       const { booking } = res.data.data;
       if (onSuccess) onSuccess(booking);

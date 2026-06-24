@@ -189,22 +189,6 @@ export default function BookingFormFields({
                 );
               })}
             </div>
-            {/* <div className={styles.field} style={{ marginTop: "0.75rem" }}>
-              <label className={styles.label}>
-                Number of {currentDuration?.label || "Units"}
-              </label>
-              <div className={styles.iconInputWrap}>
-                <Clock size={18} className={styles.iconInputIcon} />
-                <input
-                  className={styles.iconInput}
-                  type="number"
-                  step="1"
-                  placeholder="e.g. 5"
-                  value={durationValue}
-                  onChange={(e) => setDurationValue(e.target.value)}
-                />
-              </div>
-            </div> */}
           </fieldset>
 
           {/* ── Category ── */}
