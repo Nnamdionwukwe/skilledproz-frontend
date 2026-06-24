@@ -349,14 +349,32 @@ export default function BookingWorkerInfo({
 
                     <div className={styles.field}>
                       <label className={styles.label}>Custom Label</label>
-                      <input
-                        className={styles.input}
-                        type="text"
-                        value={form.customLabel || worker.customLabel || ""}
-                        disabled
-                        readOnly
-                        placeholder="No custom label provided"
-                      />
+                      <div
+                        className={`${styles.input} ${styles.customLabelDisplay}`}
+                        style={{
+                          height: "auto",
+                          minHeight: "48px",
+                          padding: "10px 14px",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          display: "flex",
+                          alignItems: "center",
+                          background: "var(--bg-input)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "12px",
+                          color: "var(--text)",
+                          fontSize: "15px",
+                          fontFamily: "var(--font-body)",
+                          width: "100%",
+                          outline: "none",
+                          cursor: "default",
+                          opacity: 0.8,
+                        }}
+                      >
+                        {form.customLabel ||
+                          worker.customRateLabel ||
+                          "No custom label provided"}
+                      </div>
                       <span className={styles.hint}>
                         Label provided by the worker
                       </span>

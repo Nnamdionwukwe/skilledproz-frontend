@@ -149,7 +149,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         setForm((prev) => ({
           ...prev,
           rate: w.customRate || 0,
-          customLabel: w.customLabel || "",
+          customLabel: w.customRateLabel || "",
         }));
 
         const available = DURATION_OPTIONS.filter((o) =>
