@@ -792,6 +792,73 @@
   .unitGrid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  /* ── Worker card – prevent vertical stacking ── */
+  .workerCard {
+    flex-wrap: nowrap; /* force horizontal */
+    align-items: center;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .workerCardAvatar {
+    width: 44px;
+    height: 44px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .workerCardInfo {
+    flex: 1;
+    min-width: 0; /* allow truncation */
+    overflow: hidden; /* contain long content */
+  }
+
+  .workerCardName {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 0 2px;
+  }
+
+  .workerCardTitle {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 0 2px;
+  }
+
+  .workerCardMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+
+  .workerCardCats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    /* optional: limit height and allow scroll if many chips */
+    max-height: 2.6em; /* ~2 lines */
+    overflow-y: auto;
+    margin-top: 2px;
+  }
+
+  .catChip {
+    font-size: 9px;
+    padding: 2px 6px;
+    white-space: nowrap; /* keep chips on one line */
+  }
+
+  /* Hide lock icon on mobile (already hidden) */
+  .workerCardLock {
+    display: none;
+  }
 }
 
 /* ── Negotiated Rate ───────────────────────────────────────── */
