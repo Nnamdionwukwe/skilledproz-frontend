@@ -1,6 +1,22 @@
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import Translator from "../../common/Translator";
+import {
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaMoneyBillWave,
+  FaClock,
+  FaCheckCircle,
+  FaFlag,
+  FaBriefcase,
+  FaMapPin,
+  FaGlobe,
+  FaHandshake,
+  FaFileAlt,
+  FaTools,
+  FaShieldAlt,
+  FaStar,
+} from "react-icons/fa";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function DetailItem({ icon, label, value, accent }) {
@@ -104,15 +120,15 @@ export default function BookingDetailMain({
   const TIMELINE_STEPS = ["Pending", "Accepted", "In Progress", "Completed"];
 
   const JOB_TYPES = {
-    FULL_TIME: { icon: "💼", label: "Full-time" },
-    PART_TIME: { icon: "⏰", label: "Part-time" },
-    CONTRACT: { icon: "📄", label: "Contract" },
-    TEMPORARY: { icon: "⏳", label: "Temporary" },
+    FULL_TIME: { icon: <FaBriefcase />, label: "Full-time" },
+    PART_TIME: { icon: <FaClock />, label: "Part-time" },
+    CONTRACT: { icon: <FaFileAlt />, label: "Contract" },
+    TEMPORARY: { icon: <FaFlag />, label: "Temporary" },
   };
   const LOC_TYPES = {
-    REMOTE: { icon: "🌐", label: "Remote" },
-    ON_SITE: { icon: "📍", label: "On-site" },
-    HYBRID: { icon: "🔀", label: "Hybrid" },
+    REMOTE: { icon: <FaGlobe />, label: "Remote" },
+    ON_SITE: { icon: <FaMapPin />, label: "On-site" },
+    HYBRID: { icon: <FaMapMarkerAlt />, label: "Hybrid" },
   };
 
   return (
@@ -129,7 +145,9 @@ export default function BookingDetailMain({
           <span className={styles.categoryPill}>{booking.category.name}</span>
         )}
         {booking.isNegotiated && (
-          <span className={styles.negotiatedPill}>💬 Negotiated rate</span>
+          <span className={styles.negotiatedPill}>
+            <FaHandshake /> Negotiated rate
+          </span>
         )}
       </div>
 
@@ -160,8 +178,8 @@ export default function BookingDetailMain({
         </div>
       )}
 
-      {/* Pending banner */}
-      {booking.status === "PENDING" && isWorker && (
+      {/* ── Pending banner – only for hirer ── */}
+      {booking.status === "PENDING" && isHirer && (
         <div className={styles.pendingBanner}>
           <div className={styles.pendingBannerPulse}>
             <span className={styles.pendingBannerDot} />
@@ -171,9 +189,9 @@ export default function BookingDetailMain({
               ⏳ Waiting for {workerName || "the worker"} to respond
             </p>
             <p className={styles.pendingBannerDesc}>
-              Your booking request has been sent. {workerName} hasn't accepted
-              yet — you'll be notified the moment they do. You can cancel for
-              free until they accept.
+              Your booking request has been sent. {workerName || "The worker"}{" "}
+              hasn't accepted yet — you'll be notified the moment they do. You
+              can cancel for free until they accept.
             </p>
           </div>
         </div>
@@ -185,18 +203,53 @@ export default function BookingDetailMain({
         <Translator text={booking.description} />
         {booking.notes && (
           <div className={styles.notes}>
-            <span className={styles.notesIcon}>📝</span>
+            <span className={styles.notesIcon}>
+              <FaFileAlt />
+            </span>
             <p>{booking.notes}</p>
           </div>
         )}
       </section>
+
+      {/* Requirements & Responsibilities */}
+      {(booking.requirements || booking.responsibilities) && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            Requirements & Responsibilities
+          </h2>
+          {booking.requirements && (
+            <div className={styles.notes} style={{ marginBottom: "0.75rem" }}>
+              <span className={styles.notesIcon}>
+                <FaFileAlt />
+              </span>
+              <div>
+                <p style={{ fontWeight: 600, marginBottom: 2 }}>Requirements</p>
+                <Translator text={booking.requirements} />
+              </div>
+            </div>
+          )}
+          {booking.responsibilities && (
+            <div className={styles.notes}>
+              <span className={styles.notesIcon}>
+                <FaTools />
+              </span>
+              <div>
+                <p style={{ fontWeight: 600, marginBottom: 2 }}>
+                  Responsibilities
+                </p>
+                <Translator text={booking.responsibilities} />
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Job Details */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Job Details</h2>
         <div className={styles.detailGrid}>
           <DetailItem
-            icon="📅"
+            icon={<FaCalendarAlt />}
             label="Scheduled"
             value={
               new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
@@ -214,7 +267,7 @@ export default function BookingDetailMain({
           />
           {booking.address && (
             <DetailItem
-              icon="📍"
+              icon={<FaMapMarkerAlt />}
               label="Job Site Address"
               value={
                 <>
@@ -235,21 +288,29 @@ export default function BookingDetailMain({
             />
           )}
           <DetailItem
-            icon="💰"
+            icon={<FaMoneyBillWave />}
             label="Agreed Rate"
             value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
             accent
           />
+          {booking.isNegotiated && booking.negotiatedRate && (
+            <DetailItem
+              icon={<FaHandshake />}
+              label="Negotiated Rate"
+              value={`${booking.currency} ${booking.negotiatedRate?.toLocaleString()}`}
+              accent
+            />
+          )}
           {booking.isNegotiated && booking.negotiationNote && (
             <DetailItem
-              icon="💬"
+              icon={<FaFileAlt />}
               label="Negotiation Note"
               value={booking.negotiationNote}
             />
           )}
           {dur && (
             <DetailItem
-              icon="⏱️"
+              icon={<FaClock />}
               label="Est. Duration"
               value={
                 <>
@@ -263,7 +324,7 @@ export default function BookingDetailMain({
           )}
           {booking.checkInAt && (
             <DetailItem
-              icon="✅"
+              icon={<FaCheckCircle />}
               label="Checked In"
               value={
                 <span className={styles.greenText}>
@@ -277,7 +338,7 @@ export default function BookingDetailMain({
           )}
           {booking.checkOutAt && (
             <DetailItem
-              icon="🏁"
+              icon={<FaFlag />}
               label="Checked Out"
               value={new Date(booking.checkOutAt).toLocaleString("en-NG", {
                 dateStyle: "medium",
@@ -287,19 +348,15 @@ export default function BookingDetailMain({
           )}
           {booking.checkInAt && booking.checkOutAt && (
             <DetailItem
-              icon="🕐"
+              icon={<FaClock />}
               label="Actual Duration"
               value={calcDuration(booking.checkInAt, booking.checkOutAt)}
             />
           )}
 
-          {/*
-            ── FIXED: use insuranceRef (backend field) instead of insurancePolicyNumber ──
-            ── Also keep insurancePlan as fallback for the plan name              ──
-          */}
           {booking.insuranceRef && (
             <DetailItem
-              icon="🛡️"
+              icon={<FaShieldAlt />}
               label="Insurance"
               value={`${booking.insurancePlan || "Insured"} · Policy #${booking.insuranceRef}`}
             />
@@ -307,43 +364,17 @@ export default function BookingDetailMain({
 
           {booking.jobType && (
             <DetailItem
-              icon={
-                booking.jobType === "FULL_TIME"
-                  ? "💼"
-                  : booking.jobType === "PART_TIME"
-                    ? "⏰"
-                    : booking.jobType === "CONTRACT"
-                      ? "📄"
-                      : "⏳"
-              }
+              icon={JOB_TYPES[booking.jobType]?.icon || <FaBriefcase />}
               label="Job Type"
-              value={
-                booking.jobType === "FULL_TIME"
-                  ? "Full-time"
-                  : booking.jobType === "PART_TIME"
-                    ? "Part-time"
-                    : booking.jobType === "CONTRACT"
-                      ? "Contract"
-                      : "Temporary"
-              }
+              value={JOB_TYPES[booking.jobType]?.label || booking.jobType}
             />
           )}
           {booking.locationType && (
             <DetailItem
-              icon={
-                booking.locationType === "REMOTE"
-                  ? "🌐"
-                  : booking.locationType === "ON_SITE"
-                    ? "📍"
-                    : "🔀"
-              }
+              icon={LOC_TYPES[booking.locationType]?.icon || <FaMapMarkerAlt />}
               label="Location Type"
               value={
-                booking.locationType === "REMOTE"
-                  ? "Remote"
-                  : booking.locationType === "ON_SITE"
-                    ? "On-site"
-                    : "Hybrid"
+                LOC_TYPES[booking.locationType]?.label || booking.locationType
               }
             />
           )}
@@ -393,8 +424,8 @@ export default function BookingDetailMain({
                 </div>
                 {booking.locationType === "REMOTE" && (
                   <div className={styles.locationRemoteNote}>
-                    🌐 This is a remote engagement — no physical job site
-                    attendance required.
+                    <FaGlobe /> This is a remote engagement — no physical job
+                    site attendance required.
                   </div>
                 )}
               </div>
@@ -481,7 +512,7 @@ export default function BookingDetailMain({
                               : styles.starEmpty
                           }
                         >
-                          ★
+                          <FaStar />
                         </span>
                       ))}
                       <span className={styles.ratingNum}>
@@ -502,12 +533,12 @@ export default function BookingDetailMain({
               className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
               style={{ display: "inline-flex", marginTop: "1rem" }}
             >
-              ⭐ Leave a Review
+              <FaStar /> Leave a Review
             </Link>
           )}
           {reviewCheckDone && hasReviewed && (
             <div className={styles.reviewedNote}>
-              ✅ Your review has been submitted.{" "}
+              <FaCheckCircle /> Your review has been submitted.{" "}
               {(booking.reviews?.length ?? 0) < 2 &&
                 " Waiting for the other party."}
             </div>
@@ -534,7 +565,7 @@ export default function BookingDetailMain({
             onClick={onDownloadInvoice}
             disabled={invoiceLoading}
           >
-            {invoiceLoading ? "⏳" : "📄"} Download Invoice
+            {invoiceLoading ? "⏳" : <FaFileAlt />} Download Invoice
           </button>
           {isHirer && paymentStatus === "RELEASED" && (
             <button
