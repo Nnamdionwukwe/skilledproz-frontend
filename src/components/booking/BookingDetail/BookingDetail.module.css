@@ -234,21 +234,38 @@
 .timeline {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  width: 100%;
   position: relative;
-  min-width: 320px;
-  padding: 0 8px; /* add side padding to prevent labels touching edge */
+  padding: 0 4px;
+}
+
+/* The connecting line behind all dots */
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 28px;
+  right: 28px;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+.timeline.hasProgress::before {
+  background: linear-gradient(
+    to right,
+    var(--orange) var(--progress, 0%),
+    var(--border) var(--progress, 0%)
+  );
 }
 
 .timelineItem {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
   position: relative;
-}
-.timelineItem:last-child {
-  flex: 0; /* last item doesn't need to stretch */
+  z-index: 1;
+  flex: 0 0 auto;
 }
 
 .timelineDot {
@@ -263,9 +280,9 @@
   font-size: 10px;
   font-weight: 700;
   color: var(--text-muted);
-  flex-shrink: 0;
-  z-index: 1;
   transition: all 0.2s;
+  position: relative;
+  z-index: 2;
 }
 .timelineDotActive {
   background: var(--orange-dim);
@@ -290,23 +307,6 @@
 }
 .timelineLabelActive {
   color: var(--text-dim);
-}
-
-.timelineLine {
-  position: absolute;
-  top: 14px; /* half of dot height (28px/2) */
-  left: calc(50% + 14px); /* from center of dot to right edge */
-  right: calc(-50% + 14px); /* to center of next dot */
-  height: 2px;
-  background: var(--border);
-  transition: background 0.3s;
-  z-index: 0;
-}
-.timelineItem:last-child .timelineLine {
-  display: none; /* no line after last dot */
-}
-.timelineLineActive {
-  background: var(--orange);
 }
 
 /* ── Sections ──────────────────────────────────────────────── */
@@ -1417,8 +1417,8 @@
     padding: 14px 12px 24px;
   }
   .timeline {
-    min-width: 240px;
-    padding: 0 4px;
+    min-width: unset;
+    width: 100%;
   }
   .timelineDot {
     width: 22px;
@@ -1426,7 +1426,7 @@
     font-size: 8px;
   }
   .timelineLine {
-    top: 11px; /* half of 22px */
+    top: 11px;
     left: calc(50% + 11px);
     right: calc(-50% + 11px);
   }
