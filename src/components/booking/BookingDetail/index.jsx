@@ -40,6 +40,7 @@ function formatDuration(booking) {
       days: "day",
       weeks: "week",
       months: "month",
+      years: "year",
     }[unit];
     const num = parseFloat(value);
     const label = unitLabel + (num !== 1 ? "s" : "");

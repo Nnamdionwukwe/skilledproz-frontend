@@ -379,59 +379,6 @@ export default function BookingDetailMain({
             />
           )}
         </div>
-
-        {/* Job Type / Location Type cards */}
-        {(booking.jobType || booking.locationType) && (
-          <div style={{ marginTop: "1rem" }}>
-            {booking.jobType && (
-              <div className={styles.typeCardGroup}>
-                <p className={styles.typeCardGroupLabel}>Job Type</p>
-                <div className={styles.typeCards}>
-                  {Object.entries(JOB_TYPES).map(([key, cfg]) => (
-                    <div
-                      key={key}
-                      className={`${styles.typeCard} ${booking.jobType === key ? styles.typeCardActive : styles.typeCardInactive}`}
-                    >
-                      {booking.jobType === key && (
-                        <span className={styles.typeCardSelectedDot} />
-                      )}
-                      <span className={styles.typeCardIcon}>{cfg.icon}</span>
-                      <span className={styles.typeCardLabel}>{cfg.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {booking.locationType && (
-              <div
-                className={styles.typeCardGroup}
-                style={{ marginTop: "1.25rem" }}
-              >
-                <p className={styles.typeCardGroupLabel}>Location Type</p>
-                <div className={styles.typeCards}>
-                  {Object.entries(LOC_TYPES).map(([key, cfg]) => (
-                    <div
-                      key={key}
-                      className={`${styles.typeCard} ${styles.typeCardLoc} ${booking.locationType === key ? styles.typeCardActive : styles.typeCardInactive}`}
-                    >
-                      {booking.locationType === key && (
-                        <span className={styles.typeCardSelectedDot} />
-                      )}
-                      <span className={styles.typeCardIcon}>{cfg.icon}</span>
-                      <span className={styles.typeCardLabel}>{cfg.label}</span>
-                    </div>
-                  ))}
-                </div>
-                {booking.locationType === "REMOTE" && (
-                  <div className={styles.locationRemoteNote}>
-                    <FaGlobe /> This is a remote engagement — no physical job
-                    site attendance required.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </section>
 
       {/* GPS section */}
