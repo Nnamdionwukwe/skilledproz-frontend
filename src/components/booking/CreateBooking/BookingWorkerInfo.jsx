@@ -176,9 +176,10 @@ export default function BookingWorkerInfo({
                 {worker.completedJobs} jobs done
               </span>
             </div>
+            {/* ── ALL categories – removed slice(0,4) ── */}
             {worker.categories?.length > 0 && (
               <div className={styles.workerCardCats}>
-                {worker.categories.slice(0, 4).map((wc) => (
+                {worker.categories.map((wc) => (
                   <span key={wc.id} className={styles.catChip}>
                     {wc.category.icon} {wc.category.name}
                   </span>
