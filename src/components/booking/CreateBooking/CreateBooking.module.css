@@ -903,3 +903,183 @@
 .negotiatedBanner strong {
   color: var(--orange);
 }
+
+/* ── Mobile‑first adjustments ────────────────────────────── */
+@media (max-width: 480px) {
+  .page {
+    padding: 12px 8px 32px;
+    max-width: 100%;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+  .title {
+    font-size: 20px;
+  }
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .fieldset {
+    padding: 14px 12px 10px;
+  }
+  .legend {
+    font-size: 10px;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    font-size: 14px;
+    height: 44px;
+  }
+  .iconInputWrap {
+    height: 44px;
+    padding: 0 10px;
+  }
+
+  /* ── Worker card ── */
+  .workerCard {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+  }
+  .workerCardAvatar {
+    width: 44px;
+    height: 44px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .workerCardInfo {
+    flex: 1;
+    min-width: 0;
+  }
+  .workerCardName {
+    font-size: 13px;
+  }
+  .workerCardTitle {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .workerCardMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  .workerCardMeta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .workerCardCats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .catChip {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  .workerCardLock {
+    display: none; /* hide on mobile to save space */
+  }
+
+  .unitGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .rateLockedRow {
+    grid-template-columns: 1fr;
+  }
+
+  .jobTypeGrid {
+    gap: 8px;
+  }
+  .jobTypeCard {
+    padding: 16px 8px;
+  }
+  .jobTypeIcon {
+    font-size: 20px;
+  }
+  .jobTypeLabel {
+    font-size: 11px;
+  }
+
+  .locationGrid {
+    gap: 6px;
+  }
+  .locationCard {
+    padding: 12px 4px;
+  }
+  .locationIcon {
+    font-size: 18px;
+  }
+  .locationLabel {
+    font-size: 10px;
+  }
+
+  .typeListRow {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .typeListIcon {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+  .typeListLabel {
+    font-size: 12px;
+  }
+  .typeListSub {
+    font-size: 10px;
+  }
+  .typeListCheck {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .negotiatedToggle {
+    padding: 10px 12px;
+  }
+  .negotiatedToggleIcon {
+    font-size: 18px;
+  }
+  .negotiatedToggleLabel {
+    font-size: 12px;
+  }
+  .negotiatedToggleSub {
+    font-size: 10px;
+  }
+  .negotiatedDot {
+    width: 16px;
+    height: 16px;
+  }
+  .negotiatedFields {
+    padding: 10px 12px;
+  }
+  .negotiatedBanner {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
+
+  .estimatedTotalValue {
+    font-size: 20px;
+  }
+
+  .submitBtn {
+    height: 50px;
+    font-size: 15px;
+    gap: 8px;
+  }
+  .submitBtnPlus {
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+  }
+}
