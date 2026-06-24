@@ -80,9 +80,14 @@ export default function WorkerPublicProfile() {
   const hasDailyRate = worker.dailyRate > 0;
   const hasWeeklyRate = worker.weeklyRate > 0;
   const hasMonthlyRate = worker.monthlyRate > 0;
+  const hasYearlyRate = worker.yearlyRate > 0;
   const hasCustomRate = worker.customRate > 0;
   const hasMultiRate =
-    hasDailyRate || hasWeeklyRate || hasMonthlyRate || hasCustomRate;
+    hasDailyRate ||
+    hasWeeklyRate ||
+    hasMonthlyRate ||
+    hasYearlyRate ||
+    hasCustomRate;
 
   return (
     <Layout>
@@ -229,6 +234,13 @@ export default function WorkerPublicProfile() {
                   <RatePill
                     value={worker.monthlyRate}
                     suffix="/mo"
+                    currency={worker.currency}
+                  />
+                )}
+                {hasYearlyRate && (
+                  <RatePill
+                    value={worker.yearlyRate}
+                    suffix="/yr"
                     currency={worker.currency}
                   />
                 )}
