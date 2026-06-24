@@ -31,7 +31,7 @@ import PostJob from "./components/hirer/PostJob";
 // Booking pages
 import BookingList from "./components/booking/BookingList";
 import BookingDetail from "./components/booking/BookingDetail/index.jsx";
-import CreateBooking from "./components/booking/CreateBooking";
+import CreateBooking from "./components/booking/CreateBooking/index.jsx";
 
 // User / shared
 import UserProfile from "./components/user/UserProfile";
