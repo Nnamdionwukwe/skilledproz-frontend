@@ -230,20 +230,27 @@
 .timelineWrap::-webkit-scrollbar {
   display: none;
 }
+
 .timeline {
   display: flex;
-  align-items: center;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
   min-width: 320px;
+  padding: 0 8px; /* add side padding to prevent labels touching edge */
 }
+
 .timelineItem {
   display: flex;
+  flex-direction: column;
   align-items: center;
   flex: 1;
   position: relative;
 }
 .timelineItem:last-child {
-  flex: 0;
+  flex: 0; /* last item doesn't need to stretch */
 }
+
 .timelineDot {
   width: 28px;
   height: 28px;
@@ -271,26 +278,32 @@
   color: var(--bg);
   box-shadow: 0 0 12px var(--orange-glow);
 }
+
 .timelineLabel {
-  position: absolute;
-  top: 34px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 8px;
   font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
   transition: color 0.2s;
+  text-align: center;
 }
 .timelineLabelActive {
   color: var(--text-dim);
 }
+
 .timelineLine {
-  flex: 1;
+  position: absolute;
+  top: 14px; /* half of dot height (28px/2) */
+  left: calc(50% + 14px); /* from center of dot to right edge */
+  right: calc(-50% + 14px); /* to center of next dot */
   height: 2px;
   background: var(--border);
-  margin: 0 4px;
   transition: background 0.3s;
+  z-index: 0;
+}
+.timelineItem:last-child .timelineLine {
+  display: none; /* no line after last dot */
 }
 .timelineLineActive {
   background: var(--orange);
@@ -1398,5 +1411,27 @@
 @media (max-width: 480px) {
   .typeCards {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .timelineWrap {
+    padding: 14px 12px 24px;
+  }
+  .timeline {
+    min-width: 240px;
+    padding: 0 4px;
+  }
+  .timelineDot {
+    width: 22px;
+    height: 22px;
+    font-size: 8px;
+  }
+  .timelineLine {
+    top: 11px; /* half of 22px */
+    left: calc(50% + 11px);
+    right: calc(-50% + 11px);
+  }
+  .timelineLabel {
+    font-size: 8px;
+    margin-top: 4px;
   }
 }
