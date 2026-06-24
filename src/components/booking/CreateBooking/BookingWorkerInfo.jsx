@@ -70,6 +70,15 @@ const DURATION_OPTIONS = [
     step: "1",
   },
   {
+    unit: "years", // ← NEW – yearly option
+    label: "Yearly",
+    rateKey: "yearlyRate",
+    suffix: "/yr",
+    inputLabel: "Years",
+    inputType: "number",
+    step: "1",
+  },
+  {
     unit: "custom",
     label: "Custom",
     rateKey: "customRate",

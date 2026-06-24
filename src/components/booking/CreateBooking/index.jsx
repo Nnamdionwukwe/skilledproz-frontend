@@ -105,6 +105,15 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       step: "1",
     },
     {
+      unit: "years", // ← NEW
+      label: "Yearly",
+      rateKey: "yearlyRate",
+      suffix: "/yr",
+      inputLabel: "Years",
+      inputType: "number",
+      step: "1",
+    },
+    {
       unit: "custom",
       label: "Custom",
       rateKey: "customRate",
@@ -120,6 +129,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     days: { budget: "DAILY", duration: "DAYS" },
     weeks: { budget: "WEEKLY", duration: "WEEKS" },
     months: { budget: "MONTHLY", duration: "MONTHS" },
+    years: { budget: "CUSTOM", duration: "CUSTOM" },
     custom: { budget: "CUSTOM", duration: "CUSTOM" },
   };
 
@@ -264,6 +274,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         else if (currentOption?.unit === "weeks") estimatedHours = rawVal * 40;
         else if (currentOption?.unit === "months")
           estimatedHours = rawVal * 160;
+        else if (currentOption?.unit === "years")
+          estimatedHours = rawVal * 1920;
       }
 
       // ── Build payload ──

@@ -867,6 +867,14 @@ export default function SettingsPage() {
                       setPricing((p) => ({ ...p, monthlyRate: v }))
                     }
                   />
+                  <PriceField
+                    label="📆 Yearly Rate"
+                    suffix="/yr"
+                    value={pricing.yearlyRate}
+                    onChange={(v) =>
+                      setPricing((p) => ({ ...p, yearlyRate: v }))
+                    }
+                  />
                 </div>
 
                 <Divider label="Custom Rate" />
