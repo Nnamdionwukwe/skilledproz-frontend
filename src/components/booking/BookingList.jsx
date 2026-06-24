@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  FaBriefcase,
+  FaMapMarkerAlt,
+  FaClock,
+  FaHandshake,
+  FaCalendarAlt,
+  FaMoneyBillWave,
+} from "react-icons/fa";
 import styles from "./BookingList.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -35,7 +43,6 @@ export default function BookingList() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  // ✅ Use correct layout based on role
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const isHirer = user?.role === "HIRER";
 
@@ -54,7 +61,6 @@ export default function BookingList() {
   return (
     <Layout>
       <div className={styles.page}>
-        {/* Header */}
         <div className={styles.header}>
           <div>
             <p className={styles.eyebrow}>My Jobs</p>
@@ -63,7 +69,6 @@ export default function BookingList() {
               {total > 0 && <span className={styles.count}>{total}</span>}
             </h1>
           </div>
-          {/* ✅ Only show "New Booking" button for HIRERS */}
           {isHirer && (
             <Link to="/bookings/create" className={styles.newBtn}>
               <span>+</span> New Booking
@@ -71,7 +76,6 @@ export default function BookingList() {
           )}
         </div>
 
-        {/* Filter tabs */}
         <div className={styles.filters}>
           {STATUSES.map((s) => (
             <button
@@ -91,7 +95,6 @@ export default function BookingList() {
           ))}
         </div>
 
-        {/* Content */}
         {loading ? (
           <div className={styles.grid}>
             {[...Array(6)].map((_, i) => (
@@ -108,7 +111,6 @@ export default function BookingList() {
           </div>
         )}
 
-        {/* Pagination */}
         {pages > 1 && (
           <div className={styles.pager}>
             <button
@@ -141,19 +143,25 @@ function BookingCard({ booking, index }) {
   const scheduled = new Date(booking.scheduledAt);
   const isPast = scheduled < new Date();
 
+  // Helper to format job type
+  const jobTypeLabel = (type) => {
+    if (!type) return null;
+    return type
+      .toLowerCase()
+      .replace("_", " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
   return (
-    // ✅ Use Link instead of <a href>
     <Link
       to={`/bookings/${booking.id}`}
       className={styles.card}
       style={{ animationDelay: `${index * 0.04}s` }}
     >
-      {/* Accent bar */}
       <div
         className={`${styles.accentBar} ${styles[`accent_${meta.color}`]}`}
       />
 
-      {/* Top row */}
       <div className={styles.cardTop}>
         <div className={styles.avatar}>
           {other?.avatar ? (
@@ -170,7 +178,6 @@ function BookingCard({ booking, index }) {
         </span>
       </div>
 
-      {/* Title */}
       <h3 className={styles.cardTitle}>{booking.title}</h3>
       <p className={styles.cardParty}>
         {other?.firstName} {other?.lastName}
@@ -182,26 +189,53 @@ function BookingCard({ booking, index }) {
         )}
       </p>
 
-      {/* Details */}
+      {/* ── Additional details ── */}
+      <div className={styles.metaGrid}>
+        {booking.jobType && (
+          <span className={styles.metaChip}>
+            <FaBriefcase className={styles.metaIcon} />
+            {jobTypeLabel(booking.jobType)}
+          </span>
+        )}
+        {booking.locationType && (
+          <span className={styles.metaChip}>
+            <FaMapMarkerAlt className={styles.metaIcon} />
+            {booking.locationType.replace("_", " ").toUpperCase()}
+          </span>
+        )}
+        {booking.estimatedHours && (
+          <span className={styles.metaChip}>
+            <FaClock className={styles.metaIcon} />
+            {booking.estimatedHours} {booking.estimatedUnit || "h"}
+          </span>
+        )}
+        {booking.isNegotiated && booking.negotiatedRate && (
+          <span className={`${styles.metaChip} ${styles.metaChipNegotiated}`}>
+            <FaHandshake className={styles.metaIcon} />
+            Negotiated
+          </span>
+        )}
+      </div>
+
       <div className={styles.details}>
         <Detail
-          icon="📅"
+          icon={<FaCalendarAlt />}
           text={`${scheduled.toLocaleDateString()} · ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
           faded={isPast}
         />
-        <Detail icon="📍" text={booking.address} truncate />
+        <Detail icon={<FaMapMarkerAlt />} text={booking.address} truncate />
       </div>
 
-      {/* Footer */}
       <div className={styles.cardFooter}>
         <span className={styles.rate}>
+          <FaMoneyBillWave className={styles.rateIcon} />
           {booking.currency} {booking.agreedRate?.toLocaleString()}
         </span>
-        {booking.payment && (
+        {booking.payments?.[0] && (
           <span
-            className={`${styles.payTag} ${styles[`payTag_${booking.payment.status.toLowerCase()}`]}`}
+            className={`${styles.payTag} ${styles[`payTag_${booking.payments[0].status.toLowerCase()}`]}`}
           >
-            {booking.payment.status}
+            {booking.payments[0].status}
           </span>
         )}
       </div>
@@ -234,7 +268,6 @@ function Empty({ filter, isHirer }) {
             : "You don't have any bookings yet."
           : `No ${filter.toLowerCase().replace("_", " ")} bookings.`}
       </p>
-      {/* ✅ Use Link instead of <a href> */}
       <Link
         to={isHirer ? "/dashboard/hirer/post-job" : "/search"}
         className={styles.emptyBtn}
