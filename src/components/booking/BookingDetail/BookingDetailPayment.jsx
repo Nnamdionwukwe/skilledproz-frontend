@@ -1,6 +1,23 @@
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import PaymentOptions from "../../payment/PaymentOptions";
+import {
+  FaCreditCard,
+  FaGift,
+  FaBolt,
+  FaCheckCircle,
+  FaInfoCircle,
+  FaChevronUp,
+} from "react-icons/fa";
+
+// ── Helper: format price with 2 decimals and thousands separator ──
+function formatPrice(amount, currency = "NGN") {
+  if (amount == null) return `${currency} 0.00`;
+  return `${currency} ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 // ── Inline helper ──────────────────────────────────────────────────────────
 function PayRow({ label, value, muted, green, capitalize, mono, extra }) {
@@ -56,6 +73,7 @@ export default function BookingDetailPayment({
       const disc = getDiscount();
       return Math.max(0, base - disc);
     };
+    const cur = feeBreakdown.currency || "NGN";
 
     return (
       <div className={styles.feeBreakdown}>
@@ -72,18 +90,15 @@ export default function BookingDetailPayment({
             <div className={styles.feeRow}>
               <span>Subtotal</span>
               <span>
-                {feeBreakdown.currency}{" "}
-                {(
-                  feeBreakdown.total - feeBreakdown.platformFee
-                ).toLocaleString()}
+                {formatPrice(
+                  feeBreakdown.total - feeBreakdown.platformFee,
+                  cur,
+                )}
               </span>
             </div>
             <div className={styles.feeRow}>
               <span>Platform fee (5%)</span>
-              <span>
-                {feeBreakdown.currency}{" "}
-                {feeBreakdown.platformFee.toLocaleString()}
-              </span>
+              <span>{formatPrice(feeBreakdown.platformFee, cur)}</span>
             </div>
           </>
         ) : !feeBreakdown.isActual ? (
@@ -92,18 +107,11 @@ export default function BookingDetailPayment({
               <span>
                 Agreed rate {feeBreakdown.noDuration ? "" : "(job value)"}
               </span>
-              <span>
-                {feeBreakdown.currency} {feeBreakdown.subtotal.toLocaleString()}
-              </span>
+              <span>{formatPrice(feeBreakdown.subtotal, cur)}</span>
             </div>
             <div className={styles.feeRow}>
               <span>Platform fee (5%)</span>
-              <span>
-                {feeBreakdown.currency}{" "}
-                {(feeBreakdown.total * 0.05).toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                })}
-              </span>
+              <span>{formatPrice(feeBreakdown.total * 0.05, cur)}</span>
             </div>
           </>
         ) : null}
@@ -111,18 +119,17 @@ export default function BookingDetailPayment({
         {feeBreakdown.workerPayout != null && (
           <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
             <span>Worker payout</span>
-            <span>
-              {feeBreakdown.currency}{" "}
-              {feeBreakdown.workerPayout.toLocaleString()}
-            </span>
+            <span>{formatPrice(feeBreakdown.workerPayout, cur)}</span>
           </div>
         )}
 
         {referralDiscount && referralApplied && booking.currency === "NGN" && (
           <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
-            <span>🎁 Referral bonus</span>
             <span>
-              − {booking.currency} {referralDiscount.discount.toLocaleString()}
+              <FaGift style={{ marginRight: "4px" }} /> Referral bonus
+            </span>
+            <span>
+              − {formatPrice(referralDiscount.discount, booking.currency)}
             </span>
           </div>
         )}
@@ -130,10 +137,7 @@ export default function BookingDetailPayment({
         <div className={styles.feeTotal}>
           <span>{feeBreakdown.isActual ? "Total Paid" : "Est. Total"}</span>
           <span className={styles.feeTotalAmount}>
-            {feeBreakdown.currency}{" "}
-            {finalTotal().toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}
+            {formatPrice(finalTotal(), cur)}
           </span>
         </div>
 
@@ -141,8 +145,8 @@ export default function BookingDetailPayment({
           <div className={styles.referralPerk}>
             {booking.currency !== "NGN" ? (
               <p>
-                🎁 You have a referral bonus — only applicable to ₦ NGN
-                payments.
+                <FaInfoCircle style={{ marginRight: "6px" }} />
+                You have a referral bonus — only applicable to ₦ NGN payments.
               </p>
             ) : referralApplied ? (
               <div
@@ -154,8 +158,11 @@ export default function BookingDetailPayment({
                 }}
               >
                 <span>
-                  ✅ Referral bonus applied — saving {booking.currency}{" "}
-                  {referralDiscount.discount.toLocaleString()}
+                  <FaCheckCircle
+                    style={{ marginRight: "6px", color: "var(--green)" }}
+                  />
+                  Referral bonus applied — saving{" "}
+                  {formatPrice(referralDiscount.discount, booking.currency)}
                 </span>
                 <button
                   onClick={onReferralToggle}
@@ -182,9 +189,13 @@ export default function BookingDetailPayment({
                 }}
               >
                 <span>
-                  🎁 You have a {booking.currency}{" "}
-                  {referralDiscount.discount.toLocaleString()} referral bonus
-                  available
+                  <FaGift style={{ marginRight: "6px" }} />
+                  You have a{" "}
+                  {formatPrice(
+                    referralDiscount.discount,
+                    booking.currency,
+                  )}{" "}
+                  referral bonus available
                 </span>
                 <button
                   onClick={onReferralToggle}
@@ -213,22 +224,20 @@ export default function BookingDetailPayment({
   // ── Render payment card ──────────────────────────────────────────────
   const renderPaymentCard = () => {
     if (!payment) return null;
+    const cur = payment.currency || "NGN";
     return (
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Payment</h2>
         <div className={styles.paymentCard}>
-          <PayRow
-            label="Total"
-            value={`${payment.currency} ${payment.amount?.toLocaleString()}`}
-          />
+          <PayRow label="Total" value={formatPrice(payment.amount, cur)} />
           <PayRow
             label="Platform Fee"
-            value={`${payment.currency} ${payment.platformFee?.toLocaleString()}`}
+            value={formatPrice(payment.platformFee, cur)}
             muted
           />
           <PayRow
             label="Worker Payout"
-            value={`${payment.currency} ${payment.workerPayout?.toLocaleString()}`}
+            value={formatPrice(payment.workerPayout, cur)}
             green
           />
           <div className={styles.paymentDivider} />
@@ -257,7 +266,9 @@ export default function BookingDetailPayment({
     return (
       <div className={styles.paymentBanner}>
         <div className={styles.paymentBannerHeader}>
-          <span className={styles.paymentBannerIcon}>💳</span>
+          <span className={styles.paymentBannerIcon}>
+            <FaCreditCard size={18} />
+          </span>
           <div>
             <p className={styles.paymentBannerTitle}>
               {payment?.status === "PENDING"
@@ -274,8 +285,10 @@ export default function BookingDetailPayment({
 
         {referralDiscount && (
           <div className={styles.paymentBannerPerk}>
-            🎁 <strong>Referral perk:</strong> {booking.currency}{" "}
-            {referralDiscount.discount.toLocaleString()} off your first booking
+            <FaGift style={{ marginRight: "6px" }} />
+            <strong>Referral perk:</strong>{" "}
+            {formatPrice(referralDiscount.discount, booking.currency)} off your
+            first booking
           </div>
         )}
 
@@ -283,15 +296,19 @@ export default function BookingDetailPayment({
           <div className={styles.paymentBannerPerk}>
             {referralApplied ? (
               <>
-                ✅ Referral bonus of {booking.currency}{" "}
-                {referralDiscount.discount.toLocaleString()} will be deducted at
-                checkout
+                <FaCheckCircle
+                  style={{ marginRight: "6px", color: "var(--green)" }}
+                />
+                Referral bonus of{" "}
+                {formatPrice(referralDiscount.discount, booking.currency)} will
+                be deducted at checkout
               </>
             ) : (
               <>
-                🎁 Apply your {booking.currency}{" "}
-                {referralDiscount.discount.toLocaleString()} referral bonus in
-                the fee breakdown above
+                <FaGift style={{ marginRight: "6px" }} />
+                Apply your{" "}
+                {formatPrice(referralDiscount.discount, booking.currency)}{" "}
+                referral bonus in the fee breakdown above
               </>
             )}
           </div>
@@ -301,7 +318,8 @@ export default function BookingDetailPayment({
             className={styles.paymentBannerPerk}
             style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
           >
-            ℹ️ Referral bonus only applies to ₦ NGN payments
+            <FaInfoCircle style={{ marginRight: "6px" }} />
+            Referral bonus only applies to ₦ NGN payments
           </div>
         )}
 
@@ -309,11 +327,21 @@ export default function BookingDetailPayment({
           className={`${styles.payNowBtn} ${showPayOptions ? styles.payNowBtnActive : ""}`}
           onClick={onTogglePayOptions}
         >
-          {showPayOptions
-            ? "▲ Hide Payment Options"
-            : payment?.status === "PENDING"
-              ? "⚡ Choose a Different Method"
-              : "💳 Pay Now"}
+          {showPayOptions ? (
+            <>
+              <FaChevronUp style={{ marginRight: "6px" }} /> Hide Payment
+              Options
+            </>
+          ) : payment?.status === "PENDING" ? (
+            <>
+              <FaBolt style={{ marginRight: "6px" }} /> Choose a Different
+              Method
+            </>
+          ) : (
+            <>
+              <FaCreditCard style={{ marginRight: "6px" }} /> Pay Now
+            </>
+          )}
         </button>
 
         {showPayOptions && (
@@ -322,7 +350,7 @@ export default function BookingDetailPayment({
               to={`/bookings/${booking.id}/pay`}
               className={`${styles.actionBtn} ${styles.actionBtn_orange}`}
             >
-              💳 Pay by Card
+              <FaCreditCard style={{ marginRight: "6px" }} /> Pay by Card
             </Link>
             <PaymentOptions
               booking={booking}

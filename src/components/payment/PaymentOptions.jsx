@@ -2,18 +2,38 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import styles from "./PaymentOptions.module.css";
+import {
+  FaDollarSign,
+  FaMoneyBill,
+  FaBitcoin,
+  FaEthereum,
+  FaCheckCircle,
+  FaUniversity,
+  FaExclamationTriangle,
+  FaPaperclip,
+  FaTimes,
+  FaGift,
+  FaMoneyBillWave,
+  FaSpinner,
+} from "react-icons/fa";
+
+// ── Helper: format price with 2 decimals and thousands separator ──
+function formatPrice(amount, currency = "NGN") {
+  if (amount == null) return `${currency} 0.00`;
+  return `${currency} ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 const CRYPTO_OPTIONS = [
-  { value: "USDC", label: "USDC", network: "Ethereum", icon: "💲" },
-  { value: "USDT", label: "USDT", network: "Tron (TRC20)", icon: "💵" },
-  { value: "BTC", label: "Bitcoin", network: "Bitcoin", icon: "₿" },
-  { value: "ETH", label: "Ethereum", network: "Ethereum", icon: "⟠" },
+  { value: "USDC", label: "USDC", network: "Ethereum", icon: FaDollarSign },
+  { value: "USDT", label: "USDT", network: "Tron (TRC20)", icon: FaMoneyBill },
+  { value: "BTC", label: "Bitcoin", network: "Bitcoin", icon: FaBitcoin },
+  { value: "ETH", label: "Ethereum", network: "Ethereum", icon: FaEthereum },
 ];
 
-// ── Pricing helper — matches BookingDetail sidebar exactly ────────────────────
-// agreedRate = rate per unit (hr / day / week / month)
-// estimatedUnit + estimatedHours → qty
-// platformFeeRate = 0.1 (10%) matching payment.service.js
+// ── Pricing helper ────────────────────────────────────────────────────────
 function calcPricing(booking, applyReferral = false, referralDiscount = null) {
   const rate = booking.agreedRate || 0;
   const unit = booking.estimatedUnit || "hours";
@@ -22,14 +42,12 @@ function calcPricing(booking, applyReferral = false, referralDiscount = null) {
     ? parseFloat(booking.estimatedValue)
     : null;
   const currency = booking.currency || "USD";
-  const PLATFORM_FEE_RATE = 0.05; // Phase 1 — 5% // must match payment.service.js PLATFORM_FEE_PERCENT
+  const PLATFORM_FEE_RATE = 0.05;
 
-  // Quantity of units
   let qty = 1;
   if (value && unit !== "custom") {
     qty = value;
   } else if (hours) {
-    // Fall back: derive qty from estimatedHours
     if (unit === "hours") qty = hours;
     if (unit === "days") qty = Math.round(hours / 8);
     if (unit === "weeks") qty = Math.round(hours / 40);
@@ -39,12 +57,11 @@ function calcPricing(booking, applyReferral = false, referralDiscount = null) {
   const unitSuffix =
     { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
   const unitLabel =
-    { hours: "hour", days: "day", weeks: "week", months: "month" }[unit] ||
-    unit;
+    { hours: "hour", days: "day", weeks: "week", month: "month" }[unit] || unit;
 
   const subtotal = rate * qty;
   const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
-  const workerPayout = subtotal; // worker gets full agreed rate; fee is charged ON TOP
+  const workerPayout = subtotal;
   const referralDeduct =
     applyReferral && referralDiscount
       ? Math.min(referralDiscount.discount, subtotal + platformFee)
@@ -97,7 +114,6 @@ export default function PaymentOptions({
   const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
 
-  // ── Pricing ───────────────────────────────────────────────────────────────
   const applyReferral = referralAppliedProp ?? false;
   const p = calcPricing(booking, applyReferral, referralDiscount);
 
@@ -193,7 +209,9 @@ export default function PaymentOptions({
   if (step === "confirm") {
     return (
       <div className={styles.successWrap}>
-        <div className={styles.successRing}>✅</div>
+        <div className={styles.successRing}>
+          <FaCheckCircle size={40} />
+        </div>
         <h3 className={styles.successTitle}>Payment Submitted</h3>
         <p className={styles.successText}>
           {tab === "bank"
@@ -212,14 +230,16 @@ export default function PaymentOptions({
 
   return (
     <div className={styles.wrap}>
-      {/* ── Pricing breakdown — matches BookingDetail sidebar exactly ── */}
+      {/* ── Pricing breakdown ── */}
       <div className={styles.summary}>
-        <p className={styles.summaryTitle}>💰 Payment Breakdown</p>
+        <p className={styles.summaryTitle}>
+          <FaMoneyBillWave style={{ marginRight: "6px" }} /> Payment Breakdown
+        </p>
 
         <div className={styles.summaryRow}>
           <span>Agreed Rate</span>
           <span>
-            {p.currency} {p.rate.toLocaleString()}
+            {formatPrice(p.rate, p.currency)}
             {p.unitSuffix}
           </span>
         </div>
@@ -237,11 +257,9 @@ export default function PaymentOptions({
         {p.hasQty && (
           <div className={styles.summaryRow}>
             <span>
-              Subtotal ({p.qty} × {p.currency} {p.rate.toLocaleString()})
+              Subtotal ({p.qty} × {formatPrice(p.rate, p.currency)})
             </span>
-            <span>
-              {p.currency} {p.subtotal.toLocaleString()}
-            </span>
+            <span>{formatPrice(p.subtotal, p.currency)}</span>
           </div>
         )}
 
@@ -249,22 +267,18 @@ export default function PaymentOptions({
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
             Platform Fee (5%)
           </span>
-
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            − {p.currency}{" "}
-            {p.platformFee.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}
+            + {formatPrice(p.platformFee, p.currency)}
           </span>
         </div>
 
         {p.referralDeduct > 0 && (
           <div className={styles.summaryRow}>
             <span style={{ color: "var(--green)", fontSize: 12 }}>
-              🎁 Referral bonus
+              <FaGift style={{ marginRight: "4px" }} /> Referral bonus
             </span>
             <span style={{ color: "var(--green)", fontSize: 12 }}>
-              − {p.currency} {p.referralDeduct.toLocaleString()}
+              − {formatPrice(p.referralDeduct, p.currency)}
             </span>
           </div>
         )}
@@ -274,12 +288,12 @@ export default function PaymentOptions({
         <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
           <span>You Pay</span>
           <span className={styles.summaryTotalAmt}>
-            {p.currency} {p.totalCharged.toLocaleString()}
+            {formatPrice(p.totalCharged, p.currency)}
           </span>
         </div>
       </div>
 
-      {/* ── Tab selector ── */}
+      {/* ── Tabs (unchanged) ── */}
       {step === "select" && (
         <>
           <div className={styles.tabs}>
@@ -287,13 +301,13 @@ export default function PaymentOptions({
               className={`${styles.tab} ${tab === "bank" ? styles.tabActive : ""}`}
               onClick={() => setTab("bank")}
             >
-              🏦 Bank Transfer
+              <FaUniversity style={{ marginRight: "6px" }} /> Bank Transfer
             </button>
             <button
               className={`${styles.tab} ${tab === "crypto" ? styles.tabActive : ""}`}
               onClick={() => setTab("crypto")}
             >
-              ₿ Crypto
+              <FaBitcoin style={{ marginRight: "6px" }} /> Crypto
             </button>
           </div>
 
@@ -311,10 +325,13 @@ export default function PaymentOptions({
               >
                 {loading ? (
                   <>
-                    <span className={styles.spinner} /> Loading…
+                    <FaSpinner className={styles.spinner} /> Loading…
                   </>
                 ) : (
-                  "🏦 Get Bank Details"
+                  <>
+                    <FaUniversity style={{ marginRight: "6px" }} /> Get Bank
+                    Details
+                  </>
                 )}
               </button>
             </div>
@@ -328,19 +345,24 @@ export default function PaymentOptions({
                 transaction hash.
               </p>
               <div className={styles.cryptoGrid}>
-                {CRYPTO_OPTIONS.map((c) => (
-                  <button
-                    key={c.value}
-                    className={`${styles.cryptoChip} ${cryptoAsset === c.value ? styles.cryptoChipActive : ""}`}
-                    onClick={() => setCryptoAsset(c.value)}
-                  >
-                    <span className={styles.cryptoChipIcon}>{c.icon}</span>
-                    <span className={styles.cryptoChipLabel}>{c.label}</span>
-                    <span className={styles.cryptoChipNetwork}>
-                      {c.network}
-                    </span>
-                  </button>
-                ))}
+                {CRYPTO_OPTIONS.map((c) => {
+                  const Icon = c.icon;
+                  return (
+                    <button
+                      key={c.value}
+                      className={`${styles.cryptoChip} ${cryptoAsset === c.value ? styles.cryptoChipActive : ""}`}
+                      onClick={() => setCryptoAsset(c.value)}
+                    >
+                      <span className={styles.cryptoChipIcon}>
+                        <Icon size={18} />
+                      </span>
+                      <span className={styles.cryptoChipLabel}>{c.label}</span>
+                      <span className={styles.cryptoChipNetwork}>
+                        {c.network}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               <button
                 className={styles.payBtn}
@@ -349,10 +371,13 @@ export default function PaymentOptions({
               >
                 {loading ? (
                   <>
-                    <span className={styles.spinner} /> Loading wallet…
+                    <FaSpinner className={styles.spinner} /> Loading wallet…
                   </>
                 ) : (
-                  `⟠ Pay with ${cryptoAsset}`
+                  <>
+                    <FaEthereum style={{ marginRight: "6px" }} /> Pay with{" "}
+                    {cryptoAsset}
+                  </>
                 )}
               </button>
             </div>
@@ -374,14 +399,15 @@ export default function PaymentOptions({
             <BankRow label="Account Name" value={bankDetails.accountName} />
             <BankRow
               label="Amount"
-              value={`${p.currency} ${p.totalCharged.toLocaleString()}`}
+              value={formatPrice(p.totalCharged, p.currency)}
               accent
             />
             <BankRow label="Narration" value={bankDetails.narration} mono />
           </div>
           <div className={styles.bankWarn}>
-            ⚠️ Include the exact proof of payment. Payments without the proof
-            may be delayed.
+            <FaExclamationTriangle style={{ marginRight: "6px" }} />
+            Include the exact proof of payment. Payments without the proof may
+            be delayed.
           </div>
           <p className={styles.bankSubtitle}>Confirm your transfer</p>
           <div className={styles.formGroup}>
@@ -416,9 +442,10 @@ export default function PaymentOptions({
                 }
               />
               <span className={styles.fileBtn}>
+                <FaPaperclip style={{ marginRight: "6px" }} />
                 {bankReceiptFile
                   ? `✅ ${bankReceiptFile.name}`
-                  : "📎 Upload receipt (image or PDF)"}
+                  : "Upload receipt (image or PDF)"}
               </span>
             </label>
             {bankReceiptFile && (
@@ -427,7 +454,7 @@ export default function PaymentOptions({
                 className={styles.fileRemove}
                 onClick={() => setBankReceiptFile(null)}
               >
-                ✕ Remove
+                <FaTimes />
               </button>
             )}
           </div>
@@ -445,10 +472,13 @@ export default function PaymentOptions({
             >
               {loading ? (
                 <>
-                  <span className={styles.spinner} /> Submitting…
+                  <FaSpinner className={styles.spinner} /> Submitting…
                 </>
               ) : (
-                "✅ I Have Transferred"
+                <>
+                  <FaCheckCircle style={{ marginRight: "6px" }} /> I Have
+                  Transferred
+                </>
               )}
             </button>
           </div>
@@ -470,13 +500,14 @@ export default function PaymentOptions({
             />
             <BankRow
               label="Amount"
-              value={`${p.currency} ${p.totalCharged.toLocaleString()}`}
+              value={formatPrice(p.totalCharged, p.currency)}
               accent
             />
             <BankRow label="Memo" value={cryptoDetails.note} mono />
           </div>
           <div className={styles.bankWarn}>
-            ⚠️ Only send {cryptoDetails.currency} on the {cryptoDetails.network}{" "}
+            <FaExclamationTriangle style={{ marginRight: "6px" }} />
+            Only send {cryptoDetails.currency} on the {cryptoDetails.network}{" "}
             network. Wrong network may result in permanent loss of funds.
           </div>
           <p className={styles.bankSubtitle}>Confirm your transaction</p>
@@ -513,9 +544,10 @@ export default function PaymentOptions({
                 }
               />
               <span className={styles.fileBtn}>
+                <FaPaperclip style={{ marginRight: "6px" }} />
                 {cryptoReceiptFile
                   ? `✅ ${cryptoReceiptFile.name}`
-                  : "📎 Upload screenshot"}
+                  : "Upload screenshot"}
               </span>
             </label>
             {cryptoReceiptFile && (
@@ -524,7 +556,7 @@ export default function PaymentOptions({
                 className={styles.fileRemove}
                 onClick={() => setCryptoReceiptFile(null)}
               >
-                ✕ Remove
+                <FaTimes />
               </button>
             )}
           </div>
@@ -543,17 +575,24 @@ export default function PaymentOptions({
             >
               {loading ? (
                 <>
-                  <span className={styles.spinner} /> Submitting…
+                  <FaSpinner className={styles.spinner} /> Submitting…
                 </>
               ) : (
-                "✅ Confirm Transaction"
+                <>
+                  <FaCheckCircle style={{ marginRight: "6px" }} /> Confirm
+                  Transaction
+                </>
               )}
             </button>
           </div>
         </div>
       )}
 
-      {error && <p className={styles.error}>⚠️ {error}</p>}
+      {error && (
+        <p className={styles.error}>
+          <FaExclamationTriangle style={{ marginRight: "6px" }} /> {error}
+        </p>
+      )}
 
       <p className={styles.disclaimer}>
         All payments are held in escrow and only released after you confirm job
