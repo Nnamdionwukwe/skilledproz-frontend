@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import api from "../../lib/api";
 import styles from "./EmergencyContact.module.css";
+import {
+  FaUser,
+  FaPhone,
+  FaEdit,
+  FaTimes,
+  FaExclamationTriangle,
+  FaSpinner,
+} from "react-icons/fa";
 
 export default function EmergencyContact({
   bookingId,
@@ -16,7 +24,7 @@ export default function EmergencyContact({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Sync form fields when `existing` prop updates (e.g. after page re-mount)
+  // Sync form fields when `existing` prop updates
   useEffect(() => {
     if (existing) {
       setName(existing.name || "");
@@ -61,10 +69,12 @@ export default function EmergencyContact({
     return (
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardIcon}>👤</span>
+          <span className={styles.cardIcon}>
+            <FaUser size={18} />
+          </span>
           <p className={styles.cardTitle}>Emergency Contact</p>
           <button className={styles.editBtn} onClick={() => setEditing(true)}>
-            Edit
+            <FaEdit size={14} style={{ marginRight: "4px" }} /> Edit
           </button>
         </div>
         <div className={styles.contactRow}>
@@ -74,6 +84,7 @@ export default function EmergencyContact({
         <div className={styles.contactRow}>
           <span className={styles.contactLabel}>Phone</span>
           <a href={`tel:${existing.phone}`} className={styles.contactPhone}>
+            <FaPhone size={12} style={{ marginRight: "4px" }} />
             {existing.phone}
           </a>
         </div>
@@ -91,14 +102,16 @@ export default function EmergencyContact({
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.cardIcon}>👤</span>
+        <span className={styles.cardIcon}>
+          <FaUser size={18} />
+        </span>
         <p className={styles.cardTitle}>Emergency Contact</p>
         {existing && (
           <button
             className={styles.cancelBtn}
             onClick={() => setEditing(false)}
           >
-            Cancel
+            <FaTimes size={14} style={{ marginRight: "4px" }} /> Cancel
           </button>
         )}
       </div>
@@ -133,13 +146,21 @@ export default function EmergencyContact({
           placeholder="e.g. Sister, Friend, Spouse"
         />
       </div>
-      {error && <p className={styles.error}>⚠️ {error}</p>}
+      {error && (
+        <p className={styles.error}>
+          <FaExclamationTriangle style={{ marginRight: "6px" }} /> {error}
+        </p>
+      )}
       <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-        {saving
-          ? "Saving..."
-          : existing
-            ? "Update Contact"
-            : "Save Emergency Contact"}
+        {saving ? (
+          <>
+            <FaSpinner className={styles.spinner} /> Saving...
+          </>
+        ) : existing ? (
+          "Update Contact"
+        ) : (
+          "Save Emergency Contact"
+        )}
       </button>
     </div>
   );

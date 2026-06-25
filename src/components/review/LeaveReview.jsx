@@ -5,6 +5,12 @@ import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import styles from "./Review.module.css";
+import {
+  FaStar,
+  FaArrowLeft,
+  FaSpinner,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 
 export default function LeaveReview() {
   const { bookingId } = useParams();
@@ -65,7 +71,7 @@ export default function LeaveReview() {
         <div className={styles.page}>
           <div className={styles.successWrap}>
             <div className={styles.successRing}>
-              <span className={styles.successStar}>⭐</span>
+              <FaStar size={48} color="#fbbf24" />
             </div>
             <h2 className={styles.successTitle}>Review Submitted!</h2>
             <p className={styles.successText}>
@@ -84,7 +90,7 @@ export default function LeaveReview() {
           {/* Header */}
           <div className={styles.reviewHeader}>
             <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
-              ← Back to Booking
+              <FaArrowLeft style={{ marginRight: "6px" }} /> Back to Booking
             </Link>
           </div>
 
@@ -131,7 +137,10 @@ export default function LeaveReview() {
                     setError("");
                   }}
                 >
-                  ★
+                  <FaStar
+                    size={32}
+                    color={s <= (hovered || rating) ? "#fbbf24" : "#374151"}
+                  />
                 </button>
               ))}
             </div>
@@ -166,7 +175,8 @@ export default function LeaveReview() {
 
             {error && (
               <div className={styles.inlineError}>
-                <span>⚠️</span> {error}
+                <FaExclamationTriangle style={{ marginRight: "6px" }} />
+                {error}
               </div>
             )}
 
@@ -177,10 +187,12 @@ export default function LeaveReview() {
             >
               {submitting ? (
                 <>
-                  <span className={styles.spinner} /> Submitting...
+                  <FaSpinner className={styles.spinner} /> Submitting...
                 </>
               ) : (
-                <>⭐ Submit Review</>
+                <>
+                  <FaStar style={{ marginRight: "6px" }} /> Submit Review
+                </>
               )}
             </button>
           </form>

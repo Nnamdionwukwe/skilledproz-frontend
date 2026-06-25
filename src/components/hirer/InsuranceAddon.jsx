@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import api from "../../lib/api";
 import styles from "./InsuranceAddon.module.css";
+import {
+  FaShieldAlt,
+  FaChevronUp,
+  FaChevronDown,
+  FaCheck,
+  FaExclamationTriangle,
+  FaSpinner,
+} from "react-icons/fa";
 
 export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
   const [plans, setPlans] = useState([]);
@@ -29,7 +37,6 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
         planId: selected,
         bookingId: bookingId || null,
       });
-      // Redirect to Stripe
       window.location.href = res.data.data.url;
     } catch (err) {
       setError(err.response?.data?.message || "Checkout failed.");
@@ -39,11 +46,12 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
 
   const selectedPlan = plans.find((p) => p.id === selected);
 
-  // ── Already insured badge ──
   if (isInsured) {
     return (
       <div className={styles.insuredBadge}>
-        <span>🛡️</span>
+        <span>
+          <FaShieldAlt size={20} />
+        </span>
         <div>
           <p className={styles.insuredTitle}>
             Insured: {booking.insurancePlan}
@@ -57,7 +65,9 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
   return (
     <div className={styles.wrap}>
       <button className={styles.trigger} onClick={() => setOpen(!open)}>
-        <span className={styles.triggerIcon}>🛡️</span>
+        <span className={styles.triggerIcon}>
+          <FaShieldAlt size={20} />
+        </span>
         <div className={styles.triggerText}>
           <span className={styles.triggerTitle}>
             Add Insurance Cover (Optional)
@@ -66,7 +76,9 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
             Protect your property — charged in USD
           </span>
         </div>
-        <span className={styles.triggerChevron}>{open ? "▲" : "▼"}</span>
+        <span className={styles.triggerChevron}>
+          {open ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
+        </span>
       </button>
 
       {open && (
@@ -104,7 +116,10 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
                   <ul className={styles.planFeatures}>
                     {plan.features.map((f, i) => (
                       <li key={i}>
-                        <span>✓</span> {f}
+                        <span>
+                          <FaCheck size={12} />
+                        </span>{" "}
+                        {f}
                       </li>
                     ))}
                   </ul>
@@ -113,7 +128,11 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
             </div>
           )}
 
-          {error && <div className={styles.errorBox}>⚠️ {error}</div>}
+          {error && (
+            <div className={styles.errorBox}>
+              <FaExclamationTriangle style={{ marginRight: "6px" }} /> {error}
+            </div>
+          )}
 
           <div className={styles.purchaseRow}>
             {selectedPlan && (
@@ -128,10 +147,13 @@ export default function InsuranceAddon({ bookingId, booking, onPurchased }) {
             >
               {purchasing ? (
                 <>
-                  <span className={styles.spinner} /> Redirecting...
+                  <FaSpinner className={styles.spinner} /> Redirecting...
                 </>
               ) : (
-                "🛡️ Pay & Activate Insurance"
+                <>
+                  <FaShieldAlt style={{ marginRight: "6px" }} /> Pay & Activate
+                  Insurance
+                </>
               )}
             </button>
           </div>

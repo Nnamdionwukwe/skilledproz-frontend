@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import Translator from "../../common/Translator";
@@ -17,6 +18,7 @@ import {
   FaShieldAlt,
   FaStar,
 } from "react-icons/fa";
+import ConfirmationModal from "../../context/ConfirmationModal";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function DetailItem({ icon, label, value, accent }) {
@@ -108,6 +110,15 @@ export default function BookingDetailMain({
   isWorker,
   workerName,
 }) {
+  // ── Refund modal state ──
+  const [showRefundModal, setShowRefundModal] = useState(false);
+
+  const handleRefundClick = () => setShowRefundModal(true);
+  const handleConfirmRefund = () => {
+    onRefund();
+    setShowRefundModal(false);
+  };
+
   const STATUS_META = {
     PENDING: { label: "Pending", color: "yellow" },
     ACCEPTED: { label: "Accepted", color: "orange" },
@@ -517,7 +528,7 @@ export default function BookingDetailMain({
           {isHirer && paymentStatus === "RELEASED" && (
             <button
               className={styles.refundBtn}
-              onClick={onRefund}
+              onClick={handleRefundClick} // ← open modal instead of direct call
               disabled={refundLoading}
             >
               {refundLoading ? "Processing…" : "↩ Request Refund"}
@@ -525,6 +536,18 @@ export default function BookingDetailMain({
           )}
         </div>
       )}
+
+      {/* ── Refund confirmation modal ── */}
+      <ConfirmationModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        onConfirm={handleConfirmRefund}
+        title="Confirm Refund"
+        message="Are you sure you want to issue a full refund? This action cannot be undone."
+        confirmLabel="Yes, Refund"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+      />
     </>
   );
 }

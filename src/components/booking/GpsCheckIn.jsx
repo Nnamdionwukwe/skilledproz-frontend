@@ -1,6 +1,16 @@
 import { useState } from "react";
 import api from "../../lib/api";
 import styles from "./GpsCheckIn.module.css";
+import {
+  FaMapMarkerAlt,
+  FaLocationArrow,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaSpinner,
+  FaCheck,
+  FaTimes,
+  FaCircle,
+} from "react-icons/fa";
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -62,7 +72,7 @@ export default function GpsCheckIn({
   jobLongitude,
   onSuccess,
 }) {
-  const [phase, setPhase] = useState("idle"); // idle | locating | confirming | submitting | done
+  const [phase, setPhase] = useState("idle");
   const [gpsData, setGpsData] = useState(null);
   const [locationLabel, setLocationLabel] = useState("");
   const [distanceKm, setDistanceKm] = useState(null);
@@ -80,7 +90,6 @@ export default function GpsCheckIn({
     const gps = await getGPS();
 
     if (!gps.latitude) {
-      // No GPS — let worker proceed anyway
       setGpsData({ latitude: null, longitude: null });
       setLocationLabel("Location unavailable");
       setDistanceKm(null);
@@ -88,12 +97,10 @@ export default function GpsCheckIn({
       return;
     }
 
-    // Reverse geocode to get human-readable location
     const label = await reverseGeocode(gps.latitude, gps.longitude);
     setLocationLabel(label);
     setGpsData(gps);
 
-    // Calculate distance from job site if job has coordinates
     if (jobLatitude && jobLongitude) {
       const dist = haversineKm(
         gps.latitude,
@@ -158,14 +165,16 @@ export default function GpsCheckIn({
       {/* ── LOCATING ── */}
       {phase === "locating" && (
         <div className={styles.locatingBox}>
-          <div className={styles.locatingIcon}>📍</div>
+          <div className={styles.locatingIcon}>
+            <FaMapMarkerAlt size={24} />
+          </div>
           <div>
             <p className={styles.locatingTitle}>Acquiring your location...</p>
             <p className={styles.locatingHint}>
               Please allow location access if prompted
             </p>
           </div>
-          <span className={styles.spinner} />
+          <FaSpinner className={styles.spinner} />
         </div>
       )}
 
@@ -174,7 +183,11 @@ export default function GpsCheckIn({
         <div className={styles.confirmBox}>
           <div className={styles.confirmHeader}>
             <span className={styles.confirmIcon}>
-              {isCheckIn ? "🟢" : "🔴"}
+              {isCheckIn ? (
+                <FaCheckCircle color="var(--green)" size={22} />
+              ) : (
+                <FaCircle color="var(--red)" size={22} />
+              )}
             </span>
             <div>
               <p className={styles.confirmTitle}>
@@ -195,7 +208,9 @@ export default function GpsCheckIn({
           {/* Location display */}
           <div className={styles.locationCard}>
             <div className={styles.locationRow}>
-              <span className={styles.locationIcon}>📍</span>
+              <span className={styles.locationIcon}>
+                <FaLocationArrow size={18} />
+              </span>
               <div>
                 <p className={styles.locationLabel}>Your current location</p>
                 <p className={styles.locationValue}>
@@ -221,7 +236,13 @@ export default function GpsCheckIn({
                 className={`${styles.distanceRow} ${distanceKm > 1 ? styles.distanceFar : styles.distanceNear}`}
               >
                 <span>
-                  {distanceKm < 0.1 ? "✅" : distanceKm > 1 ? "⚠️" : "📏"}
+                  {distanceKm < 0.1 ? (
+                    <FaCheckCircle color="var(--green)" />
+                  ) : distanceKm > 1 ? (
+                    <FaExclamationTriangle color="#fbbf24" />
+                  ) : (
+                    <FaLocationArrow />
+                  )}
                 </span>
                 <span>
                   {distanceKm < 0.1
@@ -234,7 +255,9 @@ export default function GpsCheckIn({
             {/* No GPS warning */}
             {!gpsData?.latitude && (
               <div className={styles.noGpsRow}>
-                <span>⚠️</span>
+                <span>
+                  <FaExclamationTriangle color="#fbbf24" />
+                </span>
                 <span>
                   Location unavailable — check-in will proceed without GPS
                 </span>
@@ -245,20 +268,22 @@ export default function GpsCheckIn({
           {/* Distance warning */}
           {distanceWarning && (
             <div className={styles.warningBox}>
-              ⚠️ {distanceWarning} Your location is still recorded.
+              <FaExclamationTriangle style={{ marginRight: "6px" }} />
+              {distanceWarning} Your location is still recorded.
             </div>
           )}
 
           {/* Actions */}
           <div className={styles.confirmActions}>
             <button className={styles.cancelBtn} onClick={handleReset}>
-              Cancel
+              <FaTimes style={{ marginRight: "4px" }} /> Cancel
             </button>
             <button
               className={`${styles.confirmBtn} ${isCheckIn ? styles.confirmBtnIn : styles.confirmBtnOut}`}
               onClick={handleConfirm}
             >
-              {isCheckIn ? "✓ Confirm Check-In" : "✓ Confirm Check-Out"}
+              <FaCheck style={{ marginRight: "6px" }} />
+              {isCheckIn ? "Confirm Check-In" : "Confirm Check-Out"}
             </button>
           </div>
         </div>
@@ -267,7 +292,7 @@ export default function GpsCheckIn({
       {/* ── SUBMITTING ── */}
       {phase === "submitting" && (
         <div className={styles.submittingBox}>
-          <span className={styles.spinner} />
+          <FaSpinner className={styles.spinner} />
           <p>{isCheckIn ? "Checking in..." : "Checking out..."}</p>
         </div>
       )}
@@ -275,7 +300,8 @@ export default function GpsCheckIn({
       {/* ── ERROR ── */}
       {error && (
         <div className={styles.errorBox}>
-          <span>⚠️</span> {error}
+          <FaExclamationTriangle style={{ marginRight: "6px" }} />
+          {error}
           <button onClick={handleReset} className={styles.retryBtn}>
             Retry
           </button>

@@ -1,6 +1,12 @@
 import { useState } from "react";
 import api from "../../lib/api";
 import styles from "./SOSButton.module.css";
+import {
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaSpinner,
+  FaShieldAlt,
+} from "react-icons/fa";
 
 export default function SOSButton({
   bookingId,
@@ -20,7 +26,7 @@ export default function SOSButton({
   const isResolved = !!sosActivatedAt && !!sosResolvedAt;
 
   async function handleSOS() {
-    if (isActive) return; // Already active
+    if (isActive) return;
     setPhase("locating");
     setError("");
 
@@ -60,7 +66,9 @@ export default function SOSButton({
   if (isResolved) {
     return (
       <div className={styles.resolved}>
-        <span className={styles.resolvedIcon}>✅</span>
+        <span className={styles.resolvedIcon}>
+          <FaCheckCircle size={18} />
+        </span>
         <span>Emergency resolved</span>
       </div>
     );
@@ -71,7 +79,9 @@ export default function SOSButton({
       <div className={styles.activeWrap}>
         <div className={styles.activePulse} />
         <div className={styles.activeContent}>
-          <span className={styles.activeIcon}>🚨</span>
+          <span className={styles.activeIcon}>
+            <FaExclamationTriangle size={24} />
+          </span>
           <div>
             <p className={styles.activeTitle}>SOS Active</p>
             <p className={styles.activeTime}>
@@ -95,34 +105,41 @@ export default function SOSButton({
       {phase === "idle" && (
         <button className={styles.sosBtn} onClick={handleSOS}>
           <span className={styles.sosDot} />
-          🆘 Emergency SOS
+          <FaExclamationTriangle style={{ marginRight: "6px" }} />
+          Emergency SOS
         </button>
       )}
 
       {phase === "locating" && (
         <div className={styles.locating}>
-          <span className={styles.spinner} />
+          <FaSpinner className={styles.spinner} />
           <span>Getting your location...</span>
         </div>
       )}
 
       {phase === "sending" && (
         <div className={styles.locating}>
-          <span className={styles.spinner} />
+          <FaSpinner className={styles.spinner} />
           <span>Sending emergency alert...</span>
         </div>
       )}
 
       {phase === "done" && (
         <div className={styles.activeWrap}>
-          <span className={styles.activeIcon}>🚨</span>
+          <span className={styles.activeIcon}>
+            <FaShieldAlt size={24} />
+          </span>
           <span className={styles.activeTitle}>
             SOS Sent — help is on the way
           </span>
         </div>
       )}
 
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p className={styles.error}>
+          <FaExclamationTriangle style={{ marginRight: "6px" }} /> {error}
+        </p>
+      )}
 
       <p className={styles.hint}>
         Only use in a genuine emergency. Your GPS location will be shared.
