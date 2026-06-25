@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./Disputes.module.css";
+import {
+  FaExclamationTriangle,
+  FaTimes,
+  FaImage,
+  FaTrashAlt,
+  FaSpinner,
+  FaFileImage,
+} from "react-icons/fa";
 
 const REASONS = [
   { value: "PAYMENT_NOT_RELEASED", label: "Payment not released" },
@@ -21,8 +29,21 @@ export default function RaiseDisputeModal({
 }) {
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
+  const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files);
+    setFiles((prev) => [...prev, ...selected]);
+    // Reset input so same file can be re-selected if needed
+    e.target.value = "";
+  };
+
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,9 +56,22 @@ export default function RaiseDisputeModal({
       setError("Please provide a description of at least 20 characters.");
       return;
     }
+
     setSubmitting(true);
+
+    // Build FormData for multipart upload
+    const formData = new FormData();
+    formData.append("bookingId", bookingId);
+    formData.append("reason", reason);
+    formData.append("description", description);
+    files.forEach((file) => {
+      formData.append("files", file); // matches the field name in uploadMultiple
+    });
+
     try {
-      await api.post("/disputes", { bookingId, reason, description });
+      await api.post("/disputes", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -63,12 +97,12 @@ export default function RaiseDisputeModal({
             )}
           </div>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <FaTimes />
           </button>
         </div>
 
         <div className={styles.modalWarning}>
-          <span>⚠️</span>
+          <FaExclamationTriangle />
           <p>
             Disputes are reviewed by our support team within 24–48 hours. Please
             provide as much detail as possible.
@@ -106,9 +140,64 @@ export default function RaiseDisputeModal({
             />
           </div>
 
+          {/* ── Evidence upload ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>
+              <FaImage style={{ marginRight: "0.4rem" }} /> Evidence (optional)
+              <span className={styles.charCount}>
+                {files.length} file{files.length !== 1 ? "s" : ""}
+              </span>
+            </label>
+            <div className={styles.fileUploadArea}>
+              <button
+                type="button"
+                className={styles.fileSelectBtn}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FaFileImage /> Add Images / PDFs
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                className={styles.fileInput}
+                onChange={handleFileChange}
+              />
+            </div>
+            {files.length > 0 && (
+              <div className={styles.filePreviewGrid}>
+                {files.map((file, index) => (
+                  <div key={index} className={styles.filePreviewItem}>
+                    {file.type.startsWith("image/") ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className={styles.filePreviewThumb}
+                      />
+                    ) : (
+                      <div className={styles.filePreviewPdf}>
+                        <FaFileImage />
+                        <span>PDF</span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.fileRemoveBtn}
+                      onClick={() => removeFile(index)}
+                    >
+                      <FaTrashAlt />
+                    </button>
+                    <span className={styles.filePreviewName}>{file.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className={styles.errorBox}>
-              <span>⚠️</span> {error}
+              <FaExclamationTriangle /> {error}
             </div>
           )}
 
@@ -128,7 +217,7 @@ export default function RaiseDisputeModal({
             >
               {submitting ? (
                 <>
-                  <span className={styles.spinner} /> Submitting...
+                  <FaSpinner className={styles.spinner} /> Submitting...
                 </>
               ) : (
                 "Submit Dispute"

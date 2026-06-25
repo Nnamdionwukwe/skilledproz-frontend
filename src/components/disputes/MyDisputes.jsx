@@ -5,9 +5,25 @@ import WorkerLayout from "../layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./Disputes.module.css";
 import { Link } from "react-router-dom";
+import {
+  FaShieldAlt,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaClock,
+  FaMoneyBillWave,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaUser,
+  FaUsers,
+  FaImage,
+  FaTrash,
+  FaEye,
+  FaSpinner,
+} from "react-icons/fa";
 
 const STATUS_META = {
-  OPEN: { label: "Open", cls: "statusOpen" },
+  DISPUTED: { label: "Open", cls: "statusOpen" },
   UNDER_REVIEW: { label: "Under Review", cls: "statusReview" },
   RESOLVED: { label: "Resolved", cls: "statusResolved" },
   CANCELLED: { label: "Cancelled", cls: "statusCancelled" },
@@ -16,6 +32,44 @@ const STATUS_META = {
 function StatusBadge({ status }) {
   const s = STATUS_META[status] || { label: status, cls: "statusOpen" };
   return <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>;
+}
+
+function formatCurrency(amount, currency = "NGN") {
+  if (amount == null) return `${currency} 0.00`;
+  return `${currency} ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+// ── Confirmation Modal ────────────────────────────────────────────────
+function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>{title}</h3>
+          <button className={styles.modalClose} onClick={onClose}>
+            <FaTimesCircle />
+          </button>
+        </div>
+        <p className={styles.confirmMessage}>{message}</p>
+        <div className={styles.modalActions}>
+          <button className={styles.cancelBtn} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className={`${styles.confirmBtn} ${styles.confirmDanger}`}
+            onClick={onConfirm}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function MyDisputes() {
@@ -30,6 +84,10 @@ export default function MyDisputes() {
   const [success, setSuccess] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [expanded, setExpanded] = useState(null);
+
+  // ── Confirmation modal state ──
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelBookingId, setCancelBookingId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -49,21 +107,33 @@ export default function MyDisputes() {
     load();
   }, []);
 
-  const handleCancel = async (bookingId) => {
-    if (!confirm("Cancel this dispute? This action cannot be undone.")) return;
-    setCancelling(bookingId);
+  const openCancelModal = (bookingId) => {
+    setCancelBookingId(bookingId);
+    setShowCancelModal(true);
+  };
+
+  const closeCancelModal = () => {
+    setShowCancelModal(false);
+    setCancelBookingId(null);
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelBookingId) return;
+    setCancelling(cancelBookingId);
     setError("");
     setSuccess("");
     try {
-      await api.patch(`/disputes/${bookingId}/cancel`);
+      await api.patch(`/disputes/${cancelBookingId}/cancel`);
       setSuccess("Dispute cancelled successfully.");
       setDisputes((prev) =>
         prev.map((d) =>
-          d.bookingId === bookingId ? { ...d, status: "CANCELLED" } : d,
+          d.id === cancelBookingId ? { ...d, status: "CANCELLED" } : d,
         ),
       );
+      closeCancelModal();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to cancel dispute.");
+      closeCancelModal();
     } finally {
       setCancelling(null);
     }
@@ -76,7 +146,6 @@ export default function MyDisputes() {
   return (
     <Layout>
       <div className={styles.page}>
-        {/* Header */}
         <div className={styles.pageHeader}>
           <div>
             <div className={styles.eyebrow}>Support</div>
@@ -97,7 +166,8 @@ export default function MyDisputes() {
               >
                 {
                   disputes.filter(
-                    (d) => d.status === "OPEN" || d.status === "UNDER_REVIEW",
+                    (d) =>
+                      d.status === "DISPUTED" || d.status === "UNDER_REVIEW",
                   ).length
                 }
               </span>
@@ -117,27 +187,29 @@ export default function MyDisputes() {
 
         {/* Filter tabs */}
         <div className={styles.filterTabs}>
-          {["", "OPEN", "UNDER_REVIEW", "RESOLVED", "CANCELLED"].map((s) => (
-            <button
-              key={s}
-              className={`${styles.filterTab} ${filterStatus === s ? styles.filterTabActive : ""}`}
-              onClick={() => setFilterStatus(s)}
-            >
-              {s === "" ? "All" : STATUS_META[s]?.label || s}
-            </button>
-          ))}
+          {["", "DISPUTED", "UNDER_REVIEW", "RESOLVED", "CANCELLED"].map(
+            (s) => (
+              <button
+                key={s}
+                className={`${styles.filterTab} ${filterStatus === s ? styles.filterTabActive : ""}`}
+                onClick={() => setFilterStatus(s)}
+              >
+                {s === "" ? "All" : STATUS_META[s]?.label || s}
+              </button>
+            ),
+          )}
         </div>
 
         {/* Alerts */}
         {error && (
           <div className={styles.errorBox}>
-            <span>⚠️</span> {error}
+            <FaExclamationTriangle /> {error}
             <button onClick={() => setError("")}>×</button>
           </div>
         )}
         {success && (
           <div className={styles.successBox}>
-            <span>✅</span> {success}
+            <FaCheckCircle /> {success}
             <button onClick={() => setSuccess("")}>×</button>
           </div>
         )}
@@ -148,7 +220,7 @@ export default function MyDisputes() {
             [1, 2, 3].map((i) => <div key={i} className={styles.skeleton} />)
           ) : filtered.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.emptyIcon}>🛡️</span>
+              <FaShieldAlt size={40} className={styles.emptyIcon} />
               <p className={styles.emptyTitle}>
                 {filterStatus
                   ? `No ${STATUS_META[filterStatus]?.label?.toLowerCase()} disputes`
@@ -162,8 +234,8 @@ export default function MyDisputes() {
           ) : (
             filtered.map((dispute, i) => (
               <div
-                key={dispute.id || dispute.bookingId}
-                className={`${styles.disputeCard} ${expanded === dispute.bookingId ? styles.disputeCardExpanded : ""}`}
+                key={dispute.id}
+                className={`${styles.disputeCard} ${expanded === dispute.id ? styles.disputeCardExpanded : ""}`}
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
                 {/* Card top */}
@@ -171,28 +243,30 @@ export default function MyDisputes() {
                   className={styles.cardTop}
                   onClick={() =>
                     setExpanded((prev) =>
-                      prev === dispute.bookingId ? null : dispute.bookingId,
+                      prev === dispute.id ? null : dispute.id,
                     )
                   }
                 >
                   <div className={styles.cardLeft}>
                     <div
-                      className={`${styles.disputeIcon} ${styles[`icon_${(dispute.status || "OPEN").toLowerCase()}`]}`}
+                      className={`${styles.disputeIcon} ${styles[`icon_${(dispute.status || "DISPUTED").toLowerCase()}`]}`}
                     >
-                      {dispute.status === "RESOLVED"
-                        ? "✓"
-                        : dispute.status === "CANCELLED"
-                          ? "✕"
-                          : "⚠"}
+                      {dispute.status === "RESOLVED" ? (
+                        <FaCheckCircle />
+                      ) : dispute.status === "CANCELLED" ? (
+                        <FaTimesCircle />
+                      ) : (
+                        <FaExclamationTriangle />
+                      )}
                     </div>
                     <div>
                       <p className={styles.disputeTitle}>
-                        {dispute.booking?.title || `Booking dispute`}
+                        {dispute.title || `Booking dispute`}
                       </p>
                       <p className={styles.disputeMeta}>
-                        {dispute.reason && (
+                        {dispute.disputeReason && (
                           <span className={styles.reasonTag}>
-                            {dispute.reason.replace(/_/g, " ")}
+                            {dispute.disputeReason.replace(/_/g, " ")}
                           </span>
                         )}
                         <span className={styles.metaDot}>·</span>
@@ -206,125 +280,240 @@ export default function MyDisputes() {
                             },
                           )}
                         </span>
+                        {dispute.category && (
+                          <>
+                            <span className={styles.metaDot}>·</span>
+                            <span className={styles.categoryTag}>
+                              {dispute.category.icon} {dispute.category.name}
+                            </span>
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
                   <div className={styles.cardRight}>
                     <StatusBadge status={dispute.status} />
                     <span className={styles.expandChevron}>
-                      {expanded === dispute.bookingId ? "▲" : "▼"}
+                      {expanded === dispute.id ? "▲" : "▼"}
                     </span>
                   </div>
                 </div>
 
                 {/* Expanded detail */}
-                {expanded === dispute.bookingId && (
+                {expanded === dispute.id && (
                   <div className={styles.cardBody}>
-                    {dispute.description && (
-                      <div className={styles.descBlock}>
-                        <p className={styles.descLabel}>Description</p>
-                        <p className={styles.descText}>{dispute.description}</p>
-                      </div>
-                    )}
+                    {/* Dispute Details */}
+                    <div className={styles.detailGrid}>
+                      {dispute.disputeReason && (
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Reason</span>
+                          <span className={styles.detailValue}>
+                            {dispute.disputeReason.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      )}
+                      {dispute.disputeDescription && (
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>
+                            Description
+                          </span>
+                          <span className={styles.detailValue}>
+                            {dispute.disputeDescription}
+                          </span>
+                        </div>
+                      )}
+                      {dispute.disputeEvidence &&
+                        dispute.disputeEvidence.length > 0 && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Evidence</span>
+                            <div className={styles.evidenceGallery}>
+                              {dispute.disputeEvidence.map((url, idx) => (
+                                <a
+                                  key={idx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={styles.evidenceThumb}
+                                >
+                                  <FaImage />
+                                  <span>View</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                    </div>
 
-                    {dispute.resolution && (
-                      <div className={styles.resolutionBlock}>
-                        <p className={styles.resolutionLabel}>✅ Resolution</p>
-                        <p className={styles.resolutionText}>
-                          {dispute.resolution}
-                        </p>
-                        {dispute.resolvedAt && (
-                          <p className={styles.resolvedDate}>
-                            Resolved on{" "}
-                            {new Date(dispute.resolvedAt).toLocaleDateString(
-                              "en-GB",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              },
+                    {/* Booking Details */}
+                    <div className={styles.bookingDetails}>
+                      <p className={styles.sectionLabel}>Booking Details</p>
+                      <div className={styles.detailGrid}>
+                        {dispute.agreedRate != null && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>
+                              Agreed Rate
+                            </span>
+                            <span className={styles.detailValue}>
+                              {formatCurrency(
+                                dispute.agreedRate,
+                                dispute.currency,
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {dispute.estimatedUnit && dispute.estimatedValue && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Duration</span>
+                            <span className={styles.detailValue}>
+                              {dispute.estimatedValue} {dispute.estimatedUnit}
+                            </span>
+                          </div>
+                        )}
+                        {dispute.address && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>
+                              <FaMapMarkerAlt /> Address
+                            </span>
+                            <span className={styles.detailValue}>
+                              {dispute.address}
+                            </span>
+                          </div>
+                        )}
+                        {dispute.scheduledAt && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>
+                              <FaCalendarAlt /> Scheduled
+                            </span>
+                            <span className={styles.detailValue}>
+                              {new Date(dispute.scheduledAt).toLocaleString(
+                                "en-GB",
+                                {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                },
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {dispute.jobType && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Job Type</span>
+                            <span className={styles.detailValue}>
+                              {dispute.jobType.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        )}
+                        {dispute.locationType && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Location</span>
+                            <span className={styles.detailValue}>
+                              {dispute.locationType.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Parties */}
+                    <div className={styles.partiesRow}>
+                      {dispute.hirer && (
+                        <div className={styles.partyChip}>
+                          <div className={styles.partyAvatar}>
+                            {dispute.hirer.avatar ? (
+                              <img src={dispute.hirer.avatar} alt="" />
+                            ) : (
+                              <span>
+                                {dispute.hirer.firstName?.[0]}
+                                {dispute.hirer.lastName?.[0]}
+                              </span>
                             )}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                          </div>
+                          <div>
+                            <p className={styles.partyName}>
+                              {dispute.hirer.firstName} {dispute.hirer.lastName}
+                            </p>
+                            <p className={styles.partyRole}>
+                              <FaUser /> Hirer
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {dispute.worker && (
+                        <div className={styles.partyChip}>
+                          <div className={styles.partyAvatar}>
+                            {dispute.worker.avatar ? (
+                              <img src={dispute.worker.avatar} alt="" />
+                            ) : (
+                              <span>
+                                {dispute.worker.firstName?.[0]}
+                                {dispute.worker.lastName?.[0]}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className={styles.partyName}>
+                              {dispute.worker.firstName}{" "}
+                              {dispute.worker.lastName}
+                            </p>
+                            <p className={styles.partyRole}>
+                              <FaUser /> Worker
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
-                    {/* Booking parties */}
-                    {(dispute.booking?.hirer || dispute.booking?.worker) && (
-                      <div className={styles.partiesRow}>
-                        {dispute.booking?.hirer && (
-                          <div className={styles.partyChip}>
-                            <div className={styles.partyAvatar}>
-                              {dispute.booking.hirer.avatar ? (
-                                <img
-                                  src={dispute.booking.hirer.avatar}
-                                  alt=""
-                                />
-                              ) : (
-                                <span>
-                                  {dispute.booking.hirer.firstName?.[0]}
-                                  {dispute.booking.hirer.lastName?.[0]}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <p className={styles.partyName}>
-                                {dispute.booking.hirer.firstName}{" "}
-                                {dispute.booking.hirer.lastName}
-                              </p>
-                              <p className={styles.partyRole}>Hirer</p>
-                            </div>
+                    {/* Payment info */}
+                    {dispute.payments && dispute.payments.length > 0 && (
+                      <div className={styles.paymentInfo}>
+                        <p className={styles.sectionLabel}>
+                          <FaMoneyBillWave /> Payment
+                        </p>
+                        <div className={styles.detailGrid}>
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Status</span>
+                            <span className={styles.detailValue}>
+                              {dispute.payments[0].status}
+                            </span>
                           </div>
-                        )}
-                        {dispute.booking?.worker && (
-                          <div className={styles.partyChip}>
-                            <div className={styles.partyAvatar}>
-                              {dispute.booking.worker.avatar ? (
-                                <img
-                                  src={dispute.booking.worker.avatar}
-                                  alt=""
-                                />
-                              ) : (
-                                <span>
-                                  {dispute.booking.worker.firstName?.[0]}
-                                  {dispute.booking.worker.lastName?.[0]}
-                                </span>
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Amount</span>
+                            <span className={styles.detailValue}>
+                              {formatCurrency(
+                                dispute.payments[0].amount,
+                                dispute.payments[0].currency,
                               )}
-                            </div>
-                            <div>
-                              <p className={styles.partyName}>
-                                {dispute.booking.worker.firstName}{" "}
-                                {dispute.booking.worker.lastName}
-                              </p>
-                              <p className={styles.partyRole}>Worker</p>
-                            </div>
+                            </span>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
                     {/* Actions */}
                     <div className={styles.cardActions}>
-                      {dispute.status === "OPEN" && (
+                      {dispute.status === "DISPUTED" && (
                         <button
                           className={styles.cancelDisputeBtn}
-                          disabled={cancelling === dispute.bookingId}
-                          onClick={() => handleCancel(dispute.bookingId)}
+                          disabled={cancelling === dispute.id}
+                          onClick={() => openCancelModal(dispute.id)}
                         >
-                          {cancelling === dispute.bookingId ? (
+                          {cancelling === dispute.id ? (
                             <>
-                              <span className={styles.spinner} /> Cancelling...
+                              <FaSpinner className={styles.spinner} />{" "}
+                              Cancelling...
                             </>
                           ) : (
-                            "Cancel Dispute"
+                            <>
+                              <FaTrash /> Cancel Dispute
+                            </>
                           )}
                         </button>
                       )}
                       <Link
-                        href={`/bookings/${dispute.bookingId}`}
+                        to={`/bookings/${dispute.id}`}
                         className={styles.viewBookingBtn}
                       >
-                        View Booking →
+                        <FaEye /> View Booking →
                       </Link>
                     </div>
                   </div>
@@ -334,6 +523,15 @@ export default function MyDisputes() {
           )}
         </div>
       </div>
+
+      {/* ── Confirmation Modal ── */}
+      <ConfirmationModal
+        isOpen={showCancelModal}
+        onClose={closeCancelModal}
+        onConfirm={confirmCancel}
+        title="Cancel Dispute"
+        message="Are you sure you want to cancel this dispute? This action cannot be undone."
+      />
     </Layout>
   );
 }
