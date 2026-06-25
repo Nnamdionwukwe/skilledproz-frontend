@@ -1435,3 +1435,13 @@
     margin-top: 4px;
   }
 }
+
+.profileLink {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+}
+.profileNameLink {
+  text-decoration: none;
+  color: inherit;
+}

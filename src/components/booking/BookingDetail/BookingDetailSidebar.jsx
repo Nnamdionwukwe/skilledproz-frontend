@@ -1,15 +1,24 @@
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
-// ── Feature components (from parent folder) ──────────────────────────────
+// ── Feature components ──────────────────────────────────────────────────
 import EmergencyContact from "../EmergencyContact";
 import SOSButton from "../SOSButton";
 import GpsCheckIn from "../GpsCheckIn";
 import InsuranceAddon from "../../hirer/InsuranceAddon";
 import VideoCallButton from "../VideoCallButton";
+// ── React Icons ────────────────────────────────────────────────────────
+import {
+  FaPhone,
+  FaCommentDots,
+  FaExclamationTriangle,
+  FaMoneyBillWave,
+  FaExclamationCircle,
+  FaSpinner,
+} from "react-icons/fa";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function Spinner() {
-  return <span className={styles.spinner} />;
+  return <FaSpinner className={styles.spinner} />;
 }
 
 function ActionBtn({ label, color, loading, onClick }) {
@@ -94,38 +103,49 @@ export default function BookingDetailSidebar({
   refetch,
   updateStatus,
 }) {
+  // Build profile link based on role
+  const profilePath = isHirer ? `/workers/${other.id}` : `/hirers/${other.id}`;
   return (
     <>
       {/* Party card */}
       <div className={styles.partyCard}>
         <p className={styles.partyLabel}>{isHirer ? "Worker" : "Hirer"}</p>
-        <div className={styles.partyAvatar}>
-          {other?.avatar ? (
-            <img src={other.avatar} alt="" />
-          ) : (
-            <span>
-              {other?.firstName?.[0]}
-              {other?.lastName?.[0]}
-            </span>
-          )}
-        </div>
-        <p className={styles.partyName}>
-          {other?.firstName} {other?.lastName}
-        </p>
+
+        {/* Avatar – clickable to profile */}
+        <Link to={profilePath} className={styles.profileLink}>
+          <div className={styles.partyAvatar}>
+            {other?.avatar ? (
+              <img src={other.avatar} alt="" />
+            ) : (
+              <span>
+                {other?.firstName?.[0]}
+                {other?.lastName?.[0]}
+              </span>
+            )}
+          </div>
+        </Link>
+
+        {/* Name – clickable to profile */}
+        <Link to={profilePath} className={styles.profileNameLink}>
+          <p className={styles.partyName}>
+            {other?.firstName} {other?.lastName}
+          </p>
+        </Link>
+
         {other?.phone && (
           <a href={`tel:${other.phone}`} className={styles.partyPhone}>
-            📱 {other.phone}
+            <FaPhone style={{ marginRight: "6px" }} /> {other.phone}
           </a>
         )}
         <a
           href={`/messages?with=${other?.id}&booking=${booking.id}`}
           className={styles.messageBtn}
         >
-          💬 Send Message
+          <FaCommentDots style={{ marginRight: "6px" }} /> Send Message
         </a>
       </div>
 
-      {/* Actions card */}
+      {/* Actions card – unchanged */}
       <div className={styles.actionsCard}>
         <p className={styles.actionsTitle}>Actions</p>
 
@@ -177,8 +197,8 @@ export default function BookingDetailSidebar({
             {booking.status === "ACCEPTED" &&
               (!payment || payment.status === "PENDING") && (
                 <div className={styles.waitingPayment}>
-                  ⏳ Waiting for hirer to complete payment before you can check
-                  in.
+                  <FaExclamationCircle style={{ marginRight: "6px" }} />
+                  Waiting for hirer to complete payment before you can check in.
                 </div>
               )}
 
@@ -216,7 +236,8 @@ export default function BookingDetailSidebar({
             {emergencyContact?.name && (
               <div className={styles.emergencyCard}>
                 <p className={styles.emergencyTitle}>
-                  🚨 Worker's Emergency Contact
+                  <FaExclamationTriangle style={{ marginRight: "6px" }} />
+                  Worker's Emergency Contact
                 </p>
                 <div className={styles.emergencyRow}>
                   <span className={styles.emergencyLabel}>Name</span>
@@ -230,7 +251,8 @@ export default function BookingDetailSidebar({
                     href={`tel:${emergencyContact.phone}`}
                     className={styles.emergencyPhone}
                   >
-                    📱 {emergencyContact.phone}
+                    <FaPhone style={{ marginRight: "4px" }} />{" "}
+                    {emergencyContact.phone}
                   </a>
                 </div>
                 {emergencyContact.relationship && (
@@ -255,7 +277,8 @@ export default function BookingDetailSidebar({
                 to={`/bookings/${booking.id}/release`}
                 className={`${styles.actionBtn} ${styles.actionBtn_green}`}
               >
-                💸 Release Payment
+                <FaMoneyBillWave style={{ marginRight: "6px" }} /> Release
+                Payment
               </Link>
             )}
             {["PENDING", "ACCEPTED"].includes(booking.status) && (
@@ -289,7 +312,8 @@ export default function BookingDetailSidebar({
               className={`${styles.actionBtn} ${styles.actionBtn_red}`}
               onClick={onShowDispute}
             >
-              ⚠️ Raise a Dispute
+              <FaExclamationTriangle style={{ marginRight: "6px" }} /> Raise a
+              Dispute
             </button>
           )}
 
