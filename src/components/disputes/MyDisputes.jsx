@@ -20,6 +20,7 @@ import {
   FaTrash,
   FaEye,
   FaSpinner,
+  FaTimes,
 } from "react-icons/fa";
 
 const STATUS_META = {
@@ -72,6 +73,25 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
   );
 }
 
+// ── Image Lightbox Modal ──────────────────────────────────────────────
+function ImageLightbox({ imageUrl, onClose }) {
+  if (!imageUrl) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={styles.lightboxContent}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className={styles.lightboxClose} onClick={onClose}>
+          <FaTimes size={24} />
+        </button>
+        <img src={imageUrl} alt="Evidence" className={styles.lightboxImage} />
+      </div>
+    </div>
+  );
+}
+
 export default function MyDisputes() {
   const { user } = useAuthStore();
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
@@ -88,6 +108,9 @@ export default function MyDisputes() {
   // ── Confirmation modal state ──
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelBookingId, setCancelBookingId] = useState(null);
+
+  // ── Lightbox state ──
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -328,16 +351,14 @@ export default function MyDisputes() {
                             <span className={styles.detailLabel}>Evidence</span>
                             <div className={styles.evidenceGallery}>
                               {dispute.disputeEvidence.map((url, idx) => (
-                                <a
+                                <button
                                   key={idx}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noreferrer"
                                   className={styles.evidenceThumb}
+                                  onClick={() => setLightboxImage(url)}
                                 >
                                   <FaImage />
                                   <span>View</span>
-                                </a>
+                                </button>
                               ))}
                             </div>
                           </div>
@@ -531,6 +552,12 @@ export default function MyDisputes() {
         onConfirm={confirmCancel}
         title="Cancel Dispute"
         message="Are you sure you want to cancel this dispute? This action cannot be undone."
+      />
+
+      {/* ── Image Lightbox Modal ── */}
+      <ImageLightbox
+        imageUrl={lightboxImage}
+        onClose={() => setLightboxImage(null)}
       />
     </Layout>
   );
