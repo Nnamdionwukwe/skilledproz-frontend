@@ -14,6 +14,30 @@ import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 
+// ── Helper: format duration exactly like BookingDetailMain ──────────────
+function formatDuration(booking) {
+  if (!booking) return null;
+  const unit = booking.estimatedUnit || "hours";
+  const value = booking.estimatedValue || null;
+  const hours = booking.estimatedHours || null;
+  if (!value && !hours) return null;
+  if (value) {
+    if (unit === "custom") return { main: value, sub: null };
+    const unitLabel = {
+      hours: "hour",
+      days: "day",
+      weeks: "week",
+      months: "month",
+      years: "year",
+    }[unit];
+    const num = parseFloat(value);
+    const label = unitLabel + (num !== 1 ? "s" : "");
+    const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
+    return { main: `${num} ${label}`, sub: eqv };
+  }
+  return hours ? { main: `${hours} hours`, sub: null } : null;
+}
+
 const STATUSES = [
   "ALL",
   "PENDING",
@@ -143,6 +167,9 @@ function BookingCard({ booking, index }) {
   const scheduled = new Date(booking.scheduledAt);
   const isPast = scheduled < new Date();
 
+  // Format duration using the shared helper
+  const dur = formatDuration(booking);
+
   // Helper to format job type
   const jobTypeLabel = (type) => {
     if (!type) return null;
@@ -189,7 +216,7 @@ function BookingCard({ booking, index }) {
         )}
       </p>
 
-      {/* ── Additional details ── */}
+      {/* ── Additional details (updated duration chip) ── */}
       <div className={styles.metaGrid}>
         {booking.jobType && (
           <span className={styles.metaChip}>
@@ -203,10 +230,15 @@ function BookingCard({ booking, index }) {
             {booking.locationType.replace("_", " ").toUpperCase()}
           </span>
         )}
-        {booking.estimatedHours && (
+        {dur && (
           <span className={styles.metaChip}>
             <FaClock className={styles.metaIcon} />
-            {booking.estimatedHours} {booking.estimatedUnit || "h"}
+            {dur.main}
+            {dur.sub && (
+              <span style={{ fontSize: "0.7rem", marginLeft: 4 }}>
+                {dur.sub}
+              </span>
+            )}
           </span>
         )}
         {booking.isNegotiated && booking.negotiatedRate && (
