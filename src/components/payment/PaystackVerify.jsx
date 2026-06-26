@@ -7,12 +7,14 @@ export default function PaystackVerify() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState("verifying"); // verifying | success | failed
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const reference =
       searchParams.get("reference") || searchParams.get("trxref");
     if (!reference) {
       setStatus("failed");
+      setErrorMsg("No payment reference found.");
       return;
     }
 
@@ -22,11 +24,23 @@ export default function PaystackVerify() {
         setStatus("success");
         const bookingId = res.data.data?.bookingId;
         if (bookingId) {
-          setTimeout(() => navigate(`/bookings/${bookingId}`), 2500);
+          // Force a hard navigation to clear any cached state
+          setTimeout(() => {
+            navigate(`/bookings/${bookingId}?payment=success&t=${Date.now()}`);
+          }, 2000);
+        } else {
+          // Fallback: go to bookings list
+          setTimeout(() => navigate("/bookings"), 2000);
         }
       })
-      .catch(() => setStatus("failed"));
-  }, []);
+      .catch((err) => {
+        setStatus("failed");
+        setErrorMsg(
+          err.response?.data?.message ||
+            "Verification failed. Please contact support.",
+        );
+      });
+  }, [searchParams, navigate]);
 
   return (
     <div
@@ -68,10 +82,10 @@ export default function PaystackVerify() {
             <div className={styles.failRing}>
               <span className={styles.failIcon}>✕</span>
             </div>
-            <h2 className={styles.failTitle}>Payment Failed</h2>
+            <h2 className={styles.failTitle}>Payment Verification Failed</h2>
             <p className={styles.failText}>
-              We couldn't verify your payment. Please try again or contact
-              support.
+              {errorMsg ||
+                "We couldn't verify your payment. Please try again or contact support."}
             </p>
             <Link
               to="/bookings"

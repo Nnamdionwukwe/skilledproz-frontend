@@ -142,6 +142,10 @@ export default function BookingDetailMain({
     HYBRID: { icon: <FaMapMarkerAlt />, label: "Hybrid" },
   };
 
+  // ── Determine whether to show map link ──────────────────────────────
+  const showMapLink =
+    booking.latitude && booking.longitude && booking.locationType !== "REMOTE";
+
   return (
     <>
       {/* Title block */}
@@ -283,7 +287,7 @@ export default function BookingDetailMain({
               value={
                 <>
                   {booking.address}
-                  {booking.latitude && booking.longitude && (
+                  {showMapLink && (
                     <a
                       href={mapsUrl(booking.latitude, booking.longitude)}
                       target="_blank"
@@ -528,7 +532,7 @@ export default function BookingDetailMain({
           {isHirer && paymentStatus === "RELEASED" && (
             <button
               className={styles.refundBtn}
-              onClick={handleRefundClick} // ← open modal instead of direct call
+              onClick={handleRefundClick}
               disabled={refundLoading}
             >
               {refundLoading ? "Processing…" : "↩ Request Refund"}

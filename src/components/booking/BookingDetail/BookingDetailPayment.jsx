@@ -262,6 +262,10 @@ export default function BookingDetailPayment({
       referralApplied && booking.currency === "NGN" ? referralAmount : 0;
     const finalTotal = Math.max(0, grossTotal - discount);
 
+    // Determine if payment is pending and booking is accepted
+    const isPaymentPending = payment?.status === "PENDING";
+    const isBookingAccepted = booking?.status === "ACCEPTED";
+
     return (
       <div className={styles.paymentBanner}>
         <div className={styles.paymentBannerHeader}>
@@ -270,17 +274,31 @@ export default function BookingDetailPayment({
           </span>
           <div>
             <p className={styles.paymentBannerTitle}>
-              {payment?.status === "PENDING"
-                ? "Payment Pending"
-                : "Payment Required"}
+              {isPaymentPending ? "Payment Pending" : "Payment Required"}
             </p>
             <p className={styles.paymentBannerDesc}>
-              {payment?.status === "PENDING"
+              {isPaymentPending
                 ? "Your previous payment is still processing. Try a different method below."
                 : "Secure the worker's slot — pay now to confirm."}
             </p>
           </div>
         </div>
+
+        {/* ── Worker waiting message ── */}
+        {isPaymentPending && isBookingAccepted && (
+          <div
+            className={styles.paymentBannerPerk}
+            style={{
+              borderColor: "var(--orange)",
+              background: "var(--orange-dim)",
+              color: "var(--text)",
+            }}
+          >
+            <FaClock style={{ marginRight: "6px" }} />
+            <strong>Worker is waiting for you to complete payment.</strong> Once
+            confirmed, the job will start.
+          </div>
+        )}
 
         {walletBalance > 0 && booking.currency === "NGN" && (
           <>
@@ -332,7 +350,7 @@ export default function BookingDetailPayment({
               <FaChevronUp style={{ marginRight: "6px" }} /> Hide Payment
               Options
             </>
-          ) : payment?.status === "PENDING" ? (
+          ) : isPaymentPending ? (
             <>
               <FaBolt style={{ marginRight: "6px" }} /> Choose a Different
               Method
