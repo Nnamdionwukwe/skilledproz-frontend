@@ -15,11 +15,13 @@ import {
   FaShieldAlt,
   FaLock,
   FaGift,
-  FaUser, // 👈 for Account Name
-  FaTag, // 👈 for Account Number
-  FaFileAlt, // 👈 for Narration / Memo
-  FaGlobe, // 👈 for Network
-  FaWallet, // 👈 for Wallet address (replaces 📋)
+  FaUser,
+  FaTag,
+  FaFileAlt,
+  FaGlobe,
+  FaWallet,
+  FaCopy,
+  FaCheck,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
 
@@ -130,6 +132,26 @@ export default function InitiatePayment() {
 
   // ── Crypto converter state ──
   const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
+
+  // ── Copy state ──
+  const [copied, setCopied] = useState({});
+
+  const handleCopy = async (text, key) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied((prev) => ({ ...prev, [key]: true }));
+      setTimeout(() => setCopied((prev) => ({ ...prev, [key]: false })), 2000);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied((prev) => ({ ...prev, [key]: true }));
+      setTimeout(() => setCopied((prev) => ({ ...prev, [key]: false })), 2000);
+    }
+  };
 
   // ── Load booking and wallet ──────────────────────────────────────────
   useEffect(() => {
@@ -393,6 +415,21 @@ export default function InitiatePayment() {
                     {!isBankTx && convertedCryptoAmount && selectedCryptoToken
                       ? `${convertedCryptoAmount.toFixed(6)} ${selectedCryptoToken}`
                       : formatPrice(p.totalCharged, p.currency)}
+                    {!isBankTx && convertedCryptoAmount && (
+                      <button
+                        className={styles.copyFieldBtn}
+                        onClick={() =>
+                          handleCopy(
+                            `${convertedCryptoAmount.toFixed(6)} ${selectedCryptoToken}`,
+                            "cryptoAmount",
+                          )
+                        }
+                        title="Copy amount"
+                        style={{ marginLeft: "0.5rem" }}
+                      >
+                        {copied.cryptoAmount ? <FaCheck /> : <FaCopy />}
+                      </button>
+                    )}
                   </h2>
                   {referralApplied && referralAmount > 0 && (
                     <p
@@ -419,17 +456,27 @@ export default function InitiatePayment() {
                     [<FaTag />, "Account", bd.accountNumber],
                     [<FaUser />, "Name", bd.accountName],
                     [<FaFileAlt />, "Narration", bd.narration],
-                  ].map(
-                    ([icon, k, v]) =>
-                      v && (
-                        <div key={k} className={styles.metaItem}>
-                          <span className={styles.metaIcon}>{icon}</span>
-                          <div style={{ flex: 1 }}>
-                            <div className={styles.metaRowLabel}>{k}</div>
-                            <div className={styles.metaRowValue}>{v}</div>
+                  ].map(([icon, k, v]) =>
+                    v ? (
+                      <div key={k} className={styles.metaItem}>
+                        <span className={styles.metaIcon}>{icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div className={styles.metaRowLabel}>{k}</div>
+                          <div className={styles.metaRowValue}>
+                            {v}
+                            {k === "Account" && (
+                              <button
+                                className={styles.copyFieldBtn}
+                                onClick={() => handleCopy(v, "bankAcc")}
+                                title="Copy account number"
+                              >
+                                {copied.bankAcc ? <FaCheck /> : <FaCopy />}
+                              </button>
+                            )}
                           </div>
                         </div>
-                      ),
+                      </div>
+                    ) : null,
                   )}
                 </div>
               )}
@@ -441,17 +488,45 @@ export default function InitiatePayment() {
                     [<FaWallet />, "Wallet", cd.wallet],
                     [<FaBitcoin />, "Token", cd.currency],
                     [<FaFileAlt />, "Memo", cd.note],
-                  ].map(
-                    ([icon, k, v]) =>
-                      v && (
-                        <div key={k} className={styles.metaItem}>
-                          <span className={styles.metaIcon}>{icon}</span>
-                          <div style={{ flex: 1 }}>
-                            <div className={styles.metaRowLabel}>{k}</div>
-                            <div className={styles.metaRowValue}>{v}</div>
+                  ].map(([icon, k, v]) =>
+                    v ? (
+                      <div key={k} className={styles.metaItem}>
+                        <span className={styles.metaIcon}>{icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div className={styles.metaRowLabel}>{k}</div>
+                          <div className={styles.metaRowValue}>
+                            {v}
+                            {k === "Wallet" && (
+                              <button
+                                className={styles.copyFieldBtn}
+                                onClick={() => handleCopy(v, "cryptoWallet")}
+                                title="Copy wallet address"
+                              >
+                                {copied.cryptoWallet ? <FaCheck /> : <FaCopy />}
+                              </button>
+                            )}
+                            {k === "Token" && (
+                              <button
+                                className={styles.copyFieldBtn}
+                                onClick={() => handleCopy(v, "cryptoToken")}
+                                title="Copy token symbol"
+                              >
+                                {copied.cryptoToken ? <FaCheck /> : <FaCopy />}
+                              </button>
+                            )}
+                            {k === "Memo" && (
+                              <button
+                                className={styles.copyFieldBtn}
+                                onClick={() => handleCopy(v, "cryptoMemo")}
+                                title="Copy memo"
+                              >
+                                {copied.cryptoMemo ? <FaCheck /> : <FaCopy />}
+                              </button>
+                            )}
                           </div>
                         </div>
-                      ),
+                      </div>
+                    ) : null,
                   )}
                 </div>
               )}

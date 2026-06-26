@@ -1024,3 +1024,28 @@
 .referralToggleOn:not(:disabled):hover {
   background: var(--orange-hover);
 }
+
+/* ── Copy field button ────────────────────────────────────────────── */
+.copyFieldBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 0 0 0.5rem;
+  font-size: 0.85rem;
+  transition: color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+.copyFieldBtn:hover {
+  color: var(--orange);
+}
+.copyFieldBtn svg {
+  font-size: 0.9rem;
+}
+.copyFieldBtn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
