@@ -8,8 +8,6 @@ import {
   FaUniversity,
   FaBitcoin,
   FaEthereum,
-  FaDollarSign,
-  FaMoneyBill,
   FaArrowLeft,
   FaExclamationTriangle,
   FaCheckCircle,
@@ -17,7 +15,13 @@ import {
   FaShieldAlt,
   FaLock,
   FaGift,
+  FaUser, // 👈 for Account Name
+  FaTag, // 👈 for Account Number
+  FaFileAlt, // 👈 for Narration / Memo
+  FaGlobe, // 👈 for Network
+  FaWallet, // 👈 for Wallet address (replaces 📋)
 } from "react-icons/fa";
+import CryptoRateConverter from "./CryptoRateConverter";
 
 const HIRER_FEE_RATE = 0.05;
 
@@ -78,13 +82,6 @@ function calcPricing(booking, referralDiscount = 0) {
   };
 }
 
-const CRYPTO_TOKENS = [
-  { id: "USDC", label: "USDC", icon: <FaDollarSign />, network: "BSC (BEP20)" },
-  { id: "USDT", label: "USDT", icon: <FaMoneyBill />, network: "Tron (TRC20)" },
-  { id: "BTC", label: "Bitcoin", icon: <FaBitcoin />, network: "Bitcoin" },
-  { id: "ETH", label: "Ethereum", icon: <FaEthereum />, network: "Ethereum" },
-];
-
 const METHODS = [
   {
     id: "card",
@@ -116,7 +113,7 @@ export default function InitiatePayment() {
   const [error, setError] = useState("");
   const [method, setMethod] = useState("card");
   const [manualData, setManualData] = useState(null);
-  const [cryptoToken, setCryptoToken] = useState("USDC");
+  const [selectedCryptoToken, setSelectedCryptoToken] = useState("USDC");
   const [confirmStep, setConfirmStep] = useState(null);
   const [confirmForm, setConfirmForm] = useState({});
   const [confirming, setConfirming] = useState(false);
@@ -130,6 +127,9 @@ export default function InitiatePayment() {
   const [referralPercent, setReferralPercent] = useState(0);
   const [referralAmount, setReferralAmount] = useState(0);
   const [referralApplied, setReferralApplied] = useState(false);
+
+  // ── Crypto converter state ──
+  const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
 
   // ── Load booking and wallet ──────────────────────────────────────────
   useEffect(() => {
@@ -247,7 +247,6 @@ export default function InitiatePayment() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // Navigate to the manual success page
       navigate("/payments/manual-success", {
         state: { method: "bank", bookingId },
         replace: true,
@@ -265,7 +264,7 @@ export default function InitiatePayment() {
     setError("");
     try {
       const res = await api.post(`/payments/crypto/${bookingId}`, {
-        cryptoCurrency: cryptoToken,
+        cryptoCurrency: selectedCryptoToken,
         amount: p.totalCharged,
         currency: p.currency,
         referralAmount: referralApplied ? referralAmount : 0,
@@ -290,7 +289,7 @@ export default function InitiatePayment() {
     try {
       const fd = new FormData();
       fd.append("txHash", confirmForm.txHash);
-      fd.append("cryptoCurrency", cryptoToken);
+      fd.append("cryptoCurrency", selectedCryptoToken);
       if (confirmForm.cryptoAmount)
         fd.append("cryptoAmount", confirmForm.cryptoAmount);
       if (cryptoReceiptFile) fd.append("proof", cryptoReceiptFile);
@@ -299,7 +298,6 @@ export default function InitiatePayment() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // Navigate to the manual success page
       navigate("/payments/manual-success", {
         state: { method: "crypto", bookingId },
         replace: true,
@@ -376,7 +374,7 @@ export default function InitiatePayment() {
                   </>
                 ) : (
                   <>
-                    <FaBitcoin /> {cryptoToken} Crypto
+                    <FaBitcoin /> {selectedCryptoToken} Crypto
                   </>
                 )}
               </div>
@@ -392,7 +390,9 @@ export default function InitiatePayment() {
                 <div>
                   <p className={styles.summaryLabel}>Send exactly</p>
                   <h2 className={styles.summaryTitle}>
-                    {formatPrice(p.totalCharged, p.currency)}
+                    {!isBankTx && convertedCryptoAmount && selectedCryptoToken
+                      ? `${convertedCryptoAmount.toFixed(6)} ${selectedCryptoToken}`
+                      : formatPrice(p.totalCharged, p.currency)}
                   </h2>
                   {referralApplied && referralAmount > 0 && (
                     <p
@@ -415,10 +415,10 @@ export default function InitiatePayment() {
               {isBankTx && bd && (
                 <div className={styles.summaryMeta}>
                   {[
-                    ["🏦", "Bank", bd.bankName],
-                    ["#", "Account", bd.accountNumber],
-                    ["👤", "Name", bd.accountName],
-                    ["📝", "Narration", bd.narration],
+                    [<FaUniversity />, "Bank", bd.bankName],
+                    [<FaTag />, "Account", bd.accountNumber],
+                    [<FaUser />, "Name", bd.accountName],
+                    [<FaFileAlt />, "Narration", bd.narration],
                   ].map(
                     ([icon, k, v]) =>
                       v && (
@@ -437,10 +437,10 @@ export default function InitiatePayment() {
               {!isBankTx && cd && (
                 <div className={styles.summaryMeta}>
                   {[
-                    ["🌐", "Network", cd.network],
-                    ["📋", "Wallet", cd.wallet],
-                    ["₿", "Token", cd.currency],
-                    ["📝", "Memo", cd.note],
+                    [<FaGlobe />, "Network", cd.network],
+                    [<FaWallet />, "Wallet", cd.wallet],
+                    [<FaBitcoin />, "Token", cd.currency],
+                    [<FaFileAlt />, "Memo", cd.note],
                   ].map(
                     ([icon, k, v]) =>
                       v && (
@@ -547,7 +547,7 @@ export default function InitiatePayment() {
                       className={styles.manualInput}
                       type="number"
                       step="0.0001"
-                      placeholder={`Amount in ${cryptoToken}`}
+                      placeholder={`Amount in ${selectedCryptoToken}`}
                       value={confirmForm.cryptoAmount || ""}
                       onChange={(e) =>
                         setConfirmForm((f) => ({
@@ -985,20 +985,15 @@ export default function InitiatePayment() {
             </div>
 
             {method === "crypto" && (
-              <div className={styles.cryptoTokens}>
-                {CRYPTO_TOKENS.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`${styles.tokenBtn} ${cryptoToken === t.id ? styles.tokenBtnActive : ""}`}
-                    onClick={() => setCryptoToken(t.id)}
-                  >
-                    <span className={styles.tokenBtnIcon}>{t.icon}</span>
-                    <span>{t.label}</span>
-                    <span className={styles.tokenBtnNetwork}>{t.network}</span>
-                  </button>
-                ))}
-              </div>
+              <CryptoRateConverter
+                fiatAmount={p.totalCharged}
+                fiatCurrency={p.currency || "NGN"}
+                selectedToken={selectedCryptoToken}
+                onAmountChange={(data) => {
+                  setSelectedCryptoToken(data.token);
+                  setConvertedCryptoAmount(data.amount);
+                }}
+              />
             )}
 
             {method === "card" && (
@@ -1037,7 +1032,7 @@ export default function InitiatePayment() {
               </>
             ) : (
               <>
-                <FaBitcoin /> Get {cryptoToken} Wallet —{" "}
+                <FaBitcoin /> Get {selectedCryptoToken} Wallet —{" "}
                 {formatPrice(p.totalCharged, p.currency)}
               </>
             )}

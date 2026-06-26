@@ -1,0 +1,237 @@
+.converter {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin: 1rem 0;
+  animation: fadeUp 0.3s ease;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.refreshBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 1rem;
+  transition: color 0.15s;
+}
+.refreshBtn:hover:not(:disabled) {
+  color: var(--orange);
+}
+.refreshBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.amountDisplay {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--orange-glow);
+}
+.fiatLabel {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.fiatAmount {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--orange);
+}
+
+.tokenGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.tokenCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  text-align: left;
+}
+.tokenCard:hover:not(:disabled) {
+  border-color: var(--orange);
+}
+.tokenCard.selected {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+}
+.tokenCard.unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tokenIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.tokenInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tokenLabel {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.tokenRate {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+.tokenAmount {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.tokenCard.selected .tokenAmount {
+  color: var(--orange);
+}
+.checkmark {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.resultBox {
+  background: var(--green-dim);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.resultBox p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.resultBox strong {
+  color: var(--green);
+}
+.note {
+  font-size: 0.7rem !important;
+  color: var(--text-muted) !important;
+  margin-top: 4px !important;
+}
+
+.loading,
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  color: var(--text-dim);
+}
+.spinner {
+  font-size: 2rem;
+  animation: spin 0.8s linear infinite;
+  color: var(--orange);
+}
+.errorIcon {
+  font-size: 1.5rem;
+  color: var(--red);
+}
+.retryBtn {
+  background: var(--orange);
+  border: none;
+  padding: 0.4rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #000;
+  cursor: pointer;
+}
+.retryBtn:hover {
+  filter: brightness(1.1);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.resultRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.resultText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  flex: 1;
+}
+.copyBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+.copyBtn:hover:not(.copyBtnCopied) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.copyBtnCopied {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}

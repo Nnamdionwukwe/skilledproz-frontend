@@ -3,10 +3,6 @@ import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import styles from "./PaymentOptions.module.css";
 import {
-  FaDollarSign,
-  FaMoneyBill,
-  FaBitcoin,
-  FaEthereum,
   FaCheckCircle,
   FaUniversity,
   FaExclamationTriangle,
@@ -15,7 +11,10 @@ import {
   FaGift,
   FaMoneyBillWave,
   FaSpinner,
+  FaBitcoin,
+  FaEthereum,
 } from "react-icons/fa";
+import CryptoRateConverter from "./CryptoRateConverter";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -24,13 +23,6 @@ function formatPrice(amount, currency = "NGN") {
     maximumFractionDigits: 2,
   })}`;
 }
-
-const CRYPTO_OPTIONS = [
-  { value: "USDC", label: "USDC", network: "Ethereum", icon: FaDollarSign },
-  { value: "USDT", label: "USDT", network: "Tron (TRC20)", icon: FaMoneyBill },
-  { value: "BTC", label: "Bitcoin", network: "Bitcoin", icon: FaBitcoin },
-  { value: "ETH", label: "Ethereum", network: "Ethereum", icon: FaEthereum },
-];
 
 function calcPricing(booking, referralAmount = 0, applyReferral = false) {
   const rate = booking.agreedRate || 0;
@@ -107,6 +99,8 @@ export default function PaymentOptions({
 
   const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
+
+  const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
 
   const p = calcPricing(booking, referralAmount, referralApplied);
 
@@ -210,8 +204,6 @@ export default function PaymentOptions({
       setLoading(false);
     }
   }
-
-  // ── Removed the inline success screen – now redirects to the dedicated page ──
 
   return (
     <div className={styles.wrap}>
@@ -327,26 +319,19 @@ export default function PaymentOptions({
                 Pay with cryptocurrency. Send to our wallet and submit your
                 transaction hash.
               </p>
-              <div className={styles.cryptoGrid}>
-                {CRYPTO_OPTIONS.map((c) => {
-                  const Icon = c.icon;
-                  return (
-                    <button
-                      key={c.value}
-                      className={`${styles.cryptoChip} ${cryptoAsset === c.value ? styles.cryptoChipActive : ""}`}
-                      onClick={() => setCryptoAsset(c.value)}
-                    >
-                      <span className={styles.cryptoChipIcon}>
-                        <Icon size={18} />
-                      </span>
-                      <span className={styles.cryptoChipLabel}>{c.label}</span>
-                      <span className={styles.cryptoChipNetwork}>
-                        {c.network}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+
+              {/* ── Live crypto rate converter ── */}
+              <CryptoRateConverter
+                fiatAmount={p.totalCharged}
+                fiatCurrency={p.currency || "NGN"}
+                selectedToken={cryptoAsset}
+                onAmountChange={(data) => {
+                  setCryptoAsset(data.token);
+                  setConvertedCryptoAmount(data.amount);
+                }}
+              />
+
+              {/* ── Pay button ── */}
               <button
                 className={styles.payBtn}
                 onClick={handleCryptoInitiate}
@@ -483,7 +468,11 @@ export default function PaymentOptions({
             />
             <BankRow
               label="Amount"
-              value={formatPrice(p.totalCharged, p.currency)}
+              value={
+                convertedCryptoAmount
+                  ? `${convertedCryptoAmount.toFixed(6)} ${cryptoAsset}`
+                  : formatPrice(p.totalCharged, p.currency)
+              }
               accent
             />
             <BankRow label="Memo" value={cryptoDetails.note} mono />
