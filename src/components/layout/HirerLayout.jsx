@@ -3,27 +3,57 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
+import {
+  FaHome,
+  FaBook,
+  FaCreditCard,
+  FaPlus,
+  FaClipboardList,
+  FaGavel,
+  FaNewspaper,
+  FaPenFancy,
+  FaBookmark,
+  FaSearch,
+  FaTools,
+  FaComments,
+  FaStar,
+  FaUserFriends,
+  FaFlag,
+  FaBullhorn,
+  FaBell,
+  FaShieldAlt,
+  FaGem,
+  FaRocket,
+  FaCog,
+  FaSignOutAlt,
+  FaBars,
+  FaUserCircle,
+} from "react-icons/fa";
 
 const NAV = [
   {
     group: "Overview",
     items: [
-      { label: "Dashboard", path: "/dashboard/hirer", icon: "◈" },
-      { label: "My Bookings", path: "/bookings", icon: "📋" },
+      { label: "Dashboard", path: "/dashboard/hirer", icon: <FaHome /> },
+      { label: "My Bookings", path: "/bookings", icon: <FaBook /> },
       {
         label: "Payment History",
         path: "/dashboard/hirer/payment-history",
-        icon: "�",
+        icon: <FaCreditCard />,
       },
-      { label: "Post a Job", path: "/dashboard/hirer/post-job", icon: "➕" },
+      {
+        label: "Post a Job",
+        path: "/dashboard/hirer/post-job",
+        icon: <FaPlus />,
+      },
       {
         label: "Jobs Management",
         path: "/dashboard/hirer/jobs-management",
-        icon: "📋",
+        icon: <FaClipboardList />,
       },
-      { label: "Disputes", path: "/disputes", icon: "⚖️" },
-      { label: "Community Feed", path: "/feed", icon: "📰" },
-      { label: "My Posts", path: "/my-posts", icon: "✍️" },
+      { label: "Disputes", path: "/disputes", icon: <FaGavel /> },
+      { label: "Community Feed", path: "/feed", icon: <FaNewspaper /> },
+      { label: "My Posts", path: "/my-posts", icon: <FaPenFancy /> },
     ],
   },
   {
@@ -32,16 +62,15 @@ const NAV = [
       {
         label: "Saved Workers",
         path: "/dashboard/hirer/saved-workers",
-        icon: "🔖",
+        icon: <FaBookmark />,
       },
-
       {
         label: "Browse Workers",
         path: "/search",
-        icon: "🔍",
+        icon: <FaSearch />,
       },
-      { label: "Browse By Categories", path: "/categories", icon: "🔧" },
-      { label: "Messages", path: "/messages", icon: "💬" },
+      { label: "Browse By Categories", path: "/categories", icon: <FaTools /> },
+      { label: "Messages", path: "/messages", icon: <FaComments /> },
     ],
   },
   {
@@ -50,12 +79,12 @@ const NAV = [
       {
         label: "Reviews Received",
         path: "/dashboard/hirer/reviews/received",
-        icon: "⭐",
+        icon: <FaStar />,
       },
       {
         label: "Reviews Given",
         path: "/dashboard/hirer/reviews/given",
-        icon: "✍️",
+        icon: <FaPenFancy />,
       },
     ],
   },
@@ -65,7 +94,7 @@ const NAV = [
       {
         label: "Referals",
         path: "/referrals",
-        icon: "👥",
+        icon: <FaUserFriends />,
       },
     ],
   },
@@ -75,7 +104,7 @@ const NAV = [
       {
         label: "Reports",
         path: "/my-reports",
-        icon: "🚩",
+        icon: <FaFlag />,
       },
     ],
   },
@@ -85,24 +114,23 @@ const NAV = [
       {
         label: "Campaigns",
         path: "/campaign",
-        icon: "📢",
+        icon: <FaBullhorn />,
       },
     ],
   },
   {
     group: "Account",
     items: [
-      // { label: "Profile", path: "/dashboard/hirer/profile", icon: "👤" },
       {
         label: "Notifications",
         path: "/dashboard/hirer/notifications",
-        icon: "🔔",
+        icon: <FaBell />,
         badge: "unread",
       },
       {
         label: "Verification",
         path: "/dashboard/hirer/verification",
-        icon: "🛡️",
+        icon: <FaShieldAlt />,
       },
     ],
   },
@@ -112,10 +140,14 @@ const NAV = [
       {
         label: "Subscriptions",
         path: "/dashboard/hirer/subscription",
-        icon: "💎",
+        icon: <FaGem />,
       },
-      { label: "Boost Listing", path: "/dashboard/hirer/featured", icon: "🚀" },
-      { label: "Settings", path: "/settings", icon: "⚙️" },
+      {
+        label: "Boost Listing",
+        path: "/dashboard/hirer/featured",
+        icon: <FaRocket />,
+      },
+      { label: "Settings", path: "/settings", icon: <FaCog /> },
     ],
   },
 ];
@@ -245,7 +277,7 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
                 }}
               />
             ) : (
-              initials
+              <FaUserCircle size={24} />
             )}
           </div>
           <div>
@@ -288,7 +320,9 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
               navigate("/login");
             }}
           >
-            <span className={styles.navIcon}>🚪</span>
+            <span className={styles.navIcon}>
+              <FaSignOutAlt size={16} />
+            </span>
             Log out
           </button>
         </div>
@@ -302,7 +336,7 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
               className={styles.menuBtn}
               onClick={() => setSidebarOpen((v) => !v)}
             >
-              ☰
+              <FaBars size={18} />
             </button>
             <div className={styles.headerTitleWrap}>
               <span className={styles.headerTitle}>{pageInfo.title}</span>
@@ -316,7 +350,7 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
               className={styles.headerIconBtn}
               style={{ position: "relative" }}
             >
-              🔔
+              <FaBell size={18} />
               {unreadCount > 0 && (
                 <span className={styles.bellBadge}>
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -337,7 +371,7 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
                     }}
                   />
                 ) : (
-                  initials
+                  <FaUserCircle size={20} />
                 )}
               </div>
             </Link>
