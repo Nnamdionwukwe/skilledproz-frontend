@@ -22,6 +22,9 @@ import {
   FaWallet,
   FaCopy,
   FaCheck,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaClipboardList,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
 
@@ -124,16 +127,13 @@ export default function InitiatePayment() {
   const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
 
-  // ── Referral wallet state ──
   const [walletBalance, setWalletBalance] = useState(0);
   const [referralPercent, setReferralPercent] = useState(0);
   const [referralAmount, setReferralAmount] = useState(0);
   const [referralApplied, setReferralApplied] = useState(false);
 
-  // ── Crypto converter state ──
   const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
 
-  // ── Copy state ──
   const [copied, setCopied] = useState({});
 
   const handleCopy = async (text, key) => {
@@ -153,7 +153,6 @@ export default function InitiatePayment() {
     }
   };
 
-  // ── Load booking and wallet ──────────────────────────────────────────
   useEffect(() => {
     api
       .get(`/bookings/${bookingId}`)
@@ -177,7 +176,6 @@ export default function InitiatePayment() {
     }
   }, [booking]);
 
-  // ── Auto-poll PENDING status ──
   useEffect(() => {
     if (bookingStatus !== "PENDING") return;
     const timer = setInterval(() => {
@@ -193,10 +191,8 @@ export default function InitiatePayment() {
     return () => clearInterval(timer);
   }, [bookingId, bookingStatus]);
 
-  // ── Compute pricing with referral amount ─────────────────────────────
   const p = calcPricing(booking, referralApplied ? referralAmount : 0);
 
-  // ── Handle percentage change – auto‑apply on positive amount ────────
   const handlePercentChange = (pct) => {
     const subtotal = p.subtotal || 0;
     const maxDiscount = Math.min(subtotal, walletBalance);
@@ -208,13 +204,11 @@ export default function InitiatePayment() {
     setReferralApplied(final > 0);
   };
 
-  // ── Manual toggle ──────────────────────────────────────────────────
   const handleReferralToggle = () => {
     if (referralAmount === 0) return;
     setReferralApplied((prev) => !prev);
   };
 
-  // ── CARD PAYMENT ──────────────────────────────────────────────────────
   async function handleCardPay() {
     setPaying(true);
     setError("");
@@ -235,7 +229,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── BANK TRANSFER ── initiate ──────────────────────────────────────
   async function handleBankTransfer() {
     setPaying(true);
     setError("");
@@ -254,7 +247,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── BANK TRANSFER ── confirm ──────────────────────────────────────
   async function confirmBankTransfer() {
     setConfirming(true);
     setError("");
@@ -280,7 +272,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── CRYPTO ── initiate ──────────────────────────────────────────────
   async function handleCrypto() {
     setPaying(true);
     setError("");
@@ -300,7 +291,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── CRYPTO ── confirm ──────────────────────────────────────────────
   async function confirmCrypto() {
     if (!confirmForm.txHash) {
       setError("Transaction hash is required.");
@@ -331,7 +321,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── Primary button handler ──────────────────────────────────────────
   function handlePrimary() {
     if (method === "card") return handleCardPay();
     if (method === "bank_transfer") return handleBankTransfer();
@@ -347,7 +336,6 @@ export default function InitiatePayment() {
     setError("");
   }
 
-  // ── Loading / error ──
   if (loading)
     return (
       <HirerLayout>
@@ -372,7 +360,6 @@ export default function InitiatePayment() {
       </HirerLayout>
     );
 
-  // ── Manual confirmation step ──
   if (confirmStep && manualData) {
     const isBankTx = confirmStep === "bank_transfer";
     const bd = manualData.bankDetails;
@@ -698,7 +685,6 @@ export default function InitiatePayment() {
     );
   }
 
-  // ── PENDING state ──
   if (bookingStatus === "PENDING") {
     const prev = p;
 
@@ -858,7 +844,6 @@ export default function InitiatePayment() {
     );
   }
 
-  // ── MAIN PAYMENT PAGE ──
   return (
     <HirerLayout>
       <div className={styles.page}>
@@ -875,7 +860,9 @@ export default function InitiatePayment() {
           <div className={styles.summaryCard}>
             <div className={styles.summaryTop}>
               <div className={styles.summaryIconWrap}>
-                <span className={styles.summaryIcon}>📋</span>
+                <span className={styles.summaryIcon}>
+                  <FaClipboardList />
+                </span>
               </div>
               <div>
                 <p className={styles.summaryLabel}>You're paying for</p>
@@ -887,13 +874,17 @@ export default function InitiatePayment() {
             </div>
             <div className={styles.summaryMeta}>
               <div className={styles.metaItem}>
-                <span className={styles.metaIcon}>👷</span>
+                <span className={styles.metaIcon}>
+                  <FaUser />
+                </span>
                 <span className={styles.metaText}>
                   {booking?.worker?.firstName} {booking?.worker?.lastName}
                 </span>
               </div>
               <div className={styles.metaItem}>
-                <span className={styles.metaIcon}>📅</span>
+                <span className={styles.metaIcon}>
+                  <FaCalendarAlt />
+                </span>
                 <span className={styles.metaText}>
                   {new Date(booking?.scheduledAt).toLocaleDateString("en-GB", {
                     weekday: "short",
@@ -905,14 +896,15 @@ export default function InitiatePayment() {
               </div>
               {booking?.address && (
                 <div className={styles.metaItem}>
-                  <span className={styles.metaIcon}>📍</span>
+                  <span className={styles.metaIcon}>
+                    <FaMapMarkerAlt />
+                  </span>
                   <span className={styles.metaText}>{booking.address}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── REFERRAL BONUS SECTION ── */}
           {walletBalance > 0 && booking?.currency === "NGN" && (
             <div className={styles.referralSection}>
               <div className={styles.referralHeader}>
@@ -950,7 +942,6 @@ export default function InitiatePayment() {
             </div>
           )}
 
-          {/* ── PAYMENT BREAKDOWN ── */}
           <div className={styles.breakdownCard}>
             <p className={styles.breakdownTitle}>Payment Breakdown</p>
             <div className={styles.breakdownRows}>
@@ -1036,7 +1027,6 @@ export default function InitiatePayment() {
             </div>
           </div>
 
-          {/* ── PAYMENT METHOD ── */}
           <div className={styles.breakdownCard}>
             <p className={styles.breakdownTitle}>Payment Method</p>
             <div className={styles.methodGrid}>
