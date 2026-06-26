@@ -171,7 +171,7 @@ export default function InitiatePayment() {
     return () => clearInterval(timer);
   }, [bookingId, bookingStatus]);
 
-  // ── Compute pricing with referral amount (used everywhere) ──────────
+  // ── Compute pricing with referral amount ─────────────────────────────
   const p = calcPricing(booking, referralApplied ? referralAmount : 0);
 
   // ── Handle percentage change – auto‑apply on positive amount ────────
@@ -192,7 +192,7 @@ export default function InitiatePayment() {
     setReferralApplied((prev) => !prev);
   };
 
-  // ── Payment initiation functions ──────────────────────────────────────
+  // ── CARD PAYMENT ──────────────────────────────────────────────────────
   async function handleCardPay() {
     setPaying(true);
     setError("");
@@ -213,6 +213,7 @@ export default function InitiatePayment() {
     }
   }
 
+  // ── BANK TRANSFER ── initiate ──────────────────────────────────────
   async function handleBankTransfer() {
     setPaying(true);
     setError("");
@@ -231,6 +232,34 @@ export default function InitiatePayment() {
     }
   }
 
+  // ── BANK TRANSFER ── confirm ──────────────────────────────────────
+  async function confirmBankTransfer() {
+    setConfirming(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      if (confirmForm.senderName)
+        fd.append("senderName", confirmForm.senderName);
+      if (confirmForm.bankName) fd.append("bankName", confirmForm.bankName);
+      if (bankReceiptFile) fd.append("proof", bankReceiptFile);
+
+      await api.patch(`/payments/bank-transfer/${bookingId}/confirm`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // Navigate to the manual success page
+      navigate("/payments/manual-success", {
+        state: { method: "bank", bookingId },
+        replace: true,
+      });
+    } catch (e) {
+      setError(e.response?.data?.message || "Confirmation failed.");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  // ── CRYPTO ── initiate ──────────────────────────────────────────────
   async function handleCrypto() {
     setPaying(true);
     setError("");
@@ -250,34 +279,7 @@ export default function InitiatePayment() {
     }
   }
 
-  function handlePrimary() {
-    if (method === "card") return handleCardPay();
-    if (method === "bank_transfer") return handleBankTransfer();
-    if (method === "crypto") return handleCrypto();
-  }
-
-  // ── Confirm manual payments ──────────────────────────────────────────
-  async function confirmBankTransfer() {
-    setConfirming(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      if (confirmForm.senderName)
-        fd.append("senderName", confirmForm.senderName);
-      if (confirmForm.bankName) fd.append("bankName", confirmForm.bankName);
-      if (bankReceiptFile) fd.append("proof", bankReceiptFile);
-
-      await api.patch(`/payments/bank-transfer/${bookingId}/confirm`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      navigate(`/bookings/${bookingId}?payment=bank_submitted`);
-    } catch (e) {
-      setError(e.response?.data?.message || "Confirmation failed.");
-    } finally {
-      setConfirming(false);
-    }
-  }
-
+  // ── CRYPTO ── confirm ──────────────────────────────────────────────
   async function confirmCrypto() {
     if (!confirmForm.txHash) {
       setError("Transaction hash is required.");
@@ -296,12 +298,24 @@ export default function InitiatePayment() {
       await api.patch(`/payments/crypto/${bookingId}/confirm`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      navigate(`/bookings/${bookingId}?payment=crypto_submitted`);
+
+      // Navigate to the manual success page
+      navigate("/payments/manual-success", {
+        state: { method: "crypto", bookingId },
+        replace: true,
+      });
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed.");
     } finally {
       setConfirming(false);
     }
+  }
+
+  // ── Primary button handler ──────────────────────────────────────────
+  function handlePrimary() {
+    if (method === "card") return handleCardPay();
+    if (method === "bank_transfer") return handleBankTransfer();
+    if (method === "crypto") return handleCrypto();
   }
 
   function resetToMethodSelect() {
@@ -609,10 +623,9 @@ export default function InitiatePayment() {
     );
   }
 
-  // ── PENDING state (now uses referral discount) ──────────────────────
+  // ── PENDING state ──
   if (bookingStatus === "PENDING") {
-    // Use the same pricing with referral discount
-    const prev = p; // p already includes referral
+    const prev = p;
 
     return (
       <HirerLayout>
@@ -824,7 +837,7 @@ export default function InitiatePayment() {
             </div>
           </div>
 
-          {/* ── REFERRAL BONUS SECTION (slider) ── */}
+          {/* ── REFERRAL BONUS SECTION ── */}
           {walletBalance > 0 && booking?.currency === "NGN" && (
             <div className={styles.referralSection}>
               <div className={styles.referralHeader}>

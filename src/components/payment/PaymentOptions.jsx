@@ -32,7 +32,6 @@ const CRYPTO_OPTIONS = [
   { value: "ETH", label: "Ethereum", network: "Ethereum", icon: FaEthereum },
 ];
 
-// ── Pricing helper with direct referral amount ──────────────────────
 function calcPricing(booking, referralAmount = 0, applyReferral = false) {
   const rate = booking.agreedRate || 0;
   const unit = booking.estimatedUnit || "hours";
@@ -145,7 +144,14 @@ export default function PaymentOptions({
       await api.patch(`/payments/bank-transfer/${booking.id}/confirm`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setStep("confirm");
+
+      // 🔁 Navigate to the dedicated success page
+      navigate("/payments/manual-success", {
+        state: { method: "bank", bookingId: booking.id },
+        replace: true,
+      });
+
+      // Still call onSuccess so parent can update its state if needed
       onSuccess?.();
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed");
@@ -189,7 +195,13 @@ export default function PaymentOptions({
       await api.patch(`/payments/crypto/${booking.id}/confirm`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setStep("confirm");
+
+      // 🔁 Navigate to the dedicated success page
+      navigate("/payments/manual-success", {
+        state: { method: "crypto", bookingId: booking.id },
+        replace: true,
+      });
+
       onSuccess?.();
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed");
@@ -198,27 +210,7 @@ export default function PaymentOptions({
     }
   }
 
-  if (step === "confirm") {
-    return (
-      <div className={styles.successWrap}>
-        <div className={styles.successRing}>
-          <FaCheckCircle size={40} />
-        </div>
-        <h3 className={styles.successTitle}>Payment Submitted</h3>
-        <p className={styles.successText}>
-          {tab === "bank"
-            ? "Bank transfer details submitted. We'll confirm within 1–2 hours."
-            : "Crypto transaction submitted. We'll verify on-chain within 30 minutes."}
-        </p>
-        <button
-          className={styles.successBtn}
-          onClick={() => navigate("/bookings")}
-        >
-          Back to Bookings
-        </button>
-      </div>
-    );
-  }
+  // ── Removed the inline success screen – now redirects to the dedicated page ──
 
   return (
     <div className={styles.wrap}>

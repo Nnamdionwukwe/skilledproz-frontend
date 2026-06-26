@@ -111,6 +111,7 @@ import ExternalJobDetail from "./pages/worker/ExternalJobBoard/ExternalJobDetail
 import AdminExternalJobStats from "./pages/admin/AdminExternalJobStats.jsx";
 import WorkerSavedJobs from "./pages/worker/WorkerSavedJobs/WorkerSavedJobs.jsx";
 import CompletedJobs from "./pages/worker/CompletedJobs/CompletedJobs.jsx";
+import ManualPaymentSuccess from "./components/payment/ManualPaymentSuccess.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -913,6 +914,15 @@ export default function App() {
           }
         />
         <Route path="/payments/verify/paystack" element={<PaystackVerify />} />
+
+        <Route
+          path="/payments/manual-success"
+          element={
+            <RequireAuth>
+              <ManualPaymentSuccess />
+            </RequireAuth>
+          }
+        />
 
         {/* ── Jobs (both roles can view, hirer creates) ── */}
         <Route
