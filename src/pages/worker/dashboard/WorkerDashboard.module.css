@@ -7,14 +7,12 @@
   overflow-x: hidden;
 }
 
-/* ── Stats row ── */
 .statsRow {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 
-/* ── Earnings hero card (spans 2 cols) ── */
 .earningsCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -80,7 +78,6 @@
   font-weight: 700;
 }
 
-/* Pending escrow block */
 .earningsPending {
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
@@ -116,14 +113,12 @@
   margin-top: 3px;
 }
 
-/* ── 2-column section ── */
 .row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
 }
 
-/* ── Booking row item ── */
 .bookingItem {
   display: flex;
   align-items: center;
@@ -132,7 +127,6 @@
   border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
-
 .bookingItem:last-child {
   border-bottom: none;
   padding-bottom: 0;
@@ -151,6 +145,7 @@
   font-weight: 700;
   color: var(--text-dim);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .bookingInfo {
@@ -187,12 +182,10 @@
   color: var(--green);
 }
 
-/* ── Review item ── */
 .reviewItem {
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--border);
 }
-
 .reviewItem:last-child {
   border-bottom: none;
   padding-bottom: 0;
@@ -219,7 +212,6 @@
   line-height: 1.55;
 }
 
-/* ── Profile completion ── */
 .completionCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -268,13 +260,11 @@
   color: var(--text-muted);
   margin-top: 0.625rem;
 }
-
 .completionHint a {
   color: var(--orange);
   font-weight: 600;
 }
 
-/* ── Upcoming jobs ── */
 .upcomingItem {
   display: flex;
   align-items: center;
@@ -283,7 +273,6 @@
   border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
-
 .upcomingItem:last-child {
   border-bottom: none;
   padding-bottom: 0;
@@ -337,7 +326,6 @@
   color: var(--text-muted);
 }
 
-/* ── Monthly bar chart ── */
 .barChart {
   display: flex;
   align-items: flex-end;
@@ -365,7 +353,6 @@
   transition: background 0.15s;
   cursor: pointer;
 }
-
 .bar:hover {
   background: var(--orange);
 }
@@ -379,9 +366,7 @@
   letter-spacing: 0.04em;
 }
 
-/* ── Responsive ── */
-
-/* Tablets & small laptops */
+/* ── Responsive breakpoints ── */
 @media (max-width: 1100px) {
   .statsRow {
     grid-template-columns: repeat(2, 1fr);
@@ -391,7 +376,6 @@
   }
 }
 
-/* Mobile landscape & small tablets */
 @media (max-width: 768px) {
   .row2 {
     grid-template-columns: 1fr;
@@ -402,18 +386,18 @@
   }
 }
 
-/* Large phones */
 @media (max-width: 500px) {
   .statsRow {
     grid-template-columns: 1fr 1fr;
   }
   .earningsCard {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     grid-column: span 2;
   }
   .earningsPending {
     width: 100%;
+    min-width: unset;
   }
   .earningsValue {
     font-size: 1.75rem;
@@ -421,41 +405,19 @@
   .pendingValue {
     font-size: 1rem;
   }
-  .barChart {
-    height: 80px;
-    gap: 4px;
-  }
-  .barWrap {
-    gap: 3px;
-  }
-  .bar {
-    min-height: 2px;
-  }
-  .barLabel {
-    font-size: 0.5rem;
-  }
 }
 
-/* Very small phones (<= 400px) */
 @media (max-width: 400px) {
   .statsRow {
     grid-template-columns: 1fr;
   }
   .earningsCard {
     grid-column: span 1;
-  }
-  .earningsCard {
     flex-direction: column;
     align-items: stretch;
   }
   .earningsPending {
     min-width: unset;
-  }
-  .earningsValue {
-    font-size: 1.5rem;
-  }
-  .pendingValue {
-    font-size: 0.9rem;
   }
   .barChart {
     height: 60px;
@@ -468,30 +430,9 @@
   .ui.card {
     padding: 1rem;
   }
-  .bookingItem,
-  .upcomingItem {
-    gap: 0.625rem;
-    padding: 0.625rem 0;
-  }
-  .bookingAvatar,
-  .reviewAvatar {
-    width: 28px;
-    height: 28px;
-  }
-  .bookingTitle,
-  .upcomingTitle {
-    font-size: 0.8rem;
-  }
-  .bookingMeta,
-  .upcomingMeta {
-    font-size: 0.625rem;
-  }
-  .reviewText {
-    font-size: 0.75rem;
-  }
 }
 
-/* Utility – avatar images */
+/* ── Utilities ── */
 .bookingAvatar img,
 .reviewAvatar img,
 .sidebarAvatar img {
@@ -501,7 +442,6 @@
   border-radius: 50%;
 }
 
-/* ─── Review avatar ────────────────────────────────────────────────────── */
 .reviewAvatar {
   width: 32px;
   height: 32px;
