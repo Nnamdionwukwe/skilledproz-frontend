@@ -10,6 +10,7 @@ import BookingDetailPayment from "./BookingDetailPayment";
 import BookingDetailMain from "./BookingDetailMain";
 import BookingDetailSidebar from "./BookingDetailSidebar";
 import { calcPricing } from "../../utils/pricing";
+import WorkerPaymentPreview from "./WorkerPaymentPreview";
 
 // ── Helpers (unchanged) ──────────────────────────────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -459,6 +460,10 @@ export default function BookingDetail() {
               isWorker={isWorker}
               workerName={booking.worker?.firstName}
             />
+
+            {isWorker && booking.status === "PENDING" && (
+              <WorkerPaymentPreview booking={booking} />
+            )}
 
             {booking.payment && (
               <BookingDetailPayment

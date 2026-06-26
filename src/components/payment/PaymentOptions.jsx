@@ -140,18 +140,18 @@ export default function PaymentOptions({
       fd.append("senderName", senderName);
       if (senderBank) fd.append("bankName", senderBank);
       if (bankReceiptFile) fd.append("proof", bankReceiptFile);
+      if (referralApplied && referralAmount > 0) {
+        fd.append("referralAmount", String(referralAmount));
+      }
 
       await api.patch(`/payments/bank-transfer/${booking.id}/confirm`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // 🔁 Navigate to the dedicated success page
       navigate("/payments/manual-success", {
         state: { method: "bank", bookingId: booking.id },
         replace: true,
       });
-
-      // Still call onSuccess so parent can update its state if needed
       onSuccess?.();
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed");
@@ -191,17 +191,18 @@ export default function PaymentOptions({
       fd.append("cryptoCurrency", cryptoAsset);
       if (cryptoAmount) fd.append("cryptoAmount", cryptoAmount);
       if (cryptoReceiptFile) fd.append("proof", cryptoReceiptFile);
+      if (referralApplied && referralAmount > 0) {
+        fd.append("referralAmount", String(referralAmount));
+      }
 
       await api.patch(`/payments/crypto/${booking.id}/confirm`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // 🔁 Navigate to the dedicated success page
       navigate("/payments/manual-success", {
         state: { method: "crypto", bookingId: booking.id },
         replace: true,
       });
-
       onSuccess?.();
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed");
