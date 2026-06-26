@@ -1049,3 +1049,76 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+@media (max-width: 640px) {
+  .page {
+    padding: 0.75rem 0.5rem; /* reduced horizontal padding from 1rem to 0.5rem */
+    align-items: flex-start;
+  }
+
+  .payWrap {
+    max-width: 100%;
+    gap: 0.75rem; /* less spacing between cards */
+  }
+
+  .summaryCard,
+  .breakdownCard {
+    padding: 0.875rem; /* smaller card padding */
+    border-radius: 12px; /* slightly tighter corners */
+  }
+
+  .summaryTitle {
+    font-size: 1rem;
+  }
+
+  .summaryIconWrap {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .payHeader {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .metaItem {
+    gap: 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  .metaIcon {
+    font-size: 0.8rem;
+  }
+
+  .breakdownRows {
+    gap: 0.4rem;
+  }
+
+  .payBtn {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .methodCard {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .methodCardIcon {
+    font-size: 1.1rem;
+  }
+
+  .methodCardLabel {
+    font-size: 0.85rem;
+  }
+
+  .manualInput {
+    font-size: 0.9rem;
+    padding: 10px 12px;
+  }
+
+  .referralSection {
+    padding: 10px 12px;
+  }
+}
