@@ -28,8 +28,10 @@ import {
   FaSignOutAlt,
   FaBars,
   FaUserCircle,
+  FaEnvelope,
 } from "react-icons/fa";
 
+// ─── Navigation config ──────────────────────────────────────────────────────
 const NAV = [
   {
     group: "Overview",
@@ -70,7 +72,12 @@ const NAV = [
         icon: <FaSearch />,
       },
       { label: "Browse By Categories", path: "/categories", icon: <FaTools /> },
-      { label: "Messages", path: "/messages", icon: <FaComments /> },
+      {
+        label: "Messages",
+        path: "/messages",
+        icon: <FaComments />,
+        badge: "message",
+      },
     ],
   },
   {
@@ -152,6 +159,7 @@ const NAV = [
   },
 ];
 
+// ─── Page titles map ──────────────────────────────────────────────────────
 const PAGE_TITLES = {
   "/dashboard/hirer": { title: "Dashboard", sub: "Your hiring overview" },
   "/bookings": { title: "My Bookings", sub: "All your jobs" },
@@ -225,18 +233,71 @@ function isNavActive(itemPath, pathname) {
   return pathname === itemPath;
 }
 
-export default function HirerLayout({ children, unreadNotifications = 0 }) {
+// ─── Confirmation Modal ──────────────────────────────────────────────────
+function ConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Are you sure?",
+  message = "This action cannot be undone.",
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  confirmVariant = "danger",
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <h3 className={styles.modalTitle}>{title}</h3>
+        <p className={styles.modalMessage}>{message}</p>
+        <div className={styles.modalActions}>
+          <button className={styles.modalCancelBtn} onClick={onClose}>
+            {cancelLabel}
+          </button>
+          <button
+            className={`${styles.modalConfirmBtn} ${styles[`modalConfirm_${confirmVariant}`]}`}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Layout ──────────────────────────────────────────────────────────
+export default function HirerLayout({ children }) {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  // ── Fetch unread notifications ──────────────────────────────────────────
   useEffect(() => {
     api
       .get("/notifications?limit=1")
       .then((res) => setUnreadCount(res.data.data?.unreadCount || 0))
       .catch(() => {});
+  }, [location.pathname]);
+
+  // ── Fetch unread messages ──────────────────────────────────────────────
+  useEffect(() => {
+    api
+      .get("/messages/conversations")
+      .then((res) => {
+        const conversations = res.data.data?.conversations || [];
+        const total = conversations.reduce(
+          (sum, c) => sum + (c.unreadCount || 0),
+          0,
+        );
+        setUnreadMessageCount(total);
+      })
+      .catch(() => setUnreadMessageCount(0));
   }, [location.pathname]);
 
   const initials = user
@@ -245,6 +306,12 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
 
   const pageInfo = getPageInfo(location.pathname);
   const closeSidebar = () => setSidebarOpen(false);
+
+  const handleLogout = async () => {
+    setShowLogoutModal(false);
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <div className={styles.shell}>
@@ -301,9 +368,14 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
                 >
                   <span className={styles.navIcon}>{item.icon}</span>
                   {item.label}
-                  {item.badge === "unread" && unreadNotifications > 0 && (
+                  {item.badge === "unread" && unreadCount > 0 && (
                     <span className={styles.navBadge}>
-                      {unreadNotifications}
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                  {item.badge === "message" && unreadMessageCount > 0 && (
+                    <span className={styles.navBadge}>
+                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                     </span>
                   )}
                 </Link>
@@ -315,10 +387,7 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
         <div className={styles.sidebarFooter}>
           <button
             className={styles.logoutBtn}
-            onClick={async () => {
-              await logout();
-              navigate("/login");
-            }}
+            onClick={() => setShowLogoutModal(true)}
           >
             <span className={styles.navIcon}>
               <FaSignOutAlt size={16} />
@@ -345,8 +414,9 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
           </div>
 
           <div className={styles.headerRight}>
+            {/* ── Notification Bell ── */}
             <Link
-              to="/dashboard/worker/notifications"
+              to="/dashboard/hirer/notifications"
               className={styles.headerIconBtn}
               style={{ position: "relative" }}
             >
@@ -357,6 +427,22 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
                 </span>
               )}
             </Link>
+
+            {/* ── Message Icon ── */}
+            <Link
+              to="/messages"
+              className={styles.headerIconBtn}
+              style={{ position: "relative" }}
+            >
+              <FaEnvelope size={18} />
+              {unreadMessageCount > 0 && (
+                <span className={styles.bellBadge}>
+                  {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                </span>
+              )}
+            </Link>
+
+            {/* ── User Avatar ── */}
             <Link to="/profile/me" className={styles.headerIconBtn}>
               <div className={styles.headerAvatar}>
                 {user?.avatar ? (
@@ -380,6 +466,17 @@ export default function HirerLayout({ children, unreadNotifications = 0 }) {
 
         <div className={styles.content}>{children}</div>
       </div>
+
+      {/* ─── Logout Confirmation Modal ─── */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Log out of SkilledProz?"
+        message="You will need to sign in again to access your account."
+        confirmLabel="Log out"
+        confirmVariant="danger"
+      />
     </div>
   );
 }
