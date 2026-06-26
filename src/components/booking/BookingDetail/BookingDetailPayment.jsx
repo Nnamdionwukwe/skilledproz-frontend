@@ -10,7 +10,6 @@ import {
   FaChevronUp,
 } from "react-icons/fa";
 
-// ── Helper: format price with 2 decimals and thousands separator ──
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
   return `${currency} ${Number(amount).toLocaleString(undefined, {
@@ -19,7 +18,6 @@ function formatPrice(amount, currency = "NGN") {
   })}`;
 }
 
-// ── Inline helper ──────────────────────────────────────────────────────────
 function PayRow({ label, value, muted, green, capitalize, mono, extra }) {
   return (
     <div className={styles.paymentRow}>
@@ -47,8 +45,11 @@ export default function BookingDetailPayment({
   booking,
   payment,
   feeBreakdown,
-  referralDiscount,
+  walletBalance,
+  referralAmount,
   referralApplied,
+  referralPercent,
+  onPercentChange,
   onReferralToggle,
   showPayOptions,
   onTogglePayOptions,
@@ -59,162 +60,138 @@ export default function BookingDetailPayment({
   // ── Render fee breakdown ──────────────────────────────────────────────
   const renderFeeBreakdown = () => {
     if (!feeBreakdown) return null;
-    const computeWithFee = (amount) => amount + amount * 0.05;
-    const getDiscount = () => {
-      if (referralApplied && referralDiscount && booking.currency === "NGN") {
-        return referralDiscount.discount;
-      }
-      return 0;
-    };
-    const finalTotal = () => {
-      let base = feeBreakdown.isActual
-        ? feeBreakdown.total
-        : computeWithFee(feeBreakdown.total);
-      const disc = getDiscount();
-      return Math.max(0, base - disc);
-    };
     const cur = feeBreakdown.currency || "NGN";
+
+    const agreedRate = feeBreakdown.agreedRate || 0;
+    const hasQty = feeBreakdown.hasQty || false;
+    const qty = feeBreakdown.qty || 1;
+    const unitLabel = feeBreakdown.unitLabel || "unit";
+    const subtotal = feeBreakdown.subtotal || 0;
+    const platformFee = feeBreakdown.platformFee || 0;
+    const workerPayout = feeBreakdown.workerPayout || subtotal;
+    const grossTotal = feeBreakdown.total || 0;
+
+    const discount =
+      referralApplied && booking.currency === "NGN" ? referralAmount : 0;
+    const finalTotal = Math.max(0, grossTotal - discount);
+
+    const unit = feeBreakdown.estimatedUnit || "hours";
+    const suffix =
+      {
+        hours: "/hr",
+        days: "/day",
+        weeks: "/wk",
+        months: "/mo",
+        custom: "",
+      }[unit] || "";
 
     return (
       <div className={styles.feeBreakdown}>
         <p className={styles.feeBreakdownLabel}>
-          {feeBreakdown.isActual
-            ? "Payment breakdown"
-            : feeBreakdown.noDuration
-              ? "Est. Total"
-              : feeBreakdown.label}
+          {feeBreakdown.isActual ? "Payment breakdown" : "Payment Breakdown"}
         </p>
 
-        {feeBreakdown.platformFee != null ? (
-          <>
-            <div className={styles.feeRow}>
-              <span>Subtotal</span>
-              <span>
-                {formatPrice(
-                  feeBreakdown.total - feeBreakdown.platformFee,
-                  cur,
-                )}
-              </span>
-            </div>
-            <div className={styles.feeRow}>
-              <span>Platform fee (5%)</span>
-              <span>{formatPrice(feeBreakdown.platformFee, cur)}</span>
-            </div>
-          </>
-        ) : !feeBreakdown.isActual ? (
-          <>
-            <div className={styles.feeRow}>
-              <span>
-                Agreed rate {feeBreakdown.noDuration ? "" : "(job value)"}
-              </span>
-              <span>{formatPrice(feeBreakdown.subtotal, cur)}</span>
-            </div>
-            <div className={styles.feeRow}>
-              <span>Platform fee (5%)</span>
-              <span>{formatPrice(feeBreakdown.total * 0.05, cur)}</span>
-            </div>
-          </>
-        ) : null}
+        <div className={styles.feeRow}>
+          <span>Agreed Rate</span>
+          <span>
+            {formatPrice(agreedRate, cur)}
+            {suffix}
+          </span>
+        </div>
 
-        {feeBreakdown.workerPayout != null && (
-          <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
-            <span>Worker payout</span>
-            <span>{formatPrice(feeBreakdown.workerPayout, cur)}</span>
+        {hasQty && (
+          <div className={styles.feeRow}>
+            <span>Duration</span>
+            <span>
+              {qty} {unitLabel}
+              {qty !== 1 ? "s" : ""}
+            </span>
           </div>
         )}
 
-        {referralDiscount && referralApplied && booking.currency === "NGN" && (
+        {hasQty && (
+          <div className={styles.feeRow}>
+            <span>
+              Subtotal ({qty} × {formatPrice(agreedRate, cur)})
+            </span>
+            <span>{formatPrice(subtotal, cur)}</span>
+          </div>
+        )}
+
+        <div className={styles.feeRow}>
+          <span>Platform Fee (5%)</span>
+          <span>+ {formatPrice(platformFee, cur)}</span>
+        </div>
+
+        {feeBreakdown.isActual && feeBreakdown.workerPayout != null && (
+          <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
+            <span>Worker payout</span>
+            <span>{formatPrice(workerPayout, cur)}</span>
+          </div>
+        )}
+
+        {referralApplied && discount > 0 && booking.currency === "NGN" && (
           <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
             <span>
               <FaGift style={{ marginRight: "4px" }} /> Referral bonus
             </span>
-            <span>
-              − {formatPrice(referralDiscount.discount, booking.currency)}
-            </span>
+            <span>− {formatPrice(discount, booking.currency)}</span>
           </div>
         )}
 
         <div className={styles.feeTotal}>
-          <span>{feeBreakdown.isActual ? "Total Paid" : "Est. Total"}</span>
+          <span>{feeBreakdown.isActual ? "Total Paid" : "You Pay"}</span>
           <span className={styles.feeTotalAmount}>
-            {formatPrice(finalTotal(), cur)}
+            {formatPrice(finalTotal, cur)}
           </span>
         </div>
 
-        {referralDiscount && !feeBreakdown.isActual && (
+        {/* ── Referral slider ── */}
+        {!feeBreakdown.isActual &&
+          walletBalance > 0 &&
+          booking.currency === "NGN" && (
+            <div className={styles.referralSection}>
+              <div className={styles.referralHeader}>
+                <FaGift className={styles.referralIcon} />
+                <span className={styles.referralTitle}>
+                  Referral Wallet Balance: {formatPrice(walletBalance, "NGN")}
+                </span>
+              </div>
+              <div className={styles.referralSliderWrap}>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={referralPercent}
+                  onChange={(e) => onPercentChange(Number(e.target.value))}
+                  className={styles.referralSlider}
+                />
+                <div className={styles.referralRow}>
+                  <span className={styles.referralPercent}>
+                    {referralPercent}%
+                  </span>
+                  <span className={styles.referralAmount}>
+                    {formatPrice(referralAmount, "NGN")}
+                  </span>
+                  <button
+                    className={`${styles.referralToggleBtn} ${referralApplied ? styles.referralToggleOn : ""}`}
+                    onClick={onReferralToggle}
+                    disabled={referralAmount === 0}
+                  >
+                    {referralApplied ? "Remove" : "Apply"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {!feeBreakdown.isActual && walletBalance === 0 && (
           <div className={styles.referralPerk}>
-            {booking.currency !== "NGN" ? (
-              <p>
-                <FaInfoCircle style={{ marginRight: "6px" }} />
-                You have a referral bonus — only applicable to ₦ NGN payments.
-              </p>
-            ) : referralApplied ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                }}
-              >
-                <span>
-                  <FaCheckCircle
-                    style={{ marginRight: "6px", color: "var(--green)" }}
-                  />
-                  Referral bonus applied — saving{" "}
-                  {formatPrice(referralDiscount.discount, booking.currency)}
-                </span>
-                <button
-                  onClick={onReferralToggle}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--green)",
-                    fontWeight: 700,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                }}
-              >
-                <span>
-                  <FaGift style={{ marginRight: "6px" }} />
-                  You have a{" "}
-                  {formatPrice(
-                    referralDiscount.discount,
-                    booking.currency,
-                  )}{" "}
-                  referral bonus available
-                </span>
-                <button
-                  onClick={onReferralToggle}
-                  style={{
-                    flexShrink: 0,
-                    background: "var(--green)",
-                    color: "#000",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "5px 14px",
-                    fontWeight: 700,
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  Apply
-                </button>
-              </div>
-            )}
+            <p>
+              <FaInfoCircle style={{ marginRight: "6px" }} />
+              You don't have any referral bonus yet. Invite friends to earn!
+            </p>
           </div>
         )}
       </div>
@@ -224,20 +201,36 @@ export default function BookingDetailPayment({
   // ── Render payment card ──────────────────────────────────────────────
   const renderPaymentCard = () => {
     if (!payment) return null;
-    const cur = payment.currency || "NGN";
+
+    const useBreakdown = feeBreakdown && !feeBreakdown.isActual;
+    const cur =
+      (useBreakdown ? feeBreakdown.currency : payment.currency) || "NGN";
+
+    let total = useBreakdown ? feeBreakdown.total : payment.amount;
+    let platformFee = useBreakdown
+      ? feeBreakdown.platformFee
+      : payment.platformFee;
+    let workerPayout = useBreakdown
+      ? feeBreakdown.workerPayout
+      : payment.workerPayout;
+
+    if (useBreakdown && referralApplied && booking.currency === "NGN") {
+      total = Math.max(0, total - referralAmount);
+    }
+
     return (
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Payment</h2>
         <div className={styles.paymentCard}>
-          <PayRow label="Total" value={formatPrice(payment.amount, cur)} />
+          <PayRow label="Total" value={formatPrice(total, cur)} />
           <PayRow
             label="Platform Fee"
-            value={formatPrice(payment.platformFee, cur)}
+            value={formatPrice(platformFee, cur)}
             muted
           />
           <PayRow
             label="Worker Payout"
-            value={formatPrice(payment.workerPayout, cur)}
+            value={formatPrice(workerPayout, cur)}
             green
           />
           <div className={styles.paymentDivider} />
@@ -260,9 +253,15 @@ export default function BookingDetailPayment({
     );
   };
 
-  // ── Render payment banner ────────────────────────────────────────────
+  // ── Render payment banner ──────────────────────────────────────────────
   const renderPaymentBanner = () => {
     if (!paymentRequired) return null;
+    const cur = feeBreakdown?.currency || booking.currency || "NGN";
+    const grossTotal = feeBreakdown?.total || payment?.amount || 0;
+    const discount =
+      referralApplied && booking.currency === "NGN" ? referralAmount : 0;
+    const finalTotal = Math.max(0, grossTotal - discount);
+
     return (
       <div className={styles.paymentBanner}>
         <div className={styles.paymentBannerHeader}>
@@ -283,37 +282,38 @@ export default function BookingDetailPayment({
           </div>
         </div>
 
-        {referralDiscount && (
-          <div className={styles.paymentBannerPerk}>
-            <FaGift style={{ marginRight: "6px" }} />
-            <strong>Referral perk:</strong>{" "}
-            {formatPrice(referralDiscount.discount, booking.currency)} off your
-            first booking
-          </div>
+        {walletBalance > 0 && booking.currency === "NGN" && (
+          <>
+            <div className={styles.paymentBannerPerk}>
+              <FaGift style={{ marginRight: "6px" }} />
+              <strong>Referral perk:</strong>{" "}
+              {formatPrice(referralAmount, booking.currency)} off your first
+              booking
+            </div>
+            <div className={styles.paymentBannerPerk}>
+              {referralApplied ? (
+                <>
+                  <FaCheckCircle
+                    style={{ marginRight: "6px", color: "var(--green)" }}
+                  />
+                  Referral bonus of{" "}
+                  {formatPrice(referralAmount, booking.currency)} will be
+                  deducted at checkout
+                </>
+              ) : (
+                <>
+                  <FaGift style={{ marginRight: "6px" }} />
+                  Apply your {formatPrice(
+                    referralAmount,
+                    booking.currency,
+                  )}{" "}
+                  referral bonus using the slider above
+                </>
+              )}
+            </div>
+          </>
         )}
-
-        {referralDiscount && booking.currency === "NGN" && (
-          <div className={styles.paymentBannerPerk}>
-            {referralApplied ? (
-              <>
-                <FaCheckCircle
-                  style={{ marginRight: "6px", color: "var(--green)" }}
-                />
-                Referral bonus of{" "}
-                {formatPrice(referralDiscount.discount, booking.currency)} will
-                be deducted at checkout
-              </>
-            ) : (
-              <>
-                <FaGift style={{ marginRight: "6px" }} />
-                Apply your{" "}
-                {formatPrice(referralDiscount.discount, booking.currency)}{" "}
-                referral bonus in the fee breakdown above
-              </>
-            )}
-          </div>
-        )}
-        {referralDiscount && booking.currency !== "NGN" && (
+        {walletBalance > 0 && booking.currency !== "NGN" && (
           <div
             className={styles.paymentBannerPerk}
             style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
@@ -354,7 +354,7 @@ export default function BookingDetailPayment({
             </Link>
             <PaymentOptions
               booking={booking}
-              referralDiscount={referralDiscount}
+              referralAmount={referralApplied ? referralAmount : 0}
               referralApplied={referralApplied}
               onReferralToggle={onReferralToggle}
               onSuccess={() => {

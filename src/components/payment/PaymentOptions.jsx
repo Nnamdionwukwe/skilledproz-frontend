@@ -17,7 +17,6 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 
-// ── Helper: format price with 2 decimals and thousands separator ──
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
   return `${currency} ${Number(amount).toLocaleString(undefined, {
@@ -33,8 +32,8 @@ const CRYPTO_OPTIONS = [
   { value: "ETH", label: "Ethereum", network: "Ethereum", icon: FaEthereum },
 ];
 
-// ── Pricing helper ────────────────────────────────────────────────────────
-function calcPricing(booking, applyReferral = false, referralDiscount = null) {
+// ── Pricing helper with direct referral amount ──────────────────────
+function calcPricing(booking, referralAmount = 0, applyReferral = false) {
   const rate = booking.agreedRate || 0;
   const unit = booking.estimatedUnit || "hours";
   const hours = booking.estimatedHours;
@@ -62,10 +61,9 @@ function calcPricing(booking, applyReferral = false, referralDiscount = null) {
   const subtotal = rate * qty;
   const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
   const workerPayout = subtotal;
-  const referralDeduct =
-    applyReferral && referralDiscount
-      ? Math.min(referralDiscount.discount, subtotal + platformFee)
-      : 0;
+  const referralDeduct = applyReferral
+    ? Math.min(referralAmount, subtotal + platformFee)
+    : 0;
   const totalCharged = parseFloat(
     (subtotal + platformFee - referralDeduct).toFixed(2),
   );
@@ -89,23 +87,20 @@ function calcPricing(booking, applyReferral = false, referralDiscount = null) {
 export default function PaymentOptions({
   booking,
   onSuccess,
-  referralDiscount,
-  referralApplied: referralAppliedProp,
+  referralAmount = 0,
+  referralApplied = false,
   onReferralToggle,
 }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("crypto");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [step, setStep] = useState("select"); // select | details | confirm
+  const [step, setStep] = useState("select");
 
-  // Bank transfer state
-  const [bankProof, setBankProof] = useState("");
   const [senderName, setSenderName] = useState("");
   const [senderBank, setSenderBank] = useState("");
   const [bankDetails, setBankDetails] = useState(null);
 
-  // Crypto state
   const [cryptoAsset, setCryptoAsset] = useState("USDC");
   const [cryptoTxHash, setCryptoTxHash] = useState("");
   const [cryptoAmount, setCryptoAmount] = useState("");
@@ -114,10 +109,8 @@ export default function PaymentOptions({
   const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
 
-  const applyReferral = referralAppliedProp ?? false;
-  const p = calcPricing(booking, applyReferral, referralDiscount);
+  const p = calcPricing(booking, referralAmount, referralApplied);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
   async function handleBankInitiate() {
     setLoading(true);
     setError("");
@@ -205,7 +198,6 @@ export default function PaymentOptions({
     }
   }
 
-  // ── Success screen ────────────────────────────────────────────────────────
   if (step === "confirm") {
     return (
       <div className={styles.successWrap}>
@@ -293,7 +285,7 @@ export default function PaymentOptions({
         </div>
       </div>
 
-      {/* ── Tabs (unchanged) ── */}
+      {/* ── Tabs ── */}
       {step === "select" && (
         <>
           <div className={styles.tabs}>
@@ -311,7 +303,6 @@ export default function PaymentOptions({
             </button>
           </div>
 
-          {/* Bank transfer tab */}
           {tab === "bank" && (
             <div className={styles.tabContent}>
               <p className={styles.tabDesc}>
@@ -337,7 +328,6 @@ export default function PaymentOptions({
             </div>
           )}
 
-          {/* Crypto tab */}
           {tab === "crypto" && (
             <div className={styles.tabContent}>
               <p className={styles.tabDesc}>

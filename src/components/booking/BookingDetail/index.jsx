@@ -9,8 +9,9 @@ import RaiseDisputeModal from "../../disputes/RaiseDisputeModal";
 import BookingDetailPayment from "./BookingDetailPayment";
 import BookingDetailMain from "./BookingDetailMain";
 import BookingDetailSidebar from "./BookingDetailSidebar";
+import { calcPricing } from "../../utils/pricing";
 
-// ── Helpers (inlined) ──────────────────────────────────────────────────────
+// ── Helpers (unchanged) ──────────────────────────────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -67,7 +68,7 @@ const STATUS_META = {
   DISPUTED: { label: "Disputed", color: "rose", step: -1 },
 };
 
-// ── Inlined small components ──────────────────────────────────────────────
+// ── Inlined components ──────────────────────────────────────────────
 function Alert({ type, text, onClose }) {
   return (
     <div className={`${styles.alert} ${styles[`alert_${type}`]}`}>
@@ -130,11 +131,15 @@ export default function BookingDetail() {
     phone: "",
     relationship: "",
   });
-  const [referralDiscount, setReferralDiscount] = useState(null);
-  const [referralApplied, setReferralApplied] = useState(false);
   const [resolvingSOS, setResolvingSOS] = useState(false);
   const [refundLoading, setRefundLoading] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+
+  // ── Referral wallet state ──
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [referralPercent, setReferralPercent] = useState(0);
+  const [referralAmount, setReferralAmount] = useState(0);
+  const [referralApplied, setReferralApplied] = useState(false);
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
@@ -175,20 +180,18 @@ export default function BookingDetail() {
         } else {
           setReviewCheckDone(true);
         }
-        if (user?.role === "HIRER" && !b.payment) {
+
+        // ── Fetch referral wallet balance ──
+        if (user?.role === "HIRER") {
           api
-            .get("/referral/dashboard")
-            .then((rd) => {
-              const data = rd.data.data;
-              if (data?.code) {
-                const raw = (b.agreedRate || 0) * 0.05;
-                const discount = Math.min(raw, 2500);
-                if (discount > 0)
-                  setReferralDiscount({
-                    discount,
-                    finalAmount: (b.agreedRate || 0) - discount,
-                  });
-              }
+            .get("/referral/wallet")
+            .then((res) => {
+              const bal = res.data.data?.balance || 0;
+              setWalletBalance(bal);
+              // Reset slider when balance loads
+              setReferralPercent(0);
+              setReferralAmount(0);
+              setReferralApplied(false);
             })
             .catch(() => {});
         }
@@ -203,6 +206,24 @@ export default function BookingDetail() {
     const timer = setInterval(refetch, 600_000);
     return () => clearInterval(timer);
   }, [id, refetch]);
+
+  // ── RECALCULATE REFERRAL AMOUNT WHEN PERCENT, BALANCE, OR BOOKING CHANGES ──
+  // Moved to the top level (before any early returns) to keep hook order stable.
+  useEffect(() => {
+    // Only run if we have a booking
+    if (!booking) return;
+    const p = calcPricing(booking);
+    const subtotal = p.subtotal || 0;
+    const maxDiscount = Math.min(subtotal, walletBalance);
+    const rawAmount = (referralPercent / 100) * subtotal;
+    const amount = Math.round(rawAmount);
+    const final = Math.min(amount, maxDiscount);
+
+    // Update the amount, but do NOT auto‑apply here – that's handled in the slider change
+    setReferralAmount(final);
+    // Optionally, auto‑apply can be set here if you want, but we'll keep it separate
+    // to respect manual toggle.
+  }, [referralPercent, walletBalance, booking]);
 
   // ── Status update ────────────────────────────────────────────────────
   async function updateStatus(status, extra = {}) {
@@ -329,53 +350,48 @@ export default function BookingDetail() {
         )
       : null;
 
-  const feeBreakdown = (() => {
-    if (payment?.amount) {
-      return {
-        label: "Payment breakdown",
-        subtotal: payment.amount - (payment.platformFee || 0),
-        total: payment.amount,
-        platformFee: payment.platformFee ?? null,
-        workerPayout: payment.workerPayout ?? null,
-        currency: payment.currency || booking.currency,
-        isActual: true,
-      };
-    }
-    const rate = booking.agreedRate;
-    if (!rate) return null;
-    const unit = booking.estimatedUnit;
-    const value = booking.estimatedValue;
-    if (value && unit && unit !== "custom") {
-      const num = parseFloat(value);
-      const subtotal = num * rate;
-      const suffix =
-        { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
-      return {
-        label: `Est. total (${num} ${unit} × ${booking.currency} ${rate.toLocaleString()}${suffix})`,
-        subtotal,
-        total: subtotal,
-        platformFee: null,
-        workerPayout: null,
-        currency: booking.currency,
-        isActual: false,
-      };
-    }
-    return {
-      label: "Based on agreed rate",
-      subtotal: rate,
-      total: rate,
-      platformFee: null,
-      workerPayout: null,
-      currency: booking.currency,
-      isActual: false,
-      noDuration: true,
-    };
-  })();
+  // ── Use calcPricing for consistent breakdown ──────────────────────
+  const p = calcPricing(booking);
+  const feeBreakdown = {
+    label: "Payment Breakdown",
+    subtotal: p.subtotal,
+    total: p.grossTotal,
+    platformFee: p.hirerFee,
+    workerPayout: p.workerPayout,
+    currency: p.currency,
+    isActual: false,
+    agreedRate: p.agreedRate,
+    estimatedUnit: p.unit,
+    hasQty: p.hasQty,
+    qty: p.qty,
+    unitLabel: p.unitLabel,
+    suffix: p.unitSuffix,
+    noDuration: !p.hasQty,
+  };
 
   const paymentRequired =
     isHirer &&
     ["ACCEPTED", "IN_PROGRESS"].includes(booking.status) &&
     (!payment || payment.status === "PENDING");
+
+  // ── Handlers for referral slider ──────────────────────────────────
+  const handlePercentChange = (pct) => {
+    // Immediately compute the discount for responsiveness
+    const subtotal = feeBreakdown.subtotal || 0;
+    const maxDiscount = Math.min(subtotal, walletBalance);
+    const rawAmount = (pct / 100) * subtotal;
+    const amount = Math.round(rawAmount);
+    const final = Math.min(amount, maxDiscount);
+
+    setReferralPercent(pct);
+    setReferralAmount(final);
+    // Auto‑apply if final > 0, otherwise remove discount
+    setReferralApplied(final > 0);
+  };
+
+  const handleReferralToggle = () => {
+    setReferralApplied((prev) => !prev);
+  };
 
   return (
     <Layout>
@@ -449,9 +465,12 @@ export default function BookingDetail() {
                 booking={booking}
                 payment={booking.payment}
                 feeBreakdown={feeBreakdown}
-                referralDiscount={referralDiscount}
+                walletBalance={walletBalance}
+                referralAmount={referralAmount}
                 referralApplied={referralApplied}
-                onReferralToggle={() => setReferralApplied((v) => !v)}
+                referralPercent={referralPercent}
+                onPercentChange={handlePercentChange}
+                onReferralToggle={handleReferralToggle}
                 showPayOptions={showPayOptions}
                 onTogglePayOptions={() => setShowPayOptions((v) => !v)}
                 paymentRequired={paymentRequired}
@@ -467,9 +486,12 @@ export default function BookingDetail() {
                 booking={booking}
                 payment={payment}
                 feeBreakdown={feeBreakdown}
-                referralDiscount={referralDiscount}
+                walletBalance={walletBalance}
+                referralAmount={referralAmount}
                 referralApplied={referralApplied}
-                onReferralToggle={() => setReferralApplied((v) => !v)}
+                referralPercent={referralPercent}
+                onPercentChange={handlePercentChange}
+                onReferralToggle={handleReferralToggle}
                 showPayOptions={showPayOptions}
                 onTogglePayOptions={() => setShowPayOptions((v) => !v)}
                 paymentRequired={paymentRequired}

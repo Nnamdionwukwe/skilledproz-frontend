@@ -1,11 +1,33 @@
-// src/components/booking/InitiatePayment.jsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
+import {
+  FaCreditCard,
+  FaUniversity,
+  FaBitcoin,
+  FaEthereum,
+  FaDollarSign,
+  FaMoneyBill,
+  FaArrowLeft,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaSpinner,
+  FaShieldAlt,
+  FaLock,
+  FaGift,
+} from "react-icons/fa";
 
 const HIRER_FEE_RATE = 0.05;
+
+function formatPrice(amount, currency = "USD") {
+  if (amount == null) return `${currency} 0.00`;
+  return `${currency} ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 function calcPricing(booking, referralDiscount = 0) {
   const agreedRate = booking?.agreedRate || 0;
@@ -20,9 +42,9 @@ function calcPricing(booking, referralDiscount = 0) {
   if (value && unit !== "custom") qty = value;
   else if (hours) {
     if (unit === "hours") qty = hours;
-    if (unit === "days") qty = Math.round(hours / 8);
-    if (unit === "weeks") qty = Math.round(hours / 40);
-    if (unit === "months") qty = Math.round(hours / 160);
+    else if (unit === "days") qty = Math.round(hours / 8);
+    else if (unit === "weeks") qty = Math.round(hours / 40);
+    else if (unit === "months") qty = Math.round(hours / 160);
   }
 
   const unitSuffix =
@@ -56,28 +78,32 @@ function calcPricing(booking, referralDiscount = 0) {
   };
 }
 
-// All supported crypto tokens
 const CRYPTO_TOKENS = [
-  { id: "USDC", label: "USDC", icon: "💲", network: "BSC (BEP20)" },
-  { id: "USDT", label: "USDT", icon: "💵", network: "Tron (TRC20)" },
-  { id: "BTC", label: "Bitcoin", icon: "₿", network: "Bitcoin" },
-  { id: "ETH", label: "Ethereum", icon: "⟠", network: "Ethereum" },
+  { id: "USDC", label: "USDC", icon: <FaDollarSign />, network: "BSC (BEP20)" },
+  { id: "USDT", label: "USDT", icon: <FaMoneyBill />, network: "Tron (TRC20)" },
+  { id: "BTC", label: "Bitcoin", icon: <FaBitcoin />, network: "Bitcoin" },
+  { id: "ETH", label: "Ethereum", icon: <FaEthereum />, network: "Ethereum" },
 ];
 
 const METHODS = [
   {
     id: "card",
-    icon: "💳",
+    icon: <FaCreditCard />,
     label: "Card / Mobile Money",
     desc: "Redirected to Flutterwave or Paystack",
   },
   {
     id: "bank_transfer",
-    icon: "🏦",
+    icon: <FaUniversity />,
     label: "Bank Transfer",
     desc: "Send to our escrow, we verify & activate",
   },
-  { id: "crypto", icon: "₿", label: "Crypto", desc: "USDC · USDT · BTC · ETH" },
+  {
+    id: "crypto",
+    icon: <FaBitcoin />,
+    label: "Crypto",
+    desc: "USDC · USDT · BTC · ETH",
+  },
 ];
 
 export default function InitiatePayment() {
@@ -96,15 +122,16 @@ export default function InitiatePayment() {
   const [confirming, setConfirming] = useState(false);
   const [bookingStatus, setBookingStatus] = useState(null);
 
-  // Receipt file uploads
   const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
 
-  // Referral discount
-  const [referralDiscount, setReferralDiscount] = useState(0);
+  // ── Referral wallet state ──
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [referralPercent, setReferralPercent] = useState(0);
+  const [referralAmount, setReferralAmount] = useState(0);
   const [referralApplied, setReferralApplied] = useState(false);
 
-  // ── Load booking ─────────────────────────────────────────────────────────
+  // ── Load booking and wallet ──────────────────────────────────────────
   useEffect(() => {
     api
       .get(`/bookings/${bookingId}`)
@@ -112,24 +139,23 @@ export default function InitiatePayment() {
         const b = res.data.data.booking;
         setBooking(b);
         setBookingStatus(b.status);
-        if (b.currency === "NGN") {
-          api
-            .get("/referral/dashboard")
-            .then((rd) => {
-              const data = rd.data.data;
-              if (data?.code) {
-                const raw = (b.agreedRate || 0) * 0.05;
-                setReferralDiscount(Math.min(raw, 2500));
-              }
-            })
-            .catch(() => {});
-        }
       })
       .catch(() => setError("Could not load booking details."))
       .finally(() => setLoading(false));
   }, [bookingId]);
 
-  // Auto-poll while PENDING
+  useEffect(() => {
+    if (booking) {
+      api
+        .get("/referral/wallet")
+        .then((res) => {
+          setWalletBalance(res.data.data.balance || 0);
+        })
+        .catch(() => {});
+    }
+  }, [booking]);
+
+  // ── Auto-poll PENDING status ──
   useEffect(() => {
     if (bookingStatus !== "PENDING") return;
     const timer = setInterval(() => {
@@ -145,14 +171,35 @@ export default function InitiatePayment() {
     return () => clearInterval(timer);
   }, [bookingId, bookingStatus]);
 
-  const p = calcPricing(booking, referralApplied ? referralDiscount : 0);
+  // ── Compute pricing with referral amount (used everywhere) ──────────
+  const p = calcPricing(booking, referralApplied ? referralAmount : 0);
 
-  // ── Card payment ──────────────────────────────────────────────────────────
+  // ── Handle percentage change – auto‑apply on positive amount ────────
+  const handlePercentChange = (pct) => {
+    const subtotal = p.subtotal || 0;
+    const maxDiscount = Math.min(subtotal, walletBalance);
+    const amount = Math.round((pct / 100) * subtotal);
+    const final = Math.min(amount, maxDiscount);
+
+    setReferralPercent(pct);
+    setReferralAmount(final);
+    setReferralApplied(final > 0);
+  };
+
+  // ── Manual toggle ──────────────────────────────────────────────────
+  const handleReferralToggle = () => {
+    if (referralAmount === 0) return;
+    setReferralApplied((prev) => !prev);
+  };
+
+  // ── Payment initiation functions ──────────────────────────────────────
   async function handleCardPay() {
     setPaying(true);
     setError("");
     try {
-      const res = await api.post(`/payments/initiate/${bookingId}`);
+      const res = await api.post(`/payments/initiate/${bookingId}`, {
+        referralAmount: referralApplied ? referralAmount : 0,
+      });
       const { paymentUrl } = res.data.data;
       if (!paymentUrl) {
         setError("Payment URL not received. Try again.");
@@ -166,7 +213,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── Bank transfer — get escrow details ───────────────────────────────────
   async function handleBankTransfer() {
     setPaying(true);
     setError("");
@@ -174,6 +220,7 @@ export default function InitiatePayment() {
       const res = await api.post(`/payments/bank-transfer/${bookingId}`, {
         amount: p.totalCharged,
         currency: p.currency,
+        referralAmount: referralApplied ? referralAmount : 0,
       });
       setManualData(res.data.data);
       setConfirmStep("bank_transfer");
@@ -184,7 +231,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── Crypto — get wallet details ───────────────────────────────────────────
   async function handleCrypto() {
     setPaying(true);
     setError("");
@@ -193,6 +239,7 @@ export default function InitiatePayment() {
         cryptoCurrency: cryptoToken,
         amount: p.totalCharged,
         currency: p.currency,
+        referralAmount: referralApplied ? referralAmount : 0,
       });
       setManualData(res.data.data);
       setConfirmStep("crypto");
@@ -209,7 +256,7 @@ export default function InitiatePayment() {
     if (method === "crypto") return handleCrypto();
   }
 
-  // ── Confirm bank transfer ─────────────────────────────────────────────────
+  // ── Confirm manual payments ──────────────────────────────────────────
   async function confirmBankTransfer() {
     setConfirming(true);
     setError("");
@@ -231,7 +278,6 @@ export default function InitiatePayment() {
     }
   }
 
-  // ── Confirm crypto ────────────────────────────────────────────────────────
   async function confirmCrypto() {
     if (!confirmForm.txHash) {
       setError("Transaction hash is required.");
@@ -267,7 +313,7 @@ export default function InitiatePayment() {
     setError("");
   }
 
-  // ── Loading / error guards ────────────────────────────────────────────────
+  // ── Loading / error ──
   if (loading)
     return (
       <HirerLayout>
@@ -282,17 +328,17 @@ export default function InitiatePayment() {
       <HirerLayout>
         <div className={styles.page}>
           <div className={styles.errorBox}>
-            <span className={styles.errorIcon}>⚠️</span>
+            <FaExclamationTriangle className={styles.errorIcon} />
             <p>{error}</p>
             <Link to="/bookings" className={styles.backLink}>
-              ← Back to Bookings
+              <FaArrowLeft style={{ marginRight: "4px" }} /> Back to Bookings
             </Link>
           </div>
         </div>
       </HirerLayout>
     );
 
-  // ── Manual confirmation step ──────────────────────────────────────────────
+  // ── Manual confirmation step ──
   if (confirmStep && manualData) {
     const isBankTx = confirmStep === "bank_transfer";
     const bd = manualData.bankDetails;
@@ -302,54 +348,56 @@ export default function InitiatePayment() {
       <HirerLayout>
         <div className={styles.page}>
           <div className={styles.payWrap}>
-            {/* Header */}
             <div className={styles.payHeader}>
               <button
                 className={styles.changeMethodBtn}
                 onClick={resetToMethodSelect}
               >
-                ← Change method
+                <FaArrowLeft style={{ marginRight: "4px" }} /> Change method
               </button>
               <div className={styles.payBadge}>
-                {isBankTx ? "🏦 Bank Transfer" : `₿ ${cryptoToken} Crypto`}
+                {isBankTx ? (
+                  <>
+                    <FaUniversity /> Bank Transfer
+                  </>
+                ) : (
+                  <>
+                    <FaBitcoin /> {cryptoToken} Crypto
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Transfer details card */}
             <div className={styles.summaryCard}>
               <div className={styles.summaryTop}>
                 <div className={styles.summaryIconWrap}>
                   <span className={styles.summaryIcon}>
-                    {isBankTx ? "🏦" : "₿"}
+                    {isBankTx ? <FaUniversity /> : <FaBitcoin />}
                   </span>
                 </div>
                 <div>
                   <p className={styles.summaryLabel}>Send exactly</p>
-                  {/* ↓ Use p.totalCharged so referral discount is reflected */}
                   <h2 className={styles.summaryTitle}>
-                    {p.currency} {p.totalCharged.toLocaleString()}
+                    {formatPrice(p.totalCharged, p.currency)}
                   </h2>
-                  {referralApplied &&
-                    referralDiscount > 0 &&
-                    p.currency === "NGN" && (
-                      <p
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--green)",
-                          marginTop: 2,
-                        }}
-                      >
-                        🎁 Includes ₦{referralDiscount.toLocaleString()}{" "}
-                        referral discount
-                      </p>
-                    )}
+                  {referralApplied && referralAmount > 0 && (
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--green)",
+                        marginTop: 2,
+                      }}
+                    >
+                      <FaCheckCircle /> Includes{" "}
+                      {formatPrice(referralAmount, "NGN")} referral discount
+                    </p>
+                  )}
                   <p className={styles.summaryCategory}>
                     Ref: {manualData.reference}
                   </p>
                 </div>
               </div>
 
-              {/* Bank details rows */}
               {isBankTx && bd && (
                 <div className={styles.summaryMeta}>
                   {[
@@ -372,7 +420,6 @@ export default function InitiatePayment() {
                 </div>
               )}
 
-              {/* Crypto details rows */}
               {!isBankTx && cd && (
                 <div className={styles.summaryMeta}>
                   {[
@@ -396,7 +443,6 @@ export default function InitiatePayment() {
               )}
             </div>
 
-            {/* Confirm form */}
             <div className={styles.breakdownCard}>
               <p className={styles.breakdownTitle}>Confirm Your Transfer</p>
 
@@ -532,7 +578,7 @@ export default function InitiatePayment() {
 
             {error && (
               <div className={styles.inlineError}>
-                <span>⚠️</span> {error}
+                <FaExclamationTriangle /> {error}
               </div>
             )}
 
@@ -543,10 +589,12 @@ export default function InitiatePayment() {
             >
               {confirming ? (
                 <>
-                  <span className={styles.spinner} /> Submitting…
+                  <FaSpinner className={styles.spinner} /> Submitting…
                 </>
               ) : (
-                "✅ I Have Transferred — Confirm"
+                <>
+                  <FaCheckCircle /> I Have Transferred — Confirm
+                </>
               )}
             </button>
 
@@ -561,16 +609,18 @@ export default function InitiatePayment() {
     );
   }
 
-  // ── PENDING state ─────────────────────────────────────────────────────────
+  // ── PENDING state (now uses referral discount) ──────────────────────
   if (bookingStatus === "PENDING") {
-    const prev = calcPricing(booking);
+    // Use the same pricing with referral discount
+    const prev = p; // p already includes referral
+
     return (
       <HirerLayout>
         <div className={styles.page}>
           <div className={styles.payWrap}>
             <div className={styles.payHeader}>
               <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
-                ← View Booking
+                <FaArrowLeft style={{ marginRight: "4px" }} /> View Booking
               </Link>
               <div className={styles.payBadge}>⏳ Pending Acceptance</div>
             </div>
@@ -595,28 +645,77 @@ export default function InitiatePayment() {
                 <div className={styles.breakdownRow}>
                   <span className={styles.breakdownLabel}>Agreed Rate</span>
                   <span className={styles.breakdownVal}>
-                    {prev.currency} {prev.agreedRate.toLocaleString()}
+                    {formatPrice(prev.agreedRate, prev.currency)}
                     {prev.unitSuffix}
                   </span>
                 </div>
+                {prev.hasQty && (
+                  <>
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownLabel}>Duration</span>
+                      <span className={styles.breakdownVal}>
+                        {prev.qty} {prev.unitLabel}
+                        {prev.qty !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownLabel}>
+                        Job Value ({prev.qty} ×{" "}
+                        {formatPrice(prev.agreedRate, prev.currency)})
+                      </span>
+                      <span className={styles.breakdownVal}>
+                        {formatPrice(prev.subtotal, prev.currency)}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className={styles.breakdownRow}>
                   <span className={styles.breakdownLabel}>
                     Service Fee (5%)
                   </span>
                   <span className={styles.breakdownVal}>
-                    + {prev.currency}{" "}
-                    {prev.hirerFee.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })}
+                    + {formatPrice(prev.hirerFee, prev.currency)}
                   </span>
                 </div>
+                <div className={styles.breakdownRow}>
+                  <span
+                    className={styles.breakdownLabel}
+                    style={{ fontSize: "0.78rem", color: "var(--green)" }}
+                  >
+                    <FaCheckCircle /> Worker receives (no fee)
+                  </span>
+                  <span
+                    className={styles.breakdownVal}
+                    style={{ color: "var(--green)" }}
+                  >
+                    {formatPrice(prev.workerPayout, prev.currency)}
+                  </span>
+                </div>
+
+                {referralApplied && referralAmount > 0 && (
+                  <div className={styles.breakdownRow}>
+                    <span
+                      className={styles.breakdownLabel}
+                      style={{ color: "var(--green)" }}
+                    >
+                      <FaGift /> Referral bonus
+                    </span>
+                    <span
+                      className={styles.breakdownVal}
+                      style={{ color: "var(--green)" }}
+                    >
+                      − {formatPrice(referralAmount, prev.currency)}
+                    </span>
+                  </div>
+                )}
+
                 <div className={styles.breakdownDivider} />
                 <div className={styles.breakdownRow}>
                   <span className={styles.breakdownLabelTotal}>
                     You Will Pay
                   </span>
                   <span className={styles.breakdownValTotal}>
-                    {prev.currency} {prev.totalCharged.toLocaleString()}
+                    {formatPrice(prev.totalCharged, prev.currency)}
                   </span>
                 </div>
               </div>
@@ -671,19 +770,20 @@ export default function InitiatePayment() {
     );
   }
 
-  // ── Main payment page ─────────────────────────────────────────────────────
+  // ── MAIN PAYMENT PAGE ──
   return (
     <HirerLayout>
       <div className={styles.page}>
         <div className={styles.payWrap}>
           <div className={styles.payHeader}>
             <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
-              ← Back to Booking
+              <FaArrowLeft style={{ marginRight: "4px" }} /> Back to Booking
             </Link>
-            <div className={styles.payBadge}>🔒 Secure Payment</div>
+            <div className={styles.payBadge}>
+              <FaLock /> Secure Payment
+            </div>
           </div>
 
-          {/* Booking summary */}
           <div className={styles.summaryCard}>
             <div className={styles.summaryTop}>
               <div className={styles.summaryIconWrap}>
@@ -724,14 +824,52 @@ export default function InitiatePayment() {
             </div>
           </div>
 
-          {/* Fee breakdown */}
+          {/* ── REFERRAL BONUS SECTION (slider) ── */}
+          {walletBalance > 0 && booking?.currency === "NGN" && (
+            <div className={styles.referralSection}>
+              <div className={styles.referralHeader}>
+                <FaGift className={styles.referralIcon} />
+                <span className={styles.referralTitle}>
+                  Referral Wallet Balance: {formatPrice(walletBalance, "NGN")}
+                </span>
+              </div>
+              <div className={styles.referralSliderWrap}>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={referralPercent}
+                  onChange={(e) => handlePercentChange(Number(e.target.value))}
+                  className={styles.referralSlider}
+                />
+                <div className={styles.referralRow}>
+                  <span className={styles.referralPercent}>
+                    {referralPercent}%
+                  </span>
+                  <span className={styles.referralAmount}>
+                    {formatPrice(referralAmount, "NGN")}
+                  </span>
+                  <button
+                    className={`${styles.referralToggleBtn} ${referralApplied ? styles.referralToggleOn : ""}`}
+                    onClick={handleReferralToggle}
+                    disabled={referralAmount === 0}
+                  >
+                    {referralApplied ? "Remove" : "Apply"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── PAYMENT BREAKDOWN ── */}
           <div className={styles.breakdownCard}>
             <p className={styles.breakdownTitle}>Payment Breakdown</p>
             <div className={styles.breakdownRows}>
               <div className={styles.breakdownRow}>
                 <span className={styles.breakdownLabel}>Agreed Rate</span>
                 <span className={styles.breakdownVal}>
-                  {p.currency} {p.agreedRate.toLocaleString()}
+                  {formatPrice(p.agreedRate, p.currency)}
                   {p.unitSuffix}
                 </span>
               </div>
@@ -746,11 +884,11 @@ export default function InitiatePayment() {
                   </div>
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownLabel}>
-                      Job Value ({p.qty} × {p.currency}{" "}
-                      {p.agreedRate.toLocaleString()})
+                      Job Value ({p.qty} ×{" "}
+                      {formatPrice(p.agreedRate, p.currency)})
                     </span>
                     <span className={styles.breakdownVal}>
-                      {p.currency} {p.subtotal.toLocaleString()}
+                      {formatPrice(p.subtotal, p.currency)}
                     </span>
                   </div>
                 </>
@@ -758,10 +896,7 @@ export default function InitiatePayment() {
               <div className={styles.breakdownRow}>
                 <span className={styles.breakdownLabel}>Service Fee (5%)</span>
                 <span className={styles.breakdownVal}>
-                  + {p.currency}{" "}
-                  {p.hirerFee.toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                  })}
+                  + {formatPrice(p.hirerFee, p.currency)}
                 </span>
               </div>
               <div className={styles.breakdownRow}>
@@ -769,67 +904,29 @@ export default function InitiatePayment() {
                   className={styles.breakdownLabel}
                   style={{ fontSize: "0.78rem", color: "var(--green)" }}
                 >
-                  🎉 Worker receives (no fee)
+                  <FaCheckCircle /> Worker receives (no fee)
                 </span>
                 <span
                   className={styles.breakdownVal}
                   style={{ color: "var(--green)" }}
                 >
-                  {p.currency} {p.workerPayout.toLocaleString()}
+                  {formatPrice(p.workerPayout, p.currency)}
                 </span>
               </div>
 
-              {/* Referral bonus */}
-              {referralDiscount > 0 &&
-                booking?.currency === "NGN" &&
-                (referralApplied ? (
-                  <div className={styles.breakdownRow}>
-                    <span
-                      className={styles.breakdownLabel}
-                      style={{ color: "var(--green)" }}
-                    >
-                      🎁 Referral bonus
-                      <button
-                        onClick={() => setReferralApplied(false)}
-                        className={styles.referralInlineBtn}
-                      >
-                        Remove
-                      </button>
-                    </span>
-                    <span
-                      className={styles.breakdownVal}
-                      style={{ color: "var(--green)" }}
-                    >
-                      − ₦{referralDiscount.toLocaleString()}
-                    </span>
-                  </div>
-                ) : (
-                  <div className={styles.breakdownRow}>
-                    <span
-                      className={styles.breakdownLabel}
-                      style={{
-                        color: "var(--text-muted)",
-                        fontSize: "0.78rem",
-                      }}
-                    >
-                      🎁 ₦{referralDiscount.toLocaleString()} referral bonus
-                      available
-                    </span>
-                    <button
-                      onClick={() => setReferralApplied(true)}
-                      className={styles.referralApplyBtn}
-                    >
-                      Apply
-                    </button>
-                  </div>
-                ))}
-              {booking?.currency !== "NGN" && referralDiscount > 0 && (
+              {referralApplied && referralAmount > 0 && (
                 <div className={styles.breakdownRow}>
                   <span
                     className={styles.breakdownLabel}
-                    style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}
+                    style={{ color: "var(--green)" }}
                   >
-                    ℹ️ Referral bonus only applies to ₦ NGN payments
+                    <FaGift /> Referral bonus
+                  </span>
+                  <span
+                    className={styles.breakdownVal}
+                    style={{ color: "var(--green)" }}
+                  >
+                    − {formatPrice(referralAmount, p.currency)}
                   </span>
                 </div>
               )}
@@ -838,12 +935,12 @@ export default function InitiatePayment() {
               <div className={styles.breakdownRow}>
                 <span className={styles.breakdownLabelTotal}>You Pay</span>
                 <span className={styles.breakdownValTotal}>
-                  {p.currency} {p.totalCharged.toLocaleString()}
+                  {formatPrice(p.totalCharged, p.currency)}
                 </span>
               </div>
             </div>
             <div className={styles.escrowNote}>
-              <span className={styles.escrowIcon}>🔒</span>
+              <FaShieldAlt className={styles.escrowIcon} />
               <p>
                 Funds are held in escrow and only released to the worker after
                 you confirm the job is complete.
@@ -851,7 +948,7 @@ export default function InitiatePayment() {
             </div>
           </div>
 
-          {/* Payment method */}
+          {/* ── PAYMENT METHOD ── */}
           <div className={styles.breakdownCard}>
             <p className={styles.breakdownTitle}>Payment Method</p>
             <div className={styles.methodGrid}>
@@ -874,7 +971,6 @@ export default function InitiatePayment() {
               ))}
             </div>
 
-            {/* Crypto token selector — all 4 */}
             {method === "crypto" && (
               <div className={styles.cryptoTokens}>
                 {CRYPTO_TOKENS.map((t) => (
@@ -903,7 +999,7 @@ export default function InitiatePayment() {
 
           {error && (
             <div className={styles.inlineError}>
-              <span>⚠️</span> {error}
+              <FaExclamationTriangle /> {error}
             </div>
           )}
 
@@ -914,21 +1010,22 @@ export default function InitiatePayment() {
           >
             {paying ? (
               <>
-                <span className={styles.spinner} /> Processing…
+                <FaSpinner className={styles.spinner} /> Processing…
               </>
             ) : method === "card" ? (
               <>
-                💳 Pay {p.currency} {p.totalCharged.toLocaleString()} Securely
+                <FaCreditCard /> Pay {formatPrice(p.totalCharged, p.currency)}{" "}
+                Securely
               </>
             ) : method === "bank_transfer" ? (
               <>
-                🏦 Get Bank Details — {p.currency}{" "}
-                {p.totalCharged.toLocaleString()}
+                <FaUniversity /> Get Bank Details —{" "}
+                {formatPrice(p.totalCharged, p.currency)}
               </>
             ) : (
               <>
-                ₿ Get {cryptoToken} Wallet — {p.currency}{" "}
-                {p.totalCharged.toLocaleString()}
+                <FaBitcoin /> Get {cryptoToken} Wallet —{" "}
+                {formatPrice(p.totalCharged, p.currency)}
               </>
             )}
           </button>
@@ -939,8 +1036,12 @@ export default function InitiatePayment() {
           </p>
 
           <div className={styles.trustRow}>
-            <span className={styles.trustItem}>🔐 256-bit SSL</span>
-            <span className={styles.trustItem}>🛡️ Escrow protected</span>
+            <span className={styles.trustItem}>
+              <FaLock /> 256-bit SSL
+            </span>
+            <span className={styles.trustItem}>
+              <FaShieldAlt /> Escrow protected
+            </span>
             <span className={styles.trustItem}>🦋 Flutterwave</span>
             <span className={styles.trustItem}>💚 Paystack</span>
           </div>
