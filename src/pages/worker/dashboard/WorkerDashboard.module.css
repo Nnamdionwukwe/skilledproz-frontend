@@ -3,6 +3,8 @@
   flex-direction: column;
   gap: 1.25rem;
   animation: fadeUp 0.3s ease;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* ── Stats row ── */
@@ -70,6 +72,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .earningsTrend {
@@ -83,7 +86,7 @@
   border: 1px solid var(--orange-glow);
   border-radius: 10px;
   padding: 1rem 1.25rem;
-  min-width: 160px;
+  min-width: 140px;
   flex-shrink: 0;
   position: relative;
   z-index: 1;
@@ -200,6 +203,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .reviewerName {
@@ -375,6 +380,8 @@
 }
 
 /* ── Responsive ── */
+
+/* Tablets & small laptops */
 @media (max-width: 1100px) {
   .statsRow {
     grid-template-columns: repeat(2, 1fr);
@@ -384,12 +391,18 @@
   }
 }
 
+/* Mobile landscape & small tablets */
 @media (max-width: 768px) {
   .row2 {
     grid-template-columns: 1fr;
   }
+  .earningsCard {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
+/* Large phones */
 @media (max-width: 500px) {
   .statsRow {
     grid-template-columns: 1fr 1fr;
@@ -397,13 +410,91 @@
   .earningsCard {
     flex-direction: column;
     align-items: flex-start;
+    grid-column: span 2;
   }
   .earningsPending {
     width: 100%;
   }
+  .earningsValue {
+    font-size: 1.75rem;
+  }
+  .pendingValue {
+    font-size: 1rem;
+  }
+  .barChart {
+    height: 80px;
+    gap: 4px;
+  }
+  .barWrap {
+    gap: 3px;
+  }
+  .bar {
+    min-height: 2px;
+  }
+  .barLabel {
+    font-size: 0.5rem;
+  }
 }
 
-.bookingAvatar img {
+/* Very small phones (<= 400px) */
+@media (max-width: 400px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+  .earningsCard {
+    grid-column: span 1;
+  }
+  .earningsCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .earningsPending {
+    min-width: unset;
+  }
+  .earningsValue {
+    font-size: 1.5rem;
+  }
+  .pendingValue {
+    font-size: 0.9rem;
+  }
+  .barChart {
+    height: 60px;
+  }
+  .page {
+    gap: 0.75rem;
+  }
+  .completionCard,
+  .earningsCard,
+  .ui.card {
+    padding: 1rem;
+  }
+  .bookingItem,
+  .upcomingItem {
+    gap: 0.625rem;
+    padding: 0.625rem 0;
+  }
+  .bookingAvatar,
+  .reviewAvatar {
+    width: 28px;
+    height: 28px;
+  }
+  .bookingTitle,
+  .upcomingTitle {
+    font-size: 0.8rem;
+  }
+  .bookingMeta,
+  .upcomingMeta {
+    font-size: 0.625rem;
+  }
+  .reviewText {
+    font-size: 0.75rem;
+  }
+}
+
+/* Utility – avatar images */
+.bookingAvatar img,
+.reviewAvatar img,
+.sidebarAvatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -425,13 +516,6 @@
   color: var(--text-dim);
   flex-shrink: 0;
   overflow: hidden;
-}
-
-.reviewAvatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
 }
 
 .reviewerInfo {
