@@ -1,5 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import {
+  FaLock,
+  FaMapMarkerAlt,
+  FaVideo,
+  FaCommentDots,
+  FaExclamationTriangle,
+  FaShieldAlt,
+  FaBalanceScale,
+  FaCheckCircle,
+  FaStar,
+  FaClipboardList,
+  FaCalendarAlt,
+  FaTrophy,
+  FaBuilding,
+  FaBolt,
+  FaArrowRight,
+  FaCheck,
+  FaBars,
+  FaTimes,
+  FaPlus,
+} from "react-icons/fa";
 import styles from "./LandingPage.module.css";
 
 const CURRENCIES = [
@@ -36,62 +57,62 @@ const CURRENCIES = [
 
 const FEATURES = [
   {
-    icon: "🔐",
+    icon: <FaLock />,
     title: "Escrow Payments",
     desc: "Funds held securely. Released only when you confirm the job is complete. Zero risk for both parties.",
   },
   {
-    icon: "📍",
+    icon: <FaMapMarkerAlt />,
     title: "GPS Check-In/Out",
     desc: "Worker location verified on arrival and departure. Coordinates logged with timestamp.",
   },
   {
-    icon: "📹",
+    icon: <FaVideo />,
     title: "In-App Video Calls",
     desc: "Discuss the job before it starts. No need for third-party apps — built right in.",
   },
   {
-    icon: "💬",
+    icon: <FaCommentDots />,
     title: "Real-Time Messaging",
     desc: "End-to-end messaging between hirers and workers. Every conversation stored securely.",
   },
   {
-    icon: "🚨",
+    icon: <FaExclamationTriangle />,
     title: "SOS Emergency Alert",
     desc: "Workers can trigger a safety alert that instantly notifies the hirer and our team with their GPS location.",
   },
   {
-    icon: "🛡️",
+    icon: <FaShieldAlt />,
     title: "Job Insurance",
     desc: "Optional insurance add-on at checkout. Covers damages and liability for both parties.",
   },
   {
-    icon: "⚖️",
+    icon: <FaBalanceScale />,
     title: "Dispute Resolution",
     desc: "Dedicated team reviews every dispute. Fair outcome guaranteed within 48 hours.",
   },
   {
-    icon: "✅",
+    icon: <FaCheckCircle />,
     title: "Worker Verification",
     desc: "ID checks, background screening, and certification verification. Every badge is earned, not given.",
   },
   {
-    icon: "⭐",
+    icon: <FaStar />,
     title: "Multi-Rate Pricing",
     desc: "Workers set hourly, daily, weekly, monthly, or custom rates. Hirers lock the rate at booking.",
   },
   {
-    icon: "📋",
+    icon: <FaClipboardList />,
     title: "Public Job Board",
     desc: "Post jobs publicly. Workers apply. You pick the best match. Full application management.",
   },
   {
-    icon: "🗓️",
+    icon: <FaCalendarAlt />,
     title: "Availability Scheduling",
     desc: "Workers set their weekly availability. Hirers see real-time openings.",
   },
   {
-    icon: "🏆",
+    icon: <FaTrophy />,
     title: "Subscriptions & Featured Listings",
     desc: "Workers boost visibility. Hirers unlock premium tools. Transparent tier pricing.",
   },
@@ -152,28 +173,28 @@ const WORKER_STEPS = [
 
 const PANEL_ITEMS = [
   {
-    icon: "🔐",
+    icon: <FaLock />,
     label: "Escrow Released",
     val: "NGN 240,000",
     sub: "Plumbing · Lagos",
     color: "#22c55e",
   },
   {
-    icon: "📍",
+    icon: <FaMapMarkerAlt />,
     label: "GPS Check-In",
     val: "Worker Arrived",
     sub: "Electrician · Dubai",
     color: "#3B82F6",
   },
   {
-    icon: "📋",
+    icon: <FaClipboardList />,
     label: "New Job Posted",
     val: "Carpentry Work",
     sub: "USD 800 · New York",
     color: "#f97316",
   },
   {
-    icon: "✅",
+    icon: <FaCheckCircle />,
     label: "Worker Verified",
     val: "Background Cleared",
     sub: "AC Tech · Nairobi",
@@ -270,9 +291,7 @@ export default function LandingPage() {
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Menu"
         >
-          <span />
-          <span />
-          <span />
+          {mobileOpen ? <FaTimes /> : <FaBars />}
         </button>
       </nav>
 
@@ -315,7 +334,7 @@ export default function LandingPage() {
 
           <div className={styles.heroActions}>
             <Link to="/register/hirer" className={styles.btnHeroPrimary}>
-              Hire a Worker →
+              Hire a Worker <FaArrowRight />
             </Link>
             <Link to="/register/worker" className={styles.btnHeroSecondary}>
               Start Earning
@@ -366,7 +385,9 @@ export default function LandingPage() {
                   Every booking is escrow-protected
                 </div>
               </div>
-              <span style={{ fontSize: "1.75rem" }}>🛡️</span>
+              <span style={{ fontSize: "1.75rem" }}>
+                <FaShieldAlt />
+              </span>
             </div>
           </div>
         </div>
@@ -465,7 +486,7 @@ export default function LandingPage() {
             </div>
             <input
               className={styles.catSearchInput}
-              placeholder="🔍 Search categories..."
+              placeholder="Search categories..."
               value={catSearch}
               onChange={(e) => setCatSearch(e.target.value)}
             />
@@ -494,7 +515,7 @@ export default function LandingPage() {
           {!catSearch && filteredCats.length > 48 && (
             <div className={styles.catViewAll}>
               <Link to="/categories" className={styles.btnViewAll}>
-                Browse all {filteredCats.length} categories →
+                Browse all {filteredCats.length} categories <FaArrowRight />
               </Link>
             </div>
           )}
@@ -515,7 +536,7 @@ export default function LandingPage() {
                   className={styles.catAddBtn}
                   onClick={() => setShowCustomCat(true)}
                 >
-                  + Add your profession
+                  <FaPlus /> Add your profession
                 </button>
               ) : (
                 <div className={styles.catAddForm}>
@@ -548,7 +569,7 @@ export default function LandingPage() {
             </div>
             {addedCat && (
               <div className={styles.catAddedMsg}>
-                ✅ "{addedCat.name}" is now live on SkilledProz!
+                <FaCheckCircle /> "{addedCat.name}" is now live on SkilledProz!
               </div>
             )}
           </div>
@@ -586,7 +607,7 @@ export default function LandingPage() {
               "Instant Withdrawal",
             ].map((m) => (
               <span key={m} className={styles.currencyMethod}>
-                ✓ {m}
+                <FaCheck /> {m}
               </span>
             ))}
           </div>
@@ -607,7 +628,9 @@ export default function LandingPage() {
           </div>
           <div className={styles.ctaGrid}>
             <div className={styles.ctaCard}>
-              <span className={styles.ctaCardEmoji}>🏗️</span>
+              <span className={styles.ctaCardEmoji}>
+                <FaBuilding />
+              </span>
               <h3 className={styles.ctaCardTitle}>Hire a Worker</h3>
               <p className={styles.ctaCardDesc}>
                 Post jobs, browse verified workers, book with escrow protection.
@@ -621,16 +644,20 @@ export default function LandingPage() {
                   "29 currencies accepted",
                   "Dispute resolution included",
                 ].map((item) => (
-                  <li key={item}>{item}</li>
+                  <li key={item}>
+                    <FaCheck /> {item}
+                  </li>
                 ))}
               </ul>
               <Link to="/register/hirer" className={styles.ctaBtn}>
-                Create Hirer Account →
+                Create Hirer Account <FaArrowRight />
               </Link>
             </div>
 
             <div className={`${styles.ctaCard} ${styles.ctaCardAccent}`}>
-              <span className={styles.ctaCardEmoji}>⚡</span>
+              <span className={styles.ctaCardEmoji}>
+                <FaBolt />
+              </span>
               <h3 className={styles.ctaCardTitle}>Start Earning</h3>
               <p className={styles.ctaCardDesc}>
                 Set your rates (hourly, daily, weekly, monthly, custom), get
@@ -644,11 +671,13 @@ export default function LandingPage() {
                   "Featured listing boosts",
                   "SOS safety system included",
                 ].map((item) => (
-                  <li key={item}>{item}</li>
+                  <li key={item}>
+                    <FaCheck /> {item}
+                  </li>
                 ))}
               </ul>
               <Link to="/register/worker" className={styles.ctaBtnOutline}>
-                Create Worker Account →
+                Create Worker Account <FaArrowRight />
               </Link>
             </div>
           </div>
@@ -658,16 +687,15 @@ export default function LandingPage() {
       {/* ── Safety strip ── */}
       <div className={styles.safetyStrip}>
         {[
-          ["🔐", "Escrow on every booking"],
-          ["📍", "GPS verification"],
-          ["🛡️", "Optional job insurance"],
-          ["🚨", "SOS emergency alerts"],
-          ["⚖️", "48hr dispute resolution"],
-          ["✅", "ID & background checks"],
+          [<FaLock />, "Escrow on every booking"],
+          [<FaMapMarkerAlt />, "GPS verification"],
+          [<FaShieldAlt />, "Optional job insurance"],
+          [<FaExclamationTriangle />, "SOS emergency alerts"],
+          [<FaBalanceScale />, "48hr dispute resolution"],
+          [<FaCheckCircle />, "ID & background checks"],
         ].map(([icon, label]) => (
           <div key={label} className={styles.safetyItem}>
-            <span>{icon}</span>
-            {label}
+            {icon} {label}
           </div>
         ))}
       </div>
@@ -693,26 +721,6 @@ export default function LandingPage() {
           </div>
 
           {[
-            // {
-            //   title: "Platform",
-            //   links: [
-            //     ["Find Workers", "/search"],
-            //     ["Browse Jobs", "/jobs"],
-            //     ["Post a Job", "/dashboard/hirer/post-job"],
-            //     ["How it Works", "/#how-it-works"],
-            //     ["All Categories", "/search"],
-            //   ],
-            // },
-            // {
-            //   title: "Workers",
-            //   links: [
-            //     ["Register as Worker", "/register/worker"],
-            //     ["Worker Dashboard", "/dashboard/worker"],
-            //     ["Browse Jobs", "/jobs"],
-            //     ["Earnings", "/dashboard/worker/earnings"],
-            //     ["Subscriptions", "/settings?tab=subscription"],
-            //   ],
-            // },
             {
               title: "Company",
               links: [
