@@ -18,6 +18,7 @@ import {
   FaSearch,
   FaStar,
   FaComments,
+  FaHome,
 } from "react-icons/fa";
 import styles from "./BlogPage.module.css";
 import SEO from "../../components/seo/SEO";
@@ -913,12 +914,16 @@ export default function BlogPage() {
 
         <div className={styles.blogPage}>
           <div className={styles.container}>
-            <div className={styles.backButton}>
+            {/* ── Navigation Buttons ── */}
+            <div className={styles.navButtons}>
               <button
                 onClick={() => navigate("/blog")}
                 className={styles.backBtn}
               >
                 <FaArrowLeft /> Back to Blog
+              </button>
+              <button onClick={() => navigate("/")} className={styles.homeBtn}>
+                <FaHome /> Back to Homepage
               </button>
             </div>
 
@@ -1056,6 +1061,16 @@ export default function BlogPage() {
                 economy
               </p>
             </div>
+          </div>
+
+          {/* ── Back to Homepage ── */}
+          <div className={styles.homeButtonWrapper}>
+            <button
+              onClick={() => navigate("/")}
+              className={styles.homeBtnLarge}
+            >
+              <FaHome /> Back to Homepage
+            </button>
           </div>
 
           {/* Search and Filter */}
