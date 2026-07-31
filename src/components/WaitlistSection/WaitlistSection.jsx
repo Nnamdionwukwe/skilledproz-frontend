@@ -17,6 +17,13 @@ import {
   FaInfinity,
   FaAward,
   FaGlobe,
+  FaShareAlt,
+  FaWhatsapp,
+  FaTwitter,
+  FaFacebook,
+  FaLink,
+  FaCopy,
+  FaCheck,
 } from "react-icons/fa";
 import styles from "./WaitlistSection.module.css";
 import CountdownTimer from "../ui/CountdownTimer";
@@ -25,6 +32,8 @@ export default function WaitlistSection() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [message, setMessage] = useState("");
+  const [showReferral, setShowReferral] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,6 +63,41 @@ export default function WaitlistSection() {
       setStatus("error");
       setMessage(err.message || "Failed to join. Please try again.");
     }
+  };
+
+  const referralLink = "https://skilledproz.com/ref/your-code-here";
+  const referralMessage =
+    "Join SkilledProz - the global platform for skilled workers! Get early access, exclusive bonuses, and lifetime benefits. 🚀 Use my referral link:";
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const shareOnWhatsApp = () => {
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(`${referralMessage}\n${referralLink}`)}`,
+      "_blank",
+    );
+  };
+
+  const shareOnTwitter = () => {
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${referralMessage}\n${referralLink}`)}`,
+      "_blank",
+    );
+  };
+
+  const shareOnFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`,
+      "_blank",
+    );
   };
 
   const benefits = [
@@ -227,6 +271,95 @@ export default function WaitlistSection() {
                 <FaShieldAlt /> Your data is safe with us.
               </span>
             </div>
+          </div>
+
+          {/* ── Refer a Friend Section ── */}
+          <div className={styles.referralWrapper}>
+            <button
+              className={styles.referralToggle}
+              onClick={() => setShowReferral(!showReferral)}
+            >
+              <FaShareAlt /> Refer a Friend & Earn Bonuses
+              <span className={styles.referralToggleIcon}>
+                {showReferral ? "−" : "+"}
+              </span>
+            </button>
+
+            {showReferral && (
+              <div className={styles.referralContent}>
+                <div className={styles.referralHeader}>
+                  <div className={styles.referralBadge}>
+                    <FaGift /> Both Get ₦2,000
+                  </div>
+                  <h4 className={styles.referralTitle}>
+                    Invite Friends, Earn Together
+                  </h4>
+                  <p className={styles.referralDesc}>
+                    Share your referral link. When your friend joins,{" "}
+                    <strong>you both get ₦2,000</strong> in platform credit!
+                  </p>
+                </div>
+
+                {/* Referral Link */}
+                <div className={styles.referralLinkBox}>
+                  <input
+                    type="text"
+                    className={styles.referralLinkInput}
+                    value={referralLink}
+                    readOnly
+                  />
+                  <button
+                    className={styles.referralCopyBtn}
+                    onClick={handleCopyLink}
+                  >
+                    {copied ? <FaCheck /> : <FaCopy />}
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+
+                {/* Share Buttons */}
+                <div className={styles.referralShareButtons}>
+                  <button
+                    className={styles.shareBtnWhatsApp}
+                    onClick={shareOnWhatsApp}
+                  >
+                    <FaWhatsapp /> WhatsApp
+                  </button>
+                  <button
+                    className={styles.shareBtnTwitter}
+                    onClick={shareOnTwitter}
+                  >
+                    <FaTwitter /> Twitter
+                  </button>
+                  <button
+                    className={styles.shareBtnFacebook}
+                    onClick={shareOnFacebook}
+                  >
+                    <FaFacebook /> Facebook
+                  </button>
+                  <button
+                    className={styles.shareBtnLink}
+                    onClick={handleCopyLink}
+                  >
+                    <FaLink /> Copy Link
+                  </button>
+                </div>
+
+                <div className={styles.referralFooter}>
+                  <div className={styles.referralPerks}>
+                    <span className={styles.perkItem}>
+                      <FaCheckCircle /> You get ₦2,000
+                    </span>
+                    <span className={styles.perkItem}>
+                      <FaCheckCircle /> Friend gets ₦2,000
+                    </span>
+                    <span className={styles.perkItem}>
+                      <FaCheckCircle /> Unlimited referrals
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Survey Link */}
