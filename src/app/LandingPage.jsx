@@ -24,6 +24,7 @@ import {
 import styles from "./LandingPage.module.css";
 import CountdownTimer from "../components/ui/CountdownTimer/CountdownTimer";
 import WaitlistSection from "../components/WaitlistSection/WaitlistSection";
+import SEO from "../components/seo/SEO";
 
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar", flag: "🇺🇸" },
@@ -261,566 +262,595 @@ export default function LandingPage() {
   const doubled = [...CURRENCIES, ...CURRENCIES];
 
   return (
-    <div className={styles.page}>
-      {/* ── Navbar ── */}
-      <nav className={styles.navbar}>
-        <Link to="/" className={styles.navLogo}>
-          Skilled<span>Proz</span>
-        </Link>
+    <>
+      {/* ── SEO Component ── */}
+      <SEO
+        title="Hire Verified Workers & Skilled Trades in Nigeria | SkilledProz"
+        description="Find trusted electricians, plumbers, carpenters, and skilled workers. Verified profiles, escrow payments, GPS tracking, and dispute resolution. Join 500+ early adopters."
+        keywords="hire workers, skilled trades, verified professionals, Nigeria, gig economy, plumber, electrician, carpenter, freelance work, escrow payments"
+        canonical="https://skilledproz.com"
+        ogImage="https://skilledproz.com/og-image.jpg"
+        ogType="website"
+        author="SkilledProz"
+        tags={[
+          "hire workers",
+          "skilled trades",
+          "Nigeria",
+          "gig economy",
+          "verified professionals",
+        ]}
+      />
 
-        <ul className={styles.navLinks}>
+      <div className={styles.page}>
+        {/* ── Navbar ── */}
+        <nav className={styles.navbar}>
+          <Link to="/" className={styles.navLogo}>
+            Skilled<span>Proz</span>
+          </Link>
+
+          <ul className={styles.navLinks}>
+            {[
+              ["About us", "/about"],
+              ["Terms of Service", "/terms"],
+              ["Contact Us", "/contact"],
+            ].map(([label, href]) => (
+              <li key={label}>
+                <Link to={href}>{label}</Link>
+              </li>
+            ))}
+          </ul>
+
+          <div className={styles.navCta}>
+            <Link to="/login" className={styles.btnOutline}>
+              Sign in
+            </Link>
+            <Link to="/register" className={styles.btnPrimary}>
+              Get Started
+            </Link>
+          </div>
+
+          <button
+            className={styles.menuToggle}
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Menu"
+          >
+            {mobileOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </nav>
+
+        {/* Mobile nav */}
+        <div className={`${styles.mobileNav} ${mobileOpen ? styles.open : ""}`}>
           {[
             ["About us", "/about"],
             ["Terms of Service", "/terms"],
             ["Contact Us", "/contact"],
+            ["Sign in", "/login"],
+            ["Get Started Free", "/register"],
           ].map(([label, href]) => (
-            <li key={label}>
-              <Link to={href}>{label}</Link>
-            </li>
+            <Link key={label} to={href} onClick={() => setMobileOpen(false)}>
+              {label}
+            </Link>
           ))}
-        </ul>
-
-        <div className={styles.navCta}>
-          <Link to="/login" className={styles.btnOutline}>
-            Sign in
-          </Link>
-          <Link to="/register" className={styles.btnPrimary}>
-            Get Started
-          </Link>
         </div>
 
-        <button
-          className={styles.menuToggle}
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Menu"
-        >
-          {mobileOpen ? <FaTimes /> : <FaBars />}
-        </button>
-      </nav>
+        {/* ── Hero ── */}
+        <section className={styles.hero}>
+          <div className={styles.heroBg} />
 
-      {/* Mobile nav */}
-      <div className={`${styles.mobileNav} ${mobileOpen ? styles.open : ""}`}>
-        {[
-          ["About us", "/about"],
-          ["Terms of Service", "/terms"],
-          ["Contact Us", "/contact"],
-          ["Sign in", "/login"],
-          ["Get Started Free", "/register"],
-        ].map(([label, href]) => (
-          <Link key={label} to={href} onClick={() => setMobileOpen(false)}>
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Hero ── */}
-      <section className={styles.hero}>
-        <div className={styles.heroBg} />
-
-        <div className={styles.heroContent}>
-          <div className={styles.heroBadge}>
-            <span className={styles.heroBadgeDot} />
-            Live in 50+ countries · 29 currencies · 500+ trades
-          </div>
-
-          <h1 className={styles.heroTitle}>
-            The global platform
-            <br />
-            for <em>skilled and office proz</em>
-          </h1>
-
-          <p className={styles.heroSub}>
-            SkilledProz connects hirers with verified tradespeople across every
-            profession, every country, every currency — with escrow protection,
-            GPS tracking, video calls, and dispute resolution built in.
-          </p>
-
-          <div className={styles.heroActions}>
-            <Link to="/register/hirer" className={styles.btnHeroPrimary}>
-              Hire a Worker <FaArrowRight />
-            </Link>
-            <Link to="/register/worker" className={styles.btnHeroSecondary}>
-              Start Earning
-            </Link>
-          </div>
-
-          {/* ⏳ COUNTDOWN TIMER - Added here */}
-          <div className={styles.heroCountdown}>
-            <CountdownTimer
-              targetDate="2026-09-01T00:00:00"
-              title="Early Access Launch"
-              size="md"
-              variant="orange"
-            />
-            {/* Survey Toggle */}
-            <button
-              className={styles.surveyToggle}
-              onClick={() => setShowSurvey(!showSurvey)}
-            >
-              {showSurvey ? "−" : "+"} Tell us what you need
-            </button>
-            {showSurvey && (
-              <div className={styles.surveyEmbed}>
-                <p className={styles.surveyText}>
-                  👋 Help us build what matters most to you
-                </p>
-                <a href="/survey" className={styles.surveyLink}>
-                  Take 2-min survey <FaArrowRight />
-                </a>
-              </div>
-            )}
-          </div>
-
-          <div className={styles.heroStats}>
-            {STATS.map((s) => (
-              <div key={s.label} className={styles.statCard}>
-                <span className={styles.statValue}>{s.value}</span>
-                <span className={styles.statLabel}>{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Hero panel — hidden on mobile via CSS */}
-        <div className={styles.heroPanel}>
-          <div className={styles.heroPanelInner}>
-            <div className={styles.panelHeader}>
-              <span className={styles.panelHeaderLabel}>
-                Live Platform Activity
-              </span>
-              <span className={styles.panelLive}>
-                <span className={styles.panelLiveDot} /> Active
-              </span>
+          <div className={styles.heroContent}>
+            <div className={styles.heroBadge}>
+              <span className={styles.heroBadgeDot} />
+              Live in 50+ countries · 29 currencies · 500+ trades
             </div>
-            {PANEL_ITEMS.map((item, i) => (
-              <div key={item.label} className={styles.panelItem}>
-                <span className={styles.panelItemIcon}>{item.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div className={styles.panelItemLabel}>{item.label}</div>
-                  <div className={styles.panelItemVal}>{item.val}</div>
-                </div>
-                <div className={styles.panelItemSub}>{item.sub}</div>
-                <span
-                  className={styles.panelItemDot}
-                  style={{ background: item.color }}
-                />
-              </div>
-            ))}
-            <div className={styles.panelFooter}>
-              <div>
-                <div className={styles.panelFooterTitle}>
-                  Platform Protection
-                </div>
-                <div className={styles.panelFooterVal}>
-                  Every booking is escrow-protected
-                </div>
-              </div>
-              <span style={{ fontSize: "1.75rem" }}>
-                <FaShieldAlt />
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── Currency Ticker ── */}
-      <div className={styles.ticker}>
-        <div className={styles.tickerInner}>
-          <span className={styles.tickerLabel}>29 Currencies</span>
-          <div className={styles.tickerTrack}>
-            <div className={styles.tickerScroll}>
-              {doubled.map((c, i) => (
-                <div key={i} className={styles.tickerItem}>
-                  <span>{c.flag}</span>
-                  <span className={styles.tickerItemSymbol}>{c.symbol}</span>
-                  <span>{c.code}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+            <h1 className={styles.heroTitle}>
+              The global platform
+              <br />
+              for <em>skilled and office proz</em>
+            </h1>
 
-      {/* ── Features ── */}
-      <section className={`${styles.section} ${styles.featuresSection}`}>
-        <div className={styles.sectionInner}>
-          <span className={styles.sectionEyebrow}>Everything Built In</span>
-          <h2 className={styles.sectionTitle}>
-            Not just a marketplace. A complete work platform.
-          </h2>
-          <p className={styles.sectionSub}>
-            Every feature you need to hire safely, work confidently, and get
-            paid — all in one place.
-          </p>
+            <p className={styles.heroSub}>
+              SkilledProz connects hirers with verified tradespeople across
+              every profession, every country, every currency — with escrow
+              protection, GPS tracking, video calls, and dispute resolution
+              built in.
+            </p>
 
-          <div className={styles.featuresGrid}>
-            {FEATURES.map((f) => (
-              <div key={f.title} className={styles.featureCard}>
-                <span className={styles.featureIcon}>{f.icon}</span>
-                <h3 className={styles.featureTitle}>{f.title}</h3>
-                <p className={styles.featureDesc}>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section
-        id="how-it-works"
-        className={`${styles.section} ${styles.howSection}`}
-      >
-        <div className={styles.sectionInner}>
-          <span className={styles.sectionEyebrow}>How It Works</span>
-          <h2 className={styles.sectionTitle}>Two sides. One platform.</h2>
-
-          <div className={styles.tabToggle}>
-            <button
-              className={`${styles.tabBtn} ${activeTab === "hirer" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("hirer")}
-            >
-              I want to hire
-            </button>
-            <button
-              className={`${styles.tabBtn} ${activeTab === "worker" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("worker")}
-            >
-              I want to earn
-            </button>
-          </div>
-
-          <div className={styles.stepsGrid}>
-            {(activeTab === "hirer" ? HIRER_STEPS : WORKER_STEPS).map((s) => (
-              <div key={s.num} className={styles.stepCard}>
-                <div className={styles.stepNum}>{s.num}</div>
-                <h3 className={styles.stepTitle}>{s.title}</h3>
-                <p className={styles.stepDesc}>{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Categories ── */}
-      <section className={`${styles.section} ${styles.categoriesSection}`}>
-        <div className={styles.sectionInner}>
-          <div className={styles.catHeader}>
-            <div>
-              <span className={styles.sectionEyebrow}>
-                Every Profession, Every Country
-              </span>
-              <h2 className={styles.sectionTitle}>
-                {categories.length > 0 ? `${categories.length}+` : "500+"}{" "}
-                categories — and growing
-              </h2>
-            </div>
-            <input
-              className={styles.catSearchInput}
-              placeholder="Search categories..."
-              value={catSearch}
-              onChange={(e) => setCatSearch(e.target.value)}
-            />
-          </div>
-
-          <div className={styles.catGrid}>
-            {(catSearch ? filteredCats : filteredCats.slice(0, 48)).map(
-              (cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/categories/${cat.slug}`}
-                  className={styles.catCard}
-                >
-                  <span className={styles.catIcon}>{cat.icon || "🔧"}</span>
-                  <span className={styles.catName}>{cat.name}</span>
-                  {cat._count?.workers > 0 && (
-                    <span className={styles.catCount}>
-                      {cat._count.workers} workers
-                    </span>
-                  )}
-                </Link>
-              ),
-            )}
-          </div>
-
-          {!catSearch && filteredCats.length > 48 && (
-            <div className={styles.catViewAll}>
-              <Link to="/categories" className={styles.btnViewAll}>
-                Browse all {filteredCats.length} categories <FaArrowRight />
+            <div className={styles.heroActions}>
+              <Link to="/register/hirer" className={styles.btnHeroPrimary}>
+                Hire a Worker <FaArrowRight />
+              </Link>
+              <Link to="/register/worker" className={styles.btnHeroSecondary}>
+                Start Earning
               </Link>
             </div>
-          )}
 
-          <div className={styles.catCustomBox}>
-            <div className={styles.catCustomInner}>
-              <div className={styles.catCustomText}>
-                <p className={styles.catCustomTitle}>
-                  Can't find your profession? Add it.
-                </p>
-                <p className={styles.catCustomSub}>
-                  SkilledProz is global. If your trade isn't listed, add it
-                  instantly — it goes live for the whole platform.
-                </p>
-              </div>
-              {!showCustomCat ? (
-                <button
-                  className={styles.catAddBtn}
-                  onClick={() => setShowCustomCat(true)}
-                >
-                  <FaPlus /> Add your profession
-                </button>
-              ) : (
-                <div className={styles.catAddForm}>
-                  <input
-                    autoFocus
-                    className={styles.catAddInput}
-                    value={customCatName}
-                    onChange={(e) => setCustomCatName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
-                    placeholder="e.g. Drone Operator, Solar Engineer..."
-                  />
-                  <button
-                    className={styles.catSubmitBtn}
-                    onClick={handleAddCategory}
-                    disabled={addingCat || !customCatName.trim()}
-                  >
-                    {addingCat ? "Adding..." : "Add"}
-                  </button>
-                  <button
-                    className={styles.catCancelBtn}
-                    onClick={() => {
-                      setShowCustomCat(false);
-                      setCustomCatName("");
-                    }}
-                  >
-                    Cancel
-                  </button>
+            {/* ⏳ COUNTDOWN TIMER - Added here */}
+            <div className={styles.heroCountdown}>
+              <CountdownTimer
+                targetDate="2026-09-01T00:00:00"
+                title="Early Access Launch"
+                size="md"
+                variant="orange"
+              />
+              {/* Survey Toggle */}
+              <button
+                className={styles.surveyToggle}
+                onClick={() => setShowSurvey(!showSurvey)}
+              >
+                {showSurvey ? "−" : "+"} Tell us what you need
+              </button>
+              {showSurvey && (
+                <div className={styles.surveyEmbed}>
+                  <p className={styles.surveyText}>
+                    👋 Help us build what matters most to you
+                  </p>
+                  <a href="/survey" className={styles.surveyLink}>
+                    Take 2-min survey <FaArrowRight />
+                  </a>
                 </div>
               )}
             </div>
-            {addedCat && (
-              <div className={styles.catAddedMsg}>
-                <FaCheckCircle /> "{addedCat.name}" is now live on SkilledProz!
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
-      {/* ── Currencies ── */}
-      <section className={`${styles.section} ${styles.currenciesSection}`}>
-        <div className={styles.sectionInner}>
-          <span className={styles.sectionEyebrow}>Global Payments</span>
-          <h2 className={styles.sectionTitle}>Pay and earn in your currency</h2>
-          <p className={styles.sectionSub}>
-            From Naira to Yen, Pound to Dirham — and crypto (USDC, USDT, BTC,
-            ETH). Three independent currency settings per account: dashboard
-            display, payment, and profile rate.
-          </p>
-
-          <div className={styles.currenciesGrid}>
-            {CURRENCIES.map((c) => (
-              <div key={c.code} className={styles.currencyCard}>
-                <span className={styles.currencyFlag}>{c.flag}</span>
-                <span className={styles.currencySymbol}>{c.symbol}</span>
-                <span className={styles.currencyCode}>{c.code}</span>
-                <span className={styles.currencyName}>{c.name}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.currencyMethods}>
-            {[
-              "Bank Transfer",
-              "Card Payments",
-              "Escrow Release",
-              "Crypto (USDC/USDT)",
-              "Instant Withdrawal",
-            ].map((m) => (
-              <span key={m} className={styles.currencyMethod}>
-                <FaCheck /> {m}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className={`${styles.section} ${styles.ctaSection}`}>
-        <div className={styles.sectionInner}>
-          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-            <span className={styles.sectionEyebrow}>Join SkilledProz</span>
-            <h2
-              className={styles.sectionTitle}
-              style={{ maxWidth: "none", textAlign: "center" }}
-            >
-              Choose your path. Start today.
-            </h2>
-          </div>
-          <div className={styles.ctaGrid}>
-            <div className={styles.ctaCard}>
-              <span className={styles.ctaCardEmoji}>
-                <FaBuilding />
-              </span>
-              <h3 className={styles.ctaCardTitle}>Hire a Worker</h3>
-              <p className={styles.ctaCardDesc}>
-                Post jobs, browse verified workers, book with escrow protection.
-                GPS tracking, video calls, insurance, disputes — all covered.
-              </p>
-              <ul className={styles.ctaList}>
-                {[
-                  "Free to post jobs",
-                  "Pay only when satisfied",
-                  "500+ trade categories",
-                  "29 currencies accepted",
-                  "Dispute resolution included",
-                ].map((item) => (
-                  <li key={item}>
-                    <FaCheck /> {item}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register/hirer" className={styles.ctaBtn}>
-                Create Hirer Account <FaArrowRight />
-              </Link>
-            </div>
-
-            <div className={`${styles.ctaCard} ${styles.ctaCardAccent}`}>
-              <span className={styles.ctaCardEmoji}>
-                <FaBolt />
-              </span>
-              <h3 className={styles.ctaCardTitle}>Start Earning</h3>
-              <p className={styles.ctaCardDesc}>
-                Set your rates (hourly, daily, weekly, monthly, custom), get
-                verified, receive bookings, and get paid to your local currency.
-              </p>
-              <ul className={styles.ctaList}>
-                {[
-                  "Multi-rate pricing (hourly to monthly)",
-                  "Get paid in your currency",
-                  "Portfolio & certifications",
-                  "Featured listing boosts",
-                  "SOS safety system included",
-                ].map((item) => (
-                  <li key={item}>
-                    <FaCheck /> {item}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register/worker" className={styles.ctaBtnOutline}>
-                Create Worker Account <FaArrowRight />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Safety strip ── */}
-      <div className={styles.safetyStrip}>
-        {[
-          [<FaLock />, "Escrow on every booking"],
-          [<FaMapMarkerAlt />, "GPS verification"],
-          [<FaShieldAlt />, "Optional job insurance"],
-          [<FaExclamationTriangle />, "SOS emergency alerts"],
-          [<FaBalanceScale />, "48hr dispute resolution"],
-          [<FaCheckCircle />, "ID & background checks"],
-        ].map(([icon, label]) => (
-          <div key={label} className={styles.safetyItem}>
-            {icon} {label}
-          </div>
-        ))}
-      </div>
-
-      <WaitlistSection />
-
-      {/* ── Footer ── */}
-      <footer className={styles.footer}>
-        <div className={styles.footerTop}>
-          <div>
-            <Link to="/" className={styles.navLogo}>
-              Skilled<span>Proz</span>
-            </Link>
-            <p className={styles.footerBrandDesc}>
-              The global marketplace for skilled trades. Any profession, any
-              country, any currency.
-            </p>
-            <div className={styles.footerSocials}>
-              {["𝕏", "in", "▶", "f"].map((s) => (
-                <a key={s} href="#" className={styles.socialLink}>
-                  {s}
-                </a>
+            <div className={styles.heroStats}>
+              {STATS.map((s) => (
+                <div key={s.label} className={styles.statCard}>
+                  <span className={styles.statValue}>{s.value}</span>
+                  <span className={styles.statLabel}>{s.label}</span>
+                </div>
               ))}
             </div>
           </div>
 
-          {[
-            {
-              title: "Company",
-              links: [
-                ["About Us", "/about"],
-                ["Contact", "/contact"],
-                ["Privacy Policy", "/privacy"],
-                ["Terms of Service", "/terms"],
-                ["Sign In", "/login"],
-              ],
-            },
-          ].map((col) => (
-            <div key={col.title}>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: "#F5F0EB",
-                  marginBottom: "1.25rem",
-                }}
-              >
-                {col.title}
-              </p>
-              <ul
-                style={{
-                  listStyle: "none",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.625rem",
-                }}
-              >
-                {col.links.map(([label, href]) => (
-                  <li key={label}>
-                    <Link
-                      to={href}
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "rgba(245,240,235,0.4)",
-                        textDecoration: "none",
-                        transition: "color 0.2s",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = "#F59E0B")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "rgba(245,240,235,0.4)")
-                      }
-                    >
-                      {label}
-                    </Link>
-                  </li>
+          {/* Hero panel — hidden on mobile via CSS */}
+          <div className={styles.heroPanel}>
+            <div className={styles.heroPanelInner}>
+              <div className={styles.panelHeader}>
+                <span className={styles.panelHeaderLabel}>
+                  Live Platform Activity
+                </span>
+                <span className={styles.panelLive}>
+                  <span className={styles.panelLiveDot} /> Active
+                </span>
+              </div>
+              {PANEL_ITEMS.map((item, i) => (
+                <div key={item.label} className={styles.panelItem}>
+                  <span className={styles.panelItemIcon}>{item.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div className={styles.panelItemLabel}>{item.label}</div>
+                    <div className={styles.panelItemVal}>{item.val}</div>
+                  </div>
+                  <div className={styles.panelItemSub}>{item.sub}</div>
+                  <span
+                    className={styles.panelItemDot}
+                    style={{ background: item.color }}
+                  />
+                </div>
+              ))}
+              <div className={styles.panelFooter}>
+                <div>
+                  <div className={styles.panelFooterTitle}>
+                    Platform Protection
+                  </div>
+                  <div className={styles.panelFooterVal}>
+                    Every booking is escrow-protected
+                  </div>
+                </div>
+                <span style={{ fontSize: "1.75rem" }}>
+                  <FaShieldAlt />
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Currency Ticker ── */}
+        <div className={styles.ticker}>
+          <div className={styles.tickerInner}>
+            <span className={styles.tickerLabel}>29 Currencies</span>
+            <div className={styles.tickerTrack}>
+              <div className={styles.tickerScroll}>
+                {doubled.map((c, i) => (
+                  <div key={i} className={styles.tickerItem}>
+                    <span>{c.flag}</span>
+                    <span className={styles.tickerItemSymbol}>{c.symbol}</span>
+                    <span>{c.code}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Features ── */}
+        <section className={`${styles.section} ${styles.featuresSection}`}>
+          <div className={styles.sectionInner}>
+            <span className={styles.sectionEyebrow}>Everything Built In</span>
+            <h2 className={styles.sectionTitle}>
+              Not just a marketplace. A complete work platform.
+            </h2>
+            <p className={styles.sectionSub}>
+              Every feature you need to hire safely, work confidently, and get
+              paid — all in one place.
+            </p>
+
+            <div className={styles.featuresGrid}>
+              {FEATURES.map((f) => (
+                <div key={f.title} className={styles.featureCard}>
+                  <span className={styles.featureIcon}>{f.icon}</span>
+                  <h3 className={styles.featureTitle}>{f.title}</h3>
+                  <p className={styles.featureDesc}>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── How it works ── */}
+        <section
+          id="how-it-works"
+          className={`${styles.section} ${styles.howSection}`}
+        >
+          <div className={styles.sectionInner}>
+            <span className={styles.sectionEyebrow}>How It Works</span>
+            <h2 className={styles.sectionTitle}>Two sides. One platform.</h2>
+
+            <div className={styles.tabToggle}>
+              <button
+                className={`${styles.tabBtn} ${activeTab === "hirer" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("hirer")}
+              >
+                I want to hire
+              </button>
+              <button
+                className={`${styles.tabBtn} ${activeTab === "worker" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("worker")}
+              >
+                I want to earn
+              </button>
+            </div>
+
+            <div className={styles.stepsGrid}>
+              {(activeTab === "hirer" ? HIRER_STEPS : WORKER_STEPS).map((s) => (
+                <div key={s.num} className={styles.stepCard}>
+                  <div className={styles.stepNum}>{s.num}</div>
+                  <h3 className={styles.stepTitle}>{s.title}</h3>
+                  <p className={styles.stepDesc}>{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Categories ── */}
+        <section className={`${styles.section} ${styles.categoriesSection}`}>
+          <div className={styles.sectionInner}>
+            <div className={styles.catHeader}>
+              <div>
+                <span className={styles.sectionEyebrow}>
+                  Every Profession, Every Country
+                </span>
+                <h2 className={styles.sectionTitle}>
+                  {categories.length > 0 ? `${categories.length}+` : "500+"}{" "}
+                  categories — and growing
+                </h2>
+              </div>
+              <input
+                className={styles.catSearchInput}
+                placeholder="Search categories..."
+                value={catSearch}
+                onChange={(e) => setCatSearch(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.catGrid}>
+              {(catSearch ? filteredCats : filteredCats.slice(0, 48)).map(
+                (cat) => (
+                  <Link
+                    key={cat.id}
+                    to={`/categories/${cat.slug}`}
+                    className={styles.catCard}
+                  >
+                    <span className={styles.catIcon}>{cat.icon || "🔧"}</span>
+                    <span className={styles.catName}>{cat.name}</span>
+                    {cat._count?.workers > 0 && (
+                      <span className={styles.catCount}>
+                        {cat._count.workers} workers
+                      </span>
+                    )}
+                  </Link>
+                ),
+              )}
+            </div>
+
+            {!catSearch && filteredCats.length > 48 && (
+              <div className={styles.catViewAll}>
+                <Link to="/categories" className={styles.btnViewAll}>
+                  Browse all {filteredCats.length} categories <FaArrowRight />
+                </Link>
+              </div>
+            )}
+
+            <div className={styles.catCustomBox}>
+              <div className={styles.catCustomInner}>
+                <div className={styles.catCustomText}>
+                  <p className={styles.catCustomTitle}>
+                    Can't find your profession? Add it.
+                  </p>
+                  <p className={styles.catCustomSub}>
+                    SkilledProz is global. If your trade isn't listed, add it
+                    instantly — it goes live for the whole platform.
+                  </p>
+                </div>
+                {!showCustomCat ? (
+                  <button
+                    className={styles.catAddBtn}
+                    onClick={() => setShowCustomCat(true)}
+                  >
+                    <FaPlus /> Add your profession
+                  </button>
+                ) : (
+                  <div className={styles.catAddForm}>
+                    <input
+                      autoFocus
+                      className={styles.catAddInput}
+                      value={customCatName}
+                      onChange={(e) => setCustomCatName(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleAddCategory()
+                      }
+                      placeholder="e.g. Drone Operator, Solar Engineer..."
+                    />
+                    <button
+                      className={styles.catSubmitBtn}
+                      onClick={handleAddCategory}
+                      disabled={addingCat || !customCatName.trim()}
+                    >
+                      {addingCat ? "Adding..." : "Add"}
+                    </button>
+                    <button
+                      className={styles.catCancelBtn}
+                      onClick={() => {
+                        setShowCustomCat(false);
+                        setCustomCatName("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+              {addedCat && (
+                <div className={styles.catAddedMsg}>
+                  <FaCheckCircle /> "{addedCat.name}" is now live on
+                  SkilledProz!
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Currencies ── */}
+        <section className={`${styles.section} ${styles.currenciesSection}`}>
+          <div className={styles.sectionInner}>
+            <span className={styles.sectionEyebrow}>Global Payments</span>
+            <h2 className={styles.sectionTitle}>
+              Pay and earn in your currency
+            </h2>
+            <p className={styles.sectionSub}>
+              From Naira to Yen, Pound to Dirham — and crypto (USDC, USDT, BTC,
+              ETH). Three independent currency settings per account: dashboard
+              display, payment, and profile rate.
+            </p>
+
+            <div className={styles.currenciesGrid}>
+              {CURRENCIES.map((c) => (
+                <div key={c.code} className={styles.currencyCard}>
+                  <span className={styles.currencyFlag}>{c.flag}</span>
+                  <span className={styles.currencySymbol}>{c.symbol}</span>
+                  <span className={styles.currencyCode}>{c.code}</span>
+                  <span className={styles.currencyName}>{c.name}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.currencyMethods}>
+              {[
+                "Bank Transfer",
+                "Card Payments",
+                "Escrow Release",
+                "Crypto (USDC/USDT)",
+                "Instant Withdrawal",
+              ].map((m) => (
+                <span key={m} className={styles.currencyMethod}>
+                  <FaCheck /> {m}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className={`${styles.section} ${styles.ctaSection}`}>
+          <div className={styles.sectionInner}>
+            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+              <span className={styles.sectionEyebrow}>Join SkilledProz</span>
+              <h2
+                className={styles.sectionTitle}
+                style={{ maxWidth: "none", textAlign: "center" }}
+              >
+                Choose your path. Start today.
+              </h2>
+            </div>
+            <div className={styles.ctaGrid}>
+              <div className={styles.ctaCard}>
+                <span className={styles.ctaCardEmoji}>
+                  <FaBuilding />
+                </span>
+                <h3 className={styles.ctaCardTitle}>Hire a Worker</h3>
+                <p className={styles.ctaCardDesc}>
+                  Post jobs, browse verified workers, book with escrow
+                  protection. GPS tracking, video calls, insurance, disputes —
+                  all covered.
+                </p>
+                <ul className={styles.ctaList}>
+                  {[
+                    "Free to post jobs",
+                    "Pay only when satisfied",
+                    "500+ trade categories",
+                    "29 currencies accepted",
+                    "Dispute resolution included",
+                  ].map((item) => (
+                    <li key={item}>
+                      <FaCheck /> {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/register/hirer" className={styles.ctaBtn}>
+                  Create Hirer Account <FaArrowRight />
+                </Link>
+              </div>
+
+              <div className={`${styles.ctaCard} ${styles.ctaCardAccent}`}>
+                <span className={styles.ctaCardEmoji}>
+                  <FaBolt />
+                </span>
+                <h3 className={styles.ctaCardTitle}>Start Earning</h3>
+                <p className={styles.ctaCardDesc}>
+                  Set your rates (hourly, daily, weekly, monthly, custom), get
+                  verified, receive bookings, and get paid to your local
+                  currency.
+                </p>
+                <ul className={styles.ctaList}>
+                  {[
+                    "Multi-rate pricing (hourly to monthly)",
+                    "Get paid in your currency",
+                    "Portfolio & certifications",
+                    "Featured listing boosts",
+                    "SOS safety system included",
+                  ].map((item) => (
+                    <li key={item}>
+                      <FaCheck /> {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/register/worker" className={styles.ctaBtnOutline}>
+                  Create Worker Account <FaArrowRight />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Safety strip ── */}
+        <div className={styles.safetyStrip}>
+          {[
+            [<FaLock />, "Escrow on every booking"],
+            [<FaMapMarkerAlt />, "GPS verification"],
+            [<FaShieldAlt />, "Optional job insurance"],
+            [<FaExclamationTriangle />, "SOS emergency alerts"],
+            [<FaBalanceScale />, "48hr dispute resolution"],
+            [<FaCheckCircle />, "ID & background checks"],
+          ].map(([icon, label]) => (
+            <div key={label} className={styles.safetyItem}>
+              {icon} {label}
             </div>
           ))}
         </div>
-        <div className={styles.footerBottom}>
-          <span className={styles.footerCopy}>
-            © {new Date().getFullYear()} SkilledProz Technologies Ltd. All
-            rights reserved.
-          </span>
-          <div className={styles.footerLegal}>
-            <Link to="/privacy">Privacy</Link>
-            <Link to="/terms">Terms</Link>
+
+        <WaitlistSection />
+
+        {/* ── Footer ── */}
+        <footer className={styles.footer}>
+          <div className={styles.footerTop}>
+            <div>
+              <Link to="/" className={styles.navLogo}>
+                Skilled<span>Proz</span>
+              </Link>
+              <p className={styles.footerBrandDesc}>
+                The global marketplace for skilled trades. Any profession, any
+                country, any currency.
+              </p>
+              <div className={styles.footerSocials}>
+                {["𝕏", "in", "▶", "f"].map((s) => (
+                  <a key={s} href="#" className={styles.socialLink}>
+                    {s}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {[
+              {
+                title: "Company",
+                links: [
+                  ["About Us", "/about"],
+                  ["Contact", "/contact"],
+                  ["Privacy Policy", "/privacy"],
+                  ["Terms of Service", "/terms"],
+                  ["Sign In", "/login"],
+                ],
+              },
+            ].map((col) => (
+              <div key={col.title}>
+                <p
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "#F5F0EB",
+                    marginBottom: "1.25rem",
+                  }}
+                >
+                  {col.title}
+                </p>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.625rem",
+                  }}
+                >
+                  {col.links.map(([label, href]) => (
+                    <li key={label}>
+                      <Link
+                        to={href}
+                        style={{
+                          fontSize: "0.875rem",
+                          color: "rgba(245,240,235,0.4)",
+                          textDecoration: "none",
+                          transition: "color 0.2s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.color = "#F59E0B")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.color =
+                            "rgba(245,240,235,0.4)")
+                        }
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        </div>
-      </footer>
-    </div>
+          <div className={styles.footerBottom}>
+            <span className={styles.footerCopy}>
+              © {new Date().getFullYear()} SkilledProz Technologies Ltd. All
+              rights reserved.
+            </span>
+            <div className={styles.footerLegal}>
+              <Link to="/privacy">Privacy</Link>
+              <Link to="/terms">Terms</Link>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </>
   );
 }
