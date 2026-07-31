@@ -22,6 +22,8 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import styles from "./LandingPage.module.css";
+import CountdownTimer from "../components/ui/CountdownTimer/CountdownTimer";
+import WaitlistSection from "../components/WaitlistSection/WaitlistSection";
 
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar", flag: "🇺🇸" },
@@ -211,6 +213,7 @@ export default function LandingPage() {
   const [addedCat, setAddedCat] = useState(null);
   const [activeTab, setActiveTab] = useState("hirer");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showSurvey, setShowSurvey] = useState(false);
 
   useEffect(() => {
     fetch(
@@ -339,6 +342,33 @@ export default function LandingPage() {
             <Link to="/register/worker" className={styles.btnHeroSecondary}>
               Start Earning
             </Link>
+          </div>
+
+          {/* ⏳ COUNTDOWN TIMER - Added here */}
+          <div className={styles.heroCountdown}>
+            <CountdownTimer
+              targetDate="2026-09-01T00:00:00"
+              title="Early Access Launch"
+              size="md"
+              variant="orange"
+            />
+            {/* Survey Toggle */}
+            <button
+              className={styles.surveyToggle}
+              onClick={() => setShowSurvey(!showSurvey)}
+            >
+              {showSurvey ? "−" : "+"} Tell us what you need
+            </button>
+            {showSurvey && (
+              <div className={styles.surveyEmbed}>
+                <p className={styles.surveyText}>
+                  👋 Help us build what matters most to you
+                </p>
+                <a href="/survey" className={styles.surveyLink}>
+                  Take 2-min survey <FaArrowRight />
+                </a>
+              </div>
+            )}
           </div>
 
           <div className={styles.heroStats}>
@@ -699,6 +729,8 @@ export default function LandingPage() {
           </div>
         ))}
       </div>
+
+      <WaitlistSection />
 
       {/* ── Footer ── */}
       <footer className={styles.footer}>

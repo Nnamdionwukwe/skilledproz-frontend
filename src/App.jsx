@@ -112,6 +112,9 @@ import AdminExternalJobStats from "./pages/admin/AdminExternalJobStats.jsx";
 import WorkerSavedJobs from "./pages/worker/WorkerSavedJobs/WorkerSavedJobs.jsx";
 import CompletedJobs from "./pages/worker/CompletedJobs/CompletedJobs.jsx";
 import ManualPaymentSuccess from "./components/payment/ManualPaymentSuccess.jsx";
+import WaitlistSection from "./components/WaitlistSection/WaitlistSection.jsx";
+import SurveyModal from "./components/survey/SurveyModal.jsx";
+import SurveyPage from "./components/survey/SurveyModal.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1010,6 +1013,8 @@ export default function App() {
         <Route path="/categories/:slug" element={<CategoryDetail />} />
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
         <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
+        <Route path="/waitlist" element={<WaitlistSection />} />
+        <Route path="/survey" element={<SurveyPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
