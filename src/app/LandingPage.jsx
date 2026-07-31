@@ -809,6 +809,7 @@ export default function LandingPage() {
                   ["Privacy Policy", "/privacy"],
                   ["Terms of Service", "/terms"],
                   ["Sign In", "/login"],
+                  ["Blog", "/blog"],
                 ],
               },
             ].map((col) => (

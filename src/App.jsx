@@ -115,6 +115,8 @@ import ManualPaymentSuccess from "./components/payment/ManualPaymentSuccess.jsx"
 import WaitlistSection from "./components/WaitlistSection/WaitlistSection.jsx";
 import SurveyModal from "./components/survey/SurveyModal.jsx";
 import SurveyPage from "./components/survey/SurveyModal.jsx";
+import FeedbackButton from "./components/Feedback/FeedbackButton.jsx";
+import BlogPage from "./pages/Blog/BlogPage.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1015,6 +1017,9 @@ export default function App() {
         <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
         <Route path="/waitlist" element={<WaitlistSection />} />
         <Route path="/survey" element={<SurveyPage />} />
+        <Route path="/feedback" element={<FeedbackButton />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
