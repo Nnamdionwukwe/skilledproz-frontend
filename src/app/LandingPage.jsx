@@ -303,6 +303,7 @@ export default function LandingPage() {
               ["About us", "/about"],
               ["Terms of Service", "/terms"],
               ["Contact Us", "/contact"],
+              ["Blog", "/blog"],
             ].map(([label, href]) => (
               <li key={label}>
                 <Link to={href}>{label}</Link>
@@ -334,6 +335,7 @@ export default function LandingPage() {
             ["About us", "/about"],
             ["Terms of Service", "/terms"],
             ["Contact Us", "/contact"],
+            ["Blog", "/blog"],
             ["Sign in", "/login"],
             ["Get Started Free", "/register"],
           ].map(([label, href]) => (
