@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FaLock,
@@ -20,12 +20,16 @@ import {
   FaBars,
   FaTimes,
   FaPlus,
+  FaComment,
 } from "react-icons/fa";
 import styles from "./LandingPage.module.css";
 import CountdownTimer from "../components/ui/CountdownTimer/CountdownTimer";
 import WaitlistSection from "../components/WaitlistSection/WaitlistSection";
 import SEO from "../components/seo/SEO";
+import FeedbackButton from "../components/Feedback/FeedbackButton";
+import { useAuthStore } from "../store/authStore";
 
+// ── CURRENCIES ──
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar", flag: "🇺🇸" },
   { code: "EUR", symbol: "€", name: "Euro", flag: "🇪🇺" },
@@ -58,6 +62,7 @@ const CURRENCIES = [
   { code: "USDT", symbol: "USDT", name: "Tether", flag: "₮" },
 ];
 
+// ── FEATURES ──
 const FEATURES = [
   {
     icon: <FaLock />,
@@ -121,6 +126,7 @@ const FEATURES = [
   },
 ];
 
+// ── STATS ──
 const STATS = [
   { value: "50+", label: "Countries" },
   { value: "29", label: "Currencies" },
@@ -128,6 +134,7 @@ const STATS = [
   { value: "100%", label: "Escrow Safe" },
 ];
 
+// ── HIRER_STEPS ──
 const HIRER_STEPS = [
   {
     num: "01",
@@ -151,6 +158,7 @@ const HIRER_STEPS = [
   },
 ];
 
+// ── WORKER_STEPS ──
 const WORKER_STEPS = [
   {
     num: "01",
@@ -174,6 +182,7 @@ const WORKER_STEPS = [
   },
 ];
 
+// ── PANEL_ITEMS ──
 const PANEL_ITEMS = [
   {
     icon: <FaLock />,
@@ -206,6 +215,7 @@ const PANEL_ITEMS = [
 ];
 
 export default function LandingPage() {
+  const { user } = useAuthStore();
   const [categories, setCategories] = useState([]);
   const [catSearch, setCatSearch] = useState("");
   const [showCustomCat, setShowCustomCat] = useState(false);
@@ -365,7 +375,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* ⏳ COUNTDOWN TIMER - Added here */}
+            {/* ── COUNTDOWN TIMER ── */}
             <div className={styles.heroCountdown}>
               <CountdownTimer
                 targetDate="2026-09-01T00:00:00"
@@ -373,7 +383,6 @@ export default function LandingPage() {
                 size="md"
                 variant="orange"
               />
-              {/* Survey Toggle */}
               <button
                 className={styles.surveyToggle}
                 onClick={() => setShowSurvey(!showSurvey)}
@@ -413,7 +422,7 @@ export default function LandingPage() {
                   <span className={styles.panelLiveDot} /> Active
                 </span>
               </div>
-              {PANEL_ITEMS.map((item, i) => (
+              {PANEL_ITEMS.map((item) => (
                 <div key={item.label} className={styles.panelItem}>
                   <span className={styles.panelItemIcon}>{item.icon}</span>
                   <div style={{ flex: 1 }}>
@@ -758,7 +767,18 @@ export default function LandingPage() {
           ))}
         </div>
 
+        {/* ── Waitlist Section ── */}
         <WaitlistSection />
+
+        {/* ── Feedback Button ── */}
+        <FeedbackButton
+          buttonText="Give Feedback"
+          buttonIcon={<FaComment />}
+          buttonPosition="fixed"
+          buttonColor="orange"
+          email={user?.email || ""}
+          userName={user?.name || ""}
+        />
 
         {/* ── Footer ── */}
         <footer className={styles.footer}>
