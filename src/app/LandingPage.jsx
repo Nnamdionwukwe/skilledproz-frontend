@@ -30,6 +30,7 @@ import SEO from "../components/seo/SEO";
 import FeedbackButton from "../components/Feedback/FeedbackButton";
 import { useAuthStore } from "../store/authStore";
 import AppDownload from "../components/AppDownload/AppDownload";
+import Footer from "./Footer";
 
 // ── CURRENCIES ──
 const CURRENCIES = [
@@ -793,96 +794,7 @@ export default function LandingPage() {
         />
 
         {/* ── Footer ── */}
-        <footer className={styles.footer}>
-          <div className={styles.footerTop}>
-            <div>
-              <Link to="/" className={styles.navLogo}>
-                Skilled<span>Proz</span>
-              </Link>
-              <p className={styles.footerBrandDesc}>
-                The global marketplace for skilled trades. Any profession, any
-                country, any currency.
-              </p>
-              <div className={styles.footerSocials}>
-                {["𝕏", "in", "▶", "f"].map((s) => (
-                  <a key={s} href="#" className={styles.socialLink}>
-                    {s}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {[
-              {
-                title: "Company",
-                links: [
-                  ["About Us", "/about"],
-                  ["Contact", "/contact"],
-                  ["Privacy Policy", "/privacy"],
-                  ["Terms of Service", "/terms"],
-                  ["Sign In", "/login"],
-                  ["Blog", "/blog"],
-                ],
-              },
-            ].map((col) => (
-              <div key={col.title}>
-                <p
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: "#F5F0EB",
-                    marginBottom: "1.25rem",
-                  }}
-                >
-                  {col.title}
-                </p>
-                <ul
-                  style={{
-                    listStyle: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.625rem",
-                  }}
-                >
-                  {col.links.map(([label, href]) => (
-                    <li key={label}>
-                      <Link
-                        to={href}
-                        style={{
-                          fontSize: "0.875rem",
-                          color: "rgba(245,240,235,0.4)",
-                          textDecoration: "none",
-                          transition: "color 0.2s",
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "#F59E0B")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            "rgba(245,240,235,0.4)")
-                        }
-                      >
-                        {label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className={styles.footerBottom}>
-            <span className={styles.footerCopy}>
-              © {new Date().getFullYear()} SkilledProz Technologies Ltd. All
-              rights reserved.
-            </span>
-            <div className={styles.footerLegal}>
-              <Link to="/privacy">Privacy</Link>
-              <Link to="/terms">Terms</Link>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </div>
     </>
   );
