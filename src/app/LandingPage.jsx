@@ -382,7 +382,6 @@ export default function LandingPage() {
               <Link to="/register/worker" className={styles.btnHeroSecondary}>
                 Start Earning
               </Link>
-
               <Link to="/download" className={styles.btnHeroApp}>
                 <FaDownload /> Download App
               </Link>
