@@ -322,12 +322,15 @@ export default function LandingPage() {
             </Link>
           </div>
 
+          {/* ── Hamburger Menu (uses CSS variables for colors) ── */}
           <button
-            className={styles.menuToggle}
+            className={`${styles.menuToggle} ${mobileOpen ? styles.active : ""}`}
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Menu"
           >
-            {mobileOpen ? <FaTimes /> : <FaBars />}
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
         </nav>
 
@@ -339,7 +342,8 @@ export default function LandingPage() {
             ["Contact Us", "/contact"],
             ["Blog", "/blog"],
             ["Sign in", "/login"],
-            ["Get Started Free", "/register"],
+            ["Get Started For Free", "/register"],
+            ["Download App", "/download"],
           ].map(([label, href]) => (
             <Link key={label} to={href} onClick={() => setMobileOpen(false)}>
               {label}
