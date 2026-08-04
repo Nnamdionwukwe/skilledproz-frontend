@@ -32,6 +32,7 @@ import {
   FaWeixin,
   FaLine,
   FaViber,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
 import styles from "./SocialQR.module.css";
 
@@ -237,18 +238,15 @@ function QRCodeWithLogo({ value, size, logoSize = 50 }) {
   const [logoLoaded, setLogoLoaded] = useState(false);
 
   useEffect(() => {
-    // Wait for QR code to render then add logo
     const timer = setTimeout(() => {
       const container = containerRef.current;
       if (!container) return;
 
-      // Check if logo already exists
       let existingLogo = container.querySelector(".qr-logo-overlay");
       if (existingLogo) {
         existingLogo.remove();
       }
 
-      // Create logo overlay
       const overlay = document.createElement("div");
       overlay.className = "qr-logo-overlay";
       overlay.style.cssText = `
@@ -280,7 +278,6 @@ function QRCodeWithLogo({ value, size, logoSize = 50 }) {
       `;
       img.onload = () => setLogoLoaded(true);
       img.onerror = () => {
-        // Fallback: show text logo if image fails
         overlay.innerHTML = `
           <div style="
             font-size: 12px;
@@ -296,7 +293,6 @@ function QRCodeWithLogo({ value, size, logoSize = 50 }) {
 
       overlay.appendChild(img);
 
-      // Make container relative if not already
       if (getComputedStyle(container).position === "static") {
         container.style.position = "relative";
       }
@@ -358,31 +354,22 @@ export default function SocialQR() {
   };
 
   const handleDownloadQR = () => {
-    // Find the QR code container with the overlay
     const wrapper = document.querySelector(".qr-code-wrapper");
     if (!wrapper) return;
 
-    // Get the SVG element
     const svg = wrapper.querySelector("svg");
     if (!svg) return;
 
-    // Clone the SVG
     const clonedSvg = svg.cloneNode(true);
-
-    // Create a canvas
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-
-    // Set canvas size
     const size = 300;
     canvas.width = size;
     canvas.height = size;
 
-    // Draw white background
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, size, size);
 
-    // Convert SVG to image
     const svgData = new XMLSerializer().serializeToString(clonedSvg);
     const svgBlob = new Blob([svgData], {
       type: "image/svg+xml;charset=utf-8",
@@ -391,10 +378,8 @@ export default function SocialQR() {
 
     const img = new Image();
     img.onload = function () {
-      // Draw QR code
       ctx.drawImage(img, 0, 0, size, size);
 
-      // Draw logo on top
       const logoImg = new Image();
       logoImg.src = "/skilledproz.PNG";
       logoImg.onload = function () {
@@ -402,16 +387,13 @@ export default function SocialQR() {
         const logoX = (size - logoSize) / 2;
         const logoY = (size - logoSize) / 2;
 
-        // Draw white circle behind logo
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, logoSize / 2 + 4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw logo
         ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
 
-        // Download
         const link = document.createElement("a");
         link.download = `skilledproz-${selectedPlatform.id}-qr.png`;
         link.href = canvas.toDataURL("image/png");
@@ -419,7 +401,6 @@ export default function SocialQR() {
         URL.revokeObjectURL(url);
       };
       logoImg.onerror = function () {
-        // Fallback: draw text logo
         const logoSize = 60;
         const logoX = (size - logoSize) / 2;
         const logoY = (size - logoSize) / 2;
@@ -518,35 +499,51 @@ export default function SocialQR() {
         </p>
       </div>
 
+      {/* ── Social Platforms Grid ── */}
       <div className={styles.platformGrid}>
         {SOCIAL_PLATFORMS.map((platform) => (
-          <button
-            key={platform.id}
-            className={styles.platformCard}
-            onClick={() => handlePlatformSelect(platform)}
-            style={{
-              borderColor:
-                platform.id === selectedPlatform.id
-                  ? platform.color
-                  : undefined,
-              background:
-                platform.id === selectedPlatform.id
-                  ? `${platform.color}10`
-                  : undefined,
-            }}
-            disabled={!platform.url}
-          >
-            <span
-              className={styles.platformIcon}
-              style={{ color: platform.color }}
+          <div key={platform.id} className={styles.platformCardWrapper}>
+            <button
+              className={styles.platformCard}
+              onClick={() => handlePlatformSelect(platform)}
+              style={{
+                borderColor:
+                  platform.id === selectedPlatform.id
+                    ? platform.color
+                    : undefined,
+                background:
+                  platform.id === selectedPlatform.id
+                    ? `${platform.color}10`
+                    : undefined,
+              }}
+              disabled={!platform.url}
             >
-              {platform.icon}
-            </span>
-            <span className={styles.platformName}>{platform.name}</span>
-            {!platform.url && (
-              <span className={styles.platformComingSoon}>Coming Soon</span>
+              <span
+                className={styles.platformIcon}
+                style={{ color: platform.color }}
+              >
+                {platform.icon}
+              </span>
+              <span className={styles.platformName}>{platform.name}</span>
+              {!platform.url && (
+                <span className={styles.platformComingSoon}>Coming Soon</span>
+              )}
+            </button>
+            {/* ── Direct Social Link ── */}
+            {platform.url && (
+              <a
+                href={platform.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.platformDirectLink}
+                style={{ borderColor: platform.color }}
+                title={`Follow us on ${platform.name}`}
+              >
+                <FaExternalLinkAlt />
+                <span>Follow</span>
+              </a>
             )}
-          </button>
+          </div>
         ))}
       </div>
 

@@ -544,3 +544,126 @@
     padding: 4px;
   }
 }
+
+/* ── Platform Card Wrapper ── */
+.platformCardWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Platform Card ── */
+.platformCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 0.75rem;
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  width: 100%;
+}
+
+.platformCard:hover:not(:disabled) {
+  border-color: var(--border-hover, rgba(255, 255, 255, 0.12));
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  transform: translateY(-2px);
+}
+
+.platformCard:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Direct Social Link Button ── */
+.platformDirectLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  color: var(--text-dim, rgba(255, 255, 255, 0.5));
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-family: var(--font-body, "Inter", sans-serif);
+  background: var(--bg-card, rgba(255, 255, 255, 0.02));
+}
+
+.platformDirectLink:hover {
+  background: var(--orange-dim, rgba(245, 158, 11, 0.06));
+  color: var(--orange, #f59e0b);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+}
+
+.platformDirectLink svg {
+  font-size: 0.55rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .platformDirectLink {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.375rem;
+  }
+
+  .platformDirectLink span {
+    display: none;
+  }
+
+  .platformDirectLink {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--bg-panel, #1a1a2e);
+    border-width: 2px;
+    z-index: 5;
+  }
+
+  .platformCardWrapper {
+    position: relative;
+  }
+
+  .platformCardWrapper .platformDirectLink {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 0;
+    background: var(--bg-panel, #1a1a2e);
+    border: 2px solid;
+  }
+
+  .platformCardWrapper .platformDirectLink svg {
+    font-size: 0.6rem;
+  }
+
+  .platformCardWrapper .platformDirectLink span {
+    display: none;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .platformDirectLink {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
