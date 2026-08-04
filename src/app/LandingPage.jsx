@@ -778,10 +778,6 @@ export default function LandingPage() {
         {/* ── Waitlist Section ── */}
         <WaitlistSection />
 
-        {/* <section className={styles.appDownloadSection}>
-          <AppDownload />
-        </section> */}
-
         {/* ── Feedback Button ── */}
         <FeedbackButton
           buttonText="Give Feedback"
