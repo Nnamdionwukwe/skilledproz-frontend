@@ -374,3 +374,116 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ── Back Button ── */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 10px;
+  color: var(--text-dim, rgba(255, 255, 255, 0.5));
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-family: var(--font-body, "Inter", sans-serif);
+  margin-bottom: 2rem;
+}
+
+.backButton:hover {
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  border-color: var(--orange, #f59e0b);
+  color: var(--orange, #f59e0b);
+  transform: translateY(-2px);
+}
+
+/* ── Share Grid ── */
+.shareGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.shareBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.25rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-body, "Inter", sans-serif);
+}
+
+.shareBtn:hover {
+  transform: translateY(-3px) scale(1.04);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.shareBtnLabel {
+  font-size: 0.6rem;
+}
+
+/* ── Show More/Less Buttons ── */
+.showMoreBtn,
+.showLessBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  color: var(--text-dim, rgba(255, 255, 255, 0.5));
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-body, "Inter", sans-serif);
+}
+
+.showMoreBtn:hover,
+.showLessBtn:hover {
+  background: var(--orange-dim, rgba(245, 158, 11, 0.06));
+  border-color: var(--orange, #f59e0b);
+  color: var(--orange, #f59e0b);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .shareGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .shareBtn {
+    padding: 0.625rem 0.125rem;
+    font-size: 0.65rem;
+  }
+
+  .shareBtnLabel {
+    font-size: 0.55rem;
+  }
+
+  .backButton {
+    font-size: 0.8125rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .shareGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

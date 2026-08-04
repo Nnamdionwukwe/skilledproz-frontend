@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import {
   FaTwitter,
@@ -15,9 +16,22 @@ import {
   FaCheck,
   FaDownload,
   FaTimes,
-  FaQrcode,
   FaLink,
   FaMobileAlt,
+  FaArrowLeft,
+  FaPrint,
+  FaUpload,
+  FaSms,
+  FaShare,
+  FaEllipsisH,
+  FaSnapchat,
+  FaReddit,
+  FaPinterest,
+  FaDiscord,
+  FaSlack,
+  FaWeixin,
+  FaLine,
+  FaViber,
 } from "react-icons/fa";
 import styles from "./SocialQR.module.css";
 
@@ -28,7 +42,6 @@ const SOCIAL_PLATFORMS = [
     icon: <FaTwitter />,
     url: "https://x.com/skilledprozz",
     color: "#1DA1F2",
-    bgColor: "#1DA1F2",
   },
   {
     id: "youtube",
@@ -36,7 +49,6 @@ const SOCIAL_PLATFORMS = [
     icon: <FaYoutube />,
     url: "https://youtube.com/@skilledprozmarketplace",
     color: "#FF0000",
-    bgColor: "#FF0000",
   },
   {
     id: "instagram",
@@ -44,7 +56,6 @@ const SOCIAL_PLATFORMS = [
     icon: <FaInstagram />,
     url: "https://www.instagram.com/skilledproz",
     color: "#E4405F",
-    bgColor: "#E4405F",
   },
   {
     id: "tiktok",
@@ -52,7 +63,6 @@ const SOCIAL_PLATFORMS = [
     icon: <FaTiktok />,
     url: "https://www.tiktok.com/@skilledprozmarketplace",
     color: "#000000",
-    bgColor: "#000000",
   },
   {
     id: "facebook",
@@ -60,7 +70,6 @@ const SOCIAL_PLATFORMS = [
     icon: <FaFacebook />,
     url: "https://www.facebook.com/share/19LD9KwbZt/",
     color: "#1877F2",
-    bgColor: "#1877F2",
   },
   {
     id: "linkedin",
@@ -68,15 +77,151 @@ const SOCIAL_PLATFORMS = [
     icon: <FaLinkedin />,
     url: "",
     color: "#0A66C2",
-    bgColor: "#0A66C2",
   },
 ];
 
-const SHARE_APPS = [
-  { id: "whatsapp", name: "WhatsApp", icon: <FaWhatsapp />, color: "#25D366" },
-  { id: "telegram", name: "Telegram", icon: <FaTelegram />, color: "#26A5E4" },
-  { id: "email", name: "Email", icon: <FaEnvelope />, color: "#6B7280" },
-  { id: "copy", name: "Copy Link", icon: <FaCopy />, color: "#6B7280" },
+// ── All Share Options ──
+const SHARE_OPTIONS = [
+  {
+    id: "instagram",
+    name: "Instagram",
+    icon: <FaInstagram />,
+    color: "#E4405F",
+    type: "social",
+  },
+  {
+    id: "tiktok",
+    name: "TikTok",
+    icon: <FaTiktok />,
+    color: "#000000",
+    type: "social",
+  },
+  {
+    id: "facebook",
+    name: "Facebook",
+    icon: <FaFacebook />,
+    color: "#1877F2",
+    type: "social",
+  },
+  {
+    id: "twitter",
+    name: "X/Twitter",
+    icon: <FaTwitter />,
+    color: "#1DA1F2",
+    type: "social",
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    icon: <FaWhatsapp />,
+    color: "#25D366",
+    type: "messaging",
+  },
+  {
+    id: "telegram",
+    name: "Telegram",
+    icon: <FaTelegram />,
+    color: "#26A5E4",
+    type: "messaging",
+  },
+  {
+    id: "viber",
+    name: "Viber",
+    icon: <FaViber />,
+    color: "#665CAC",
+    type: "messaging",
+  },
+  {
+    id: "line",
+    name: "Line",
+    icon: <FaLine />,
+    color: "#00C300",
+    type: "messaging",
+  },
+  {
+    id: "weixin",
+    name: "WeChat",
+    icon: <FaWeixin />,
+    color: "#07C160",
+    type: "messaging",
+  },
+  {
+    id: "discord",
+    name: "Discord",
+    icon: <FaDiscord />,
+    color: "#5865F2",
+    type: "social",
+  },
+  {
+    id: "reddit",
+    name: "Reddit",
+    icon: <FaReddit />,
+    color: "#FF4500",
+    type: "social",
+  },
+  {
+    id: "pinterest",
+    name: "Pinterest",
+    icon: <FaPinterest />,
+    color: "#E60023",
+    type: "social",
+  },
+  {
+    id: "snapchat",
+    name: "Snapchat",
+    icon: <FaSnapchat />,
+    color: "#FFFC00",
+    type: "social",
+  },
+  {
+    id: "slack",
+    name: "Slack",
+    icon: <FaSlack />,
+    color: "#4A154B",
+    type: "work",
+  },
+  {
+    id: "sms",
+    name: "Messages",
+    icon: <FaSms />,
+    color: "#34A853",
+    type: "messaging",
+  },
+  {
+    id: "email",
+    name: "Email",
+    icon: <FaEnvelope />,
+    color: "#6B7280",
+    type: "work",
+  },
+  {
+    id: "copy",
+    name: "Copy Link",
+    icon: <FaCopy />,
+    color: "#6B7280",
+    type: "utility",
+  },
+  {
+    id: "print",
+    name: "Print",
+    icon: <FaPrint />,
+    color: "#6B7280",
+    type: "utility",
+  },
+  {
+    id: "upload",
+    name: "Save to Photos",
+    icon: <FaUpload />,
+    color: "#6B7280",
+    type: "utility",
+  },
+  {
+    id: "share",
+    name: "Quick Share",
+    icon: <FaShare />,
+    color: "#6B7280",
+    type: "utility",
+  },
 ];
 
 export default function SocialQR() {
@@ -85,17 +230,27 @@ export default function SocialQR() {
   const [copied, setCopied] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
   const [showShareMessage, setShowShareMessage] = useState(false);
+  const [showAllShareOptions, setShowAllShareOptions] = useState(false);
+
+  const shareMessageText = `📱 Follow SkilledProz on ${selectedPlatform.name}!\n\n${selectedPlatform.url}\n\nJoin the global marketplace for skilled trades! 🚀`;
 
   const handlePlatformSelect = (platform) => {
+    if (!platform.url) return;
     setSelectedPlatform(platform);
     setIsModalOpen(true);
+    setShowAllShareOptions(false);
   };
 
   const handleCopyLink = async (url) => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
+      setShareMessage("✅ Link copied to clipboard!");
+      setShowShareMessage(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShowShareMessage(false);
+      }, 3000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -128,52 +283,75 @@ export default function SocialQR() {
   };
 
   const handleShare = (app, url) => {
-    const message = `📱 Follow SkilledProz on ${selectedPlatform.name}!\n\n${url}\n\nJoin the global marketplace for skilled trades! 🚀`;
+    const message = shareMessageText;
 
-    switch (app) {
-      case "whatsapp":
-        window.open(
-          `https://wa.me/?text=${encodeURIComponent(message)}`,
-          "_blank",
-        );
-        break;
-      case "telegram":
-        window.open(
-          `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(message)}`,
-          "_blank",
-        );
-        break;
-      case "email":
-        window.open(
-          `mailto:?subject=Follow SkilledProz on ${selectedPlatform.name}&body=${encodeURIComponent(message)}`,
-          "_blank",
-        );
-        break;
-      case "copy":
-        handleCopyLink(url);
-        setShareMessage("✅ Link copied to clipboard!");
-        setShowShareMessage(true);
-        setTimeout(() => setShowShareMessage(false), 3000);
-        break;
-      default:
-        break;
+    // Native share API (for mobile devices)
+    if (app === "share" && navigator.share) {
+      navigator
+        .share({
+          title: `Follow SkilledProz on ${selectedPlatform.name}`,
+          text: message,
+          url: url,
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // Copy to clipboard
+    if (app === "copy") {
+      handleCopyLink(url);
+      return;
+    }
+
+    // Print
+    if (app === "print") {
+      window.print();
+      return;
+    }
+
+    // Save to Photos (download)
+    if (app === "upload") {
+      handleDownloadQR();
+      return;
+    }
+
+    // Social media sharing URLs
+    const shareUrls = {
+      instagram: `https://www.instagram.com/`,
+      tiktok: `https://www.tiktok.com/@skilledprozmarketplace`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Follow SkilledProz on Twitter! 🚀\n\n${url}`)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(message)}`,
+      viber: `https://viber://forward?text=${encodeURIComponent(message)}`,
+      line: `https://line.me/R/msg/text/?${encodeURIComponent(message)}`,
+      weixin: `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`,
+      discord: `https://discord.com/channels/@me`,
+      reddit: `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(`Follow SkilledProz on ${selectedPlatform.name}!`)}`,
+      pinterest: `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&description=${encodeURIComponent(`Follow SkilledProz on ${selectedPlatform.name}!`)}`,
+      snapchat: `https://www.snapchat.com/`,
+      slack: `https://slack.com/app_redirect?channel=`,
+      sms: `sms:?body=${encodeURIComponent(message)}`,
+      email: `mailto:?subject=Follow SkilledProz on ${selectedPlatform.name}&body=${encodeURIComponent(message)}`,
+    };
+
+    if (shareUrls[app]) {
+      window.open(shareUrls[app], "_blank");
     }
   };
 
-  const getShareUrl = (platform) => {
-    const urls = {
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Follow SkilledProz on Twitter! 🚀\n\n${platform.url}`)}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(platform.url)}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(platform.url)}`,
-      whatsapp: `https://wa.me/?text=${encodeURIComponent(`Follow SkilledProz on ${platform.name}! 🚀\n\n${platform.url}`)}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(platform.url)}&text=${encodeURIComponent(`Follow SkilledProz on ${platform.name}! 🚀`)}`,
-      email: `mailto:?subject=Follow SkilledProz on ${platform.name}&body=${encodeURIComponent(`Follow SkilledProz on ${platform.name}! 🚀\n\n${platform.url}`)}`,
-    };
-    return urls[platform.id] || platform.url;
-  };
+  // Get visible share options (first 6, then show more)
+  const visibleShareOptions = showAllShareOptions
+    ? SHARE_OPTIONS
+    : SHARE_OPTIONS.slice(0, 6);
 
   return (
     <div className={styles.socialQR}>
+      {/* ── Back Button ── */}
+      <Link to="/" className={styles.backButton}>
+        <FaArrowLeft /> Back to Home
+      </Link>
+
       <div className={styles.header}>
         <h2 className={styles.title}>📱 Connect With Us</h2>
         <p className={styles.subtitle}>
@@ -236,10 +414,10 @@ export default function SocialQR() {
                   {selectedPlatform.icon}
                 </span>
                 <h3 className={styles.modalTitle}>
-                  {selectedPlatform.name} QR Code
+                  Share {selectedPlatform.name} Profile
                 </h3>
                 <p className={styles.modalSubtitle}>
-                  Scan to follow us on {selectedPlatform.name}
+                  Scan QR code or share the profile link
                 </p>
               </div>
 
@@ -277,17 +455,21 @@ export default function SocialQR() {
                 <p className={styles.shareTitle}>
                   <FaShareAlt /> Share this profile
                 </p>
-                <div className={styles.shareButtons}>
-                  {SHARE_APPS.map((app) => (
+
+                <div className={styles.shareGrid}>
+                  {visibleShareOptions.map((app) => (
                     <button
                       key={app.id}
                       className={styles.shareBtn}
                       onClick={() => handleShare(app.id, selectedPlatform.url)}
                       style={{
-                        background:
-                          app.id === "copy" ? "var(--bg-card)" : app.color,
+                        background: app.color,
                         color:
-                          app.id === "copy" ? "var(--text-dim)" : "#ffffff",
+                          app.id === "copy" ||
+                          app.id === "print" ||
+                          app.id === "upload"
+                            ? "var(--text)"
+                            : "#ffffff",
                       }}
                     >
                       {app.icon}
@@ -295,6 +477,24 @@ export default function SocialQR() {
                     </button>
                   ))}
                 </div>
+
+                {!showAllShareOptions && SHARE_OPTIONS.length > 6 && (
+                  <button
+                    className={styles.showMoreBtn}
+                    onClick={() => setShowAllShareOptions(true)}
+                  >
+                    <FaEllipsisH /> Show More
+                  </button>
+                )}
+
+                {showAllShareOptions && (
+                  <button
+                    className={styles.showLessBtn}
+                    onClick={() => setShowAllShareOptions(false)}
+                  >
+                    <FaTimes /> Show Less
+                  </button>
+                )}
               </div>
 
               {showShareMessage && (
