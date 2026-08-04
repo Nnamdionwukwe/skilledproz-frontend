@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import {
   FaAndroid,
   FaApple,
@@ -70,6 +71,14 @@ export default function AppDownload() {
   };
 
   const currentLink = downloadLinks[deviceType] || downloadLinks.other;
+
+  // Get the download URL for QR code
+  const getDownloadUrl = () => {
+    if (deviceType === "android") {
+      return currentLink.storeUrl || "https://skilledproz.com/download";
+    }
+    return "https://skilledproz.com/download";
+  };
 
   const handleDownload = () => {
     // Track download event
@@ -215,11 +224,18 @@ export default function AppDownload() {
               </p>
 
               <div className={styles.qrContainer}>
-                <img
-                  src="/qr-code-download.png"
-                  alt="Download QR Code"
-                  className={styles.qrImage}
+                <QRCodeSVG
+                  value={getDownloadUrl()}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#1a2466"
+                  level="H"
+                  includeMargin={true}
                 />
+              </div>
+
+              <div className={styles.qrUrl}>
+                <span>{getDownloadUrl()}</span>
               </div>
 
               <div className={styles.modalInstructions}>
