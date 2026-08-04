@@ -32,6 +32,7 @@ import { useAuthStore } from "../store/authStore";
 import AppDownload from "../components/AppDownload/AppDownload";
 import Footer from "./Footer";
 import SocialQR from "../components/SocialQR";
+import { SkilledProzLoader } from "../components/ui";
 
 // ── CURRENCIES ──
 const CURRENCIES = [
@@ -220,6 +221,7 @@ const PANEL_ITEMS = [
 
 export default function LandingPage() {
   const { user } = useAuthStore();
+  const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [catSearch, setCatSearch] = useState("");
   const [showCustomCat, setShowCustomCat] = useState(false);
@@ -231,6 +233,11 @@ export default function LandingPage() {
   const [showSurvey, setShowSurvey] = useState(false);
 
   useEffect(() => {
+    // Simulate loading for the landing page
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+
     fetch(
       `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/categories?limit=1000`,
     )
@@ -240,6 +247,8 @@ export default function LandingPage() {
         setCategories(Array.isArray(cats) ? cats : []);
       })
       .catch(() => setCategories([]));
+
+    return () => clearTimeout(timer);
   }, []);
 
   const filteredCats = categories.filter(
@@ -274,6 +283,11 @@ export default function LandingPage() {
   }
 
   const doubled = [...CURRENCIES, ...CURRENCIES];
+
+  // ── Show loader while loading ──
+  if (loading) {
+    return <SkilledProzLoader />;
+  }
 
   return (
     <>
