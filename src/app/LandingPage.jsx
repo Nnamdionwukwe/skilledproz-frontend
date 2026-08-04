@@ -21,6 +21,7 @@ import {
   FaTimes,
   FaPlus,
   FaComment,
+  FaDownload,
 } from "react-icons/fa";
 import styles from "./LandingPage.module.css";
 import CountdownTimer from "../components/ui/CountdownTimer/CountdownTimer";
@@ -28,6 +29,7 @@ import WaitlistSection from "../components/WaitlistSection/WaitlistSection";
 import SEO from "../components/seo/SEO";
 import FeedbackButton from "../components/Feedback/FeedbackButton";
 import { useAuthStore } from "../store/authStore";
+import AppDownload from "../components/AppDownload/AppDownload";
 
 // ── CURRENCIES ──
 const CURRENCIES = [
@@ -374,6 +376,10 @@ export default function LandingPage() {
               </Link>
               <Link to="/register/worker" className={styles.btnHeroSecondary}>
                 Start Earning
+              </Link>
+
+              <Link to="/download" className={styles.btnHeroApp}>
+                <FaDownload /> Download App
               </Link>
             </div>
 
@@ -771,6 +777,10 @@ export default function LandingPage() {
 
         {/* ── Waitlist Section ── */}
         <WaitlistSection />
+
+        {/* <section className={styles.appDownloadSection}>
+          <AppDownload />
+        </section> */}
 
         {/* ── Feedback Button ── */}
         <FeedbackButton

@@ -117,6 +117,7 @@ import SurveyModal from "./components/survey/SurveyModal.jsx";
 import SurveyPage from "./components/survey/SurveyModal.jsx";
 import FeedbackButton from "./components/Feedback/FeedbackButton.jsx";
 import BlogPage from "./pages/Blog/BlogPage.jsx";
+import DownloadPage from "./pages/DownloadPage.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1025,6 +1026,8 @@ export default function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
+
+        <Route path="/download" element={<DownloadPage />} />
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/login" replace />} />

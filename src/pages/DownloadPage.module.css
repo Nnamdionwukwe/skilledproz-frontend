@@ -1,0 +1,59 @@
+.page {
+  min-height: 100vh;
+  background: var(--ds-surface, #f5f6fa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+}
+
+.backBtn {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--ds-text-mute, #64698f);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.backBtn:hover {
+  color: var(--ds-navy, #1a2466);
+}
+
+.instructions {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--ds-card, #ffffff);
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--ds-border, #e2e5f0);
+}
+
+.instructions h3 {
+  font-family: var(--ds-font, "Outfit", sans-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ds-text, #0d1033);
+  margin: 0 0 0.5rem 0;
+}
+
+.instructions p {
+  font-size: 0.875rem;
+  color: var(--ds-text-mute, #64698f);
+  margin: 0;
+}
+
+.instructions a {
+  color: var(--ds-navy, #1a2466);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.instructions a:hover {
+  text-decoration: underline;
+}

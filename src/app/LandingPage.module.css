@@ -1362,3 +1362,49 @@
     padding: 0.25rem 0.75rem;
   }
 }
+
+/* ── App Download Section ── */
+.appDownloadSection {
+  padding: 3rem 1.5rem;
+  background: var(--bg-panel, #0a0a0f);
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media screen and (min-width: 768px) {
+  .appDownloadSection {
+    padding: 4rem 2rem;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  .appDownloadSection {
+    padding: 5rem 3rem;
+  }
+}
+
+.btnHeroApp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.875rem;
+  background: transparent;
+  color: var(--text, #ffffff);
+  border: 2px solid var(--orange, #f59e0b);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-body, "Inter", sans-serif);
+}
+
+.btnHeroApp:hover {
+  background: var(--orange, #f59e0b);
+  color: var(--bg, #000000);
+  transform: translateY(-2px);
+}
