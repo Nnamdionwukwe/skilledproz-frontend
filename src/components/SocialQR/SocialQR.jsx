@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -224,6 +224,100 @@ const SHARE_OPTIONS = [
   },
 ];
 
+// ── QR Code with Logo Component ──
+function QRCodeWithLogo({ value, size, logoSize = 50 }) {
+  const containerRef = useRef(null);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  useEffect(() => {
+    // Wait for QR code to render then add logo
+    const timer = setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      // Check if logo already exists
+      let existingLogo = container.querySelector(".qr-logo-overlay");
+      if (existingLogo) {
+        existingLogo.remove();
+      }
+
+      // Create logo overlay
+      const overlay = document.createElement("div");
+      overlay.className = "qr-logo-overlay";
+      overlay.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: ${logoSize}px;
+        height: ${logoSize}px;
+        border-radius: 8px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 10;
+        padding: 6px;
+        pointer-events: none;
+      `;
+
+      const img = document.createElement("img");
+      img.src = "/skilledproz.PNG";
+      img.alt = "SkilledProz";
+      img.style.cssText = `
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 4px;
+      `;
+      img.onload = () => setLogoLoaded(true);
+      img.onerror = () => {
+        // Fallback: show text logo if image fails
+        overlay.innerHTML = `
+          <div style="
+            font-size: 12px;
+            font-weight: 800;
+            color: #f59e0b;
+            text-align: center;
+            line-height: 1.2;
+          ">
+            Skilled<br>Proz
+          </div>
+        `;
+      };
+
+      overlay.appendChild(img);
+
+      // Make container relative if not already
+      if (getComputedStyle(container).position === "static") {
+        container.style.position = "relative";
+      }
+
+      container.appendChild(overlay);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [value, size, logoSize]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="qr-code-wrapper"
+      style={{ position: "relative", display: "inline-block" }}
+    >
+      <QRCodeSVG
+        value={value}
+        size={size}
+        bgColor="#ffffff"
+        fgColor="#1a1a2e"
+        level="H"
+        includeMargin={true}
+      />
+    </div>
+  );
+}
+
 export default function SocialQR() {
   const [selectedPlatform, setSelectedPlatform] = useState(SOCIAL_PLATFORMS[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -257,35 +351,99 @@ export default function SocialQR() {
   };
 
   const handleDownloadQR = () => {
-    const svg = document.querySelector(".qr-code-container svg");
-    if (svg) {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const svgBlob = new Blob([svgData], {
-        type: "image/svg+xml;charset=utf-8",
-      });
-      const url = URL.createObjectURL(svgBlob);
+    // Find the QR code container with the overlay
+    const wrapper = document.querySelector(".qr-code-wrapper");
+    if (!wrapper) return;
 
-      const img = new Image();
-      img.onload = function () {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
+    // Get the SVG element
+    const svg = wrapper.querySelector("svg");
+    if (!svg) return;
+
+    // Clone the SVG
+    const clonedSvg = svg.cloneNode(true);
+
+    // Create a canvas
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Set canvas size
+    const size = 300;
+    canvas.width = size;
+    canvas.height = size;
+
+    // Draw white background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+
+    // Convert SVG to image
+    const svgData = new XMLSerializer().serializeToString(clonedSvg);
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = function () {
+      // Draw QR code
+      ctx.drawImage(img, 0, 0, size, size);
+
+      // Draw logo on top
+      const logoImg = new Image();
+      logoImg.src = "/skilledproz.PNG";
+      logoImg.onload = function () {
+        const logoSize = 60;
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        // Draw white circle behind logo
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, logoSize / 2 + 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw logo
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+
+        // Download
         const link = document.createElement("a");
         link.download = `skilledproz-${selectedPlatform.id}-qr.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
         URL.revokeObjectURL(url);
       };
-      img.src = url;
-    }
+      logoImg.onerror = function () {
+        // Fallback: draw text logo
+        const logoSize = 60;
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, logoSize / 2 + 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#f59e0b";
+        ctx.font = "bold 18px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("Skilled", size / 2, size / 2 - 8);
+        ctx.fillStyle = "#1a1a2e";
+        ctx.font = "bold 16px Inter, sans-serif";
+        ctx.fillText("Proz", size / 2, size / 2 + 18);
+
+        const link = document.createElement("a");
+        link.download = `skilledproz-${selectedPlatform.id}-qr.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        URL.revokeObjectURL(url);
+      };
+    };
+    img.src = url;
   };
 
   const handleShare = (app, url) => {
     const message = shareMessageText;
 
-    // Native share API (for mobile devices)
     if (app === "share" && navigator.share) {
       navigator
         .share({
@@ -297,25 +455,21 @@ export default function SocialQR() {
       return;
     }
 
-    // Copy to clipboard
     if (app === "copy") {
       handleCopyLink(url);
       return;
     }
 
-    // Print
     if (app === "print") {
       window.print();
       return;
     }
 
-    // Save to Photos (download)
     if (app === "upload") {
       handleDownloadQR();
       return;
     }
 
-    // Social media sharing URLs
     const shareUrls = {
       instagram: `https://www.instagram.com/`,
       tiktok: `https://www.tiktok.com/@skilledprozmarketplace`,
@@ -340,14 +494,12 @@ export default function SocialQR() {
     }
   };
 
-  // Get visible share options (first 6, then show more)
   const visibleShareOptions = showAllShareOptions
     ? SHARE_OPTIONS
     : SHARE_OPTIONS.slice(0, 6);
 
   return (
     <div className={styles.socialQR}>
-      {/* ── Back Button ── */}
       <Link to="/" className={styles.backButton}>
         <FaArrowLeft /> Back to Home
       </Link>
@@ -391,7 +543,6 @@ export default function SocialQR() {
         ))}
       </div>
 
-      {/* ── QR Code Modal ── */}
       {isModalOpen && selectedPlatform.url && (
         <div
           className={styles.modalOverlay}
@@ -422,13 +573,10 @@ export default function SocialQR() {
               </div>
 
               <div className={`${styles.qrContainer} qr-code-container`}>
-                <QRCodeSVG
+                <QRCodeWithLogo
                   value={selectedPlatform.url}
                   size={220}
-                  bgColor="#ffffff"
-                  fgColor="#1a1a2e"
-                  level="H"
-                  includeMargin={true}
+                  logoSize={50}
                 />
               </div>
 
@@ -450,7 +598,6 @@ export default function SocialQR() {
                 </button>
               </div>
 
-              {/* ── Share Section ── */}
               <div className={styles.shareSection}>
                 <p className={styles.shareTitle}>
                   <FaShareAlt /> Share this profile
