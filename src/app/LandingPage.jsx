@@ -31,6 +31,7 @@ import FeedbackButton from "../components/Feedback/FeedbackButton";
 import { useAuthStore } from "../store/authStore";
 import AppDownload from "../components/AppDownload/AppDownload";
 import Footer from "./Footer";
+import SocialQR from "../components/SocialQR";
 
 // ── CURRENCIES ──
 const CURRENCIES = [

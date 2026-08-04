@@ -379,6 +379,19 @@ export default function WaitlistSection() {
             <p className={styles.surveySubtext}>
               Help us build the platform <strong>you</strong> actually need
             </p>
+
+            <Link to={`/socials`} className={styles.socialBtn}>
+              <span className={styles.socialBtnIcon}>
+                <FaShareAlt />
+                <span className={styles.socialBtnPulse} />
+              </span>
+              <span className={styles.socialBtnText}>
+                Join <strong>5,000+</strong> Followers
+              </span>
+              <span className={styles.socialBtnBadge}>
+                <FaArrowRight />
+              </span>
+            </Link>
           </div>
         </div>
       </div>

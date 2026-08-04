@@ -118,6 +118,7 @@ import SurveyPage from "./components/survey/SurveyModal.jsx";
 import FeedbackButton from "./components/Feedback/FeedbackButton.jsx";
 import BlogPage from "./pages/Blog/BlogPage.jsx";
 import DownloadPage from "./pages/DownloadPage.jsx";
+import SocialQR from "./components/SocialQR/SocialQR.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1028,6 +1029,7 @@ export default function App() {
         <Route path="/terms" element={<Terms />} />
 
         <Route path="/download" element={<DownloadPage />} />
+        <Route path="/socials" element={<SocialQR />} />
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/login" replace />} />
