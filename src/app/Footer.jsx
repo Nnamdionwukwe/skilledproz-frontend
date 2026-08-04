@@ -6,6 +6,7 @@ import {
   FaTiktok,
   FaFacebook,
   FaLinkedin,
+  FaTelegram,
 } from "react-icons/fa";
 import styles from "./Footer.module.css";
 
@@ -29,23 +30,28 @@ export default function Footer() {
     },
     {
       name: "YouTube",
-      url: "https://youtube.com/@skilledprozmarketplace?si=FZIzKKNQ8U-8z027",
+      url: "https://youtube.com/@skilledprozmarketplace",
       icon: <FaYoutube />,
     },
     {
       name: "Instagram",
-      url: "https://www.instagram.com/skilledproz?igsh=MWltanU2ZmY4Ym51ag==",
+      url: "https://www.instagram.com/skilledproz",
       icon: <FaInstagram />,
     },
     {
       name: "TikTok",
-      url: "https://www.tiktok.com/@skilledprozmarketplace?_r=1&_t=ZS-98bEkvA2NNZ",
+      url: "https://www.tiktok.com/@skilledprozmarketplace",
       icon: <FaTiktok />,
     },
     {
       name: "Facebook",
       url: "https://www.facebook.com/share/19LD9KwbZt/",
       icon: <FaFacebook />,
+    },
+    {
+      name: "Telegram",
+      url: "https://t.me/Skilledprozmarketplace",
+      icon: <FaTelegram />,
     },
     {
       name: "LinkedIn",

@@ -37,6 +37,13 @@ import styles from "./SocialQR.module.css";
 
 const SOCIAL_PLATFORMS = [
   {
+    id: "telegram",
+    name: "Telegram",
+    icon: <FaTelegram />,
+    url: "https://t.me/Skilledprozmarketplace",
+    color: "#26A5E4",
+  },
+  {
     id: "twitter",
     name: "Twitter/X",
     icon: <FaTwitter />,
