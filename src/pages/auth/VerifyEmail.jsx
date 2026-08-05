@@ -75,12 +75,17 @@ export default function VerifyEmail() {
             <div className={s.stateTitle}>Email verified! 🎉</div>
             <p className={s.stateSub}>Your account is now active.</p>
           </div>
-          <button
+          <Link
+            to="/login"
             className={`${s.btn} ${s.btnPrimary}`}
-            onClick={() => navigate("/login")}
+            style={{
+              textDecoration: "none",
+              textAlign: "center",
+              display: "inline-block",
+            }}
           >
             Continue to Sign In →
-          </button>
+          </Link>
         </div>
       </AuthLayout>
     );
