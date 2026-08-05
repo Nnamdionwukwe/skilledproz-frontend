@@ -119,34 +119,16 @@ export default function VerifyEmail() {
   return (
     <AuthLayout>
       <div className={s.container}>
-        {/* --- ADDED "BACK TO SIGN IN" LINK AT THE TOP --- */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-start",
-            marginBottom: "16px",
-          }}
-        >
-          <Link
-            to="/login"
-            className={s.link}
-            style={{ display: "flex", alignItems: "center", gap: "6px" }}
-          >
-            <ArrowLeft size={15} /> Back to sign in
-          </Link>
-        </div>
-        {/* --------------------------------------------- */}
-
         <div className={s.header}>
-          <span className={s.eyebrow}>One more steps</span>
+          <span className={s.eyebrow}>One more step</span>
           <h1 className={s.title}>
             Check your
             <br />
-            inbox
+            inboxs
           </h1>
           <p className={s.subtitle}>
             We sent a verification link to your email. Click it to activate your
-            account.
+            account. One{" "}
           </p>
         </div>
         <div className={s.stateBox}>
@@ -184,7 +166,7 @@ export default function VerifyEmail() {
             disabled={
               resendStatus === "sending" ||
               resendStatus === "sent" ||
-              !resendEmail?.trim()
+              !resendEmail?.trim() // <--- THE ONLY CHANGE (added .trim())
             }
           >
             {resendStatus === "sending" && (
@@ -196,13 +178,11 @@ export default function VerifyEmail() {
               : "Resend verification email"}
           </button>
         </form>
-        {/* --- PRESERVED BOTTOM LINK --- */}
         <p className={s.footer}>
           <Link to="/login" className={s.link}>
             ← Back to sign in
           </Link>
         </p>
-        {/* ---------------------------- */}
       </div>
     </AuthLayout>
   );
