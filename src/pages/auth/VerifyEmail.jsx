@@ -166,7 +166,7 @@ export default function VerifyEmail() {
             disabled={
               resendStatus === "sending" ||
               resendStatus === "sent" ||
-              !resendEmail
+              !resendEmail?.trim() // <--- THE ONLY CHANGE (added .trim())
             }
           >
             {resendStatus === "sending" && (
