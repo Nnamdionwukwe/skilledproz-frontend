@@ -124,7 +124,7 @@ export default function VerifyEmail() {
           <h1 className={s.title}>
             Check your
             <br />
-            inboxs
+            inbox
           </h1>
           <p className={s.subtitle}>
             We sent a verification link to your email. Click it to activate your
