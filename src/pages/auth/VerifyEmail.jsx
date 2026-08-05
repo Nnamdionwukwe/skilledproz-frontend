@@ -138,7 +138,7 @@ export default function VerifyEmail() {
         {/* --------------------------------------------- */}
 
         <div className={s.header}>
-          <span className={s.eyebrow}>One more step</span>
+          <span className={s.eyebrow}>One more steps</span>
           <h1 className={s.title}>
             Check your
             <br />
