@@ -119,6 +119,24 @@ export default function VerifyEmail() {
   return (
     <AuthLayout>
       <div className={s.container}>
+        {/* --- ADDED "BACK TO SIGN IN" LINK AT THE TOP --- */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-start",
+            marginBottom: "16px",
+          }}
+        >
+          <Link
+            to="/login"
+            className={s.link}
+            style={{ display: "flex", alignItems: "center", gap: "6px" }}
+          >
+            <ArrowLeft size={15} /> Back to sign in
+          </Link>
+        </div>
+        {/* --------------------------------------------- */}
+
         <div className={s.header}>
           <span className={s.eyebrow}>One more step</span>
           <h1 className={s.title}>
@@ -166,7 +184,7 @@ export default function VerifyEmail() {
             disabled={
               resendStatus === "sending" ||
               resendStatus === "sent" ||
-              !resendEmail?.trim() // <--- THE ONLY CHANGE (added .trim())
+              !resendEmail?.trim()
             }
           >
             {resendStatus === "sending" && (
@@ -178,11 +196,13 @@ export default function VerifyEmail() {
               : "Resend verification email"}
           </button>
         </form>
+        {/* --- PRESERVED BOTTOM LINK --- */}
         <p className={s.footer}>
           <Link to="/login" className={s.link}>
             ← Back to sign in
           </Link>
         </p>
+        {/* ---------------------------- */}
       </div>
     </AuthLayout>
   );
