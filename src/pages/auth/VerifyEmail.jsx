@@ -38,8 +38,16 @@ export default function VerifyEmail() {
     try {
       await api.post("/auth/resend-verification", { email: resendEmail });
       setResendStatus("sent");
-    } catch {
-      setResendStatus("error");
+    } catch (error) {
+      // Check if the backend returned a specific 404 message
+      const backendMessage = error.response?.data?.message;
+
+      // If the backend says "User not found", show a helpful message
+      if (backendMessage === "User not found") {
+        setResendStatus("user_not_found");
+      } else {
+        setResendStatus("error");
+      }
     }
   };
 
@@ -155,13 +163,19 @@ export default function VerifyEmail() {
               <AlertCircle size={14} /> Failed to send. Try again.
             </div>
           )}
+          {resendStatus === "user_not_found" && (
+            <div className={s.alertError}>
+              <AlertCircle size={14} /> No account found with that email. Please
+              use the email you signed up with.
+            </div>
+          )}
           <button
             type="submit"
             className={`${s.btn} ${s.btnOutline}`}
             disabled={
               resendStatus === "sending" ||
               resendStatus === "sent" ||
-              !resendEmail
+              !resendEmail?.trim()
             }
           >
             {resendStatus === "sending" && (
