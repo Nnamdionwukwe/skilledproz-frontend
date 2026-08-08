@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./HirerNotifications.module.css";
 import api from "../../lib/api";
-import { useAuthStore } from "../../store/authStore"; // Kept just in case, though not strictly used for layout selection
+import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../../components/layout/HirerLayout";
+import WorkerLayout from "../../components/layout/WorkerLayout";
 
 // ── React Icons ────────────────────────────────────────────────────────────────
 import {
@@ -158,7 +159,9 @@ function NotificationModal({ notif, onClose, onNavigate }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function HirerNotifications() {
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+  const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   const [notifications, setNotifications] = useState([]);
   const [total, setTotal] = useState(0);
@@ -179,7 +182,7 @@ export default function HirerNotifications() {
     try {
       const params = new URLSearchParams({ page: p, limit: 20 });
       if (f === "unread") params.set("unreadOnly", "true");
-      const res = await api.get(`/hirers/me/notifications?${params}`);
+      const res = await api.get(`/notifications?${params}`);
       const d = res.data.data;
       setNotifications(d.notifications || []);
       setTotal(d.total || 0);
@@ -206,7 +209,7 @@ export default function HirerNotifications() {
   }
 
   async function markAllRead() {
-    await api.patch("/hirers/me/notifications/read");
+    await api.patch("/notifications/read-all");
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
   }
@@ -240,7 +243,7 @@ export default function HirerNotifications() {
   }
 
   return (
-    <HirerLayout unreadNotifications={unreadCount}>
+    <Layout unreadNotifications={unreadCount}>
       <div className={styles.page}>
         {/* ── Header ── */}
         <div className={styles.pageHeader}>
@@ -422,6 +425,6 @@ export default function HirerNotifications() {
         confirmLabel="Delete"
         confirmVariant="danger"
       />
-    </HirerLayout>
+    </Layout>
   );
 }

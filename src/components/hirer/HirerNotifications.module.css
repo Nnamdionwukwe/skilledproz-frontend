@@ -1,10 +1,9 @@
-/* ── HirerNotifications.module.css ── */
-
 .page {
-  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   max-width: 720px;
-  margin: 0 auto;
-  animation: fadeUp 0.4s ease both;
+  animation: fadeUp 0.3s ease;
 }
 
 /* ── Header ── */
@@ -12,49 +11,49 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 28px;
   flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .pageTitle {
   font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 1.375rem;
+  font-weight: 900;
   color: var(--text);
-  letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin: 0 0 2px;
 }
 
 .pageSubtitle {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-top: 4px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: 0;
 }
 
 .headerActions {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .actionBtn {
-  padding: 8px 18px;
-  background: transparent;
-  color: var(--text-dim);
+  padding: 0.4375rem 0.875rem;
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.15s;
+  font-family: var(--font-body);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
+
 .actionBtn:hover {
-  border-color: var(--orange);
-  color: var(--orange);
+  border-color: var(--border-hover);
+  color: var(--text);
 }
+
 .actionBtnDanger {
   color: var(--red);
 }
@@ -67,18 +66,20 @@
 /* ── Filter bar ── */
 .filterBar {
   display: flex;
-  gap: 4px;
+  gap: 0.25rem;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 16px;
 }
 
 .filterBtn {
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   font-family: var(--font-body);
@@ -105,10 +106,9 @@
   padding: 0 4px;
   background: var(--bg-card);
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--text-muted);
-  margin-left: 4px;
 }
 
 .filterCountUnread {
@@ -127,43 +127,43 @@
 .item {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  transition: border-color 0.15s;
-  animation: fadeUp 0.4s ease both;
-  position: relative;
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  position: relative;
 }
+
 .item:hover {
   border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .itemUnread {
-  background: rgba(249, 115, 22, 0.04);
-  border-color: rgba(249, 115, 22, 0.15);
+  border-color: rgba(255, 107, 0, 0.2);
+  background: rgba(255, 107, 0, 0.03);
+}
+
+.itemUnread:hover {
+  border-color: rgba(255, 107, 0, 0.35);
 }
 
 .itemIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
   position: relative;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .unreadDot {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -3px;
+  right: -3px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -180,32 +180,30 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 0.5rem;
+  margin-bottom: 3px;
 }
 
 .itemTitle {
-  font-size: 14px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--text);
-  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .itemTime {
-  font-size: 11px;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  font-weight: 500;
   flex-shrink: 0;
 }
 
 .itemBody {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-dim);
   line-height: 1.5;
-  margin-bottom: 6px;
+  margin: 0 0 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -213,22 +211,22 @@
 }
 
 .itemLink {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--orange);
   font-weight: 600;
 }
 
 .itemDelete {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 0.625rem;
+  right: 0.625rem;
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -237,8 +235,7 @@
   opacity: 0;
   transition:
     opacity 0.15s,
-    background 0.15s,
-    color 0.15s;
+    background 0.15s;
 }
 
 .item:hover .itemDelete {
@@ -249,58 +246,40 @@
   color: var(--red);
 }
 
+/* ── Skeleton ── */
+.skeletonItem {
+  height: 80px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: pulse 1.5s infinite;
+}
+
 /* ── Empty ── */
 .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
+  gap: 0.75rem;
+  padding: 4rem 1.5rem;
   text-align: center;
 }
 
 .emptyIcon {
-  font-size: 52px;
-  margin-bottom: 16px;
+  font-size: 2.5rem;
+  opacity: 0.4;
 }
-
 .emptyTitle {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 8px;
+  margin: 0;
 }
-
 .emptyText {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-dim);
-}
-
-/* ── Skeletons ── */
-@keyframes shimmer {
-  0% {
-    background-position: -400px 0;
-  }
-  100% {
-    background-position: 400px 0;
-  }
-}
-.skeletonBase {
-  background: linear-gradient(
-    90deg,
-    var(--bg-card) 25%,
-    rgba(255, 255, 255, 0.04) 50%,
-    var(--bg-card) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.4s infinite;
-  border-radius: 10px;
-}
-.skeletonItem {
-  composes: skeletonBase;
-  height: 76px;
-  border-radius: 12px;
+  margin: 0;
 }
 
 /* ── Pagination ── */
@@ -308,21 +287,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 0.75rem;
 }
 
 .pageBtn {
-  padding: 8px 16px;
+  padding: 0.4375rem 1rem;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
   font-family: var(--font-body);
   transition: border-color 0.15s;
 }
+
 .pageBtn:hover:not(:disabled) {
   border-color: var(--border-hover);
   color: var(--text);
@@ -332,11 +311,11 @@
   cursor: not-allowed;
 }
 .pageInfo {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
-/* ── Detail Modal ── */
+/* ── Modal ── */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -402,6 +381,7 @@
   transition: color 0.15s;
   flex-shrink: 0;
 }
+
 .modalClose:hover {
   color: var(--text);
 }
@@ -473,11 +453,11 @@
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .modalActionBtn:hover {
   background: var(--orange-hover);
 }
 
-/* ── Animations ── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -496,6 +476,15 @@
     opacity: 1;
   }
 }
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -507,26 +496,27 @@
   }
 }
 
-/* ── Mobile Fix ── */
 @media (max-width: 640px) {
-  .page {
-    padding: 20px 16px;
+  .pageHeader {
+    flex-direction: column;
+  }
+  .headerActions {
+    width: 100%;
+  }
+  .actionBtn {
+    flex: 1;
+    justify-content: center;
   }
   .item {
-    padding: 14px;
+    padding: 0.875rem;
   }
+  .itemTitle {
+    font-size: 0.875rem;
+  }
+
+  /* ── FIX: Make the delete X always visible on mobile ── */
   .itemDelete {
     opacity: 1 !important;
-    top: 6px;
-    right: 6px;
-  }
-  .pageTitle {
-    font-size: 22px;
-  }
-}
-
-@media (min-width: 768px) {
-  .page {
-    padding: 40px 32px;
+    margin-top: -4px; /* Slight adjustment to align better with smaller padding */
   }
 }
