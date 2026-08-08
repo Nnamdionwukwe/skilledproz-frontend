@@ -222,13 +222,13 @@
   position: absolute;
   top: 0.625rem;
   right: 0.625rem;
-  width: 28px; /* Increased from 22px */
-  height: 28px; /* Increased from 22px */
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 1.4rem; /* Increased from 1rem */
+  font-size: 1.4rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -514,5 +514,11 @@
   }
   .itemTitle {
     font-size: 0.875rem;
+  }
+
+  /* ── FIX: Make the delete X always visible on mobile ── */
+  .itemDelete {
+    opacity: 1 !important;
+    margin-top: -4px; /* Slight adjustment to align better with smaller padding */
   }
 }
