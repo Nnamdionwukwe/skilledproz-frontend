@@ -43,10 +43,35 @@ export default function VerifyEmail() {
     }
   };
 
+  // ── Shared Top Navigation Link ──────────────────────────────────────────────
+  const BackToLoginLink = () => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "flex-start",
+        marginBottom: "16px",
+      }}
+    >
+      <Link
+        to="/login"
+        className={s.link}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          textDecoration: "none",
+        }}
+      >
+        <ArrowLeft size={15} /> Back to sign in
+      </Link>
+    </div>
+  );
+
   if (verifyStatus === "verifying")
     return (
       <AuthLayout>
         <div className={s.container}>
+          <BackToLoginLink />
           <div className={s.stateBox}>
             <div
               className={s.stateIcon}
@@ -64,6 +89,7 @@ export default function VerifyEmail() {
     return (
       <AuthLayout>
         <div className={s.container}>
+          <BackToLoginLink />
           <div
             className={s.stateBox}
             style={{
@@ -75,12 +101,17 @@ export default function VerifyEmail() {
             <div className={s.stateTitle}>Email verified! 🎉</div>
             <p className={s.stateSub}>Your account is now active.</p>
           </div>
-          <button
+          <Link
+            to="/login"
             className={`${s.btn} ${s.btnPrimary}`}
-            onClick={() => navigate("/login")}
+            style={{
+              textDecoration: "none",
+              textAlign: "center",
+              display: "inline-block",
+            }}
           >
             Continue to Sign In →
-          </button>
+          </Link>
         </div>
       </AuthLayout>
     );
@@ -89,6 +120,7 @@ export default function VerifyEmail() {
     return (
       <AuthLayout>
         <div className={s.container}>
+          <BackToLoginLink />
           <div
             className={s.stateBox}
             style={{
@@ -114,6 +146,8 @@ export default function VerifyEmail() {
   return (
     <AuthLayout>
       <div className={s.container}>
+        <BackToLoginLink />
+
         <div className={s.header}>
           <span className={s.eyebrow}>One more step</span>
           <h1 className={s.title}>
@@ -161,7 +195,7 @@ export default function VerifyEmail() {
             disabled={
               resendStatus === "sending" ||
               resendStatus === "sent" ||
-              !resendEmail
+              !resendEmail?.trim()
             }
           >
             {resendStatus === "sending" && (
@@ -173,11 +207,6 @@ export default function VerifyEmail() {
               : "Resend verification email"}
           </button>
         </form>
-        <p className={s.footer}>
-          <Link to="/login" className={s.link}>
-            ← Back to sign in
-          </Link>
-        </p>
       </div>
     </AuthLayout>
   );
