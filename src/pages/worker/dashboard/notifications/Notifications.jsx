@@ -6,22 +6,51 @@ import { useAuthStore } from "../../../../store/authStore";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import HirerLayout from "../../../../components/layout/HirerLayout";
 
+// ── React Icons ────────────────────────────────────────────────────────────────
+import {
+  FaBell,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaBan,
+  FaClock,
+  FaTrophy,
+  FaCalendarPlus,
+  FaCreditCard,
+  FaMoneyBillWave,
+  FaUndoAlt,
+  FaStar,
+  FaStarHalfAlt,
+  FaFileAlt,
+  FaCheck,
+  FaCommentDots,
+  FaEye,
+  FaShieldAlt,
+  FaGavel,
+  FaExclamationTriangle,
+  FaLock,
+  FaBriefcase,
+  FaRocket,
+  FaExclamationCircle,
+} from "react-icons/fa";
+import { BsTrash3 } from "react-icons/bs";
+import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
+
 // ── Icon map by notification type ─────────────────────────────────────────────
 const TYPE_ICON = {
-  JOB_APPLICATION: "📋",
-  APPLICATION_STATUS: "🎯",
-  BOOKING_PENDING: "📅",
-  BOOKING_ACCEPTED: "✅",
-  BOOKING_REJECTED: "❌",
-  BOOKING_CANCELLED: "🚫",
-  BOOKING_COMPLETED: "🎉",
-  BOOKING_IN_PROGRESS: "🔨",
-  PAYMENT_HELD: "💳",
-  PAYMENT_RELEASED: "💰",
-  NEW_MESSAGE: "💬",
-  REVIEW_REQUEST: "⭐",
-  PROFILE_VIEWED: "👀",
-  SYSTEM: "🔔",
+  JOB_APPLICATION: <FaFileAlt />,
+  APPLICATION_STATUS: <FaCheck />,
+  BOOKING_PENDING: <FaCalendarPlus />,
+  BOOKING_ACCEPTED: <FaCheckCircle />,
+  BOOKING_REJECTED: <FaTimesCircle />,
+  BOOKING_CANCELLED: <FaBan />,
+  BOOKING_COMPLETED: <FaTrophy />,
+  BOOKING_IN_PROGRESS: <FaClock />,
+  PAYMENT_HELD: <FaCreditCard />,
+  PAYMENT_RELEASED: <FaMoneyBillWave />,
+  NEW_MESSAGE: <FaCommentDots />,
+  REVIEW_REQUEST: <FaStarHalfAlt />,
+  PROFILE_VIEWED: <FaEye />,
+  SYSTEM: <FaBell />,
 };
 
 // ── Action links by type ───────────────────────────────────────────────────────
@@ -77,7 +106,7 @@ function NotificationModal({ notif, onClose, onNavigate }) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <span className={styles.modalIcon}>
-            {TYPE_ICON[notif.type] || "🔔"}
+            {TYPE_ICON[notif.type] || <FaBell />}
           </span>
           <div className={styles.modalTitleWrap}>
             <h3 className={styles.modalTitle}>{notif.title}</h3>
@@ -143,6 +172,11 @@ export default function Notifications() {
   const [filter, setFilter] = useState("all"); // all | unread
   const [selected, setSelected] = useState(null);
 
+  // ── Modal State ──
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
   const fetchNotifications = async (p = 1, f = filter) => {
     setLoading(true);
     try {
@@ -181,18 +215,26 @@ export default function Notifications() {
   }
 
   async function clearAll() {
-    if (!window.confirm("Clear all notifications?")) return;
     await api.delete("/notifications/clear-all");
     setNotifications([]);
     setTotal(0);
     setUnreadCount(0);
+    setShowClearModal(false);
   }
 
-  async function deleteOne(e, id) {
-    e.stopPropagation();
-    await api.delete(`/notifications/${id}`);
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  async function confirmDeleteNotification() {
+    if (!pendingDeleteId) return;
+    await api.delete(`/notifications/${pendingDeleteId}`);
+    setNotifications((prev) => prev.filter((n) => n.id !== pendingDeleteId));
     setTotal((c) => c - 1);
+    setPendingDeleteId(null);
+    setShowDeleteModal(false);
+  }
+
+  function handleDeleteClick(e, id) {
+    e.stopPropagation();
+    setPendingDeleteId(id);
+    setShowDeleteModal(true);
   }
 
   function handleNavigate(link) {
@@ -222,9 +264,9 @@ export default function Notifications() {
             {notifications.length > 0 && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                onClick={clearAll}
+                onClick={() => setShowClearModal(true)}
               >
-                🗑 Clear all
+                <BsTrash3 /> Clear all
               </button>
             )}
           </div>
@@ -268,7 +310,9 @@ export default function Notifications() {
           </div>
         ) : notifications.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>🔔</span>
+            <span className={styles.emptyIcon}>
+              <FaBell />
+            </span>
             <p className={styles.emptyTitle}>
               {filter === "unread"
                 ? "No unread notifications"
@@ -289,7 +333,7 @@ export default function Notifications() {
                 onClick={() => handleClick(notif)}
               >
                 <div className={styles.itemIcon}>
-                  {TYPE_ICON[notif.type] || "🔔"}
+                  {TYPE_ICON[notif.type] || <FaBell />}
                   {!notif.isRead && <span className={styles.unreadDot} />}
                 </div>
 
@@ -310,7 +354,7 @@ export default function Notifications() {
 
                 <button
                   className={styles.itemDelete}
-                  onClick={(e) => deleteOne(e, notif.id)}
+                  onClick={(e) => handleDeleteClick(e, notif.id)}
                   title="Delete"
                 >
                   ×
@@ -355,6 +399,31 @@ export default function Notifications() {
         notif={selected}
         onClose={() => setSelected(null)}
         onNavigate={handleNavigate}
+      />
+
+      {/* ── Clear All Confirmation Modal ── */}
+      <ConfirmationModal
+        isOpen={showClearModal}
+        onClose={() => setShowClearModal(false)}
+        onConfirm={clearAll}
+        title="Clear all notifications?"
+        message="This will permanently remove all notifications from your account. This action cannot be undone."
+        confirmLabel="Clear all"
+        confirmVariant="danger"
+      />
+
+      {/* ── Delete Single Notification Confirmation Modal ── */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setPendingDeleteId(null);
+        }}
+        onConfirm={confirmDeleteNotification}
+        title="Delete notification?"
+        message="This notification will be permanently removed from your account. This action cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
       />
     </Layout>
   );
