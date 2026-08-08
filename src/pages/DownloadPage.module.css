@@ -1,0 +1,87 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg, #0a0a0f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+}
+
+.backBtn {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.5));
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  font-family: var(--font-body, "Inter", sans-serif);
+}
+
+.backBtn:hover {
+  color: var(--orange, #f59e0b);
+}
+
+.instructions {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-panel, rgba(0, 0, 0, 0.3));
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.instructions h3 {
+  font-family: var(--font-display, "Inter", sans-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text, #ffffff);
+  margin: 0 0 0.5rem 0;
+}
+
+.instructions p {
+  font-size: 0.875rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.5));
+  margin: 0;
+  line-height: 1.6;
+}
+
+.instructions a {
+  color: var(--orange, #f59e0b);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.instructions a:hover {
+  color: var(--orange-hover, #d97706);
+  text-decoration: underline;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+
+  .instructions {
+    padding: 1rem;
+  }
+
+  .instructions h3 {
+    font-size: 0.9375rem;
+  }
+
+  .instructions p {
+    font-size: 0.8125rem;
+  }
+}

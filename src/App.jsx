@@ -112,6 +112,13 @@ import AdminExternalJobStats from "./pages/admin/AdminExternalJobStats.jsx";
 import WorkerSavedJobs from "./pages/worker/WorkerSavedJobs/WorkerSavedJobs.jsx";
 import CompletedJobs from "./pages/worker/CompletedJobs/CompletedJobs.jsx";
 import ManualPaymentSuccess from "./components/payment/ManualPaymentSuccess.jsx";
+import WaitlistSection from "./components/WaitlistSection/WaitlistSection.jsx";
+import SurveyModal from "./components/survey/SurveyModal.jsx";
+import SurveyPage from "./components/survey/SurveyModal.jsx";
+import FeedbackButton from "./components/Feedback/FeedbackButton.jsx";
+import BlogPage from "./pages/Blog/BlogPage.jsx";
+import DownloadPage from "./pages/DownloadPage.jsx";
+import SocialQR from "./components/SocialQR/SocialQR.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1010,11 +1017,19 @@ export default function App() {
         <Route path="/categories/:slug" element={<CategoryDetail />} />
         <Route path="/workers/:userId" element={<WorkerPublicProfile />} />
         <Route path="/hirers/:userId" element={<HirerPublicProfile />} />
+        <Route path="/waitlist" element={<WaitlistSection />} />
+        <Route path="/survey" element={<SurveyPage />} />
+        <Route path="/feedback" element={<FeedbackButton />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
+
+        <Route path="/download" element={<DownloadPage />} />
+        <Route path="/socials" element={<SocialQR />} />
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/login" replace />} />

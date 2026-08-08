@@ -157,7 +157,7 @@ export default function VerifyEmail() {
           </h1>
           <p className={s.subtitle}>
             We sent a verification link to your email. Click it to activate your
-            account.
+            account. One{" "}
           </p>
         </div>
         <div className={s.stateBox}>
@@ -195,7 +195,11 @@ export default function VerifyEmail() {
             disabled={
               resendStatus === "sending" ||
               resendStatus === "sent" ||
+<<<<<<< HEAD
               !resendEmail?.trim()
+=======
+              !resendEmail?.trim() // <--- THE ONLY CHANGE (added .trim())
+>>>>>>> 6f48106e0ed49165fd3f5bac2d2607bfe0ea8714
             }
           >
             {resendStatus === "sending" && (

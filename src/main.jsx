@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { HelmetProvider } from "react-helmet-async";
 import { SubscriptionProvider } from "./components/context/SubscriptionContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
@@ -23,10 +24,12 @@ function HydratedApp() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <CurrencyProvider>
-        <HydratedApp />
-      </CurrencyProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider>
+        <CurrencyProvider>
+          <HydratedApp />
+        </CurrencyProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   </React.StrictMode>,
 );
