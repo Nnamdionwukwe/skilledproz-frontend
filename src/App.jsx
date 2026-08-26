@@ -120,6 +120,7 @@ import BlogPage from "./pages/Blog/BlogPage.jsx";
 import DownloadPage from "./pages/DownloadPage.jsx";
 import SocialQR from "./components/SocialQR/SocialQR.jsx";
 import AdminSurveys from "./pages/admin/AdminSurveys.jsx";
+import AdminWaitlist from "./pages/admin/AdminWaitlist.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -499,6 +500,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminSurveys />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/waitlist"
+          element={
+            <RequireAdmin>
+              <AdminWaitlist />
             </RequireAdmin>
           }
         />

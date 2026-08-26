@@ -95,6 +95,7 @@ const NAV = [
       { label: "Reviews", path: "/admin/reviews", icon: FiStar },
       { label: "Categories", path: "/admin/categories", icon: FiTool },
       { label: "Surveys", path: "/admin/surveys", icon: FiBookOpen },
+      { label: "Waitlist", path: "/admin/waitlist", icon: FiUsers },
     ],
   },
   {
