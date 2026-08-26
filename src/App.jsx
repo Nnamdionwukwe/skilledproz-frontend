@@ -121,6 +121,7 @@ import DownloadPage from "./pages/DownloadPage.jsx";
 import SocialQR from "./components/SocialQR/SocialQR.jsx";
 import AdminSurveys from "./pages/admin/AdminSurveys.jsx";
 import AdminWaitlist from "./pages/admin/AdminWaitlist.jsx";
+import AdminFeedback from "./pages/admin/AdminFeedback.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -508,6 +509,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminWaitlist />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/feedback"
+          element={
+            <RequireAdmin>
+              <AdminFeedback />
             </RequireAdmin>
           }
         />
