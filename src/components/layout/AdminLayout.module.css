@@ -114,6 +114,21 @@
   overflow-y: auto;
 }
 
+/* Scrollbar styling */
+.nav::-webkit-scrollbar {
+  width: 4px;
+}
+.nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+.nav::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
 .navGroup {
   margin-bottom: 1rem;
 }
@@ -157,10 +172,25 @@
   background: var(--orange-dim);
   color: var(--orange);
 }
+
+/* Nav Icon for React Icons */
 .navIcon {
-  font-size: 0.9375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
-  text-align: center;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+
+.navItemActive .navIcon {
+  color: var(--orange);
+}
+
+.navItem:hover .navIcon {
+  color: var(--text);
 }
 
 /* Footer */
@@ -218,18 +248,18 @@
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.875rem;
   color: var(--text-dim);
   flex-shrink: 0;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .logoutBtn:hover {
@@ -262,14 +292,23 @@
   align-items: center;
   gap: 0.75rem;
 }
+
 .menuBtn {
   display: none;
   background: none;
   border: none;
-  font-size: 1.125rem;
   color: var(--text-dim);
   cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
+
+.menuBtn:hover {
+  color: var(--text);
+  background: var(--bg-card);
+}
+
 .headerTitle {
   font-family: var(--font-display);
   font-size: 1rem;
@@ -324,18 +363,68 @@
     left: 0;
     height: 100dvh;
     transform: translateX(-100%);
+    width: 280px;
   }
 
   .sidebar.open {
     transform: translateX(0);
   }
+
   .overlay {
     display: block;
   }
+
   .menuBtn {
-    display: flex;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
+
   .content {
     padding: 1rem;
+  }
+}
+
+/* ── Small screens ── */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .header {
+    padding: 0 0.75rem;
+  }
+
+  .content {
+    padding: 0.75rem;
+  }
+
+  .quickStats {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .qStat {
+    flex: 1 0 30%;
+  }
+
+  .qStatDivider {
+    display: none;
+  }
+}
+
+/* ── Dark mode support ── */
+@media (prefers-color-scheme: dark) {
+  .navItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .logoutBtn:hover {
+    background: rgba(239, 68, 68, 0.15);
+  }
+
+  .menuBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
   }
 }

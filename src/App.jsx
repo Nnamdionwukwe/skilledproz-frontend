@@ -119,6 +119,7 @@ import FeedbackButton from "./components/Feedback/FeedbackButton.jsx";
 import BlogPage from "./pages/Blog/BlogPage.jsx";
 import DownloadPage from "./pages/DownloadPage.jsx";
 import SocialQR from "./components/SocialQR/SocialQR.jsx";
+import AdminSurveys from "./pages/admin/AdminSurveys.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -490,6 +491,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminSettings />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/surveys"
+          element={
+            <RequireAdmin>
+              <AdminSurveys />
             </RequireAdmin>
           }
         />
