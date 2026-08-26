@@ -24,16 +24,59 @@ import {
   FaLink,
   FaCopy,
   FaCheck,
+  FaInfoCircle,
 } from "react-icons/fa";
 import styles from "./WaitlistSection.module.css";
 import CountdownTimer from "../ui/CountdownTimer";
 
+// ─── Confirmation Modal Component ──────────────────────────────────────────
+
+function ConfirmationModal({
+  isOpen,
+  onClose,
+  title,
+  message,
+  icon,
+  buttonLabel,
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalIconWrapper}>
+          <span className={styles.modalIcon}>{icon || "✅"}</span>
+        </div>
+        <h3 className={styles.modalTitle}>{title}</h3>
+        <p className={styles.modalMessage}>{message}</p>
+        <button className={styles.modalButton} onClick={onClose}>
+          {buttonLabel || "Got it!"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function WaitlistSection() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error | info
   const [message, setMessage] = useState("");
   const [showReferral, setShowReferral] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // ─── Modal State ──────────────────────────────────────────────────────────
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({
+    title: "",
+    message: "",
+    icon: null,
+    buttonLabel: "Got it!",
+  });
+
+  const showModal = (title, message, icon = null, buttonLabel = "Got it!") => {
+    setModalContent({ title, message, icon, buttonLabel });
+    setModalOpen(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,14 +97,43 @@ export default function WaitlistSection() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
+      // ─── Handle 409 Conflict - Email already exists ────────────────────
+      if (res.status === 409) {
+        setStatus("info");
+        setMessage("You're already on the waitlist!");
+        showModal(
+          "🎉 You're Already on the List!",
+          "We've already got your email. You'll be among the first to know when SkilledProz launches. Stay tuned for exclusive early adopter benefits!",
+          "✅",
+          "Awesome!",
+        );
+        setEmail("");
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
 
       setStatus("success");
       setMessage("🎉 You're on the list! Check your email for confirmation.");
+      showModal(
+        "🎉 You're on the Waitlist!",
+        "Welcome to the SkilledProz early adopter community! Check your email for confirmation and exclusive benefits. We'll notify you when we launch.",
+        "🚀",
+        "Amazing!",
+      );
       setEmail("");
     } catch (err) {
       setStatus("error");
       setMessage(err.message || "Failed to join. Please try again.");
+      showModal(
+        "❌ Something Went Wrong",
+        err.message ||
+          "We couldn't process your request. Please try again later.",
+        "⚠️",
+        "Try Again",
+      );
     }
   };
 
@@ -136,6 +208,16 @@ export default function WaitlistSection() {
   return (
     <section className={styles.waitlist}>
       <div className={styles.container}>
+        {/* ─── Confirmation Modal ─────────────────────────────────────────── */}
+        <ConfirmationModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={modalContent.title}
+          message={modalContent.message}
+          icon={modalContent.icon}
+          buttonLabel={modalContent.buttonLabel}
+        />
+
         {/* Social Proof Banner */}
         <div className={styles.socialProof}>
           <div className={styles.socialProofContent}>
@@ -245,7 +327,7 @@ export default function WaitlistSection() {
                   {status === "loading" ? (
                     <FaSpinner className={styles.spinner} />
                   ) : status === "success" ? (
-                    "🎉 Joined!"
+                    "✅ Joined!"
                   ) : (
                     "Claim My Spot 🚀"
                   )}
@@ -253,10 +335,19 @@ export default function WaitlistSection() {
               </div>
               {message && (
                 <p
-                  className={`${styles.message} ${status === "success" ? styles.success : styles.error}`}
+                  className={`${styles.message} ${
+                    status === "success"
+                      ? styles.success
+                      : status === "info"
+                        ? styles.info
+                        : styles.error
+                  }`}
                 >
                   {status === "success" && (
                     <FaCheckCircle className={styles.messageIcon} />
+                  )}
+                  {status === "info" && (
+                    <FaInfoCircle className={styles.messageIcon} />
                   )}
                   {message}
                 </p>
