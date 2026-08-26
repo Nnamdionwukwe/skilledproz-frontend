@@ -5,6 +5,19 @@ import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import { useAuthStore } from "../../store/authStore";
 
+import {
+  FiArrowLeft,
+  FiSearch,
+  FiPlus,
+  FiX,
+  FiUser,
+  FiTag,
+  FiCheckCircle,
+  FiAlertCircle,
+} from "react-icons/fi";
+
+import { FaRegUser, FaUsers } from "react-icons/fa";
+
 export default function CategoriesBrowse() {
   const { user } = useAuthStore();
 
@@ -13,7 +26,7 @@ export default function CategoriesBrowse() {
       ? "/dashboard/worker"
       : user?.role === "HIRER"
         ? "/dashboard/hirer"
-        : "/landingpage"; // Default for Guests
+        : "/landingpage";
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,118 +84,142 @@ export default function CategoriesBrowse() {
   }
 
   return (
-    <>
-      <div className={styles.page}>
-        <Link to={backDestination} className={styles.backBtn}>
-          ← Back
-        </Link>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Browse Categories</h1>
-          <p className={styles.sub}>
-            {categories.length > 0
-              ? `${categories.length}+ categories`
-              : "All categories"}{" "}
-            — search or add yours
-          </p>
-        </div>
+    <div className={styles.page}>
+      <Link to={backDestination} className={styles.backBtn}>
+        <FiArrowLeft size={16} /> Back
+      </Link>
 
-        {/* Search + suggest row */}
-        <div className={styles.controlRow}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Browse Categories</h1>
+        <p className={styles.sub}>
+          {categories.length > 0
+            ? `${categories.length}+ categories`
+            : "All categories"}{" "}
+          — search or add yours
+        </p>
+      </div>
+
+      {/* Search + suggest row */}
+      <div className={styles.controlRow}>
+        <div className={styles.searchWrap}>
+          <FiSearch className={styles.searchIcon} size={18} />
           <input
             className={styles.searchInput}
-            placeholder="🔍 Search categories..."
+            placeholder="Search categories..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          {!showSuggest ? (
+          {search && (
             <button
-              className={styles.suggestTrigger}
-              onClick={() => setShowSuggest(true)}
+              className={styles.clearBtn}
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
             >
-              + Add Category
+              <FiX size={16} />
             </button>
-          ) : (
-            <form onSubmit={handleSuggest} className={styles.suggestForm}>
-              <input
-                autoFocus
-                className={styles.suggestInput}
-                placeholder="e.g. Drone Operator, Solar Engineer..."
-                value={suggestName}
-                onChange={(e) => setSuggestName(e.target.value)}
-                onKeyDown={(e) => e.key === "Escape" && setShowSuggest(false)}
-              />
-              <button
-                type="submit"
-                className={styles.suggestBtn}
-                disabled={suggesting || !suggestName.trim()}
-              >
-                {suggesting ? "Adding..." : "Add"}
-              </button>
-              <button
-                type="button"
-                className={styles.suggestCancel}
-                onClick={() => {
-                  setShowSuggest(false);
-                  setSuggestName("");
-                }}
-              >
-                Cancel
-              </button>
-            </form>
           )}
         </div>
 
-        {suggestMsg && (
-          <div
-            className={`${styles.suggestMsg} ${suggestMsg.startsWith("✅") ? styles.suggestMsgOk : styles.suggestMsgErr}`}
+        {!showSuggest ? (
+          <button
+            className={styles.suggestTrigger}
+            onClick={() => setShowSuggest(true)}
           >
-            {suggestMsg}
-          </div>
-        )}
-
-        {loading ? (
-          <div className={styles.grid}>
-            {[...Array(12)].map((_, i) => (
-              <div key={i} className={styles.skeleton} />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className={styles.empty}>
-            <p>No categories found{search ? ` for "${search}"` : ""}.</p>
-            {search && (
-              <button
-                className={styles.suggestTrigger}
-                onClick={() => {
-                  setSuggestName(search);
-                  setShowSuggest(true);
-                  setSearch("");
-                }}
-              >
-                + Add "{search}" as a new category
-              </button>
-            )}
-          </div>
+            <FiPlus size={16} /> Add Category
+          </button>
         ) : (
-          <div className={styles.grid}>
-            {filtered.map((cat) => (
-              <Link
-                key={cat.id}
-                to={`/categories/${cat.slug}`}
-                className={styles.card}
-              >
-                {cat.icon && <span className={styles.icon}>{cat.icon}</span>}
-                <h3 className={styles.name}>{cat.name}</h3>
-                <p className={styles.count}>
-                  {cat._count?.workers || 0} workers
-                </p>
-                {cat.isUserSubmitted && (
-                  <span className={styles.userTag}>Community</span>
-                )}
-              </Link>
-            ))}
-          </div>
+          <form onSubmit={handleSuggest} className={styles.suggestForm}>
+            <input
+              autoFocus
+              className={styles.suggestInput}
+              placeholder="e.g. Drone Operator, Solar Engineer..."
+              value={suggestName}
+              onChange={(e) => setSuggestName(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setShowSuggest(false)}
+            />
+            <button
+              type="submit"
+              className={styles.suggestBtn}
+              disabled={suggesting || !suggestName.trim()}
+            >
+              {suggesting ? "Adding..." : "Add"}
+            </button>
+            <button
+              type="button"
+              className={styles.suggestCancel}
+              onClick={() => {
+                setShowSuggest(false);
+                setSuggestName("");
+              }}
+            >
+              <FiX size={14} /> Cancel
+            </button>
+          </form>
         )}
       </div>
-    </>
+
+      {suggestMsg && (
+        <div
+          className={`${styles.suggestMsg} ${
+            suggestMsg.startsWith("✅")
+              ? styles.suggestMsgOk
+              : styles.suggestMsgErr
+          }`}
+        >
+          {suggestMsg.startsWith("✅") ? (
+            <FiCheckCircle size={16} />
+          ) : (
+            <FiAlertCircle size={16} />
+          )}
+          {suggestMsg}
+        </div>
+      )}
+
+      {loading ? (
+        <div className={styles.grid}>
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className={styles.skeleton} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className={styles.empty}>
+          <FiSearch size={48} opacity={0.3} />
+          <p>No categories found{search ? ` for "${search}"` : ""}.</p>
+          {search && (
+            <button
+              className={styles.suggestTrigger}
+              onClick={() => {
+                setSuggestName(search);
+                setShowSuggest(true);
+                setSearch("");
+              }}
+            >
+              <FiPlus size={16} /> Add "{search}" as a new category
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {filtered.map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/categories/${cat.slug}`}
+              className={styles.card}
+            >
+              {cat.icon && <span className={styles.icon}>{cat.icon}</span>}
+              <h3 className={styles.name}>{cat.name}</h3>
+              <p className={styles.count}>
+                <FaUsers size={12} /> {cat._count?.workers || 0} workers
+              </p>
+              {cat.isUserSubmitted && (
+                <span className={styles.userTag}>
+                  <FiTag size={10} /> Community
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

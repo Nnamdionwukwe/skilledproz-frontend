@@ -4,6 +4,19 @@ import styles from "./CategoryDetail.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 
+import {
+  FiArrowLeft,
+  FiMapPin,
+  FiDollarSign,
+  FiStar,
+  FiUsers,
+  FiClock,
+  FiUser,
+  FiCamera,
+} from "react-icons/fi";
+
+import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
+
 export default function CategoryDetail() {
   const { slug } = useParams();
   const [category, setCategory] = useState(null);
@@ -17,7 +30,6 @@ export default function CategoryDetail() {
       .then((res) => setCategory(res.data.data.category))
       .catch(() => setError("Category not found"));
 
-    // Use /search endpoint with category filter — this is what exists
     api
       .get("/search", {
         params: {
@@ -34,7 +46,6 @@ export default function CategoryDetail() {
         setLoading(false);
       })
       .catch(() => {
-        // Fallback: fetch all workers via worker endpoint
         api
           .get("/workers", { params: { category: slug, limit: 20 } })
           .then((res) => setWorkers(res.data.data?.workers || []))
@@ -59,96 +70,124 @@ export default function CategoryDetail() {
         <div className={styles.header}>
           <h1>Category not found</h1>
           <Link to="/categories" className={styles.backBtn}>
-            ← Back to Categories
+            <FiArrowLeft size={16} /> Back to Categories
           </Link>
         </div>
       </div>
     );
   }
 
+  // Helper to render star ratings
+  const renderStars = (rating) => {
+    if (!rating) return null;
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+    return (
+      <span className={styles.starsContainer}>
+        {[...Array(fullStars)].map((_, i) => (
+          <FaStar key={`full-${i}`} className={styles.starFilled} />
+        ))}
+        {halfStar && <FaStarHalfAlt className={styles.starFilled} />}
+        {[...Array(emptyStars)].map((_, i) => (
+          <FaRegStar key={`empty-${i}`} className={styles.starEmpty} />
+        ))}
+      </span>
+    );
+  };
+
   return (
-    <>
-      <div className={styles.page}>
-        <div className={styles.header}>
-          <Link to="/categories" className={styles.backBtn}>
-            ← Back
-          </Link>
-          {category.icon && (
-            <span className={styles.icon}>{category.icon}</span>
-          )}
-          <h1>{category.name}</h1>
-          <p className={styles.workerCount}>
-            {workers.length} workers available
-          </p>
-        </div>
-
-        <div className={styles.workersGrid}>
-          {workers.map((worker, i) => {
-            // Search returns workerProfile shape; /workers endpoint returns user shape
-            const isSearchShape = !!worker.user; // has nested user
-            const userId = isSearchShape ? worker.user?.id : worker.id;
-            const firstName = isSearchShape
-              ? worker.user?.firstName
-              : worker.firstName;
-            const lastName = isSearchShape
-              ? worker.user?.lastName
-              : worker.lastName;
-            const avatar = isSearchShape ? worker.user?.avatar : worker.avatar;
-            const city = isSearchShape ? worker.user?.city : worker.city;
-            const wp = isSearchShape ? worker : worker.workerProfile;
-
-            return (
-              <Link
-                key={userId || i}
-                to={`/workers/${userId}`}
-                className={styles.workerCard}
-              >
-                <div className={styles.avatar}>
-                  {avatar ? (
-                    <img src={avatar} alt={firstName} />
-                  ) : (
-                    <span>
-                      {firstName?.[0]}
-                      {lastName?.[0]}
-                    </span>
-                  )}
-                </div>
-                <h3 className={styles.name}>
-                  {firstName} {lastName}
-                </h3>
-                {wp?.title && <p className={styles.title}>{wp.title}</p>}
-                <div className={styles.rating}>
-                  <span className={styles.stars}>★</span>
-                  <span className={styles.ratingValue}>
-                    {wp?.avgRating || "New"}
-                  </span>
-                  <span className={styles.ratingCount}>
-                    ({wp?.totalReviews || 0} reviews)
-                  </span>
-                </div>
-                {city && <p className={styles.location}>📍 {city}</p>}
-                {wp?.hourlyRate && (
-                  <p className={styles.rate}>
-                    {wp.currency || "USD"} {wp.hourlyRate}/hr
-                  </p>
-                )}
-                {wp?.isAvailable && (
-                  <div className={styles.available}>🟢 Available</div>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-
-        {workers.length === 0 && (
-          <div className={styles.empty}>
-            <p>No workers found in this category</p>
-            <Link to="/categories" className={styles.backBtn}>
-              Browse other categories
-            </Link>
-          </div>
-        )}
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <Link to="/categories" className={styles.backBtn}>
+          <FiArrowLeft size={16} /> Back
+        </Link>
+        {category.icon && <span className={styles.icon}>{category.icon}</span>}
+        <h1>{category.name}</h1>
+        <p className={styles.workerCount}>
+          <FiUsers size={14} /> {workers.length} workers available
+        </p>
       </div>
-    </>
+
+      <div className={styles.workersGrid}>
+        {workers.map((worker, i) => {
+          const isSearchShape = !!worker.user;
+          const userId = isSearchShape ? worker.user?.id : worker.id;
+          const firstName = isSearchShape
+            ? worker.user?.firstName
+            : worker.firstName;
+          const lastName = isSearchShape
+            ? worker.user?.lastName
+            : worker.lastName;
+          const avatar = isSearchShape ? worker.user?.avatar : worker.avatar;
+          const city = isSearchShape ? worker.user?.city : worker.city;
+          const wp = isSearchShape ? worker : worker.workerProfile;
+
+          return (
+            <Link
+              key={userId || i}
+              to={`/workers/${userId}`}
+              className={styles.workerCard}
+            >
+              <div className={styles.avatar}>
+                {avatar ? (
+                  <img src={avatar} alt={firstName} />
+                ) : (
+                  <span>
+                    <FiUser size={28} />
+                  </span>
+                )}
+              </div>
+              <h3 className={styles.name}>
+                {firstName} {lastName}
+              </h3>
+              {wp?.title && <p className={styles.title}>{wp.title}</p>}
+              <div className={styles.rating}>
+                {wp?.avgRating ? (
+                  <>
+                    {renderStars(wp.avgRating)}
+                    <span className={styles.ratingValue}>
+                      {wp.avgRating.toFixed(1)}
+                    </span>
+                    <span className={styles.ratingCount}>
+                      ({wp.totalReviews || 0} reviews)
+                    </span>
+                  </>
+                ) : (
+                  <span className={styles.ratingNew}>New</span>
+                )}
+              </div>
+              {city && (
+                <p className={styles.location}>
+                  <FiMapPin size={12} /> {city}
+                </p>
+              )}
+              {wp?.hourlyRate && (
+                <p className={styles.rate}>
+                  <FiDollarSign size={14} />
+                  {wp.currency || "USD"} {wp.hourlyRate}/hr
+                </p>
+              )}
+              {wp?.isAvailable && (
+                <div className={styles.available}>
+                  <span className={styles.statusDot} /> Available
+                </div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+
+      {workers.length === 0 && (
+        <div className={styles.empty}>
+          <FiUsers size={48} opacity={0.3} />
+          <p>No workers found in this category</p>
+          <Link to="/categories" className={styles.backBtn}>
+            <FiArrowLeft size={16} /> Browse other categories
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
