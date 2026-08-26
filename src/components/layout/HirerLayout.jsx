@@ -29,6 +29,7 @@ import {
   FaBars,
   FaUserCircle,
   FaEnvelope,
+  FaWallet,
 } from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
@@ -142,6 +143,16 @@ const NAV = [
     ],
   },
   {
+    group: "Wallet",
+    items: [
+      {
+        label: "My Wallet",
+        path: "/dashboard/hirer/wallet",
+        icon: <FaWallet />,
+      },
+    ],
+  },
+  {
     group: "Subscriptions & Features",
     items: [
       {
@@ -211,6 +222,10 @@ const PAGE_TITLES = {
     sub: "Boost your listing",
   },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
+  "/dashboard/hirer/wallet": {
+    title: "My Wallet",
+    sub: "Manage your funds and payments",
+  },
 };
 
 function getPageInfo(pathname) {
@@ -230,6 +245,8 @@ function isNavActive(itemPath, pathname) {
     return pathname === "/dashboard/hirer/reviews/given";
   if (itemPath === "/dashboard/hirer/payment-history")
     return pathname === "/dashboard/hirer/payment-history";
+  if (itemPath === "/dashboard/hirer/wallet")
+    return pathname === "/dashboard/hirer/wallet";
   return pathname === itemPath;
 }
 

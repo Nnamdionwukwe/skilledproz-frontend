@@ -122,6 +122,7 @@ import SocialQR from "./components/SocialQR/SocialQR.jsx";
 import AdminSurveys from "./pages/admin/AdminSurveys.jsx";
 import AdminWaitlist from "./pages/admin/AdminWaitlist.jsx";
 import AdminFeedback from "./pages/admin/AdminFeedback.jsx";
+import HirerWallet from "./components/hirer/HirerWallet.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -835,6 +836,16 @@ export default function App() {
             <RequireHirer>
               <RequireAuth>
                 <FeaturedBoost />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/wallet"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <HirerWallet />
               </RequireAuth>
             </RequireHirer>
           }
