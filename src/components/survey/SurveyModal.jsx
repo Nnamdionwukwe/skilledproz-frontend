@@ -146,19 +146,58 @@ export default function SurveyPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Log what we're sending
+    console.log("📝 Submitting survey data:", formData);
+
+    // Validate experience is set
+    if (!formData.experience) {
+      setStatus("error");
+      setMessage("Please select your experience level in Step 3");
+      return;
+    }
+
     setStatus("submitting");
+    setMessage("");
 
     try {
+      const payload = {
+        role: formData.role,
+        industry: formData.industry,
+        experience: formData.experience,
+        problem: formData.problem,
+        feature: formData.feature,
+        concern: formData.concern || "",
+        hearAbout: formData.hearAbout || "",
+        email: formData.email,
+        name: formData.name || "",
+        phone: formData.phone || "",
+        location: formData.location || "",
+        additionalFeedback: formData.additionalFeedback || "",
+        rating: formData.rating || 0,
+      };
+
+      console.log("📤 Sending payload:", payload);
+
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/survey`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         },
       );
 
-      if (!res.ok) throw new Error("Failed to submit");
+      const data = await res.json();
+      console.log("📥 Response:", data);
+
+      if (!res.ok) {
+        // Show detailed validation errors from backend
+        if (data.errors) {
+          throw new Error(data.errors.join(", "));
+        }
+        throw new Error(data.message || "Failed to submit");
+      }
 
       setStatus("success");
       setMessage("🎉 Thank you! Your feedback will shape SkilledProz.");
@@ -167,8 +206,9 @@ export default function SurveyPage() {
         navigate("/", { state: { surveyComplete: true } });
       }, 3000);
     } catch (err) {
+      console.error("❌ Survey error:", err);
       setStatus("error");
-      setMessage("Something went wrong. Please try again.");
+      setMessage(err.message || "Something went wrong. Please try again.");
     }
   };
 
