@@ -123,6 +123,7 @@ import AdminSurveys from "./pages/admin/AdminSurveys.jsx";
 import AdminWaitlist from "./pages/admin/AdminWaitlist.jsx";
 import AdminFeedback from "./pages/admin/AdminFeedback.jsx";
 import HirerWallet from "./components/hirer/HirerWallet.jsx";
+import WalletCallback from "./components/hirer/WalletCallback.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -846,6 +847,16 @@ export default function App() {
             <RequireHirer>
               <RequireAuth>
                 <HirerWallet />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/wallet/callback"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <WalletCallback />
               </RequireAuth>
             </RequireHirer>
           }

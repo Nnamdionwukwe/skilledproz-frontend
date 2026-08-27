@@ -952,3 +952,147 @@
   );
   background-size: 400px 100%;
 }
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Message Modal ────────────────────────────────────────────────────── */
+
+.messageHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0 12px;
+}
+
+.messageIconSuccess {
+  font-size: 48px;
+  color: #10b981;
+}
+
+.messageIconError {
+  font-size: 48px;
+  color: #ef4444;
+}
+
+.messageIconInfo {
+  font-size: 48px;
+  color: #f59e0b;
+}
+
+.messageTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.messageBody {
+  padding: 0 20px 16px;
+  text-align: center;
+}
+
+.messageText {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.messageActions {
+  padding: 0 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.messageBtn {
+  padding: 10px 40px;
+  background: var(--orange);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.messageBtn:hover {
+  opacity: 0.88;
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .messageIconSuccess,
+  .messageIconError,
+  .messageIconInfo {
+    font-size: 36px;
+  }
+
+  .messageTitle {
+    font-size: 18px;
+  }
+
+  .messageText {
+    font-size: 14px;
+  }
+
+  .messageBtn {
+    width: 100%;
+    padding: 12px;
+  }
+}

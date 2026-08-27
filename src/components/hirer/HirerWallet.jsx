@@ -1,10 +1,11 @@
 // src/pages/hirer/HirerWallet.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerWallet.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 
 import {
   FaWallet,
@@ -30,7 +31,7 @@ function formatCurrency(amount, currency = "NGN") {
     style: "currency",
     currency: currency,
     minimumFractionDigits: 2,
-  }).format(amount);
+  }).format(amount || 0);
 }
 
 function formatDate(date) {
@@ -113,7 +114,10 @@ function WalletSkeleton() {
   return (
     <div className={styles.skeletonPage}>
       <div className={styles.skeletonHeader}>
-        <div className={styles.skeletonTitle} />
+        <div>
+          <div className={styles.skeletonTitle} />
+          <div className={styles.skeletonSubtitle} />
+        </div>
         <div className={styles.skeletonActions}>
           <div className={styles.skeletonBtn} />
           <div className={styles.skeletonBtn} />
@@ -126,7 +130,8 @@ function WalletSkeleton() {
         <div className={styles.skeletonStat} />
         <div className={styles.skeletonStat} />
       </div>
-      <div className={styles.skeletonTransactions}>
+      <div className={styles.skeletonPanel}>
+        <div className={styles.skeletonPanelHeader} />
         <div className={styles.skeletonTx} />
         <div className={styles.skeletonTx} />
         <div className={styles.skeletonTx} />
@@ -139,17 +144,14 @@ function WalletSkeleton() {
 
 // ─── Stat Card ──────────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, subtitle, color }) {
+function StatCard({ icon: Icon, label, value, accent }) {
   return (
-    <div className={styles.statCard}>
-      <div className={styles.statIcon} style={{ backgroundColor: color }}>
-        <Icon size={20} />
-      </div>
-      <div className={styles.statInfo}>
-        <div className={styles.statValue}>{value}</div>
-        <div className={styles.statLabel}>{label}</div>
-        {subtitle && <div className={styles.statSubtitle}>{subtitle}</div>}
-      </div>
+    <div
+      className={`${styles.statCard} ${accent ? styles[`accent_${accent}`] : ""}`}
+    >
+      <span className={styles.statIcon}>{Icon && <Icon size={16} />}</span>
+      <p className={styles.statValue}>{value}</p>
+      <p className={styles.statLabel}>{label}</p>
     </div>
   );
 }
@@ -212,18 +214,25 @@ function TransactionRow({ transaction }) {
 
 // ─── Deposit Modal ─────────────────────────────────────────────────────────
 
-function DepositModal({ isOpen, onClose, onDeposit, loading }) {
+function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
   const [amount, setAmount] = useState("");
-  const [currency] = useState("NGN");
+  const [currency, setCurrency] = useState("NGN");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 100) {
+      // Use modal instead of alert
       alert("Minimum deposit amount is ₦100");
       return;
     }
-    onDeposit(numAmount, currency);
+    setIsSubmitting(true);
+    try {
+      await onDeposit(numAmount, currency);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -258,6 +267,20 @@ function DepositModal({ isOpen, onClose, onDeposit, loading }) {
                 autoFocus
               />
             </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Currency</label>
+              <select
+                className={styles.formInput}
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+              >
+                {currencies.map((cur) => (
+                  <option key={cur} value={cur}>
+                    {cur}
+                  </option>
+                ))}
+              </select>
+            </div>
             <p className={styles.minAmount}>Minimum: ₦100</p>
             <div className={styles.modalActions}>
               <button
@@ -270,9 +293,9 @@ function DepositModal({ isOpen, onClose, onDeposit, loading }) {
               <button
                 type="submit"
                 className={styles.modalConfirm}
-                disabled={loading}
+                disabled={loading || isSubmitting}
               >
-                {loading ? (
+                {loading || isSubmitting ? (
                   <FaSpinner className={styles.spinning} />
                 ) : (
                   "Proceed to Pay"
@@ -288,14 +311,23 @@ function DepositModal({ isOpen, onClose, onDeposit, loading }) {
 
 // ─── Withdraw Modal ─────────────────────────────────────────────────────────
 
-function WithdrawModal({ isOpen, onClose, onWithdraw, loading, balance }) {
+function WithdrawModal({
+  isOpen,
+  onClose,
+  onWithdraw,
+  loading,
+  balance,
+  currencies,
+}) {
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("NGN");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [bankCode, setBankCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 100) {
@@ -306,13 +338,19 @@ function WithdrawModal({ isOpen, onClose, onWithdraw, loading, balance }) {
       alert("Insufficient balance");
       return;
     }
-    onWithdraw({
-      amount: numAmount,
-      bankName,
-      accountNumber,
-      accountName,
-      bankCode,
-    });
+    setIsSubmitting(true);
+    try {
+      await onWithdraw({
+        amount: numAmount,
+        currency,
+        bankName,
+        accountNumber,
+        accountName,
+        bankCode,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -332,12 +370,12 @@ function WithdrawModal({ isOpen, onClose, onWithdraw, loading, balance }) {
           <p className={styles.modalSubtext}>
             Withdraw funds to your bank account
           </p>
-          <p className={styles.balanceDisplay}>
+          <div className={styles.balanceDisplay}>
             Available Balance: {formatCurrency(balance)}
-          </p>
+          </div>
           <form onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Amount (₦)</label>
+              <label className={styles.formLabel}>Amount</label>
               <input
                 type="number"
                 className={styles.formInput}
@@ -348,6 +386,20 @@ function WithdrawModal({ isOpen, onClose, onWithdraw, loading, balance }) {
                 step="100"
                 required
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Currency</label>
+              <select
+                className={styles.formInput}
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+              >
+                {currencies.map((cur) => (
+                  <option key={cur} value={cur}>
+                    {cur}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Bank Name</label>
@@ -407,16 +459,47 @@ function WithdrawModal({ isOpen, onClose, onWithdraw, loading, balance }) {
               <button
                 type="submit"
                 className={styles.modalConfirm}
-                disabled={loading}
+                disabled={loading || isSubmitting}
               >
-                {loading ? (
+                {loading || isSubmitting ? (
                   <FaSpinner className={styles.spinning} />
                 ) : (
-                  "Withdraw"
+                  "Request Withdrawal"
                 )}
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Message Modal ─────────────────────────────────────────────────────────
+
+function MessageModal({ isOpen, onClose, title, message, type = "success" }) {
+  if (!isOpen) return null;
+
+  const icons = {
+    success: <FaCheckCircle className={styles.messageIconSuccess} />,
+    error: <FaTimesCircle className={styles.messageIconError} />,
+    info: <FaClock className={styles.messageIconInfo} />,
+  };
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.messageHeader}>
+          {icons[type] || icons.success}
+          <h3 className={styles.messageTitle}>{title}</h3>
+        </div>
+        <div className={styles.messageBody}>
+          <p className={styles.messageText}>{message}</p>
+        </div>
+        <div className={styles.messageActions}>
+          <button className={styles.messageBtn} onClick={onClose}>
+            Got it
+          </button>
         </div>
       </div>
     </div>
@@ -429,59 +512,99 @@ export default function HirerWallet() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [currencies, setCurrencies] = useState(["NGN", "USD", "EUR", "GBP"]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
     total: 0,
     pages: 1,
   });
-  const [activeTab, setActiveTab] = useState("all");
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageConfig, setMessageConfig] = useState({
+    title: "",
+    message: "",
+    type: "success",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ─── Show message modal ──────────────────────────────────────────────────
+
+  const showMessage = (title, message, type = "success") => {
+    setMessageConfig({ title, message, type });
+    setShowMessageModal(true);
+  };
+
   // ─── Fetch wallet data ────────────────────────────────────────────────────
 
-  const fetchWallet = async () => {
-    try {
-      setLoading(true);
-      const [walletRes, txRes] = await Promise.all([
-        api.get("/wallet/balance"),
-        api.get("/wallet/transactions", {
+  const fetchWallet = useCallback(
+    async (showLoadingState = true) => {
+      if (showLoadingState) setLoading(true);
+      setRefreshing(true);
+      try {
+        const walletRes = await api.get("/wallet/balance");
+        const walletData = walletRes.data.data;
+        setWallet(walletData);
+
+        const txRes = await api.get("/wallet/transactions", {
           params: {
             page: pagination.page,
             limit: pagination.limit,
             type: filterType || undefined,
             status: filterStatus || undefined,
           },
-        }),
-      ]);
+        });
+        setTransactions(txRes.data.data.transactions || []);
+        setPagination(
+          txRes.data.data.pagination || {
+            page: 1,
+            limit: 20,
+            total: 0,
+            pages: 1,
+          },
+        );
 
-      setWallet(walletRes.data.data);
-      setTransactions(txRes.data.data.transactions || []);
-      setPagination(
-        txRes.data.data.pagination || {
-          page: 1,
-          limit: 20,
-          total: 0,
-          pages: 1,
-        },
-      );
-    } catch (err) {
-      console.error("Failed to fetch wallet:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        try {
+          const currenciesRes = await api.get("/wallet/currencies");
+          if (currenciesRes.data?.data?.currencies) {
+            setCurrencies(currenciesRes.data.data.currencies);
+          }
+        } catch (err) {
+          console.log("Using default currencies");
+        }
+      } catch (err) {
+        console.error("Failed to fetch wallet:", err);
+        if (err.response?.status === 404) {
+          setWallet({
+            balance: 0,
+            currency: "NGN",
+            totalDeposited: 0,
+            totalSpent: 0,
+            totalWithdrawn: 0,
+          });
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [pagination.page, filterType, filterStatus],
+  );
 
   useEffect(() => {
-    fetchWallet();
-  }, [pagination.page, filterType, filterStatus]);
+    fetchWallet(true);
+  }, [pagination.page, filterType, filterStatus, fetchWallet]);
+
+  const refreshWallet = () => {
+    fetchWallet(false);
+  };
 
   // ─── Deposit ──────────────────────────────────────────────────────────────
 
@@ -489,14 +612,105 @@ export default function HirerWallet() {
     setSubmitting(true);
     try {
       const res = await api.post("/wallet/fund", { amount, currency });
-      const { paymentLink } = res.data.data;
+      const { paymentLink, reference } = res.data.data;
+
       if (paymentLink) {
+        // Store pending deposit info
+        localStorage.setItem("pendingDepositAmount", amount.toString());
+        localStorage.setItem("pendingDepositCurrency", currency);
+        localStorage.setItem("pendingDepositReference", reference);
+
+        setShowDepositModal(false);
+
+        showMessage(
+          "Payment Initiated",
+          "Your payment page is opening. Please complete your payment.",
+          "info",
+        );
+
+        // Open Flutterwave payment page
         window.open(paymentLink, "_blank");
+
+        // Start polling for transaction status
+        let attempts = 0;
+        const maxAttempts = 30;
+
+        const checkTransaction = async () => {
+          try {
+            const verifyRes = await api.get(`/wallet/verify/${reference}`);
+            const status = verifyRes.data.data?.status;
+
+            if (status === "SUCCESS") {
+              showMessage(
+                "Payment Successful! 🎉",
+                `Your wallet has been funded with ${formatCurrency(amount, currency)}.`,
+                "success",
+              );
+              await fetchWallet(false);
+              return true;
+            } else if (status === "FAILED") {
+              showMessage(
+                "Payment Failed",
+                "Your payment was not successful. Please try again.",
+                "error",
+              );
+              return true;
+            }
+            return false;
+          } catch (err) {
+            return false;
+          }
+        };
+
+        const interval = setInterval(async () => {
+          attempts++;
+          const done = await checkTransaction();
+          if (done || attempts >= maxAttempts) {
+            clearInterval(interval);
+            if (attempts >= maxAttempts && !done) {
+              showMessage(
+                "Verification Timeout",
+                "Please check your wallet balance manually to confirm the payment.",
+                "info",
+              );
+            }
+            await fetchWallet(false);
+          }
+        }, 5000);
+
+        const handleVisibilityChange = async () => {
+          if (document.visibilityState === "visible") {
+            const done = await checkTransaction();
+            if (done) {
+              clearInterval(interval);
+              await fetchWallet(false);
+            }
+          }
+        };
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        setTimeout(() => {
+          clearInterval(interval);
+          document.removeEventListener(
+            "visibilitychange",
+            handleVisibilityChange,
+          );
+        }, 180000);
+      } else {
+        showMessage(
+          "Payment Initiated",
+          "Please check your email for payment instructions.",
+          "info",
+        );
+        setShowDepositModal(false);
+        setTimeout(() => fetchWallet(false), 5000);
       }
-      setShowDepositModal(false);
-      fetchWallet();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to initiate deposit");
+      showMessage(
+        "Deposit Failed",
+        err.response?.data?.message || "Failed to initiate deposit",
+        "error",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -508,11 +722,19 @@ export default function HirerWallet() {
     setSubmitting(true);
     try {
       const res = await api.post("/wallet/withdraw", data);
-      alert("Withdrawal request submitted successfully!");
+      showMessage(
+        "Withdrawal Request Submitted ✅",
+        `Your withdrawal of ${formatCurrency(data.amount, data.currency)} has been submitted for admin approval.\n\nReference: ${res.data.data.reference}`,
+        "success",
+      );
       setShowWithdrawModal(false);
-      fetchWallet();
+      await fetchWallet(false);
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to process withdrawal");
+      showMessage(
+        "Withdrawal Failed",
+        err.response?.data?.message || "Failed to process withdrawal",
+        "error",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -540,6 +762,8 @@ export default function HirerWallet() {
     );
   }
 
+  const balance = wallet?.balance || 0;
+
   return (
     <HirerLayout>
       <div className={styles.page}>
@@ -552,6 +776,13 @@ export default function HirerWallet() {
             <p className={styles.subtitle}>Manage your funds and payments</p>
           </div>
           <div className={styles.headerActions}>
+            <button
+              className={styles.refreshBtn}
+              onClick={refreshWallet}
+              disabled={refreshing}
+            >
+              {refreshing ? <FaSpinner className={styles.spinning} /> : "⟳"}
+            </button>
             <button
               className={styles.actionBtn}
               onClick={() => setShowDepositModal(true)}
@@ -572,7 +803,7 @@ export default function HirerWallet() {
           <div className={styles.balanceInfo}>
             <div className={styles.balanceLabel}>Available Balance</div>
             <div className={styles.balanceAmount}>
-              {formatCurrency(wallet?.balance || 0, wallet?.currency || "NGN")}
+              {formatCurrency(balance, wallet?.currency || "NGN")}
             </div>
             <div className={styles.balanceMeta}>
               <span>
@@ -608,25 +839,23 @@ export default function HirerWallet() {
             icon={FaArrowDown}
             label="Total Deposits"
             value={formatCurrency(wallet?.totalDeposited || 0)}
-            color="#10B981"
+            accent="green"
           />
           <StatCard
             icon={FaCreditCard}
             label="Total Spent"
             value={formatCurrency(wallet?.totalSpent || 0)}
-            color="#EF4444"
+            accent="orange"
           />
           <StatCard
             icon={FaArrowUp}
             label="Total Withdrawn"
             value={formatCurrency(wallet?.totalWithdrawn || 0)}
-            color="#F59E0B"
           />
           <StatCard
             icon={FaClock}
             label="Transactions"
             value={pagination.total || 0}
-            color="#3B82F6"
           />
         </div>
 
@@ -685,7 +914,6 @@ export default function HirerWallet() {
             </div>
           )}
 
-          {/* ─── Pagination ─────────────────────────────────────────────────── */}
           {pagination.pages > 1 && (
             <div className={styles.pagination}>
               <button
@@ -719,6 +947,7 @@ export default function HirerWallet() {
           onClose={() => setShowDepositModal(false)}
           onDeposit={handleDeposit}
           loading={submitting}
+          currencies={currencies}
         />
 
         {/* ─── Withdraw Modal ───────────────────────────────────────────────── */}
@@ -727,7 +956,17 @@ export default function HirerWallet() {
           onClose={() => setShowWithdrawModal(false)}
           onWithdraw={handleWithdraw}
           loading={submitting}
-          balance={wallet?.balance || 0}
+          balance={balance}
+          currencies={currencies}
+        />
+
+        {/* ─── Message Modal ────────────────────────────────────────────────── */}
+        <MessageModal
+          isOpen={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          title={messageConfig.title}
+          message={messageConfig.message}
+          type={messageConfig.type}
         />
       </div>
     </HirerLayout>
