@@ -116,6 +116,7 @@ const NAV = [
     items: [
       { label: "Broadcast", path: "/admin/broadcast", icon: FaBullhorn },
       { label: "Settings", path: "/admin/settings", icon: FiSettings },
+      { label: "Admin Logs", path: "/admin/adminlogs", icon: FiSettings },
     ],
   },
 ];
