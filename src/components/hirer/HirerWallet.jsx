@@ -37,11 +37,13 @@ import {
 // ─── Helper Functions ──────────────────────────────────────────────────────
 
 function formatCurrency(amount, currency = "NGN") {
+  const numAmount =
+    typeof amount === "number" ? amount : parseFloat(amount) || 0;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency,
     minimumFractionDigits: 2,
-  }).format(amount || 0);
+  }).format(numAmount);
 }
 
 function formatDate(date) {
@@ -249,8 +251,12 @@ function StatCard({ icon: Icon, label, value, accent }) {
 
 // ─── Currency Tab ──────────────────────────────────────────────────────────
 
-function CurrencyTab({ currency, balance, isActive, onClick, isZero }) {
+function CurrencyTab({ currency, balance, isActive, onClick }) {
   const symbol = getCurrencySymbol(currency);
+  // Ensure balance is a valid number
+  const safeBalance =
+    typeof balance === "number" ? balance : parseFloat(balance) || 0;
+  const isZero = safeBalance === 0;
 
   return (
     <button
@@ -264,7 +270,7 @@ function CurrencyTab({ currency, balance, isActive, onClick, isZero }) {
       <span className={styles.currencyTabCode}>{currency}</span>
       <span className={styles.currencyTabBalance}>
         {symbol}
-        {balance.toFixed(2)}
+        {safeBalance.toFixed(2)}
       </span>
       {isZero && <span className={styles.currencyTabZeroBadge}>Empty</span>}
     </button>
@@ -828,49 +834,103 @@ export default function HirerWallet() {
 
   // ─── Fetch wallet data ────────────────────────────────────────────────────
 
+  // ─── Fetch wallet data ────────────────────────────────────────────────────
+
   const fetchWallet = useCallback(
     async (showLoadingState = true) => {
       if (showLoadingState) setLoading(true);
       setRefreshing(true);
       try {
-        // Get wallet balance - use the main wallet balance as NGN balance
-        const walletRes = await api.get("/wallet/balance");
-        const walletData = walletRes.data.data;
-        setWallet(walletData);
+        // Step 1: Get all balances from the new /balances endpoint
+        let balances = { NGN: 0 };
+        let supportedCurrencies = ["NGN"];
+        let walletData = {
+          balance: 0,
+          currency: "NGN",
+          totalDeposited: 0,
+          totalSpent: 0,
+          totalWithdrawn: 0,
+        };
 
-        // Initialize currency balances with the main wallet balance
-        const balances = { NGN: walletData.balance || 0 };
+        try {
+          const balanceRes = await api.get("/wallet/balances");
+          if (balanceRes.data?.data?.balances) {
+            const rawBalances = balanceRes.data.data.balances;
 
-        // Try to get supported currencies
+            // Get the NGN balance data with totals
+            if (rawBalances.NGN) {
+              const ngnData = rawBalances.NGN;
+              walletData = {
+                balance:
+                  typeof ngnData.balance === "number"
+                    ? ngnData.balance
+                    : parseFloat(ngnData.balance) || 0,
+                currency: "NGN",
+                totalDeposited:
+                  typeof ngnData.totalDeposited === "number"
+                    ? ngnData.totalDeposited
+                    : parseFloat(ngnData.totalDeposited) || 0,
+                totalSpent:
+                  typeof ngnData.totalSpent === "number"
+                    ? ngnData.totalSpent
+                    : parseFloat(ngnData.totalSpent) || 0,
+                totalWithdrawn:
+                  typeof ngnData.totalWithdrawn === "number"
+                    ? ngnData.totalWithdrawn
+                    : parseFloat(ngnData.totalWithdrawn) || 0,
+              };
+            }
+
+            // Convert all values to numbers for currency balances
+            Object.keys(rawBalances).forEach((key) => {
+              const val = rawBalances[key];
+              if (typeof val === "object" && val !== null) {
+                // Handle nested object format { balance: 100, totalDeposited: 200 }
+                balances[key] =
+                  typeof val.balance === "number"
+                    ? val.balance
+                    : parseFloat(val.balance) || 0;
+              } else {
+                balances[key] =
+                  typeof val === "number" ? val : parseFloat(val) || 0;
+              }
+            });
+          }
+
+          if (balanceRes.data?.data?.currencies) {
+            supportedCurrencies = balanceRes.data.data.currencies;
+          }
+        } catch (err) {
+          console.log("Balances endpoint not available, using fallback");
+          // Fallback: get single balance
+          const walletRes = await api.get("/wallet/balance");
+          walletData = walletRes.data.data;
+          balances = { NGN: walletData.balance || 0 };
+        }
+
+        // Step 2: Get supported currencies
         try {
           const currenciesRes = await api.get("/wallet/currencies");
           if (currenciesRes.data?.data?.currencies) {
-            const supported = currenciesRes.data.data.currencies;
-            setCurrencies(supported);
-
-            // Initialize balances for all supported currencies
-            supported.forEach((cur) => {
-              if (!balances[cur]) balances[cur] = 0;
-            });
+            supportedCurrencies = currenciesRes.data.data.currencies;
           }
         } catch (err) {
           console.log("Using default currencies");
         }
 
-        // Try to get multi-currency balances from a separate endpoint if available
-        try {
-          const balanceRes = await api.get("/wallet/balances");
-          if (balanceRes.data?.data?.balances) {
-            Object.assign(balances, balanceRes.data.data.balances);
+        // Ensure all supported currencies exist in balances
+        supportedCurrencies.forEach((cur) => {
+          if (balances[cur] === undefined) {
+            balances[cur] = 0;
           }
-        } catch (err) {
-          // If the endpoint doesn't exist, just use the main balance
-          console.log("Multi-currency balance endpoint not available");
-        }
+        });
 
+        // Set wallet state with all data
+        setWallet(walletData);
         setCurrencyBalances(balances);
+        setCurrencies(supportedCurrencies);
 
-        // Get transactions filtered by currency
+        // Step 3: Get transactions
         const txRes = await api.get("/wallet/transactions", {
           params: {
             page: pagination.page,
@@ -890,6 +950,11 @@ export default function HirerWallet() {
             pages: 1,
           },
         );
+
+        // Set active currency to first available with balance, or NGN
+        const activeCur =
+          Object.keys(balances).find((cur) => balances[cur] > 0) || "NGN";
+        setActiveCurrency(activeCur);
       } catch (err) {
         console.error("Failed to fetch wallet:", err);
         if (err.response?.status === 404) {
@@ -921,7 +986,8 @@ export default function HirerWallet() {
   // ─── Get current currency balance ────────────────────────────────────────
 
   const getCurrentBalance = () => {
-    return currencyBalances[activeCurrency] || 0;
+    const bal = currencyBalances[activeCurrency];
+    return typeof bal === "number" ? bal : parseFloat(bal) || 0;
   };
 
   // ─── Deposit ──────────────────────────────────────────────────────────────
@@ -1080,7 +1146,10 @@ export default function HirerWallet() {
   // ─── Get available currencies with balance > 0 ──────────────────────────
 
   const availableCurrencies = Object.keys(currencyBalances).filter(
-    (cur) => (currencyBalances[cur] || 0) > 0,
+    (cur) =>
+      (typeof currencyBalances[cur] === "number"
+        ? currencyBalances[cur]
+        : parseFloat(currencyBalances[cur]) || 0) > 0,
   );
 
   // ─── Loading state ───────────────────────────────────────────────────────
@@ -1140,17 +1209,18 @@ export default function HirerWallet() {
         <div className={styles.currencyTabsContainer}>
           <div className={styles.currencyTabs}>
             {currencies.map((cur) => {
-              const balance = currencyBalances[cur] || 0;
+              const balance =
+                typeof currencyBalances[cur] === "number"
+                  ? currencyBalances[cur]
+                  : parseFloat(currencyBalances[cur]) || 0;
               const isActive = cur === activeCurrency;
-              const isZero = balance === 0;
               return (
                 <CurrencyTab
                   key={cur}
                   currency={cur}
                   balance={balance}
                   isActive={isActive}
-                  isZero={isZero}
-                  onClick={() => !isZero && setActiveCurrency(cur)}
+                  onClick={() => setActiveCurrency(cur)}
                 />
               );
             })}
@@ -1189,7 +1259,10 @@ export default function HirerWallet() {
             </div>
             <div className={styles.balanceMeta}>
               {currencies.map((cur) => {
-                const bal = currencyBalances[cur] || 0;
+                const bal =
+                  typeof currencyBalances[cur] === "number"
+                    ? currencyBalances[cur]
+                    : parseFloat(currencyBalances[cur]) || 0;
                 if (bal === 0) return null;
                 return (
                   <span key={cur}>
