@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import {
+  FiClipboard,
+  FiZap,
+  FiCheckCircle,
+  FiCreditCard,
+  FiStar,
+  FiPlus,
+} from "react-icons/fi";
 import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerDashboard.module.css";
 import api from "../../lib/api";
@@ -55,7 +63,9 @@ export default function HirerDashboard() {
           <div className={styles.headerActions}>
             <DashboardCurrencySwitch />
             <Link to="/dashboard/hirer/post-job" className={styles.ctaBtn}>
-              <span className={styles.ctaBtnIcon}>+</span>
+              <span className={styles.ctaBtnIcon}>
+                <FiPlus size={16} />
+              </span>
               Post a Job
             </Link>
           </div>
@@ -66,27 +76,27 @@ export default function HirerDashboard() {
           <StatCard
             label="Total Bookings"
             value={stats.totalBookings}
-            icon="📋"
+            icon={<FiClipboard />}
             delay={0}
           />
           <StatCard
             label="Active Jobs"
             value={stats.activeBookings}
-            icon="⚡"
+            icon={<FiZap />}
             accent="orange"
             delay={0.05}
           />
           <StatCard
             label="Completed"
             value={stats.completedBookings}
-            icon="✅"
+            icon={<FiCheckCircle />}
             accent="green"
             delay={0.1}
           />
           <StatCard
             label="Total Spent"
             value={fmt(stats.totalSpent || 0, dashboardCurrency)}
-            icon="💳"
+            icon={<FiCreditCard />}
             delay={0.15}
             currencySymbol={currencySymbol}
           />
@@ -287,7 +297,9 @@ function WorkerRow({ worker, delay }) {
         <p className={styles.workerTitle}>{worker.workerProfile?.title}</p>
       </div>
       <div className={styles.workerRating}>
-        <span className={styles.star}>★</span>
+        <span className={styles.star}>
+          <FiStar size={12} />
+        </span>
         <span>{worker.workerProfile?.avgRating?.toFixed(1) || "—"}</span>
       </div>
     </Link>

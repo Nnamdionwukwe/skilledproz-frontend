@@ -1695,22 +1695,6 @@ export default function HirerWallet() {
             >
               {refreshing ? <FaSpinner className={styles.spinning} /> : "⟳"}
             </button>
-            {/* <button
-              className={styles.actionBtn}
-              onClick={() => setShowDepositModal(true)}
-            >
-              <FaPlus /> Fund Wallet
-            </button>
-            <button
-              className={`${styles.actionBtn} ${!hasBalance ? styles.actionBtnDisabled : ""}`}
-              onClick={() => hasBalance && setShowWithdrawModal(true)}
-              disabled={!hasBalance}
-              title={
-                !hasBalance ? `No ${activeCurrency} balance to withdraw` : ""
-              }
-            >
-              <FaMinus /> Withdraw
-            </button> */}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
+/* ── Page Layout ── */
 .page {
-  padding: 16px;
-  max-width: 1200px;
+  padding: clamp(8px, 2vw, 24px);
+  max-width: 1400px;
   margin: 0 auto;
   animation: fadeUp 0.4s ease both;
 }
@@ -10,7 +11,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: clamp(16px, 3vw, 28px);
   flex-wrap: wrap;
 }
 
@@ -22,7 +23,7 @@
 }
 
 .eyebrow {
-  font-size: 10px;
+  font-size: clamp(9px, 1.2vw, 12px);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -32,7 +33,7 @@
 
 .title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: clamp(20px, 4vw, 32px);
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.5px;
@@ -47,7 +48,7 @@
   color: var(--bg);
   border: none;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: clamp(11px, 1.2vw, 14px);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -61,24 +62,26 @@
 }
 
 .ctaBtnIcon {
-  font-size: 16px;
+  font-size: clamp(14px, 1.6vw, 18px);
   line-height: 1;
   font-weight: 300;
+  display: flex;
+  align-items: center;
 }
 
 /* ── Stats ─────────────────────────────────────────────────── */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: clamp(8px, 1.5vw, 16px);
+  margin-bottom: clamp(16px, 3vw, 28px);
 }
 
 .statCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: clamp(10px, 1.5vw, 14px);
+  padding: clamp(12px, 2vw, 20px);
   position: relative;
   overflow: hidden;
   animation: fadeUp 0.45s ease both;
@@ -118,13 +121,14 @@
 }
 
 .statIcon {
-  font-size: 18px;
+  font-size: clamp(18px, 2.5vw, 28px);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: clamp(4px, 0.8vw, 8px);
+  line-height: 1;
 }
 .statValue {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: clamp(18px, 3.5vw, 32px);
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.5px;
@@ -133,7 +137,7 @@
   word-break: break-all;
 }
 .statLabel {
-  font-size: 11px;
+  font-size: clamp(10px, 1.2vw, 13px);
   color: var(--text-dim);
   font-weight: 500;
 }
@@ -142,14 +146,14 @@
 .grid2 {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
+  gap: clamp(12px, 2vw, 24px);
 }
 
 /* ── Panel ─────────────────────────────────────────────────── */
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: clamp(12px, 1.5vw, 16px);
   overflow: hidden;
   animation: fadeUp 0.5s ease both;
 }
@@ -158,19 +162,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 12px;
+  padding: clamp(12px, 1.8vw, 18px) clamp(14px, 2vw, 20px);
   border-bottom: 1px solid var(--border);
 }
 
 .panelTitle {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: clamp(13px, 1.6vw, 18px);
   font-weight: 700;
   color: var(--text);
 }
 
 .panelLink {
-  font-size: 11px;
+  font-size: clamp(10px, 1.1vw, 13px);
   font-weight: 600;
   color: var(--orange);
   transition: opacity 0.15s;
@@ -189,8 +193,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: clamp(8px, 1.5vw, 16px);
+  padding: clamp(8px, 1.2vw, 14px) clamp(12px, 1.5vw, 18px);
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
   animation: fadeUp 0.4s ease both;
@@ -208,7 +212,7 @@
 .bookingRowLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: clamp(8px, 1.2vw, 14px);
   min-width: 0;
   flex: 1;
 }
@@ -219,15 +223,15 @@
 }
 
 .bookingAvatar {
-  width: 32px;
-  height: 32px;
+  width: clamp(28px, 4vw, 40px);
+  height: clamp(28px, 4vw, 40px);
   border-radius: 50%;
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: clamp(10px, 1.2vw, 14px);
   font-weight: 700;
   color: var(--orange);
   overflow: hidden;
@@ -240,7 +244,7 @@
 }
 
 .bookingTitle {
-  font-size: 12px;
+  font-size: clamp(11px, 1.4vw, 15px);
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -248,7 +252,7 @@
   text-overflow: ellipsis;
 }
 .bookingMeta {
-  font-size: 10px;
+  font-size: clamp(9px, 1.1vw, 12px);
   color: var(--text-dim);
   margin-top: 1px;
   white-space: nowrap;
@@ -257,16 +261,16 @@
 }
 
 .bookingDate {
-  font-size: 9px;
+  font-size: clamp(8px, 0.9vw, 11px);
   color: var(--text-muted);
   margin-top: 1px;
 }
 
 /* ── Badges ────────────────────────────────────────────────── */
 .badge {
-  font-size: 9px;
+  font-size: clamp(8px, 0.9vw, 11px);
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px clamp(6px, 1vw, 10px);
   border-radius: 20px;
   white-space: nowrap;
   letter-spacing: 0.04em;
@@ -307,7 +311,7 @@
 }
 
 .bookingRate {
-  font-size: 10px;
+  font-size: clamp(10px, 1.2vw, 14px);
   font-weight: 700;
   color: var(--orange);
   white-space: nowrap;
@@ -322,8 +326,8 @@
 .workerRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: clamp(8px, 1.2vw, 14px);
+  padding: clamp(8px, 1.2vw, 14px) clamp(12px, 1.5vw, 18px);
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
   animation: fadeUp 0.4s ease both;
@@ -337,15 +341,15 @@
 }
 
 .workerAvatar {
-  width: 34px;
-  height: 34px;
+  width: clamp(30px, 4.2vw, 42px);
+  height: clamp(30px, 4.2vw, 42px);
   border-radius: 50%;
   background: rgba(129, 140, 248, 0.12);
   border: 1px solid rgba(129, 140, 248, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: clamp(10px, 1.2vw, 14px);
   font-weight: 700;
   color: #818cf8;
   overflow: hidden;
@@ -362,12 +366,12 @@
   min-width: 0;
 }
 .workerName {
-  font-size: 12px;
+  font-size: clamp(11px, 1.4vw, 15px);
   font-weight: 600;
   color: var(--text);
 }
 .workerTitle {
-  font-size: 10px;
+  font-size: clamp(9px, 1.1vw, 12px);
   color: var(--text-dim);
   margin-top: 1px;
   white-space: nowrap;
@@ -378,20 +382,22 @@
 .workerRating {
   display: flex;
   align-items: center;
-  gap: 2px;
-  font-size: 11px;
+  gap: clamp(2px, 0.4vw, 6px);
+  font-size: clamp(10px, 1.2vw, 13px);
   font-weight: 600;
   color: var(--text-dim);
   flex-shrink: 0;
 }
 .star {
   color: #fbbf24;
+  font-size: clamp(10px, 1.2vw, 14px);
+  line-height: 1;
 }
 
 .empty {
-  padding: 24px 16px;
+  padding: clamp(20px, 3vw, 32px) clamp(12px, 1.5vw, 18px);
   text-align: center;
-  font-size: 12px;
+  font-size: clamp(11px, 1.2vw, 14px);
   color: var(--text-muted);
 }
 
@@ -417,19 +423,19 @@
 }
 .skeletonHeader {
   composes: skeletonBase;
-  height: 40px;
+  height: clamp(32px, 5vw, 48px);
   width: 200px;
   margin-bottom: 24px;
 }
 .skeletonCard {
   composes: skeletonBase;
-  height: 90px;
-  border-radius: 12px;
+  height: clamp(70px, 12vw, 110px);
+  border-radius: clamp(10px, 1.5vw, 14px);
 }
 .skeletonPanel {
   composes: skeletonBase;
-  height: 280px;
-  border-radius: 14px;
+  height: clamp(220px, 30vw, 320px);
+  border-radius: clamp(12px, 1.5vw, 16px);
 }
 
 /* ── Animations ────────────────────────────────────────────── */
@@ -449,29 +455,29 @@
 /* Small phones (portrait) */
 @media (min-width: 360px) {
   .page {
-    padding: 12px;
+    padding: clamp(6px, 1.5vw, 12px);
   }
   .statValue {
-    font-size: 18px;
+    font-size: clamp(16px, 4vw, 20px);
   }
   .statCard {
-    padding: 12px;
+    padding: clamp(10px, 2vw, 14px);
   }
 }
 
 /* Medium phones and small tablets */
 @media (min-width: 480px) {
   .page {
-    padding: 16px;
+    padding: clamp(12px, 2.5vw, 20px);
   }
   .statValue {
-    font-size: 20px;
+    font-size: clamp(18px, 4vw, 24px);
   }
   .statCard {
-    padding: 14px;
+    padding: clamp(12px, 2vw, 16px);
   }
   .title {
-    font-size: 24px;
+    font-size: clamp(22px, 4.5vw, 28px);
   }
 }
 
@@ -479,13 +485,13 @@
 @media (min-width: 640px) {
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: clamp(10px, 1.8vw, 16px);
   }
   .statValue {
-    font-size: 22px;
+    font-size: clamp(20px, 4vw, 26px);
   }
   .page {
-    padding: 20px;
+    padding: clamp(16px, 3vw, 24px);
   }
 }
 
@@ -493,19 +499,19 @@
 @media (min-width: 768px) {
   .statsGrid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: clamp(12px, 2vw, 18px);
   }
   .statValue {
-    font-size: 24px;
+    font-size: clamp(22px, 3.5vw, 28px);
   }
   .statCard {
-    padding: 18px;
+    padding: clamp(14px, 2.2vw, 20px);
   }
   .title {
-    font-size: 26px;
+    font-size: clamp(24px, 4vw, 30px);
   }
   .page {
-    padding: 24px;
+    padding: clamp(20px, 3.5vw, 28px);
   }
 }
 
@@ -513,42 +519,42 @@
 @media (min-width: 900px) {
   .grid2 {
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: clamp(16px, 2.5vw, 24px);
   }
   .page {
-    padding: 32px 24px;
+    padding: clamp(24px, 4vw, 36px);
   }
   .statValue {
-    font-size: 26px;
+    font-size: clamp(24px, 3vw, 30px);
   }
   .title {
-    font-size: 28px;
+    font-size: clamp(26px, 3.5vw, 32px);
   }
 }
 
 /* Large screens */
 @media (min-width: 1200px) {
   .page {
-    padding: 40px 32px;
+    padding: clamp(28px, 3vw, 40px);
   }
   .statValue {
-    font-size: 28px;
+    font-size: clamp(26px, 2.8vw, 32px);
   }
 }
 
 /* Fix for very small screens */
 @media (max-width: 359px) {
   .page {
-    padding: 8px;
+    padding: 6px;
   }
   .statCard {
-    padding: 10px;
+    padding: 8px;
   }
   .statValue {
-    font-size: 16px;
+    font-size: clamp(14px, 4vw, 18px);
   }
   .statIcon {
-    font-size: 16px;
+    font-size: clamp(14px, 4vw, 18px);
   }
   .header {
     flex-direction: column;
@@ -562,39 +568,39 @@
     flex: 1;
   }
   .bookingRow {
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
   .bookingAvatar {
-    width: 28px;
-    height: 28px;
-    font-size: 10px;
+    width: clamp(24px, 6vw, 28px);
+    height: clamp(24px, 6vw, 28px);
+    font-size: 8px;
   }
   .workerAvatar {
-    width: 30px;
-    height: 30px;
-    font-size: 10px;
+    width: clamp(26px, 6vw, 30px);
+    height: clamp(26px, 6vw, 30px);
+    font-size: 8px;
   }
 }
 
 /* Fix for landscape phones */
 @media (max-height: 500px) and (orientation: landscape) {
   .page {
-    padding: 8px 16px;
+    padding: 6px 12px;
   }
   .statsGrid {
-    gap: 8px;
+    gap: 6px;
   }
   .statCard {
-    padding: 10px;
+    padding: 8px;
   }
   .statValue {
-    font-size: 16px;
+    font-size: clamp(14px, 3vw, 18px);
   }
   .statIcon {
-    font-size: 14px;
-    margin-bottom: 4px;
+    font-size: clamp(12px, 2.5vw, 16px);
+    margin-bottom: 2px;
   }
   .header {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 }
