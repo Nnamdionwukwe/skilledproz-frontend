@@ -31,25 +31,79 @@ function mapsUrl(lat, lng) {
 
 function formatDuration(booking) {
   if (!booking) return null;
+
   const unit = booking.estimatedUnit || "hours";
-  const value = booking.estimatedValue || null;
-  const hours = booking.estimatedHours || null;
+  const value = booking.estimatedValue;
+  const hours = booking.estimatedHours;
+
+  // If no duration data, return null
   if (!value && !hours) return null;
+
+  // If there's a value (user entered custom duration)
   if (value) {
-    if (unit === "custom") return { main: value, sub: null };
-    const unitLabel = {
+    // Custom unit - just show the value as-is
+    if (unit === "custom") {
+      return {
+        main: value,
+        sub: null,
+        unit: "custom",
+        label: "Custom duration",
+      };
+    }
+
+    // Standard units
+    const unitMap = {
       hours: "hour",
       days: "day",
       weeks: "week",
       months: "month",
       years: "year",
-    }[unit];
+    };
+
+    const unitLabel = unitMap[unit] || unit;
     const num = parseFloat(value);
+
+    // Handle invalid numbers
+    if (isNaN(num) || num <= 0) {
+      return {
+        main: value,
+        sub: null,
+        unit: unit,
+        label: `${value} ${unit}`,
+      };
+    }
+
     const label = unitLabel + (num !== 1 ? "s" : "");
     const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
-    return { main: `${num} ${label}`, sub: eqv };
+
+    return {
+      main: `${num} ${label}`,
+      sub: eqv,
+      unit: unit,
+      label: `${num} ${label}`,
+    };
   }
-  return hours ? { main: `${hours} hours`, sub: null } : null;
+
+  // Fallback to hours only
+  if (hours) {
+    const num = parseFloat(hours);
+    if (isNaN(num) || num <= 0) {
+      return {
+        main: `${hours} hours`,
+        sub: null,
+        unit: "hours",
+        label: `${hours} hours`,
+      };
+    }
+    return {
+      main: `${num} hours`,
+      sub: null,
+      unit: "hours",
+      label: `${num} hours`,
+    };
+  }
+
+  return null;
 }
 
 function calcDuration(start, end) {

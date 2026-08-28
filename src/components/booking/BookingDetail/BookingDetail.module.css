@@ -2316,3 +2316,33 @@
     padding: 0.625rem 0.75rem;
   }
 }
+
+.durationDisplay {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.durationMain {
+  font-weight: 600;
+}
+
+.durationSub {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.durationUnit {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  background: var(--bg-dim);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 6px;
+}
+
+.durationPlaceholder {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}

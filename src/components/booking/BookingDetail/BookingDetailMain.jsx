@@ -146,6 +146,49 @@ export default function BookingDetailMain({
   const showMapLink =
     booking.latitude && booking.longitude && booking.locationType !== "REMOTE";
 
+  // ── Helper to render duration with unit ─────────────────────────────
+  const renderDuration = () => {
+    // If dur is null or undefined, show a placeholder
+    if (!dur) {
+      // Check if there's any duration data in the booking
+      if (booking.estimatedHours || booking.estimatedValue) {
+        return <span className={styles.durationPlaceholder}>Loading...</span>;
+      }
+      return <span className={styles.durationPlaceholder}>Not specified</span>;
+    }
+
+    const unitMap = {
+      hours: "hours",
+      days: "days",
+      weeks: "weeks",
+      months: "months",
+      custom: "Custom",
+    };
+
+    const unitLabel = booking.estimatedUnit
+      ? unitMap[booking.estimatedUnit] || booking.estimatedUnit
+      : null;
+
+    return (
+      <div className={styles.durationDisplay}>
+        <span className={styles.durationMain}>{dur.main}</span>
+        {dur.sub && <span className={styles.durationSub}> {dur.sub}</span>}
+        {unitLabel && booking.estimatedUnit !== "custom" && (
+          <span className={styles.durationUnit}>
+            ({unitLabel}
+            {booking.isNegotiated && booking.negotiatedRate
+              ? " · negotiated"
+              : ""}
+            )
+          </span>
+        )}
+        {booking.estimatedUnit === "custom" && (
+          <span className={styles.durationUnit}>(Custom)</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Title block */}
@@ -323,20 +366,11 @@ export default function BookingDetailMain({
               value={booking.negotiationNote}
             />
           )}
-          {dur && (
-            <DetailItem
-              icon={<FaClock />}
-              label="Est. Duration"
-              value={
-                <>
-                  {dur.main}
-                  {dur.sub && (
-                    <span className={styles.durationSub}> {dur.sub}</span>
-                  )}
-                </>
-              }
-            />
-          )}
+          <DetailItem
+            icon={<FaClock />}
+            label="Est. Duration"
+            value={renderDuration()}
+          />
           {booking.checkInAt && (
             <DetailItem
               icon={<FaCheckCircle />}
