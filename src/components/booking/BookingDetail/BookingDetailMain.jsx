@@ -19,6 +19,7 @@ import {
   FaStar,
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
+import { calcPricing } from "../../utils/pricing";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function DetailItem({ icon, label, value, accent }) {
@@ -428,30 +429,32 @@ export default function BookingDetailMain({
             />
           )}
 
-          {/* Payment Summary - Shows differently for Hirer and Worker */}
+          {/* Payment Summary - Using calcPricing for exact numbers */}
           {(() => {
-            const subtotal = booking.agreedRate * (booking.estimatedHours || 1);
-            const platformFee = Math.round(subtotal * 0.05);
-            const totalPayment = subtotal + platformFee;
-            const workerPayout = subtotal;
+            const p = calcPricing(booking);
+            const currency = p.currency || booking.currency || "NGN";
+            const subtotal = p.subtotal || 0;
+            const platformFee = p.hirerFee || 0;
+            const workerPayout = p.workerPayout || 0;
+            const grossTotal = p.grossTotal || 0;
 
             return isHirer ? (
               <>
                 <DetailItem
                   icon={<FaMoneyBillWave />}
                   label="Subtotal"
-                  value={`${booking.currency} ${subtotal.toLocaleString()}`}
+                  value={`${currency} ${subtotal.toLocaleString()}`}
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
                   label="Platform Fee (5%)"
-                  value={`${booking.currency} ${platformFee.toLocaleString()}`}
+                  value={`${currency} ${platformFee.toLocaleString()}`}
                   accent
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
                   label="Total Payment"
-                  value={`${booking.currency} ${totalPayment.toLocaleString()}`}
+                  value={`${currency} ${grossTotal.toLocaleString()}`}
                   accent
                 />
               </>
@@ -460,18 +463,18 @@ export default function BookingDetailMain({
                 <DetailItem
                   icon={<FaMoneyBillWave />}
                   label="Total Earnings"
-                  value={`${booking.currency} ${subtotal.toLocaleString()}`}
+                  value={`${currency} ${subtotal.toLocaleString()}`}
                   accent
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
                   label="Platform Fee (5%)"
-                  value={`${booking.currency} ${platformFee.toLocaleString()}`}
+                  value={`${currency} ${platformFee.toLocaleString()}`}
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
                   label="Your Payout"
-                  value={`${booking.currency} ${workerPayout.toLocaleString()}`}
+                  value={`${currency} ${workerPayout.toLocaleString()}`}
                   accent
                 />
               </>
