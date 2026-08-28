@@ -1,11 +1,12 @@
 // src/pages/hirer/HirerWallet.jsx
+// Complete Hirer Wallet with Multi-Currency Support & Withdrawal Confirmation
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerWallet.module.css";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
-import ConfirmationModal from "../../components/ui/ConfirmationModal";
 
 import {
   FaWallet,
@@ -22,6 +23,15 @@ import {
   FaArrowRight,
   FaArrowLeft,
   FaTimes,
+  FaCopy,
+  FaExclamationTriangle,
+  FaCheck,
+  FaMoneyBillWave,
+  FaDollarSign,
+  FaEuroSign,
+  FaPoundSign,
+  FaBitcoin,
+  FaYenSign,
 } from "react-icons/fa";
 
 // ─── Helper Functions ──────────────────────────────────────────────────────
@@ -108,6 +118,88 @@ function getTransactionLabel(type) {
   return labels[type] || type;
 }
 
+function getCurrencyIcon(currency) {
+  // Using available react-icons/fa icons
+  const icons = {
+    NGN: <FaMoneyBillWave />,
+    USD: <FaDollarSign />,
+    EUR: <FaEuroSign />,
+    GBP: <FaPoundSign />,
+    JPY: <FaYenSign />,
+    CNY: <FaYenSign />,
+    BTC: <FaBitcoin />,
+  };
+  return icons[currency] || <FaMoneyBillWave />;
+}
+
+function getCurrencySymbol(currency) {
+  const symbols = {
+    NGN: "₦",
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    GHS: "GH₵",
+    KES: "KSh",
+    ZAR: "R",
+    CAD: "C$",
+    AUD: "A$",
+    JPY: "¥",
+    CNY: "¥",
+    INR: "₹",
+    BRL: "R$",
+    AED: "د.إ",
+    SAR: "ر.س",
+    QAR: "ر.ق",
+    EGP: "E£",
+    TZS: "TSh",
+    UGX: "USh",
+    RWF: "FRw",
+    XOF: "CFA",
+    MAD: "DH",
+    PHP: "₱",
+    IDR: "Rp",
+    VND: "₫",
+    THB: "฿",
+    BDT: "৳",
+    PKR: "₨",
+    MYR: "RM",
+    SGD: "S$",
+    HKD: "HK$",
+    BTC: "₿",
+  };
+  return symbols[currency] || currency;
+}
+
+// ─── Copy Button ──────────────────────────────────────────────────────────
+
+function CopyButton({ text, label = "Copy" }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <button className={styles.copyBtn} onClick={handleCopy}>
+      {copied ? <FaCheck size={12} /> : <FaCopy size={12} />}
+      <span>{copied ? "Copied!" : label}</span>
+    </button>
+  );
+}
+
 // ─── Skeleton Loader ──────────────────────────────────────────────────────
 
 function WalletSkeleton() {
@@ -156,6 +248,30 @@ function StatCard({ icon: Icon, label, value, accent }) {
   );
 }
 
+// ─── Currency Tab ──────────────────────────────────────────────────────────
+
+function CurrencyTab({ currency, balance, isActive, onClick, isZero }) {
+  const symbol = getCurrencySymbol(currency);
+
+  return (
+    <button
+      className={`${styles.currencyTab} ${isActive ? styles.currencyTabActive : ""} ${isZero ? styles.currencyTabZero : ""}`}
+      onClick={onClick}
+      disabled={isZero}
+    >
+      <span className={styles.currencyTabIcon}>
+        {getCurrencyIcon(currency)}
+      </span>
+      <span className={styles.currencyTabCode}>{currency}</span>
+      <span className={styles.currencyTabBalance}>
+        {symbol}
+        {balance.toFixed(2)}
+      </span>
+      {isZero && <span className={styles.currencyTabZeroBadge}>Empty</span>}
+    </button>
+  );
+}
+
 // ─── Transaction Row ───────────────────────────────────────────────────────
 
 function TransactionRow({ transaction }) {
@@ -182,11 +298,9 @@ function TransactionRow({ transaction }) {
           <span className={styles.transactionDate}>
             <FaClock size={10} /> {formatDate(transaction.createdAt)}
           </span>
-          {transaction.bookingId && (
-            <span className={styles.transactionBooking}>
-              Booking #{transaction.bookingId.slice(0, 8)}
-            </span>
-          )}
+          <span className={styles.transactionCurrency}>
+            {transaction.currency || "NGN"}
+          </span>
         </div>
       </div>
       <div className={styles.transactionAmount}>
@@ -194,7 +308,7 @@ function TransactionRow({ transaction }) {
           {amountPrefix}
           {formatCurrency(
             transaction.netAmount || transaction.amount,
-            transaction.currency,
+            transaction.currency || "NGN",
           )}
         </div>
         <div
@@ -223,7 +337,6 @@ function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 100) {
-      // Use modal instead of alert
       alert("Minimum deposit amount is ₦100");
       return;
     }
@@ -254,7 +367,9 @@ function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
           </p>
           <form onSubmit={handleSubmit}>
             <div className={styles.amountInputGroup}>
-              <span className={styles.currencySymbol}>₦</span>
+              <span className={styles.currencySymbol}>
+                {getCurrencySymbol(currency)}
+              </span>
               <input
                 type="number"
                 className={styles.amountInput}
@@ -276,12 +391,14 @@ function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
               >
                 {currencies.map((cur) => (
                   <option key={cur} value={cur}>
-                    {cur}
+                    {cur} ({getCurrencySymbol(cur)})
                   </option>
                 ))}
               </select>
             </div>
-            <p className={styles.minAmount}>Minimum: ₦100</p>
+            <p className={styles.minAmount}>
+              Minimum: {getCurrencySymbol(currency)}100
+            </p>
             <div className={styles.modalActions}>
               <button
                 type="button"
@@ -309,6 +426,145 @@ function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
   );
 }
 
+// ─── Withdrawal Confirmation Modal ──────────────────────────────────────────
+
+function WithdrawalConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  loading,
+  withdrawalData,
+}) {
+  if (!isOpen || !withdrawalData) return null;
+
+  const { amount, currency, bankName, accountNumber, accountName } =
+    withdrawalData;
+  const fee = Math.min(amount * 0.01, 100);
+  const netAmount = amount - fee;
+  const symbol = getCurrencySymbol(currency);
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={`${styles.modalBox} ${styles.modalLarge}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>
+            <FaExclamationTriangle /> Confirm Withdrawal
+          </h3>
+          <button className={styles.modalClose} onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+        <div className={styles.modalBody}>
+          <div className={styles.confirmDisclaimer}>
+            <FaExclamationTriangle className={styles.disclaimerIcon} />
+            <p className={styles.disclaimerText}>
+              Please <strong>verify your bank details carefully</strong> before
+              confirming. Withdrawals cannot be reversed once approved by our
+              team.
+            </p>
+          </div>
+
+          <div className={styles.confirmBankDetails}>
+            <h4 className={styles.confirmSectionTitle}>Bank Details</h4>
+            <div className={styles.confirmDetailsGrid}>
+              <div className={styles.confirmDetail}>
+                <span className={styles.confirmLabel}>Bank</span>
+                <span className={styles.confirmValue}>{bankName}</span>
+              </div>
+              <div className={styles.confirmDetail}>
+                <span className={styles.confirmLabel}>Account Number</span>
+                <span className={styles.confirmValue}>
+                  {accountNumber}
+                  <CopyButton text={accountNumber} label="Copy" />
+                </span>
+              </div>
+              <div className={styles.confirmDetail}>
+                <span className={styles.confirmLabel}>Account Name</span>
+                <span className={styles.confirmValue}>{accountName}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.confirmBreakdown}>
+            <h4 className={styles.confirmSectionTitle}>Withdrawal Breakdown</h4>
+            <div className={styles.breakdownRow}>
+              <span className={styles.breakdownLabel}>Amount</span>
+              <span className={styles.breakdownValue}>
+                {symbol}
+                {amount.toFixed(2)}
+              </span>
+            </div>
+            <div className={styles.breakdownRow}>
+              <span className={styles.breakdownLabel}>Platform Fee (1%)</span>
+              <span
+                className={styles.breakdownValue}
+                style={{ color: "var(--orange)" }}
+              >
+                -{symbol}
+                {fee.toFixed(2)}
+              </span>
+            </div>
+            <div className={`${styles.breakdownRow} ${styles.breakdownTotal}`}>
+              <span className={styles.breakdownLabel}>You'll Receive</span>
+              <span
+                className={styles.breakdownValue}
+                style={{
+                  color: "var(--green)",
+                  fontWeight: 900,
+                  fontSize: "1.2rem",
+                }}
+              >
+                {symbol}
+                {netAmount.toFixed(2)}
+                <CopyButton
+                  text={`${symbol}${netAmount.toFixed(2)}`}
+                  label="Copy"
+                />
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.confirmWarning}>
+            <FaExclamationTriangle size={16} />
+            <span>
+              This request will be reviewed by our admin team. Processing may
+              take 24-48 hours.
+            </span>
+          </div>
+
+          <div className={styles.modalActions}>
+            <button
+              type="button"
+              className={styles.modalCancel}
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={`${styles.modalConfirm} ${styles.confirmWithdrawBtn}`}
+              onClick={onConfirm}
+              disabled={loading}
+            >
+              {loading ? (
+                <FaSpinner className={styles.spinning} />
+              ) : (
+                <>
+                  <FaCheck /> Confirm Withdrawal
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Withdraw Modal ─────────────────────────────────────────────────────────
 
 function WithdrawModal({
@@ -317,161 +573,190 @@ function WithdrawModal({
   onWithdraw,
   loading,
   balance,
+  currency,
   currencies,
 }) {
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("NGN");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [bankCode, setBankCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [withdrawalData, setWithdrawalData] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleWithdraw = () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 100) {
-      alert("Minimum withdrawal amount is ₦100");
+      alert(`Minimum withdrawal amount is ${getCurrencySymbol(currency)}100`);
       return;
     }
     if (numAmount > balance) {
-      alert("Insufficient balance");
+      alert(
+        `Insufficient balance. You have ${getCurrencySymbol(currency)}${balance.toFixed(2)}`,
+      );
       return;
     }
-    setIsSubmitting(true);
-    try {
-      await onWithdraw({
-        amount: numAmount,
-        currency,
-        bankName,
-        accountNumber,
-        accountName,
-        bankCode,
-      });
-    } finally {
-      setIsSubmitting(false);
+    if (!bankName || !accountNumber || !accountName) {
+      alert("Please fill in all bank details");
+      return;
     }
+
+    // Show confirmation modal
+    setWithdrawalData({
+      amount: numAmount,
+      currency,
+      bankName,
+      accountNumber,
+      accountName,
+      bankCode,
+    });
+    setShowConfirm(true);
+  };
+
+  const handleConfirmWithdrawal = () => {
+    if (!withdrawalData) return;
+    onWithdraw(withdrawalData);
+    setShowConfirm(false);
+    onClose();
+  };
+
+  const handleClose = () => {
+    setShowConfirm(false);
+    setWithdrawalData(null);
+    onClose();
   };
 
   if (!isOpen) return null;
 
+  const symbol = getCurrencySymbol(currency);
+
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FaMinus /> Withdraw Funds
-          </h3>
-          <button className={styles.modalClose} onClick={onClose}>
-            <FaTimes />
-          </button>
-        </div>
-        <div className={styles.modalBody}>
-          <p className={styles.modalSubtext}>
-            Withdraw funds to your bank account
-          </p>
-          <div className={styles.balanceDisplay}>
-            Available Balance: {formatCurrency(balance)}
+    <>
+      <div className={styles.modalOverlay} onClick={handleClose}>
+        <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h3 className={styles.modalTitle}>
+              <FaMinus /> Withdraw Funds
+            </h3>
+            <button className={styles.modalClose} onClick={handleClose}>
+              <FaTimes />
+            </button>
           </div>
-          <form onSubmit={handleSubmit}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Amount</label>
-              <input
-                type="number"
-                className={styles.formInput}
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                min="100"
-                step="100"
-                required
-              />
+          <div className={styles.modalBody}>
+            <p className={styles.modalSubtext}>
+              Withdraw funds from your {currency} wallet
+            </p>
+            <div className={styles.balanceDisplay}>
+              Available Balance: {formatCurrency(balance, currency)}
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Currency</label>
-              <select
-                className={styles.formInput}
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-              >
-                {currencies.map((cur) => (
-                  <option key={cur} value={cur}>
-                    {cur}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Bank Name</label>
-              <input
-                type="text"
-                className={styles.formInput}
-                placeholder="e.g. GTBank"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Account Number</label>
-              <input
-                type="text"
-                className={styles.formInput}
-                placeholder="Enter 10-digit account number"
-                value={accountNumber}
-                onChange={(e) =>
-                  setAccountNumber(e.target.value.replace(/\D/g, ""))
-                }
-                maxLength="10"
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Account Name</label>
-              <input
-                type="text"
-                className={styles.formInput}
-                placeholder="Enter account holder name"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Bank Code (Optional)</label>
-              <input
-                type="text"
-                className={styles.formInput}
-                placeholder="Enter bank code"
-                value={bankCode}
-                onChange={(e) => setBankCode(e.target.value)}
-              />
-            </div>
-            <p className={styles.feeNote}>Fee: 1% (max ₦100)</p>
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.modalCancel}
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={styles.modalConfirm}
-                disabled={loading || isSubmitting}
-              >
-                {loading || isSubmitting ? (
-                  <FaSpinner className={styles.spinning} />
-                ) : (
-                  "Request Withdrawal"
-                )}
-              </button>
-            </div>
-          </form>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleWithdraw();
+              }}
+            >
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Amount ({currency})</label>
+                <div className={styles.amountInputGroup}>
+                  <span className={styles.currencySymbol}>{symbol}</span>
+                  <input
+                    type="number"
+                    className={styles.amountInput}
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min="100"
+                    step="100"
+                    required
+                  />
+                </div>
+                <p className={styles.feeNote}>Fee: 1% (max {symbol}100)</p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Bank Name</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="e.g. GTBank"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Account Number</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="Enter 10-digit account number"
+                  value={accountNumber}
+                  onChange={(e) =>
+                    setAccountNumber(e.target.value.replace(/\D/g, ""))
+                  }
+                  maxLength="10"
+                  required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Account Name</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="Enter account holder name"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Bank Code (Optional)</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  placeholder="Enter bank code"
+                  value={bankCode}
+                  onChange={(e) => setBankCode(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.modalCancel}
+                  onClick={handleClose}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`${styles.modalConfirm} ${styles.withdrawBtn}`}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <FaSpinner className={styles.spinning} />
+                  ) : (
+                    "Review Withdrawal"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Withdrawal Confirmation Modal */}
+      <WithdrawalConfirmModal
+        isOpen={showConfirm}
+        onClose={() => {
+          setShowConfirm(false);
+          setWithdrawalData(null);
+        }}
+        onConfirm={handleConfirmWithdrawal}
+        loading={loading}
+        withdrawalData={withdrawalData}
+      />
+    </>
   );
 }
 
@@ -515,7 +800,7 @@ export default function HirerWallet() {
   const [refreshing, setRefreshing] = useState(false);
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const [currencies, setCurrencies] = useState(["NGN", "USD", "EUR", "GBP"]);
+  const [currencies, setCurrencies] = useState(["NGN"]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -534,6 +819,8 @@ export default function HirerWallet() {
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCurrency, setActiveCurrency] = useState("NGN");
+  const [currencyBalances, setCurrencyBalances] = useState({});
 
   // ─── Show message modal ──────────────────────────────────────────────────
 
@@ -549,21 +836,26 @@ export default function HirerWallet() {
       if (showLoadingState) setLoading(true);
       setRefreshing(true);
       try {
+        // Get wallet balance
         const walletRes = await api.get("/wallet/balance");
         const walletData = walletRes.data.data;
         setWallet(walletData);
 
+        // Get transactions filtered by currency
         const txRes = await api.get("/wallet/transactions", {
           params: {
             page: pagination.page,
             limit: pagination.limit,
             type: filterType || undefined,
             status: filterStatus || undefined,
+            currency: activeCurrency || undefined,
           },
         });
-        setTransactions(txRes.data.data.transactions || []);
+
+        const txData = txRes.data.data;
+        setTransactions(txData.transactions || []);
         setPagination(
-          txRes.data.data.pagination || {
+          txData.pagination || {
             page: 1,
             limit: 20,
             total: 0,
@@ -571,10 +863,25 @@ export default function HirerWallet() {
           },
         );
 
+        // Get supported currencies
         try {
           const currenciesRes = await api.get("/wallet/currencies");
           if (currenciesRes.data?.data?.currencies) {
-            setCurrencies(currenciesRes.data.data.currencies);
+            const supported = currenciesRes.data.data.currencies;
+            setCurrencies(supported);
+
+            // Initialize currency balances
+            const balances = {};
+            supported.forEach((cur) => {
+              balances[cur] = 0;
+            });
+
+            // Get balances for each currency from transactions
+            const balanceRes = await api.get("/wallet/balances");
+            if (balanceRes.data?.data?.balances) {
+              Object.assign(balances, balanceRes.data.data.balances);
+            }
+            setCurrencyBalances(balances);
           }
         } catch (err) {
           console.log("Using default currencies");
@@ -595,15 +902,21 @@ export default function HirerWallet() {
         setRefreshing(false);
       }
     },
-    [pagination.page, filterType, filterStatus],
+    [pagination.page, filterType, filterStatus, activeCurrency],
   );
 
   useEffect(() => {
     fetchWallet(true);
-  }, [pagination.page, filterType, filterStatus, fetchWallet]);
+  }, [pagination.page, filterType, filterStatus, activeCurrency, fetchWallet]);
 
   const refreshWallet = () => {
     fetchWallet(false);
+  };
+
+  // ─── Get current currency balance ────────────────────────────────────────
+
+  const getCurrentBalance = () => {
+    return currencyBalances[activeCurrency] || 0;
   };
 
   // ─── Deposit ──────────────────────────────────────────────────────────────
@@ -615,7 +928,6 @@ export default function HirerWallet() {
       const { paymentLink, reference } = res.data.data;
 
       if (paymentLink) {
-        // Store pending deposit info
         localStorage.setItem("pendingDepositAmount", amount.toString());
         localStorage.setItem("pendingDepositCurrency", currency);
         localStorage.setItem("pendingDepositReference", reference);
@@ -628,10 +940,9 @@ export default function HirerWallet() {
           "info",
         );
 
-        // Open Flutterwave payment page
         window.open(paymentLink, "_blank");
 
-        // Start polling for transaction status
+        // Poll for transaction status
         let attempts = 0;
         const maxAttempts = 30;
 
@@ -722,12 +1033,17 @@ export default function HirerWallet() {
     setSubmitting(true);
     try {
       const res = await api.post("/wallet/withdraw", data);
+      const fee = Math.min(data.amount * 0.01, 100);
+      const netAmount = data.amount - fee;
+
       showMessage(
         "Withdrawal Request Submitted ✅",
-        `Your withdrawal of ${formatCurrency(data.amount, data.currency)} has been submitted for admin approval.\n\nReference: ${res.data.data.reference}`,
+        `Your withdrawal of ${formatCurrency(data.amount, data.currency)} has been submitted for admin approval.\n\n` +
+          `Fee: ${formatCurrency(fee, data.currency)}\n` +
+          `Net Amount: ${formatCurrency(netAmount, data.currency)}\n` +
+          `Reference: ${res.data.data.reference}`,
         "success",
       );
-      setShowWithdrawModal(false);
       await fetchWallet(false);
     } catch (err) {
       showMessage(
@@ -752,6 +1068,12 @@ export default function HirerWallet() {
     );
   });
 
+  // ─── Get available currencies with balance > 0 ──────────────────────────
+
+  const availableCurrencies = currencies.filter(
+    (cur) => (currencyBalances[cur] || 0) > 0,
+  );
+
   // ─── Loading state ───────────────────────────────────────────────────────
 
   if (loading) {
@@ -762,7 +1084,8 @@ export default function HirerWallet() {
     );
   }
 
-  const balance = wallet?.balance || 0;
+  const currentBalance = getCurrentBalance();
+  const hasBalance = currentBalance > 0;
 
   return (
     <HirerLayout>
@@ -773,7 +1096,9 @@ export default function HirerWallet() {
             <h1 className={styles.title}>
               <FaWallet /> Wallet
             </h1>
-            <p className={styles.subtitle}>Manage your funds and payments</p>
+            <p className={styles.subtitle}>
+              Manage your funds across multiple currencies
+            </p>
           </div>
           <div className={styles.headerActions}>
             <button
@@ -790,31 +1115,79 @@ export default function HirerWallet() {
               <FaPlus /> Fund Wallet
             </button>
             <button
-              className={styles.actionBtn}
-              onClick={() => setShowWithdrawModal(true)}
+              className={`${styles.actionBtn} ${!hasBalance ? styles.actionBtnDisabled : ""}`}
+              onClick={() => hasBalance && setShowWithdrawModal(true)}
+              disabled={!hasBalance}
+              title={
+                !hasBalance ? `No ${activeCurrency} balance to withdraw` : ""
+              }
             >
               <FaMinus /> Withdraw
             </button>
           </div>
         </div>
 
+        {/* ─── Currency Tabs ────────────────────────────────────────────────── */}
+        <div className={styles.currencyTabsContainer}>
+          <div className={styles.currencyTabs}>
+            {currencies.map((cur) => {
+              const balance = currencyBalances[cur] || 0;
+              const isActive = cur === activeCurrency;
+              const isZero = balance === 0;
+              return (
+                <CurrencyTab
+                  key={cur}
+                  currency={cur}
+                  balance={balance}
+                  isActive={isActive}
+                  isZero={isZero}
+                  onClick={() => !isZero && setActiveCurrency(cur)}
+                />
+              );
+            })}
+          </div>
+          <div className={styles.currencyTabHint}>
+            {availableCurrencies.length === 0 ? (
+              <span className={styles.hintText}>
+                💡 Fund your wallet to see currency balances
+              </span>
+            ) : (
+              <span className={styles.hintText}>
+                {availableCurrencies.length} currency
+                {availableCurrencies.length > 1 ? "ies" : ""} available
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* ─── Balance Card ──────────────────────────────────────────────────── */}
         <div className={styles.balanceCard}>
           <div className={styles.balanceInfo}>
-            <div className={styles.balanceLabel}>Available Balance</div>
+            <div className={styles.balanceLabel}>
+              Available Balance ({activeCurrency})
+              {!hasBalance && (
+                <span className={styles.balanceZeroBadge}>Empty</span>
+              )}
+            </div>
             <div className={styles.balanceAmount}>
-              {formatCurrency(balance, wallet?.currency || "NGN")}
+              {formatCurrency(currentBalance, activeCurrency)}
+              {currentBalance > 0 && (
+                <CopyButton
+                  text={`${getCurrencySymbol(activeCurrency)}${currentBalance.toFixed(2)}`}
+                  label="Copy"
+                />
+              )}
             </div>
             <div className={styles.balanceMeta}>
-              <span>
-                Total Deposited: {formatCurrency(wallet?.totalDeposited || 0)}
-              </span>
-              <span>
-                Total Spent: {formatCurrency(wallet?.totalSpent || 0)}
-              </span>
-              <span>
-                Total Withdrawn: {formatCurrency(wallet?.totalWithdrawn || 0)}
-              </span>
+              {currencies.map((cur) => {
+                const bal = currencyBalances[cur] || 0;
+                if (bal === 0) return null;
+                return (
+                  <span key={cur}>
+                    {cur}: {formatCurrency(bal, cur)}
+                  </span>
+                );
+              })}
             </div>
           </div>
           <div className={styles.balanceQuickActions}>
@@ -825,8 +1198,9 @@ export default function HirerWallet() {
               <FaPlus /> Add Money
             </button>
             <button
-              className={styles.quickAction}
-              onClick={() => setShowWithdrawModal(true)}
+              className={`${styles.quickAction} ${!hasBalance ? styles.quickActionDisabled : ""}`}
+              onClick={() => hasBalance && setShowWithdrawModal(true)}
+              disabled={!hasBalance}
             >
               <FaMinus /> Withdraw
             </button>
@@ -838,19 +1212,19 @@ export default function HirerWallet() {
           <StatCard
             icon={FaArrowDown}
             label="Total Deposits"
-            value={formatCurrency(wallet?.totalDeposited || 0)}
+            value={formatCurrency(wallet?.totalDeposited || 0, activeCurrency)}
             accent="green"
           />
           <StatCard
             icon={FaCreditCard}
             label="Total Spent"
-            value={formatCurrency(wallet?.totalSpent || 0)}
+            value={formatCurrency(wallet?.totalSpent || 0, activeCurrency)}
             accent="orange"
           />
           <StatCard
             icon={FaArrowUp}
             label="Total Withdrawn"
-            value={formatCurrency(wallet?.totalWithdrawn || 0)}
+            value={formatCurrency(wallet?.totalWithdrawn || 0, activeCurrency)}
           />
           <StatCard
             icon={FaClock}
@@ -862,7 +1236,9 @@ export default function HirerWallet() {
         {/* ─── Transactions ──────────────────────────────────────────────────── */}
         <div className={styles.transactionsSection}>
           <div className={styles.transactionsHeader}>
-            <h2 className={styles.sectionTitle}>Transaction History</h2>
+            <h2 className={styles.sectionTitle}>
+              Transaction History {activeCurrency && `(${activeCurrency})`}
+            </h2>
             <div className={styles.transactionControls}>
               <div className={styles.searchWrapper}>
                 <FaSearch className={styles.searchIcon} />
@@ -904,7 +1280,9 @@ export default function HirerWallet() {
             <div className={styles.emptyState}>
               <FaWallet size={48} />
               <h3>No transactions found</h3>
-              <p>Your transaction history will appear here</p>
+              <p>
+                Your transaction history for {activeCurrency} will appear here
+              </p>
             </div>
           ) : (
             <div className={styles.transactionsList}>
@@ -956,7 +1334,8 @@ export default function HirerWallet() {
           onClose={() => setShowWithdrawModal(false)}
           onWithdraw={handleWithdraw}
           loading={submitting}
-          balance={balance}
+          balance={currentBalance}
+          currency={activeCurrency}
           currencies={currencies}
         />
 

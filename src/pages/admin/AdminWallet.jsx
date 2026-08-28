@@ -1,7 +1,7 @@
 // src/pages/admin/AdminWallet.jsx
-// Complete Admin Wallet Management with Platform Modals
+// Complete Admin Wallet Management with Platform UX
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
@@ -38,11 +38,20 @@ import {
   FiEdit,
   FiCheck,
   FiSend,
+  FiCopy,
 } from "react-icons/fi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(amount, currency = "NGN") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency,
+    minimumFractionDigits: 2,
+  }).format(amount || 0);
+}
+
+function formatCurrencyPlain(amount, currency = "NGN") {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency,
@@ -98,6 +107,20 @@ function getStatusIcon(status) {
   return <FiClock />;
 }
 
+function getStatusClass(status) {
+  const map = {
+    PENDING: "pending",
+    PROCESSING: "processing",
+    COMPLETED: "completed",
+    SUCCESS: "success",
+    FAILED: "failed",
+    REVERSED: "reversed",
+    CANCELLED: "cancelled",
+    INITIATED: "initiated",
+  };
+  return map[status] || "pending";
+}
+
 function getTransactionTypeLabel(type) {
   const labels = {
     DEPOSIT: "Deposit",
@@ -111,6 +134,41 @@ function getTransactionTypeLabel(type) {
   return labels[type] || type;
 }
 
+// ─── Copy Button Component ──────────────────────────────────────────────────
+
+function CopyButton({ text, label = "Copy" }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <button
+      className={styles.copyBtn}
+      onClick={handleCopy}
+      title={`Copy ${label}`}
+    >
+      {copied ? <FiCheck size={14} /> : <FiCopy size={14} />}
+      <span>{copied ? "Copied!" : label}</span>
+    </button>
+  );
+}
+
 // ─── Modal Components ──────────────────────────────────────────────────────
 
 function ConfirmModal({
@@ -121,6 +179,9 @@ function ConfirmModal({
   message,
   confirmLabel = "Confirm",
   variant = "danger",
+  withdrawalAmount,
+  feeAmount,
+  netAmount,
 }) {
   if (!isOpen) return null;
 
@@ -135,6 +196,55 @@ function ConfirmModal({
         </div>
         <div className={styles.modalBody}>
           <p className={styles.confirmMessage}>{message}</p>
+
+          {(withdrawalAmount || feeAmount || netAmount) && (
+            <div className={styles.approvalBreakdown}>
+              <div className={styles.breakdownRow}>
+                <span className={styles.breakdownLabel}>Withdrawal Amount</span>
+                <span className={styles.breakdownValue}>
+                  {formatCurrency(withdrawalAmount || 0)}
+                </span>
+              </div>
+              <div className={styles.breakdownRow}>
+                <span className={styles.breakdownLabel}>
+                  Fee (1% platform fee)
+                </span>
+                <span
+                  className={styles.breakdownValue}
+                  style={{ color: "var(--orange)" }}
+                >
+                  -{formatCurrency(feeAmount || 0)}
+                </span>
+              </div>
+              <div
+                className={`${styles.breakdownRow} ${styles.breakdownTotal}`}
+              >
+                <span className={styles.breakdownLabel}>Final Payout</span>
+                <span
+                  className={styles.breakdownValue}
+                  style={{
+                    color: "var(--green)",
+                    fontWeight: 900,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  {formatCurrency(netAmount || 0)}
+                </span>
+              </div>
+              {netAmount > 0 && (
+                <div className={styles.copyRow}>
+                  <span className={styles.breakdownLabel}>
+                    Copy Final Amount
+                  </span>
+                  <CopyButton
+                    text={formatCurrencyPlain(netAmount || 0)}
+                    label="Copy"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           <div className={styles.modalActions}>
             <button className={styles.modalCancel} onClick={onClose}>
               Cancel
@@ -249,20 +359,18 @@ function Toast({ toast }) {
   );
 }
 
-// ─── Stat Card ──────────────────────────────────────────────────────────────
+// ─── Stat Chip ─────────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, accent, subtitle }) {
+function StatChip({ icon: Icon, label, value, accent, subtext }) {
   return (
     <div
-      className={`${styles.statCard} ${accent ? styles[`accent_${accent}`] : ""}`}
+      className={`${styles.statChip} ${accent ? styles[`chipAccent_${accent}`] : ""}`}
     >
-      <div className={styles.statIcon}>
-        <Icon size={20} />
-      </div>
+      <span className={styles.chipIcon}>{Icon && <Icon size={16} />}</span>
       <div>
-        <div className={styles.statValue}>{value}</div>
-        <div className={styles.statLabel}>{label}</div>
-        {subtitle && <div className={styles.statSubtitle}>{subtitle}</div>}
+        <div className={styles.chipVal}>{value ?? "—"}</div>
+        <div className={styles.chipLabel}>{label}</div>
+        {subtext && <div className={styles.chipSubtext}>{subtext}</div>}
       </div>
     </div>
   );
@@ -273,11 +381,7 @@ function StatCard({ icon: Icon, label, value, accent, subtitle }) {
 function StatusBadge({ status }) {
   return (
     <span
-      className={styles.statusBadge}
-      style={{
-        backgroundColor: getStatusColor(status) + "15",
-        color: getStatusColor(status),
-      }}
+      className={`${styles.statusBadge} ${styles[`statusBadge_${getStatusClass(status)}`]}`}
     >
       {getStatusIcon(status)} {getStatusLabel(status)}
     </span>
@@ -301,7 +405,7 @@ function TransactionRow({ transaction, onView }) {
           {transaction.hirer?.firstName?.[0] || "?"}
           {transaction.hirer?.lastName?.[0] || ""}
         </div>
-        <div>
+        <div className={styles.userInfo}>
           <div className={styles.userName}>
             {transaction.hirer?.firstName} {transaction.hirer?.lastName}
           </div>
@@ -329,7 +433,7 @@ function TransactionRow({ transaction, onView }) {
         onClick={() => onView(transaction)}
         title="View details"
       >
-        <FiEye size={16} />
+        <FiEye size={14} />
       </button>
     </div>
   );
@@ -338,6 +442,9 @@ function TransactionRow({ transaction, onView }) {
 // ─── Withdrawal Row ─────────────────────────────────────────────────────────
 
 function WithdrawalRow({ withdrawal, onApprove, onReject, onView }) {
+  const fee = (withdrawal.amount || 0) * 0.01;
+  const netAmount = (withdrawal.amount || 0) - fee;
+
   return (
     <div className={styles.withdrawalRow}>
       <div className={styles.withdrawalUser}>
@@ -345,7 +452,7 @@ function WithdrawalRow({ withdrawal, onApprove, onReject, onView }) {
           {withdrawal.hirer?.firstName?.[0] || "?"}
           {withdrawal.hirer?.lastName?.[0] || ""}
         </div>
-        <div>
+        <div className={styles.userInfo}>
           <div className={styles.userName}>
             {withdrawal.hirer?.firstName} {withdrawal.hirer?.lastName}
           </div>
@@ -364,7 +471,17 @@ function WithdrawalRow({ withdrawal, onApprove, onReject, onView }) {
           {formatCurrency(withdrawal.amount)}
         </div>
         <div className={styles.withdrawalFee}>
-          Fee: {formatCurrency(withdrawal.fee)}
+          Fee (1%): {formatCurrency(fee)}
+        </div>
+        <div
+          className={styles.withdrawalNet}
+          style={{
+            fontWeight: 600,
+            color: "var(--green)",
+            fontSize: "0.75rem",
+          }}
+        >
+          Net: {formatCurrency(netAmount)}
         </div>
       </div>
       <div className={styles.withdrawalStatus}>
@@ -379,13 +496,13 @@ function WithdrawalRow({ withdrawal, onApprove, onReject, onView }) {
             className={styles.approveBtn}
             onClick={() => onApprove(withdrawal)}
           >
-            <FiCheck size={16} /> Approve
+            <FiCheck size={14} /> Approve
           </button>
           <button
             className={styles.rejectBtn}
             onClick={() => onReject(withdrawal)}
           >
-            <FiX size={16} /> Reject
+            <FiX size={14} /> Reject
           </button>
         </div>
       )}
@@ -395,7 +512,7 @@ function WithdrawalRow({ withdrawal, onApprove, onReject, onView }) {
           onClick={() => onView(withdrawal)}
           title="View details"
         >
-          <FiEye size={16} />
+          <FiEye size={14} />
         </button>
       )}
     </div>
@@ -409,6 +526,10 @@ function DetailModal({ data, onClose }) {
 
   const isTransaction = data.type !== undefined;
   const title = isTransaction ? "Transaction Details" : "Withdrawal Details";
+  const fee = isTransaction ? data.fee || 0 : (data.amount || 0) * 0.01;
+  const netAmount = isTransaction
+    ? data.netAmount || data.amount
+    : (data.amount || 0) - fee;
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -465,6 +586,12 @@ function DetailModal({ data, onClose }) {
                   <span className={styles.detailLabel}>Net Amount</span>
                   <span className={styles.detailValue}>
                     {formatCurrency(data.netAmount || data.amount)}
+                    {data.netAmount && (
+                      <CopyButton
+                        text={formatCurrencyPlain(data.netAmount)}
+                        label="Copy"
+                      />
+                    )}
                   </span>
                 </div>
                 <div className={styles.detailItem}>
@@ -503,15 +630,25 @@ function DetailModal({ data, onClose }) {
                   </span>
                 </div>
                 <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Fee</span>
-                  <span className={styles.detailValue}>
-                    {formatCurrency(data.fee || 0)}
+                  <span className={styles.detailLabel}>Fee (1%)</span>
+                  <span
+                    className={styles.detailValue}
+                    style={{ color: "var(--orange)" }}
+                  >
+                    {formatCurrency(fee)}
                   </span>
                 </div>
                 <div className={styles.detailItem}>
                   <span className={styles.detailLabel}>Net Amount</span>
-                  <span className={styles.detailValue}>
-                    {formatCurrency(data.netAmount || data.amount)}
+                  <span
+                    className={styles.detailValue}
+                    style={{ color: "var(--green)", fontWeight: 700 }}
+                  >
+                    {formatCurrency(netAmount)}
+                    <CopyButton
+                      text={formatCurrencyPlain(netAmount)}
+                      label="Copy"
+                    />
                   </span>
                 </div>
                 {data.failureReason && (
@@ -570,6 +707,7 @@ export default function AdminWallet() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterType, setFilterType] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingApproval, setPendingApproval] = useState(null);
 
   // ─── Modal States ────────────────────────────────────────────────────────
   const [confirmModal, setConfirmModal] = useState(null);
@@ -591,8 +729,16 @@ export default function AdminWallet() {
     onConfirm,
     confirmLabel = "Confirm",
     variant = "danger",
+    withdrawalData = null,
   ) {
-    setConfirmModal({ title, message, onConfirm, confirmLabel, variant });
+    setConfirmModal({
+      title,
+      message,
+      onConfirm,
+      confirmLabel,
+      variant,
+      withdrawalData,
+    });
   }
 
   function showPrompt(
@@ -602,6 +748,14 @@ export default function AdminWallet() {
     placeholder = "Enter reason...",
   ) {
     setPromptModal({ title, message, onConfirm, placeholder });
+  }
+
+  function setParam(k, v) {
+    const p = new URLSearchParams(searchParams);
+    if (v) p.set(k, v);
+    else p.delete(k);
+    if (k !== "page") p.set("page", "1");
+    setSearchParams(p);
   }
 
   // ─── API Calls ────────────────────────────────────────────────────────────
@@ -668,15 +822,18 @@ export default function AdminWallet() {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const handleApproveWithdrawal = (withdrawal) => {
+    const fee = (withdrawal.amount || 0) * 0.01;
+    const netAmount = (withdrawal.amount || 0) - fee;
+
     showConfirm(
       "Approve Withdrawal",
-      `Are you sure you want to approve this withdrawal of ${formatCurrency(withdrawal.amount)}?`,
+      `Are you sure you want to approve this withdrawal?`,
       async () => {
         try {
           await api.patch(`/wallet/admin/withdrawals/${withdrawal.id}/approve`);
           showMessage(
             "Approved",
-            "Withdrawal approved successfully!",
+            `Withdrawal approved successfully!\nFinal payout: ${formatCurrency(netAmount)}`,
             "success",
           );
           fetchWithdrawals();
@@ -688,6 +845,7 @@ export default function AdminWallet() {
       },
       "Approve",
       "success",
+      { withdrawalAmount: withdrawal.amount, feeAmount: fee, netAmount },
     );
   };
 
@@ -756,7 +914,7 @@ export default function AdminWallet() {
     return (
       <AdminLayout>
         <div className={styles.loading}>
-          <FiClock className={styles.spinner} size={32} />
+          <span className={styles.spinner} />
           <p>Loading wallet data...</p>
         </div>
       </AdminLayout>
@@ -778,6 +936,9 @@ export default function AdminWallet() {
             message={confirmModal.message}
             confirmLabel={confirmModal.confirmLabel}
             variant={confirmModal.variant}
+            withdrawalAmount={confirmModal.withdrawalData?.withdrawalAmount}
+            feeAmount={confirmModal.withdrawalData?.feeAmount}
+            netAmount={confirmModal.withdrawalData?.netAmount}
           />
         )}
 
@@ -808,14 +969,15 @@ export default function AdminWallet() {
             <p className={styles.eyebrow}>Finance</p>
             <h1 className={styles.pageTitle}>
               <FaWallet size={24} /> Wallet Management
+              {total > 0 && <span className={styles.countPill}>{total}</span>}
             </h1>
           </div>
           <div className={styles.headerActions}>
-            <button className={styles.exportBtn} onClick={handleExportCSV}>
+            <button className={styles.secondaryBtn} onClick={handleExportCSV}>
               <FiDownload size={16} /> Export
             </button>
             <button
-              className={styles.refreshBtn}
+              className={styles.primaryBtn}
               onClick={() => {
                 if (tab === "transactions") fetchTransactions();
                 else if (tab === "withdrawals") fetchWithdrawals();
@@ -829,31 +991,31 @@ export default function AdminWallet() {
 
         {/* ─── Stats ───────────────────────────────────────────────────────── */}
         {stats && (
-          <div className={styles.statsGrid}>
-            <StatCard
+          <div className={styles.statsBar}>
+            <StatChip
               icon={FiUsers}
               label="Total Wallets"
               value={stats.totalWallets || 0}
             />
-            <StatCard
+            <StatChip
               icon={FaWallet}
               label="Total Balance"
               value={formatCurrency(stats.totalBalance || 0)}
               accent="green"
             />
-            <StatCard
+            <StatChip
               icon={FiArrowDown}
               label="Total Deposited"
               value={formatCurrency(stats.totalDeposited || 0)}
               accent="green"
             />
-            <StatCard
+            <StatChip
               icon={FiArrowUp}
               label="Total Withdrawn"
               value={formatCurrency(stats.totalWithdrawn || 0)}
               accent="orange"
             />
-            <StatCard
+            <StatChip
               icon={FiClock}
               label="Pending Withdrawals"
               value={stats.pendingWithdrawals || 0}
@@ -866,21 +1028,21 @@ export default function AdminWallet() {
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${tab === "overview" ? styles.tabActive : ""}`}
-            onClick={() => setSearchParams({ tab: "overview" })}
+            onClick={() => setParam("tab", "overview")}
           >
-            <FiPieChart size={16} /> Overview
+            <FiPieChart size={14} /> Overview
           </button>
           <button
             className={`${styles.tab} ${tab === "transactions" ? styles.tabActive : ""}`}
-            onClick={() => setSearchParams({ tab: "transactions", page: "1" })}
+            onClick={() => setParam("tab", "transactions")}
           >
-            <FiActivity size={16} /> Transactions
+            <FiActivity size={14} /> Transactions
           </button>
           <button
             className={`${styles.tab} ${tab === "withdrawals" ? styles.tabActive : ""}`}
-            onClick={() => setSearchParams({ tab: "withdrawals", page: "1" })}
+            onClick={() => setParam("tab", "withdrawals")}
           >
-            <FiArrowUp size={16} /> Withdrawals
+            <FiArrowUp size={14} /> Withdrawals
           </button>
         </div>
 
@@ -933,10 +1095,13 @@ export default function AdminWallet() {
         {/* ─── Transactions Tab ───────────────────────────────────────────── */}
         {tab === "transactions" && (
           <div className={styles.transactionsSection}>
-            <div className={styles.controls}>
+            <div className={styles.controlBar}>
               <div className={styles.searchWrap}>
-                <FiSearch size={14} />
+                <span className={styles.searchIcon}>
+                  <FiSearch size={14} />
+                </span>
                 <input
+                  className={styles.searchInput}
                   type="text"
                   placeholder="Search by reference or email..."
                   value={searchQuery}
@@ -955,34 +1120,37 @@ export default function AdminWallet() {
                   </button>
                 )}
               </div>
-              <select
-                className={styles.filterSelect}
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                <option value="">All Types</option>
-                <option value="DEPOSIT">Deposits</option>
-                <option value="WITHDRAWAL">Withdrawals</option>
-                <option value="PAYMENT">Payments</option>
-                <option value="SUBSCRIPTION">Subscriptions</option>
-                <option value="REFUND">Refunds</option>
-              </select>
-              <select
-                className={styles.filterSelect}
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="PENDING">Pending</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="FAILED">Failed</option>
-                <option value="REVERSED">Reversed</option>
-              </select>
+              <div className={styles.filterGroup}>
+                <select
+                  className={styles.filterSelect}
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  <option value="DEPOSIT">Deposits</option>
+                  <option value="WITHDRAWAL">Withdrawals</option>
+                  <option value="PAYMENT">Payments</option>
+                  <option value="SUBSCRIPTION">Subscriptions</option>
+                  <option value="REFUND">Refunds</option>
+                </select>
+                <select
+                  className={styles.filterSelect}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="FAILED">Failed</option>
+                  <option value="REVERSED">Reversed</option>
+                </select>
+              </div>
+              <span className={styles.totalPill}>{total} transactions</span>
             </div>
 
             {loading ? (
               <div className={styles.loading}>
-                <FiClock className={styles.spinner} size={32} />
+                <span className={styles.spinner} />
                 <p>Loading transactions...</p>
               </div>
             ) : transactions.length === 0 ? (
@@ -992,7 +1160,7 @@ export default function AdminWallet() {
               </div>
             ) : (
               <>
-                <div className={styles.transactionsTable}>
+                <div className={styles.tableContainer}>
                   {transactions.map((tx) => (
                     <TransactionRow
                       key={tx.id}
@@ -1007,12 +1175,7 @@ export default function AdminWallet() {
                     <button
                       className={styles.pageBtn}
                       disabled={page === 1}
-                      onClick={() =>
-                        setSearchParams({
-                          tab: "transactions",
-                          page: String(page - 1),
-                        })
-                      }
+                      onClick={() => setParam("page", String(page - 1))}
                     >
                       <FiArrowLeft size={14} /> Prev
                     </button>
@@ -1022,12 +1185,7 @@ export default function AdminWallet() {
                     <button
                       className={styles.pageBtn}
                       disabled={page === pages}
-                      onClick={() =>
-                        setSearchParams({
-                          tab: "transactions",
-                          page: String(page + 1),
-                        })
-                      }
+                      onClick={() => setParam("page", String(page + 1))}
                     >
                       Next <FiArrowRight size={14} />
                     </button>
@@ -1041,24 +1199,27 @@ export default function AdminWallet() {
         {/* ─── Withdrawals Tab ───────────────────────────────────────────── */}
         {tab === "withdrawals" && (
           <div className={styles.withdrawalsSection}>
-            <div className={styles.controls}>
-              <select
-                className={styles.filterSelect}
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="PENDING">Pending</option>
-                <option value="PROCESSING">Processing</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="FAILED">Failed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
+            <div className={styles.controlBar}>
+              <div className={styles.filterGroup}>
+                <select
+                  className={styles.filterSelect}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="PROCESSING">Processing</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="FAILED">Failed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </div>
+              <span className={styles.totalPill}>{total} withdrawals</span>
             </div>
 
             {loading ? (
               <div className={styles.loading}>
-                <FiClock className={styles.spinner} size={32} />
+                <span className={styles.spinner} />
                 <p>Loading withdrawals...</p>
               </div>
             ) : withdrawals.length === 0 ? (
@@ -1068,7 +1229,7 @@ export default function AdminWallet() {
               </div>
             ) : (
               <>
-                <div className={styles.withdrawalsTable}>
+                <div className={styles.tableContainer}>
                   {withdrawals.map((wd) => (
                     <WithdrawalRow
                       key={wd.id}
@@ -1085,12 +1246,7 @@ export default function AdminWallet() {
                     <button
                       className={styles.pageBtn}
                       disabled={page === 1}
-                      onClick={() =>
-                        setSearchParams({
-                          tab: "withdrawals",
-                          page: String(page - 1),
-                        })
-                      }
+                      onClick={() => setParam("page", String(page - 1))}
                     >
                       <FiArrowLeft size={14} /> Prev
                     </button>
@@ -1100,12 +1256,7 @@ export default function AdminWallet() {
                     <button
                       className={styles.pageBtn}
                       disabled={page === pages}
-                      onClick={() =>
-                        setSearchParams({
-                          tab: "withdrawals",
-                          page: String(page + 1),
-                        })
-                      }
+                      onClick={() => setParam("page", String(page + 1))}
                     >
                       Next <FiArrowRight size={14} />
                     </button>
