@@ -86,6 +86,7 @@ const NAV = [
       { label: "Promo Codes", path: "/admin/promocodes", icon: FiTag },
       { label: "Featured", path: "/admin/featured", icon: FaRocket },
       { label: "Insurance", path: "/admin/insurance", icon: FiShield },
+      { label: "Hirer Wallet", path: "/admin/wallet", icon: FiShield },
     ],
   },
   {

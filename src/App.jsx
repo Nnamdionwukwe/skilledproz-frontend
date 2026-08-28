@@ -125,6 +125,7 @@ import AdminFeedback from "./pages/admin/AdminFeedback.jsx";
 import HirerWallet from "./components/hirer/HirerWallet.jsx";
 import WalletCallback from "./components/hirer/WalletCallback.jsx";
 import AdminLogs from "./pages/admin/AdminLogs.jsx";
+import AdminWallet from "./pages/admin/AdminWallet.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -528,6 +529,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminLogs />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/wallet"
+          element={
+            <RequireAdmin>
+              <AdminWallet />
             </RequireAdmin>
           }
         />
