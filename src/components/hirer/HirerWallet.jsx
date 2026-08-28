@@ -119,7 +119,6 @@ function getTransactionLabel(type) {
 }
 
 function getCurrencyIcon(currency) {
-  // Using available react-icons/fa icons
   const icons = {
     NGN: <FaMoneyBillWave />,
     USD: <FaDollarSign />,
@@ -601,7 +600,6 @@ function WithdrawModal({
       return;
     }
 
-    // Show confirmation modal
     setWithdrawalData({
       amount: numAmount,
       currency,
@@ -745,7 +743,6 @@ function WithdrawModal({
         </div>
       </div>
 
-      {/* Withdrawal Confirmation Modal */}
       <WithdrawalConfirmModal
         isOpen={showConfirm}
         onClose={() => {
@@ -820,7 +817,7 @@ export default function HirerWallet() {
   const [filterStatus, setFilterStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCurrency, setActiveCurrency] = useState("NGN");
-  const [currencyBalances, setCurrencyBalances] = useState({});
+  const [currencyBalances, setCurrencyBalances] = useState({ NGN: 0 });
 
   // ─── Show message modal ──────────────────────────────────────────────────
 
@@ -836,10 +833,42 @@ export default function HirerWallet() {
       if (showLoadingState) setLoading(true);
       setRefreshing(true);
       try {
-        // Get wallet balance
+        // Get wallet balance - use the main wallet balance as NGN balance
         const walletRes = await api.get("/wallet/balance");
         const walletData = walletRes.data.data;
         setWallet(walletData);
+
+        // Initialize currency balances with the main wallet balance
+        const balances = { NGN: walletData.balance || 0 };
+
+        // Try to get supported currencies
+        try {
+          const currenciesRes = await api.get("/wallet/currencies");
+          if (currenciesRes.data?.data?.currencies) {
+            const supported = currenciesRes.data.data.currencies;
+            setCurrencies(supported);
+
+            // Initialize balances for all supported currencies
+            supported.forEach((cur) => {
+              if (!balances[cur]) balances[cur] = 0;
+            });
+          }
+        } catch (err) {
+          console.log("Using default currencies");
+        }
+
+        // Try to get multi-currency balances from a separate endpoint if available
+        try {
+          const balanceRes = await api.get("/wallet/balances");
+          if (balanceRes.data?.data?.balances) {
+            Object.assign(balances, balanceRes.data.data.balances);
+          }
+        } catch (err) {
+          // If the endpoint doesn't exist, just use the main balance
+          console.log("Multi-currency balance endpoint not available");
+        }
+
+        setCurrencyBalances(balances);
 
         // Get transactions filtered by currency
         const txRes = await api.get("/wallet/transactions", {
@@ -848,7 +877,6 @@ export default function HirerWallet() {
             limit: pagination.limit,
             type: filterType || undefined,
             status: filterStatus || undefined,
-            currency: activeCurrency || undefined,
           },
         });
 
@@ -862,30 +890,6 @@ export default function HirerWallet() {
             pages: 1,
           },
         );
-
-        // Get supported currencies
-        try {
-          const currenciesRes = await api.get("/wallet/currencies");
-          if (currenciesRes.data?.data?.currencies) {
-            const supported = currenciesRes.data.data.currencies;
-            setCurrencies(supported);
-
-            // Initialize currency balances
-            const balances = {};
-            supported.forEach((cur) => {
-              balances[cur] = 0;
-            });
-
-            // Get balances for each currency from transactions
-            const balanceRes = await api.get("/wallet/balances");
-            if (balanceRes.data?.data?.balances) {
-              Object.assign(balances, balanceRes.data.data.balances);
-            }
-            setCurrencyBalances(balances);
-          }
-        } catch (err) {
-          console.log("Using default currencies");
-        }
       } catch (err) {
         console.error("Failed to fetch wallet:", err);
         if (err.response?.status === 404) {
@@ -896,18 +900,19 @@ export default function HirerWallet() {
             totalSpent: 0,
             totalWithdrawn: 0,
           });
+          setCurrencyBalances({ NGN: 0 });
         }
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [pagination.page, filterType, filterStatus, activeCurrency],
+    [pagination.page, filterType, filterStatus],
   );
 
   useEffect(() => {
     fetchWallet(true);
-  }, [pagination.page, filterType, filterStatus, activeCurrency, fetchWallet]);
+  }, [pagination.page, filterType, filterStatus, fetchWallet]);
 
   const refreshWallet = () => {
     fetchWallet(false);
@@ -1059,6 +1064,10 @@ export default function HirerWallet() {
   // ─── Filter transactions ─────────────────────────────────────────────────
 
   const filteredTransactions = transactions.filter((tx) => {
+    // Filter by active currency
+    if (activeCurrency && tx.currency && tx.currency !== activeCurrency) {
+      return false;
+    }
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -1070,7 +1079,7 @@ export default function HirerWallet() {
 
   // ─── Get available currencies with balance > 0 ──────────────────────────
 
-  const availableCurrencies = currencies.filter(
+  const availableCurrencies = Object.keys(currencyBalances).filter(
     (cur) => (currencyBalances[cur] || 0) > 0,
   );
 
@@ -1212,19 +1221,19 @@ export default function HirerWallet() {
           <StatCard
             icon={FaArrowDown}
             label="Total Deposits"
-            value={formatCurrency(wallet?.totalDeposited || 0, activeCurrency)}
+            value={formatCurrency(wallet?.totalDeposited || 0, "NGN")}
             accent="green"
           />
           <StatCard
             icon={FaCreditCard}
             label="Total Spent"
-            value={formatCurrency(wallet?.totalSpent || 0, activeCurrency)}
+            value={formatCurrency(wallet?.totalSpent || 0, "NGN")}
             accent="orange"
           />
           <StatCard
             icon={FaArrowUp}
             label="Total Withdrawn"
-            value={formatCurrency(wallet?.totalWithdrawn || 0, activeCurrency)}
+            value={formatCurrency(wallet?.totalWithdrawn || 0, "NGN")}
           />
           <StatCard
             icon={FaClock}
