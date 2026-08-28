@@ -429,46 +429,54 @@ export default function BookingDetailMain({
           )}
 
           {/* Payment Summary - Shows differently for Hirer and Worker */}
-          {isHirer ? (
-            <>
-              <DetailItem
-                icon={<FaMoneyBillWave />}
-                label="Subtotal"
-                value={`${booking.currency} ${(booking.agreedRate * (booking.estimatedHours || 1)).toLocaleString()}`}
-              />
-              <DetailItem
-                icon={<FaMoneyBillWave />}
-                label="Platform Fee (10%)"
-                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 0.1).toLocaleString()}`}
-                accent
-              />
-              <DetailItem
-                icon={<FaMoneyBillWave />}
-                label="Total Payment"
-                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 1.1).toLocaleString()}`}
-                accent
-              />
-            </>
-          ) : (
-            <>
-              <DetailItem
-                icon={<FaMoneyBillWave />}
-                label="Subtotal"
-                value={`${booking.currency} ${(booking.agreedRate * (booking.estimatedHours || 1)).toLocaleString()}`}
-              />
-              <DetailItem
-                icon={<FaMoneyBillWave />}
-                label="Platform Fee (10%)"
-                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 0.1).toLocaleString()}`}
-              />
-              <DetailItem
-                icon={<FaMoneyBillWave />}
-                label="Your Payout"
-                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 0.9).toLocaleString()}`}
-                accent
-              />
-            </>
-          )}
+          {(() => {
+            const subtotal = booking.agreedRate * (booking.estimatedHours || 1);
+            const platformFee = Math.round(subtotal * 0.05);
+            const totalPayment = subtotal + platformFee;
+            const workerPayout = subtotal;
+
+            return isHirer ? (
+              <>
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Subtotal"
+                  value={`${booking.currency} ${subtotal.toLocaleString()}`}
+                />
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Platform Fee (5%)"
+                  value={`${booking.currency} ${platformFee.toLocaleString()}`}
+                  accent
+                />
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Total Payment"
+                  value={`${booking.currency} ${totalPayment.toLocaleString()}`}
+                  accent
+                />
+              </>
+            ) : (
+              <>
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Total Earnings"
+                  value={`${booking.currency} ${subtotal.toLocaleString()}`}
+                  accent
+                />
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Platform Fee (5%)"
+                  value={`${booking.currency} ${platformFee.toLocaleString()}`}
+                />
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Your Payout"
+                  value={`${booking.currency} ${workerPayout.toLocaleString()}`}
+                  accent
+                />
+              </>
+            );
+          })()}
         </div>
       </section>
 
