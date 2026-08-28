@@ -17,7 +17,7 @@
   border-radius: 20px;
   transition: all 0.15s;
   text-decoration: none;
-  margin: 12px 8px 16px 8px; /* reduced side margin */
+  margin: 12px 8px 16px 8px;
 }
 .back:hover {
   border-color: var(--orange);
@@ -34,7 +34,7 @@
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  margin: 0 8px 16px 8px; /* reduced side margin */
+  margin: 0 8px 16px 8px;
   animation: fadeUp 0.3s ease both;
 }
 .alert_error {
@@ -66,7 +66,7 @@
   border: 2px solid var(--red);
   border-radius: 12px;
   padding: 1rem 1.25rem;
-  margin: 0 8px 16px 8px; /* reduced side margin */
+  margin: 0 8px 16px 8px;
   animation: fadeUp 0.3s ease both;
 }
 .sosBannerIcon {
@@ -113,13 +113,13 @@
   grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
-  padding: 0 8px 16px 8px; /* reduced side padding */
+  padding: 0 8px 16px 8px;
 }
 @media (min-width: 900px) {
   .layout {
     grid-template-columns: 1fr 300px;
     gap: 20px;
-    padding: 0 20px 20px 20px; /* desktop padding */
+    padding: 0 20px 20px 20px;
   }
 }
 @media (min-width: 1200px) {
@@ -1200,7 +1200,7 @@
   height: 32px;
   width: 120px;
   border-radius: 20px;
-  margin: 12px 8px 0 8px; /* reduced side margin */
+  margin: 12px 8px 0 8px;
 }
 .skMain {
   height: 600px;
@@ -1670,4 +1670,649 @@
 .workerPaymentNoteBox p {
   margin: 0;
   line-height: 1.5;
+}
+
+/* ── SAMSUNG S22 AND SMALLER SCREEN OPTIMIZATION ──────────── */
+@media (max-width: 412px) {
+  /* Page padding - minimal */
+  .page {
+    padding: 0;
+  }
+
+  /* Back button - smaller and tighter */
+  .back {
+    font-size: 11px;
+    padding: 4px 10px;
+    margin: 6px 4px 10px 4px;
+    border-radius: 16px;
+  }
+
+  /* Alerts - compact */
+  .alert {
+    padding: 8px 12px;
+    font-size: 11px;
+    margin: 0 4px 10px 4px;
+    border-radius: 8px;
+  }
+  .alertClose {
+    font-size: 15px;
+  }
+
+  /* SOS Banner - compact */
+  .sosBanner {
+    padding: 0.625rem 0.875rem;
+    margin: 0 4px 10px 4px;
+    gap: 0.625rem;
+    border-radius: 10px;
+  }
+  .sosBannerIcon {
+    font-size: 1.2rem;
+  }
+  .sosBannerTitle {
+    font-size: 0.78rem;
+  }
+  .sosBannerDesc {
+    font-size: 0.7rem;
+  }
+  .sosResolveBtn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+
+  /* Layout - edge to edge */
+  .layout {
+    padding: 0 4px 10px 4px;
+    gap: 10px;
+  }
+
+  /* Main column */
+  .main {
+    gap: 10px;
+  }
+
+  /* Title block - compact */
+  .titleBlock {
+    padding: 12px 14px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+  .titleRow {
+    gap: 8px;
+  }
+  .title {
+    font-size: 17px;
+  }
+  .categoryPill {
+    font-size: 9px;
+    padding: 2px 8px;
+  }
+  .negotiatedPill {
+    font-size: 9px;
+    padding: 2px 8px;
+    margin-left: 4px;
+  }
+  .badge {
+    font-size: 8px;
+    padding: 2px 8px;
+  }
+
+  /* Timeline - compact */
+  .timelineWrap {
+    padding: 12px 10px 18px;
+    border-radius: 12px;
+  }
+  .timelineDot {
+    width: 20px;
+    height: 20px;
+    font-size: 7px;
+    border-width: 1.5px;
+  }
+  .timeline::before {
+    top: 10px;
+    left: 20px;
+    right: 20px;
+    height: 1.5px;
+  }
+  .timelineLabel {
+    font-size: 7px;
+    margin-top: 4px;
+  }
+
+  /* Sections - compact */
+  .section {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  .sectionTitle {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  /* Notes - compact */
+  .notes {
+    padding: 8px 10px;
+    font-size: 11px;
+    gap: 6px;
+    margin-top: 8px;
+    border-radius: 6px;
+  }
+  .notesIcon {
+    font-size: 12px;
+  }
+
+  /* Detail grid - single column on small screens */
+  .detailGrid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .detailItem {
+    padding: 8px 10px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+  .detailIcon {
+    font-size: 13px;
+  }
+  .detailLabel {
+    font-size: 8px;
+  }
+  .detailValue {
+    font-size: 11px;
+  }
+  .detailAccent {
+    font-size: 13px;
+  }
+  .durationSub {
+    font-size: 9px;
+  }
+  .mapLink {
+    font-size: 10px;
+  }
+
+  /* Fee breakdown - compact */
+  .feeBreakdown {
+    padding: 10px 12px;
+    border-radius: 10px;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .feeBreakdownLabel {
+    font-size: 9px;
+  }
+  .feeRow {
+    font-size: 11px;
+  }
+  .feeTotal {
+    font-size: 11px;
+    padding-top: 6px;
+  }
+  .feeTotalAmount {
+    font-size: 16px;
+  }
+
+  /* GPS cards - compact */
+  .gpsNote {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+  .gpsCards {
+    gap: 8px;
+  }
+  .gpsCard {
+    padding: 12px;
+    border-radius: 10px;
+  }
+  .gpsCardHeader {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .gpsCardTitle {
+    font-size: 12px;
+  }
+  .gpsCardTime {
+    font-size: 10px;
+  }
+  .gpsCoordRow {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .gpsDistRow {
+    font-size: 11px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+  }
+  .gpsMapLink {
+    font-size: 10px;
+  }
+
+  /* Payment card - compact */
+  .paymentCard {
+    gap: 6px;
+  }
+  .paymentRow {
+    gap: 6px;
+  }
+  .payLabel {
+    font-size: 10px;
+  }
+  .payValue {
+    font-size: 11px;
+  }
+  .payMuted {
+    font-size: 11px;
+  }
+  .payGreen {
+    font-size: 11px;
+  }
+  .payRef {
+    font-size: 9px;
+  }
+  .payStatus {
+    font-size: 8px;
+    padding: 1px 8px;
+  }
+  .paymentDivider {
+    margin: 2px 0;
+  }
+
+  /* Reviews - compact */
+  .reviewsList {
+    gap: 0.75rem;
+  }
+  .reviewCard {
+    gap: 6px;
+  }
+  .reviewCardTop {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .reviewerAvatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.65rem;
+  }
+  .reviewerName {
+    font-size: 0.75rem;
+  }
+  .reviewerRole {
+    font-size: 0.65rem;
+  }
+  .reviewDate {
+    font-size: 0.65rem;
+  }
+  .starFilled,
+  .starEmpty {
+    font-size: 16px;
+  }
+  .ratingNum {
+    font-size: 11px;
+  }
+  .reviewComment {
+    font-size: 12px;
+    padding-left: 8px;
+  }
+  .reviewedNote {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+  }
+
+  /* Bottom actions - compact */
+  .bottomActions {
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+  }
+  .invoiceBtn,
+  .refundBtn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+
+  /* Sidebar - compact */
+  .sidebar {
+    gap: 10px;
+  }
+
+  /* Payment banner - compact */
+  .paymentBanner {
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    gap: 0.5rem;
+  }
+  .paymentBannerHeader {
+    gap: 0.5rem;
+  }
+  .paymentBannerIcon {
+    font-size: 0.9rem;
+  }
+  .paymentBannerTitle {
+    font-size: 0.78rem;
+  }
+  .paymentBannerDesc {
+    font-size: 0.7rem;
+  }
+  .paymentBannerPerk {
+    padding: 0.4rem 0.625rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+  .payNowBtn {
+    padding: 0.5rem 1rem;
+    font-size: 0.78rem;
+    border-radius: 8px;
+  }
+  .paymentOptionsWrap {
+    gap: 6px;
+    padding-top: 6px;
+  }
+
+  /* Party card - compact */
+  .partyCard {
+    padding: 14px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+  .partyAvatar {
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
+    border-width: 1.5px;
+  }
+  .partyName {
+    font-size: 13px;
+  }
+  .partyPhone {
+    font-size: 11px;
+  }
+  .messageBtn {
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+
+  /* Actions card - compact */
+  .actionsCard {
+    padding: 12px 14px;
+    border-radius: 12px;
+    gap: 8px;
+  }
+  .actionsTitle {
+    font-size: 9px;
+  }
+  .actionBtn {
+    height: 34px;
+    font-size: 11px;
+    border-radius: 8px;
+  }
+
+  /* Emergency contact - compact */
+  .emergencyCard {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+  .emergencyTitle {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+  .emergencyRow {
+    padding: 3px 0;
+  }
+  .emergencyLabel {
+    font-size: 9px;
+  }
+  .emergencyValue {
+    font-size: 11px;
+  }
+  .emergencyPhone {
+    font-size: 11px;
+  }
+
+  /* Pending banner - compact */
+  .pendingBanner {
+    padding: 0.625rem 0.875rem;
+    gap: 0.625rem;
+    border-radius: 10px;
+  }
+  .pendingBannerPulse {
+    width: 14px;
+    height: 14px;
+  }
+  .pendingBannerDot {
+    width: 10px;
+    height: 10px;
+    top: 2px;
+    left: 2px;
+  }
+  .pendingBannerDot::before {
+    width: 14px;
+    height: 14px;
+    top: -2px;
+    left: -2px;
+  }
+  .pendingBannerTitle {
+    font-size: 0.75rem;
+  }
+  .pendingBannerDesc {
+    font-size: 0.7rem;
+  }
+
+  /* Job type cards - compact */
+  .typeCards {
+    gap: 0.4rem;
+  }
+  .typeCard {
+    padding: 0.625rem 0.35rem;
+    min-height: 60px;
+    border-radius: 10px;
+    gap: 0.35rem;
+  }
+  .typeCardIcon {
+    font-size: 1.2rem;
+  }
+  .typeCardLabel {
+    font-size: 0.65rem;
+  }
+  .typeCardSelectedDot {
+    width: 7px;
+    height: 7px;
+    top: 5px;
+    right: 5px;
+  }
+
+  /* Referral section - compact */
+  .referralSection {
+    padding: 8px 10px;
+    border-radius: 8px;
+    gap: 6px;
+  }
+  .referralHeader {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .referralIcon {
+    font-size: 13px;
+  }
+  .referralSlider {
+    height: 4px;
+  }
+  .referralSlider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+  }
+  .referralPercent {
+    font-size: 12px;
+    min-width: 36px;
+  }
+  .referralAmount {
+    font-size: 11px;
+  }
+  .referralToggleBtn {
+    font-size: 10px;
+    padding: 2px 10px;
+    border-radius: 4px;
+  }
+
+  /* Worker payment preview - compact */
+  .workerPaymentPreview {
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.625rem 0;
+  }
+  .workerPaymentHeader {
+    gap: 0.4rem;
+    margin-bottom: 0.625rem;
+  }
+  .workerPaymentIcon {
+    font-size: 1rem;
+  }
+  .workerPaymentTitle {
+    font-size: 0.85rem;
+  }
+  .workerPaymentBadge {
+    font-size: 0.5rem;
+    padding: 1px 6px;
+  }
+  .workerPaymentRow {
+    font-size: 0.75rem;
+  }
+  .workerPaymentNote {
+    font-size: 0.6rem;
+  }
+  .workerPaymentTotal {
+    font-size: 0.85rem;
+  }
+  .workerPaymentValueTotal {
+    font-size: 1rem;
+  }
+  .workerPaymentNoteBox {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+  .workerPaymentNoteBox svg {
+    font-size: 0.8rem;
+  }
+
+  /* Cancel box - compact */
+  .cancelBox {
+    gap: 6px;
+  }
+  .cancelBoxTitle {
+    font-size: 11px;
+  }
+  .cancelInput {
+    padding: 8px 10px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+  .cancelRow {
+    gap: 6px;
+  }
+  .cancelConfirm,
+  .cancelAbort {
+    height: 32px;
+    font-size: 10px;
+    border-radius: 6px;
+  }
+
+  /* Skeletons - compact */
+  .skBack {
+    height: 26px;
+    width: 100px;
+    margin: 6px 4px 0 4px;
+  }
+  .skMain {
+    height: 450px;
+    border-radius: 12px;
+  }
+  .skSide {
+    height: 300px;
+    border-radius: 12px;
+  }
+
+  /* Not found - compact */
+  .notFound {
+    padding: 40px 16px;
+  }
+  .notFoundIcon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+  .notFoundTitle {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  /* Cancel reason - compact */
+  .cancelReasonCard {
+    padding: 10px 12px;
+    border-radius: 10px;
+    gap: 8px;
+  }
+  .cancelReasonIcon {
+    font-size: 13px;
+  }
+  .cancelReasonText {
+    font-size: 11px;
+  }
+
+  /* Waiting payment - compact */
+  .waitingPayment {
+    padding: 8px 10px;
+    font-size: 11px;
+    border-radius: 8px;
+  }
+}
+
+/* ── EXTRA SMALL (under 360px - Samsung S22 is 360px) ── */
+@media (max-width: 360px) {
+  .page {
+    padding: 0;
+  }
+
+  .back {
+    font-size: 10px;
+    padding: 3px 8px;
+    margin: 4px 2px 8px 2px;
+    border-radius: 14px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .layout {
+    padding: 0 2px 8px 2px;
+    gap: 8px;
+  }
+
+  .titleBlock {
+    padding: 10px 10px;
+  }
+
+  .section {
+    padding: 10px 10px;
+  }
+
+  .detailItem {
+    padding: 6px 8px;
+  }
+
+  .feeBreakdown {
+    padding: 8px 10px;
+  }
+  .feeTotalAmount {
+    font-size: 14px;
+  }
+
+  .actionBtn {
+    height: 30px;
+    font-size: 10px;
+  }
+
+  .paymentBanner {
+    padding: 0.625rem 0.75rem;
+  }
 }
