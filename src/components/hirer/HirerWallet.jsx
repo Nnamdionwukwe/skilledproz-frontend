@@ -1695,7 +1695,7 @@ export default function HirerWallet() {
             >
               {refreshing ? <FaSpinner className={styles.spinning} /> : "⟳"}
             </button>
-            <button
+            {/* <button
               className={styles.actionBtn}
               onClick={() => setShowDepositModal(true)}
             >
@@ -1710,7 +1710,7 @@ export default function HirerWallet() {
               }
             >
               <FaMinus /> Withdraw
-            </button>
+            </button> */}
           </div>
         </div>
 
