@@ -129,7 +129,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     days: { budget: "DAILY", duration: "DAYS" },
     weeks: { budget: "WEEKLY", duration: "WEEKS" },
     months: { budget: "MONTHLY", duration: "MONTHS" },
-    years: { budget: "CUSTOM", duration: "CUSTOM" },
+    years: { budget: "YEARLY", duration: "YEARLY" },
     custom: { budget: "CUSTOM", duration: "CUSTOM" },
   };
 
@@ -256,8 +256,14 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       }
     }
     // For non‑custom units, ensure a rate exists
-    if (lockedRate <= 0 && currentOption?.unit !== "custom") {
+    if (lockedRate <= 0 && currentOption?.unit !== "custom" && !isNegotiated) {
       setError("This worker has not set a rate for the selected duration.");
+      return;
+    }
+
+    // If negotiated, ensure a rate is entered
+    if (isNegotiated && !negotiatedRate) {
+      setError("Please enter the agreed total amount.");
       return;
     }
 
@@ -268,7 +274,9 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       const rawVal = form.estimatedValue
         ? parseFloat(form.estimatedValue)
         : null;
-      if (rawVal !== null) {
+
+      // Only calculate hours if NOT negotiated (negotiated rate is total amount)
+      if (!isNegotiated && rawVal !== null) {
         if (currentOption?.unit === "hours") estimatedHours = rawVal;
         else if (currentOption?.unit === "days") estimatedHours = rawVal * 8;
         else if (currentOption?.unit === "weeks") estimatedHours = rawVal * 40;
@@ -277,6 +285,13 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         else if (currentOption?.unit === "years")
           estimatedHours = rawVal * 1920;
       }
+
+      // ── Determine the final agreed rate ──
+      // If negotiated, use the negotiated rate as the agreedRate (this is the total)
+      // Otherwise use the locked rate
+      const finalAgreedRate = isNegotiated
+        ? parseFloat(negotiatedRate)
+        : finalRate;
 
       // ── Build payload ──
       const payload = {
@@ -290,8 +305,12 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         scheduledAt: form.scheduledAt,
         estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
-        estimatedValue: form.estimatedValue || undefined,
-        agreedRate: finalRate,
+        estimatedValue: isNegotiated
+          ? String(parseFloat(negotiatedRate)) // Store the negotiated total
+          : form.estimatedValue
+            ? String(form.estimatedValue)
+            : undefined,
+        agreedRate: finalAgreedRate,
         isNegotiated,
         negotiatedRate: isNegotiated ? parseFloat(negotiatedRate) : undefined,
         negotiationNote:
@@ -304,15 +323,14 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         durationType: durationType || undefined,
         requirements: form.requirements || undefined,
         responsibilities: form.responsibilities || undefined,
-        // ── Custom fields ──
         quantity: form.quantity || 1,
         customLabel: form.customLabel || null,
       };
 
-      // ── If budgetType is "CUSTOM", compute estimatedValue = rate * quantity ──
-      if (budgetType === "CUSTOM" && form.rate > 0) {
-        payload.estimatedValue = form.rate * (form.quantity || 1);
-        payload.agreedRate = form.rate; // use the locked rate
+      // ── If budgetType is "CUSTOM" and NOT negotiated ──
+      if (budgetType === "CUSTOM" && form.rate > 0 && !isNegotiated) {
+        payload.estimatedValue = String(form.rate * (form.quantity || 1));
+        payload.agreedRate = form.rate;
       }
 
       const res = await api.post("/bookings", payload);
@@ -409,6 +427,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             form={form}
             set={set}
             minDate={minDate}
+            selectedUnit={selectedUnit}
+            isNegotiated={isNegotiated}
           />
 
           {error && (

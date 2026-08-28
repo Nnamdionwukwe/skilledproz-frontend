@@ -70,7 +70,7 @@ const DURATION_OPTIONS = [
     step: "1",
   },
   {
-    unit: "years", // ← NEW – yearly option
+    unit: "years",
     label: "Yearly",
     rateKey: "yearlyRate",
     suffix: "/yr",
@@ -114,7 +114,7 @@ export default function BookingWorkerInfo({
   // Format helper using the current currency
   const format = (amount) => formatPrice(amount, lockedCurrency);
 
-  // Get currency symbol for display (used in price formatting)
+  // Get currency symbol for display
   const currencySymbol = CURRENCY_SYMBOLS[lockedCurrency] || lockedCurrency;
 
   // ── Local state for custom quantity input ──
@@ -126,6 +126,27 @@ export default function BookingWorkerInfo({
   useEffect(() => {
     setQuantityInput(String(form.quantity || 1));
   }, [form.quantity]);
+
+  // Calculate the effective total based on whether negotiated rate is set
+  const getEffectiveTotal = () => {
+    // If negotiated rate is set, use that as the total (this is the agreed total amount)
+    if (isNegotiated && negotiatedRate) {
+      return parseFloat(negotiatedRate);
+    }
+
+    // Otherwise use the standard calculation
+    if (selectedUnit === "custom") {
+      return (form.rate || worker?.customRate || 0) * (form.quantity || 1);
+    }
+
+    if (estFees) {
+      return estFees.subtotal;
+    }
+
+    return 0;
+  };
+
+  const effectiveTotal = getEffectiveTotal();
 
   return (
     <>
@@ -254,9 +275,7 @@ export default function BookingWorkerInfo({
               </div>
               <div className={styles.rateLockedBox}>
                 <span className={styles.rateLockedLabel}>Currency</span>
-                <span className={styles.rateLockedValue}>
-                  {lockedCurrency} {/* ← code, not symbol */}
-                </span>
+                <span className={styles.rateLockedValue}>{lockedCurrency}</span>
                 <span className={styles.rateLockedNote}>
                   <Lock size={12} /> Job's currency
                 </span>
@@ -310,17 +329,31 @@ export default function BookingWorkerInfo({
                 <div className={styles.rateLockedBox}>
                   <span className={styles.rateLockedLabel}>Agreed Rate</span>
                   <span className={styles.rateLockedValue}>
-                    {format(lockedRate)}
-                    {currentOption?.suffix}
+                    {isNegotiated && negotiatedRate ? (
+                      <>
+                        {format(parseFloat(negotiatedRate))}
+                        <span className={styles.negotiatedBadge}>
+                          Negotiated
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {format(lockedRate)}
+                        {currentOption?.suffix}
+                      </>
+                    )}
                   </span>
                   <span className={styles.rateLockedNote}>
-                    <Lock size={12} /> Worker's rate
+                    <Lock size={12} />{" "}
+                    {isNegotiated && negotiatedRate
+                      ? "Overridden by negotiated total"
+                      : "Worker's rate"}
                   </span>
                 </div>
                 <div className={styles.rateLockedBox}>
                   <span className={styles.rateLockedLabel}>Currency</span>
                   <span className={styles.rateLockedValue}>
-                    {lockedCurrency} {/* ← code, not symbol */}
+                    {lockedCurrency}
                   </span>
                   <span className={styles.rateLockedNote}>
                     <Lock size={12} /> Worker's currency
@@ -404,11 +437,7 @@ export default function BookingWorkerInfo({
                       onChange={(e) => {
                         const val = e.target.value;
                         setQuantityInput(val);
-                        // Only update form if it's a valid number >= 1
-                        if (val === "") {
-                          // Leave form.quantity unchanged
-                          return;
-                        }
+                        if (val === "") return;
                         const num = parseFloat(val);
                         if (!isNaN(num) && num >= 1) {
                           set("quantity", num);
@@ -424,18 +453,6 @@ export default function BookingWorkerInfo({
                         }
                       }}
                     />
-                  </div>
-
-                  <div className={styles.estimatedTotalBox}>
-                    <span className={styles.estimatedTotalLabel}>
-                      Estimated Total
-                    </span>
-                    <span className={styles.estimatedTotalValue}>
-                      {format(
-                        (form.rate || worker.customRate || 0) *
-                          (form.quantity || 1),
-                      )}
-                    </span>
                   </div>
                 </div>
               )}
@@ -517,7 +534,7 @@ export default function BookingWorkerInfo({
                   <span className={styles.negotiatedToggleSub}>
                     {isNegotiated
                       ? "Tap to go back to worker's listed rate"
-                      : "Override the worker's listed price with your agreed amount"}
+                      : "Override the worker's listed price with your agreed total amount"}
                   </span>
                 </div>
                 <div
@@ -529,7 +546,7 @@ export default function BookingWorkerInfo({
                 <div className={styles.negotiatedFields}>
                   <div className={styles.field}>
                     <label className={styles.label}>
-                      <span className={styles.req}>*</span>
+                      Agreed Total Amount <span className={styles.req}>*</span>
                     </label>
                     <div className={styles.iconInputWrap}>
                       <MessageSquare
@@ -550,7 +567,8 @@ export default function BookingWorkerInfo({
                       </span>
                     </div>
                     <span className={styles.hint}>
-                      Enter the agreed rate (e.g., for discounts)
+                      Enter the total agreed amount for the entire job (this
+                      overrides all duration calculations)
                     </span>
                     {lockedRate > 0 && negotiatedRate && (
                       <p className={styles.negotiatedDiff}>
@@ -578,25 +596,71 @@ export default function BookingWorkerInfo({
 
                   <div className={styles.negotiatedBanner}>
                     <Lock size={14} className={styles.iconInline} /> Both you
-                    and the worker agreed to this rate in the platform Chat.
-                    Make sure the worker agreed to this price before booking.
-                    This replaces the listed rate of{" "}
-                    <strong>{format(lockedRate)}</strong> for this booking only.
+                    and the worker agreed to this total amount in the platform
+                    Chat. Make sure the worker agreed to this price before
+                    booking. This replaces all duration calculations with a
+                    fixed total of{" "}
+                    <strong>
+                      {negotiatedRate
+                        ? format(parseFloat(negotiatedRate))
+                        : format(lockedRate)}
+                    </strong>{" "}
+                    for this booking.
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Estimated total for non‑custom */}
-          {estFees && (
-            <div className={styles.estimatedTotalBox}>
-              <span className={styles.estimatedTotalLabel}>
-                Estimated Total
-              </span>
-              <span className={styles.estimatedTotalValue}>
-                {format(estFees.subtotal)}
-              </span>
+          {/* Estimated total - show the effective total */}
+          <div className={styles.estimatedTotalBox}>
+            <span className={styles.estimatedTotalLabel}>
+              {isNegotiated && negotiatedRate
+                ? "Agreed Total"
+                : "Estimated Total"}
+              {isNegotiated && negotiatedRate && (
+                <span className={styles.negotiatedTotalBadge}>
+                  <Handshake size={14} /> Negotiated
+                </span>
+              )}
+            </span>
+            <span className={styles.estimatedTotalValue}>
+              {format(effectiveTotal)}
+            </span>
+          </div>
+
+          {/* Show breakdown when not negotiated */}
+          {!isNegotiated && estFees && (
+            <div className={styles.feeBreakdown}>
+              <div className={styles.feeRow}>
+                <span>Subtotal</span>
+                <span>{format(estFees.subtotal)}</span>
+              </div>
+              <div className={styles.feeRow}>
+                <span>Platform Fee (5%)</span>
+                <span>{format(estFees.hirerFee)}</span>
+              </div>
+              <div className={styles.feeTotal}>
+                <span>Total to Pay</span>
+                <span>{format(estFees.totalToPay)}</span>
+              </div>
+            </div>
+          )}
+
+          {isNegotiated && negotiatedRate && (
+            <div className={styles.feeBreakdown}>
+              <div className={styles.feeRow}>
+                <span>Agreed Amount</span>
+                <span>{format(parseFloat(negotiatedRate))}</span>
+              </div>
+              <div className={styles.feeRow}>
+                <span>Platform Fee (5%)</span>
+                <span>{format(parseFloat(negotiatedRate) * 0.05)}</span>
+              </div>
+              <div className={styles.feeTotal}>
+                <span>Total to Pay</span>
+                <span>{format(parseFloat(negotiatedRate) * 1.05)}</span>
+              </div>
             </div>
           )}
 

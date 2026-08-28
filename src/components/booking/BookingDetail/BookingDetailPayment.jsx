@@ -64,6 +64,8 @@ export default function BookingDetailPayment({
   const renderFeeBreakdown = () => {
     if (!feeBreakdown) return null;
 
+    const isNegotiated = booking.isNegotiated && booking.negotiatedRate;
+
     // Workers see a simplified view
     if (isWorker) {
       const cur = feeBreakdown.currency || "NGN";
@@ -84,51 +86,83 @@ export default function BookingDetailPayment({
 
       return (
         <div className={styles.feeBreakdown}>
-          <p className={styles.feeBreakdownLabel}>Your Earnings</p>
+          <p className={styles.feeBreakdownLabel}>
+            {isNegotiated ? "Agreed Total (Negotiated)" : "Your Earnings"}
+          </p>
 
-          <div className={styles.feeRow}>
-            <span>Agreed Rate</span>
-            <span>
-              {formatPrice(agreedRate, cur)}
-              {suffix}
-            </span>
-          </div>
+          {isNegotiated ? (
+            // Negotiated view - fixed total
+            <>
+              <div className={styles.feeRow}>
+                <span>Agreed Total</span>
+                <span>{formatPrice(booking.negotiatedRate, cur)}</span>
+              </div>
+              <div className={styles.feeRow}>
+                <span>Duration</span>
+                <span>
+                  {qty} {unitLabel}
+                  {qty !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className={styles.feeRow}>
+                <span>Platform Fee (5%)</span>
+                <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
+              </div>
+              <div className={styles.feeTotal}>
+                <span>You Earn</span>
+                <span className={styles.feeTotalAmount}>
+                  {formatPrice(workerPayout, cur)}
+                </span>
+              </div>
+            </>
+          ) : (
+            // Regular view
+            <>
+              <div className={styles.feeRow}>
+                <span>Agreed Rate</span>
+                <span>
+                  {formatPrice(agreedRate, cur)}
+                  {suffix}
+                </span>
+              </div>
 
-          {hasQty && (
-            <div className={styles.feeRow}>
-              <span>Duration</span>
-              <span>
-                {qty} {unitLabel}
-                {qty !== 1 ? "s" : ""}
-              </span>
-            </div>
+              {hasQty && (
+                <div className={styles.feeRow}>
+                  <span>Duration</span>
+                  <span>
+                    {qty} {unitLabel}
+                    {qty !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
+
+              {hasQty && (
+                <div className={styles.feeRow}>
+                  <span>
+                    Subtotal ({qty} × {formatPrice(agreedRate, cur)})
+                  </span>
+                  <span>{formatPrice(feeBreakdown.subtotal || 0, cur)}</span>
+                </div>
+              )}
+
+              <div className={styles.feeRow}>
+                <span>Platform Fee (5%)</span>
+                <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
+              </div>
+
+              <div className={styles.feeTotal}>
+                <span>You Earn</span>
+                <span className={styles.feeTotalAmount}>
+                  {formatPrice(workerPayout, cur)}
+                </span>
+              </div>
+            </>
           )}
-
-          {hasQty && (
-            <div className={styles.feeRow}>
-              <span>
-                Subtotal ({qty} × {formatPrice(agreedRate, cur)})
-              </span>
-              <span>{formatPrice(feeBreakdown.subtotal || 0, cur)}</span>
-            </div>
-          )}
-
-          <div className={styles.feeRow}>
-            <span>Platform Fee (5%)</span>
-            <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
-          </div>
-
-          <div className={styles.feeTotal}>
-            <span>You Earn</span>
-            <span className={styles.feeTotalAmount}>
-              {formatPrice(workerPayout, cur)}
-            </span>
-          </div>
         </div>
       );
     }
 
-    // Hirer view (existing code)
+    // Hirer view
     const cur = feeBreakdown.currency || "NGN";
 
     const agreedRate = feeBreakdown.agreedRate || 0;
@@ -157,63 +191,107 @@ export default function BookingDetailPayment({
     return (
       <div className={styles.feeBreakdown}>
         <p className={styles.feeBreakdownLabel}>
-          {feeBreakdown.isActual ? "Payment breakdown" : "Payment Breakdown"}
+          {isNegotiated ? "Agreed Total (Negotiated)" : "Payment Breakdown"}
         </p>
 
-        <div className={styles.feeRow}>
-          <span>Agreed Rate</span>
-          <span>
-            {formatPrice(agreedRate, cur)}
-            {suffix}
-          </span>
-        </div>
+        {isNegotiated ? (
+          // Negotiated view - fixed total
+          <>
+            <div className={styles.feeRow}>
+              <span>Agreed Total</span>
+              <span>{formatPrice(booking.negotiatedRate, cur)}</span>
+            </div>
 
-        {hasQty && (
-          <div className={styles.feeRow}>
-            <span>Duration</span>
-            <span>
-              {qty} {unitLabel}
-              {qty !== 1 ? "s" : ""}
-            </span>
-          </div>
+            {hasQty && (
+              <div className={styles.feeRow}>
+                <span>Duration</span>
+                <span>
+                  {qty} {unitLabel}
+                  {qty !== 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
+
+            <div className={styles.feeRow}>
+              <span>Platform Fee (5%)</span>
+              <span>+ {formatPrice(platformFee, cur)}</span>
+            </div>
+
+            {referralApplied && discount > 0 && booking.currency === "NGN" && (
+              <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
+                <span>
+                  <FaGift style={{ marginRight: "4px" }} /> Referral bonus
+                </span>
+                <span>− {formatPrice(discount, booking.currency)}</span>
+              </div>
+            )}
+
+            <div className={styles.feeTotal}>
+              <span>You Pay</span>
+              <span className={styles.feeTotalAmount}>
+                {formatPrice(finalTotal, cur)}
+              </span>
+            </div>
+          </>
+        ) : (
+          // Regular view
+          <>
+            <div className={styles.feeRow}>
+              <span>Agreed Rate</span>
+              <span>
+                {formatPrice(agreedRate, cur)}
+                {suffix}
+              </span>
+            </div>
+
+            {hasQty && (
+              <div className={styles.feeRow}>
+                <span>Duration</span>
+                <span>
+                  {qty} {unitLabel}
+                  {qty !== 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
+
+            {hasQty && (
+              <div className={styles.feeRow}>
+                <span>
+                  Subtotal ({qty} × {formatPrice(agreedRate, cur)})
+                </span>
+                <span>{formatPrice(subtotal, cur)}</span>
+              </div>
+            )}
+
+            <div className={styles.feeRow}>
+              <span>Platform Fee (5%)</span>
+              <span>+ {formatPrice(platformFee, cur)}</span>
+            </div>
+
+            {feeBreakdown.isActual && feeBreakdown.workerPayout != null && (
+              <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
+                <span>Worker payout</span>
+                <span>{formatPrice(workerPayout, cur)}</span>
+              </div>
+            )}
+
+            {referralApplied && discount > 0 && booking.currency === "NGN" && (
+              <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
+                <span>
+                  <FaGift style={{ marginRight: "4px" }} /> Referral bonus
+                </span>
+                <span>− {formatPrice(discount, booking.currency)}</span>
+              </div>
+            )}
+
+            <div className={styles.feeTotal}>
+              <span>{feeBreakdown.isActual ? "Total Paid" : "You Pay"}</span>
+              <span className={styles.feeTotalAmount}>
+                {formatPrice(finalTotal, cur)}
+              </span>
+            </div>
+          </>
         )}
-
-        {hasQty && (
-          <div className={styles.feeRow}>
-            <span>
-              Subtotal ({qty} × {formatPrice(agreedRate, cur)})
-            </span>
-            <span>{formatPrice(subtotal, cur)}</span>
-          </div>
-        )}
-
-        <div className={styles.feeRow}>
-          <span>Platform Fee (5%)</span>
-          <span>+ {formatPrice(platformFee, cur)}</span>
-        </div>
-
-        {feeBreakdown.isActual && feeBreakdown.workerPayout != null && (
-          <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
-            <span>Worker payout</span>
-            <span>{formatPrice(workerPayout, cur)}</span>
-          </div>
-        )}
-
-        {referralApplied && discount > 0 && booking.currency === "NGN" && (
-          <div className={`${styles.feeRow} ${styles.feeRowGreen}`}>
-            <span>
-              <FaGift style={{ marginRight: "4px" }} /> Referral bonus
-            </span>
-            <span>− {formatPrice(discount, booking.currency)}</span>
-          </div>
-        )}
-
-        <div className={styles.feeTotal}>
-          <span>{feeBreakdown.isActual ? "Total Paid" : "You Pay"}</span>
-          <span className={styles.feeTotalAmount}>
-            {formatPrice(finalTotal, cur)}
-          </span>
-        </div>
 
         {/* ── Referral slider (Hirer only) ── */}
         {!feeBreakdown.isActual &&

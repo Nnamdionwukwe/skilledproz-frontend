@@ -9,16 +9,53 @@ export function calcPricing(booking, referralDiscount = 0) {
     ? parseFloat(booking.estimatedValue)
     : null;
   const currency = booking?.currency || "USD";
+  const isNegotiated = booking?.isNegotiated && booking?.negotiatedRate;
 
   let qty = 1;
-  if (value && unit !== "custom") {
-    qty = value;
-  } else if (hours) {
-    if (unit === "hours") qty = hours;
-    else if (unit === "days") qty = Math.round(hours / 8);
-    else if (unit === "weeks") qty = Math.round(hours / 40);
-    else if (unit === "months") qty = Math.round(hours / 160);
-    else if (unit === "years") qty = Math.round(hours / 1920); // 40h/week * 48 weeks
+  let subtotal = 0;
+  let hasQty = false;
+
+  // For negotiated bookings, the agreedRate IS the total amount
+  if (isNegotiated) {
+    // Use the negotiated rate as the total
+    subtotal =
+      parseFloat(booking.negotiatedRate) || parseFloat(agreedRate) || 0;
+
+    // Still show duration for reference, but don't use it in calculation
+    if (value && unit !== "custom") {
+      qty = value;
+      hasQty = true;
+    } else if (hours) {
+      if (unit === "hours") qty = hours;
+      else if (unit === "days") qty = Math.round(hours / 8);
+      else if (unit === "weeks") qty = Math.round(hours / 40);
+      else if (unit === "months") qty = Math.round(hours / 160);
+      else if (unit === "years") qty = Math.round(hours / 1920);
+      hasQty = true;
+    } else if (value) {
+      qty = value;
+      hasQty = true;
+    }
+
+    // IMPORTANT: For negotiated, the "agreedRate" should be the total, not per-unit
+    // But we keep the original agreedRate for display purposes
+  } else {
+    // Regular calculation - multiply rate by quantity
+    if (value && unit !== "custom") {
+      qty = value;
+      hasQty = true;
+    } else if (hours) {
+      if (unit === "hours") qty = hours;
+      else if (unit === "days") qty = Math.round(hours / 8);
+      else if (unit === "weeks") qty = Math.round(hours / 40);
+      else if (unit === "months") qty = Math.round(hours / 160);
+      else if (unit === "years") qty = Math.round(hours / 1920);
+      hasQty = true;
+    } else if (unit === "custom" && value) {
+      qty = value;
+      hasQty = true;
+    }
+    subtotal = parseFloat((agreedRate * qty).toFixed(2));
   }
 
   const unitSuffix =
@@ -39,7 +76,6 @@ export function calcPricing(booking, referralDiscount = 0) {
       years: "year",
     }[unit] || unit;
 
-  const subtotal = parseFloat((agreedRate * qty).toFixed(2));
   const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
   const workerPayout = subtotal;
   const grossTotal = parseFloat((subtotal + hirerFee).toFixed(2));
@@ -49,7 +85,7 @@ export function calcPricing(booking, referralDiscount = 0) {
   );
 
   return {
-    agreedRate,
+    agreedRate: isNegotiated ? booking.negotiatedRate : agreedRate,
     qty,
     unit,
     unitSuffix,
@@ -61,6 +97,8 @@ export function calcPricing(booking, referralDiscount = 0) {
     grossTotal,
     totalCharged,
     referralSaving,
-    hasQty: !!(value || hours) && unit !== "custom",
+    hasQty: (hasQty || !!(value || hours)) && unit !== "custom",
+    isNegotiated,
+    negotiatedRate: isNegotiated ? booking.negotiatedRate : null,
   };
 }

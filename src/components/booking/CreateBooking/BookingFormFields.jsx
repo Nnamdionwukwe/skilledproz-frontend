@@ -12,6 +12,7 @@ import {
   Pencil,
   Calendar,
   Check,
+  Lock,
 } from "lucide-react";
 import styles from "./CreateBooking.module.css";
 
@@ -49,6 +50,12 @@ const BUDGET_TYPES = [
     sub: "Billed monthly",
     icon: CalendarDays,
   },
+  {
+    value: "YEARLY",
+    label: "Per Year",
+    sub: "Billed yearly",
+    icon: CalendarDays,
+  },
   { value: "CUSTOM", label: "Custom", sub: "Define your own", icon: Pencil },
 ];
 
@@ -57,8 +64,19 @@ const DURATION_TYPES_LIST = [
   { value: "DAYS", label: "Days", icon: Sun },
   { value: "WEEKS", label: "Weeks", icon: CalendarDays },
   { value: "MONTHS", label: "Months", icon: CalendarDays },
+  { value: "YEARLY", label: "Yearly", icon: CalendarDays },
   { value: "CUSTOM", label: "Custom", icon: Pencil },
 ];
+
+// Map worker unit to budget type and duration type
+const UNIT_TO_TYPES = {
+  hours: { budget: "HOURLY", duration: "HOURS" },
+  days: { budget: "DAILY", duration: "DAYS" },
+  weeks: { budget: "WEEKLY", duration: "WEEKS" },
+  months: { budget: "MONTHLY", duration: "MONTHS" },
+  years: { budget: "YEARLY", duration: "YEARLY" },
+  custom: { budget: "CUSTOM", duration: "CUSTOM" },
+};
 
 export default function BookingFormFields({
   worker,
@@ -75,10 +93,24 @@ export default function BookingFormFields({
   form,
   set,
   minDate,
+  selectedUnit,
+  isNegotiated,
 }) {
   const currentDuration = DURATION_TYPES_LIST.find(
     (d) => d.value === durationType,
   );
+
+  // Check if payment type and duration should be locked based on selected unit
+  const isLocked = selectedUnit && !isNegotiated;
+  const lockedBudgetType = selectedUnit
+    ? UNIT_TO_TYPES[selectedUnit]?.budget
+    : null;
+  const lockedDurationType = selectedUnit
+    ? UNIT_TO_TYPES[selectedUnit]?.duration
+    : null;
+
+  // For negotiated, lock to FIXED and CUSTOM
+  const isNegotiatedLocked = isNegotiated;
 
   return (
     <>
@@ -134,19 +166,40 @@ export default function BookingFormFields({
 
           {/* ── Payment Type ── */}
           <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Payment Type</legend>
+            <legend className={styles.legend}>
+              Payment Type
+              {(isLocked || isNegotiatedLocked) && (
+                <span className={styles.lockedBadge} style={{ marginLeft: 8 }}>
+                  <Lock size={12} /> Locked
+                </span>
+              )}
+            </legend>
             <div className={styles.typeList}>
               {BUDGET_TYPES.map((bt) => {
                 const Icon = bt.icon;
+                const isActive = isNegotiatedLocked
+                  ? bt.value === "FIXED"
+                  : budgetType === bt.value;
+
+                // Check if this option should be disabled
+                const isDisabled = isNegotiatedLocked
+                  ? bt.value !== "FIXED"
+                  : isLocked && bt.value !== lockedBudgetType;
+
                 return (
                   <button
                     type="button"
                     key={bt.value}
-                    className={`${styles.typeListRow} ${budgetType === bt.value ? styles.typeListRowActive : ""}`}
-                    onClick={() => setBudgetType(bt.value)}
+                    className={`${styles.typeListRow} ${isActive ? styles.typeListRowActive : ""} ${isDisabled ? styles.typeListDisabled : ""}`}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        setBudgetType(bt.value);
+                      }
+                    }}
+                    disabled={isDisabled}
                   >
                     <div
-                      className={`${styles.typeListIcon} ${budgetType === bt.value ? styles.typeListIconActive : ""}`}
+                      className={`${styles.typeListIcon} ${isActive ? styles.typeListIconActive : ""}`}
                     >
                       <Icon size={18} />
                     </div>
@@ -154,41 +207,91 @@ export default function BookingFormFields({
                       <span className={styles.typeListLabel}>{bt.label}</span>
                       <span className={styles.typeListSub}>{bt.sub}</span>
                     </div>
-                    {budgetType === bt.value && (
+                    {isActive && (
                       <Check size={18} className={styles.typeListCheck} />
+                    )}
+                    {isDisabled && (
+                      <Lock size={14} className={styles.typeListLock} />
                     )}
                   </button>
                 );
               })}
             </div>
+            {isLocked && (
+              <p className={styles.lockedHint}>
+                <Lock size={12} className={styles.iconInline} /> Payment type is
+                locked to match the worker's selected rate.
+              </p>
+            )}
+            {isNegotiatedLocked && (
+              <p className={styles.lockedHint}>
+                <Lock size={12} className={styles.iconInline} /> Payment type is
+                locked to "Fixed Price" for negotiated bookings.
+              </p>
+            )}
           </fieldset>
 
           {/* ── Job Duration ── */}
           <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Job Duration</legend>
+            <legend className={styles.legend}>
+              Job Duration
+              {(isLocked || isNegotiatedLocked) && (
+                <span className={styles.lockedBadge} style={{ marginLeft: 8 }}>
+                  <Lock size={12} /> Locked
+                </span>
+              )}
+            </legend>
             <div className={styles.typeList}>
               {DURATION_TYPES_LIST.map((dt) => {
                 const Icon = dt.icon;
+                const isActive = isNegotiatedLocked
+                  ? dt.value === "CUSTOM"
+                  : durationType === dt.value;
+
+                const isDisabled = isNegotiatedLocked
+                  ? dt.value !== "CUSTOM"
+                  : isLocked && dt.value !== lockedDurationType;
+
                 return (
                   <button
                     type="button"
                     key={dt.value}
-                    className={`${styles.typeListRow} ${durationType === dt.value ? styles.typeListRowActive : ""}`}
-                    onClick={() => setDurationType(dt.value)}
+                    className={`${styles.typeListRow} ${isActive ? styles.typeListRowActive : ""} ${isDisabled ? styles.typeListDisabled : ""}`}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        setDurationType(dt.value);
+                      }
+                    }}
+                    disabled={isDisabled}
                   >
                     <div
-                      className={`${styles.typeListIcon} ${durationType === dt.value ? styles.typeListIconActive : ""}`}
+                      className={`${styles.typeListIcon} ${isActive ? styles.typeListIconActive : ""}`}
                     >
                       <Icon size={18} />
                     </div>
                     <span className={styles.typeListLabel}>{dt.label}</span>
-                    {durationType === dt.value && (
+                    {isActive && (
                       <Check size={18} className={styles.typeListCheck} />
+                    )}
+                    {isDisabled && (
+                      <Lock size={14} className={styles.typeListLock} />
                     )}
                   </button>
                 );
               })}
             </div>
+            {isLocked && (
+              <p className={styles.lockedHint}>
+                <Lock size={12} className={styles.iconInline} /> Duration type
+                is locked to match the worker's selected rate.
+              </p>
+            )}
+            {isNegotiatedLocked && (
+              <p className={styles.lockedHint}>
+                <Lock size={12} className={styles.iconInline} /> Duration type
+                is locked to "Custom" for negotiated bookings.
+              </p>
+            )}
           </fieldset>
 
           {/* ── Category ── */}
