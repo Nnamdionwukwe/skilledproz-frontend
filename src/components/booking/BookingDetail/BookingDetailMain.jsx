@@ -427,6 +427,48 @@ export default function BookingDetailMain({
               }
             />
           )}
+
+          {/* Payment Summary - Shows differently for Hirer and Worker */}
+          {isHirer ? (
+            <>
+              <DetailItem
+                icon={<FaMoneyBillWave />}
+                label="Subtotal"
+                value={`${booking.currency} ${(booking.agreedRate * (booking.estimatedHours || 1)).toLocaleString()}`}
+              />
+              <DetailItem
+                icon={<FaMoneyBillWave />}
+                label="Platform Fee (10%)"
+                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 0.1).toLocaleString()}`}
+                accent
+              />
+              <DetailItem
+                icon={<FaMoneyBillWave />}
+                label="Total Payment"
+                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 1.1).toLocaleString()}`}
+                accent
+              />
+            </>
+          ) : (
+            <>
+              <DetailItem
+                icon={<FaMoneyBillWave />}
+                label="Subtotal"
+                value={`${booking.currency} ${(booking.agreedRate * (booking.estimatedHours || 1)).toLocaleString()}`}
+              />
+              <DetailItem
+                icon={<FaMoneyBillWave />}
+                label="Platform Fee (10%)"
+                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 0.1).toLocaleString()}`}
+              />
+              <DetailItem
+                icon={<FaMoneyBillWave />}
+                label="Your Payout"
+                value={`${booking.currency} ${Math.round(booking.agreedRate * (booking.estimatedHours || 1) * 0.9).toLocaleString()}`}
+                accent
+              />
+            </>
+          )}
         </div>
       </section>
 

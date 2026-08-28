@@ -57,31 +57,51 @@ export default function Translator({ text, className }) {
     if (autoTranslatedRef.current) return;
     autoTranslatedRef.current = true;
 
+    // Add this to the doTranslate function
     const doTranslate = async () => {
       setLoading(true);
       setError("");
       try {
         const res = await api.post("/translate", {
           text,
-          targetLang: targetLang, // ← FIXED: use targetLang
-          sourceLang: "auto", // ← FIXED: use sourceLang
+          targetLang: targetLang,
+          sourceLang: "auto",
         });
         if (res.data.success) {
           const result = res.data.data.translated;
           translationCache.set(cacheKey, result);
           setTranslated(result);
           setShowTranslation(true);
+
+          // Show warning if using fallback
+          if (res.data.data.fallback) {
+            setError("⚠️ Using fallback translation (service limited)");
+          }
         } else {
-          setError("Translation service returned an error.");
+          setError(
+            res.data.message || "Translation service returned an error.",
+          );
           setTranslated(text);
           setShowTranslation(true);
         }
       } catch (err) {
         console.error("Translation error:", err);
-        setError(
-          err.response?.data?.message ||
-            "Translation failed. Please try again.",
-        );
+
+        // Handle rate limiting
+        if (err.response?.status === 429) {
+          setError(
+            "Translation service is busy. Please try again in a moment.",
+          );
+          // Try again after a delay
+          setTimeout(() => {
+            handleTranslate();
+          }, 3000);
+        } else {
+          setError(
+            err.response?.data?.message ||
+              "Translation failed. Please try again.",
+          );
+        }
         setTranslated(text);
         setShowTranslation(true);
       } finally {
