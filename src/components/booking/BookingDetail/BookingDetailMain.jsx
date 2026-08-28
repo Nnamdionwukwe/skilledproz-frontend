@@ -171,7 +171,9 @@ export default function BookingDetailMain({
       : null;
 
     return (
-      <div className={styles.durationDisplay}>
+      <span className={styles.durationDisplay}>
+        {" "}
+        {/* ← CHANGED FROM <div> TO <span> */}
         <span className={styles.durationMain}>{dur.main}</span>
         {dur.sub && <span className={styles.durationSub}> {dur.sub}</span>}
         {unitLabel && booking.estimatedUnit !== "custom" && (
@@ -186,7 +188,7 @@ export default function BookingDetailMain({
         {booking.estimatedUnit === "custom" && (
           <span className={styles.durationUnit}>(Custom)</span>
         )}
-      </div>
+      </span>
     );
   };
 

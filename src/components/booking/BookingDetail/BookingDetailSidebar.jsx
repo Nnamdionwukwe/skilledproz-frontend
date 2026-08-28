@@ -104,7 +104,12 @@ export default function BookingDetailSidebar({
   updateStatus,
 }) {
   // Build profile link based on role
-  const profilePath = isHirer ? `/workers/${other.id}` : `/hirers/${other.id}`;
+  const profilePath = other
+    ? isHirer
+      ? `/workers/${other.id}`
+      : `/hirers/${other.id}`
+    : "#";
+
   return (
     <>
       {/* Party card */}
@@ -112,25 +117,35 @@ export default function BookingDetailSidebar({
         <p className={styles.partyLabel}>{isHirer ? "Worker" : "Hirer"}</p>
 
         {/* Avatar – clickable to profile */}
-        <Link to={profilePath} className={styles.profileLink}>
+        {other ? (
+          <Link to={profilePath} className={styles.profileLink}>
+            <div className={styles.partyAvatar}>
+              {other?.avatar ? (
+                <img src={other.avatar} alt="" />
+              ) : (
+                <span>
+                  {other?.firstName?.[0]}
+                  {other?.lastName?.[0]}
+                </span>
+              )}
+            </div>
+          </Link>
+        ) : (
           <div className={styles.partyAvatar}>
-            {other?.avatar ? (
-              <img src={other.avatar} alt="" />
-            ) : (
-              <span>
-                {other?.firstName?.[0]}
-                {other?.lastName?.[0]}
-              </span>
-            )}
+            <span>?</span>
           </div>
-        </Link>
+        )}
 
         {/* Name – clickable to profile */}
-        <Link to={profilePath} className={styles.profileNameLink}>
-          <p className={styles.partyName}>
-            {other?.firstName} {other?.lastName}
-          </p>
-        </Link>
+        {other ? (
+          <Link to={profilePath} className={styles.profileNameLink}>
+            <p className={styles.partyName}>
+              {other?.firstName} {other?.lastName}
+            </p>
+          </Link>
+        ) : (
+          <p className={styles.partyName}>Unknown User</p>
+        )}
 
         {other?.phone && (
           <a href={`tel:${other.phone}`} className={styles.partyPhone}>
@@ -138,7 +153,7 @@ export default function BookingDetailSidebar({
           </a>
         )}
         <a
-          href={`/messages?with=${other?.id}&booking=${booking.id}`}
+          href={`/messages?with=${other?.id || ""}&booking=${booking.id}`}
           className={styles.messageBtn}
         >
           <FaCommentDots style={{ marginRight: "6px" }} /> Send Message
