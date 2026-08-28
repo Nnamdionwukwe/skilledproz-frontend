@@ -29,7 +29,6 @@ export default function Translator({ text, className }) {
   const userLang = user?.language || language || "en";
   const isEnglish = userLang === "en";
 
-  // Target language: start with user's language, but if English, default to Yoruba
   const defaultTarget = isEnglish ? "yo" : userLang;
   const [targetLang, setTargetLang] = useState(defaultTarget);
   const [translated, setTranslated] = useState("");
@@ -40,7 +39,6 @@ export default function Translator({ text, className }) {
 
   const cacheKey = `${text}|${targetLang}`;
 
-  // Auto‑translate only if targetLang is not English
   useEffect(() => {
     if (!text || targetLang === "en") {
       setTranslated("");
@@ -65,7 +63,8 @@ export default function Translator({ text, className }) {
       try {
         const res = await api.post("/translate", {
           text,
-          targetLang,
+          targetLang: targetLang, // ← FIXED: use targetLang
+          sourceLang: "auto", // ← FIXED: use sourceLang
         });
         if (res.data.success) {
           const result = res.data.data.translated;
@@ -79,7 +78,10 @@ export default function Translator({ text, className }) {
         }
       } catch (err) {
         console.error("Translation error:", err);
-        setError("Translation failed. Please try again.");
+        setError(
+          err.response?.data?.message ||
+            "Translation failed. Please try again.",
+        );
         setTranslated(text);
         setShowTranslation(true);
       } finally {
@@ -93,13 +95,11 @@ export default function Translator({ text, className }) {
   const handleTranslate = async () => {
     if (!text) return;
     if (targetLang === "en") {
-      // If target is English, show original text
       setTranslated(text);
       setShowTranslation(true);
       return;
     }
 
-    // Check cache
     if (translationCache.has(cacheKey)) {
       setTranslated(translationCache.get(cacheKey));
       setShowTranslation(true);
@@ -111,7 +111,8 @@ export default function Translator({ text, className }) {
     try {
       const res = await api.post("/translate", {
         text,
-        targetLang,
+        targetLang: targetLang, // ← FIXED: use targetLang
+        sourceLang: "auto", // ← FIXED: use sourceLang
       });
       if (res.data.success) {
         const result = res.data.data.translated;
@@ -140,7 +141,6 @@ export default function Translator({ text, className }) {
   const handleLangChange = (e) => {
     const newLang = e.target.value;
     setTargetLang(newLang);
-    // Clear previous translation state for new language
     setTranslated("");
     setShowTranslation(false);
     setError("");
@@ -149,10 +149,8 @@ export default function Translator({ text, className }) {
 
   return (
     <div className={`${styles.wrap} ${className || ""}`}>
-      {/* Original text */}
       <p className={styles.originalText}>{text}</p>
 
-      {/* Controls – always visible */}
       <div className={styles.controls}>
         <select
           className={styles.langSelect}
@@ -193,7 +191,6 @@ export default function Translator({ text, className }) {
         )}
       </div>
 
-      {/* Translated output */}
       {showTranslation && translated && (
         <div className={styles.translation}>
           <div className={styles.translationHeader}>
