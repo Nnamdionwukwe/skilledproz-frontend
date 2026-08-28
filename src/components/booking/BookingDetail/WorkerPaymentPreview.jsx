@@ -16,7 +16,10 @@ function formatPrice(amount, currency = "NGN") {
   })}`;
 }
 
-export default function WorkerPaymentPreview({ booking }) {
+export default function WorkerPaymentPreview({ booking, isWorker }) {
+  // Only workers should see this component
+  if (!isWorker) return null;
+
   const p = calcPricing(booking);
   const currency = p.currency || "NGN";
   const subtotal = p.subtotal;

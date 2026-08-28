@@ -396,7 +396,7 @@ export default function BookingDetailMain({
         </div>
       </section>
 
-      {/* GPS section */}
+      {/* GPS section - Visible to both parties */}
       {(hasCheckInGps || hasCheckOutGps) && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Worker Location</h2>
@@ -430,7 +430,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Reviews */}
+      {/* Reviews - Visible to both parties when completed */}
       {booking.status === "COMPLETED" && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Reviews</h2>
@@ -508,7 +508,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Cancellation reason */}
+      {/* Cancellation reason - Visible to both parties */}
       {booking.cancelReason && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Cancellation Reason</h2>
@@ -519,7 +519,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Bottom actions (invoice & refund) */}
+      {/* Bottom actions (invoice & refund) - Role specific */}
       {booking.status === "COMPLETED" && (
         <div className={styles.bottomActions}>
           <button
@@ -541,17 +541,19 @@ export default function BookingDetailMain({
         </div>
       )}
 
-      {/* ── Refund confirmation modal ── */}
-      <ConfirmationModal
-        isOpen={showRefundModal}
-        onClose={() => setShowRefundModal(false)}
-        onConfirm={handleConfirmRefund}
-        title="Confirm Refund"
-        message="Are you sure you want to issue a full refund? This action cannot be undone."
-        confirmLabel="Yes, Refund"
-        cancelLabel="Cancel"
-        confirmVariant="danger"
-      />
+      {/* ── Refund confirmation modal (Hirer only) ── */}
+      {isHirer && (
+        <ConfirmationModal
+          isOpen={showRefundModal}
+          onClose={() => setShowRefundModal(false)}
+          onConfirm={handleConfirmRefund}
+          title="Confirm Refund"
+          message="Are you sure you want to issue a full refund? This action cannot be undone."
+          confirmLabel="Yes, Refund"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+        />
+      )}
     </>
   );
 }

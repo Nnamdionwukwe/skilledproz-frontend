@@ -462,7 +462,7 @@ export default function BookingDetail() {
             />
 
             {isWorker && booking.status === "PENDING" && (
-              <WorkerPaymentPreview booking={booking} />
+              <WorkerPaymentPreview booking={booking} isWorker={isWorker} />
             )}
 
             {booking.payment && (
@@ -481,12 +481,14 @@ export default function BookingDetail() {
                 paymentRequired={paymentRequired}
                 refetch={refetch}
                 onSuccess={setSuccess}
+                isHirer={isHirer}
+                isWorker={isWorker}
               />
             )}
           </div>
 
           <div className={styles.sidebar}>
-            {paymentRequired && (
+            {isHirer && paymentRequired && (
               <BookingDetailPayment
                 booking={booking}
                 payment={payment}
@@ -502,6 +504,8 @@ export default function BookingDetail() {
                 paymentRequired={paymentRequired}
                 refetch={refetch}
                 onSuccess={setSuccess}
+                isHirer={isHirer}
+                isWorker={isWorker}
               />
             )}
 

@@ -57,10 +57,78 @@ export default function BookingDetailPayment({
   paymentRequired,
   refetch,
   onSuccess,
+  isHirer,
+  isWorker,
 }) {
   // ── Render fee breakdown ──────────────────────────────────────────────
   const renderFeeBreakdown = () => {
     if (!feeBreakdown) return null;
+
+    // Workers see a simplified view
+    if (isWorker) {
+      const cur = feeBreakdown.currency || "NGN";
+      const workerPayout = feeBreakdown.workerPayout || 0;
+      const hasQty = feeBreakdown.hasQty || false;
+      const qty = feeBreakdown.qty || 1;
+      const unitLabel = feeBreakdown.unitLabel || "unit";
+      const agreedRate = feeBreakdown.agreedRate || 0;
+      const unit = feeBreakdown.estimatedUnit || "hours";
+      const suffix =
+        {
+          hours: "/hr",
+          days: "/day",
+          weeks: "/wk",
+          months: "/mo",
+          custom: "",
+        }[unit] || "";
+
+      return (
+        <div className={styles.feeBreakdown}>
+          <p className={styles.feeBreakdownLabel}>Your Earnings</p>
+
+          <div className={styles.feeRow}>
+            <span>Agreed Rate</span>
+            <span>
+              {formatPrice(agreedRate, cur)}
+              {suffix}
+            </span>
+          </div>
+
+          {hasQty && (
+            <div className={styles.feeRow}>
+              <span>Duration</span>
+              <span>
+                {qty} {unitLabel}
+                {qty !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+
+          {hasQty && (
+            <div className={styles.feeRow}>
+              <span>
+                Subtotal ({qty} × {formatPrice(agreedRate, cur)})
+              </span>
+              <span>{formatPrice(feeBreakdown.subtotal || 0, cur)}</span>
+            </div>
+          )}
+
+          <div className={styles.feeRow}>
+            <span>Platform Fee (5%)</span>
+            <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
+          </div>
+
+          <div className={styles.feeTotal}>
+            <span>You Earn</span>
+            <span className={styles.feeTotalAmount}>
+              {formatPrice(workerPayout, cur)}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Hirer view (existing code)
     const cur = feeBreakdown.currency || "NGN";
 
     const agreedRate = feeBreakdown.agreedRate || 0;
@@ -147,8 +215,9 @@ export default function BookingDetailPayment({
           </span>
         </div>
 
-        {/* ── Referral slider ── */}
+        {/* ── Referral slider (Hirer only) ── */}
         {!feeBreakdown.isActual &&
+          isHirer &&
           walletBalance > 0 &&
           booking.currency === "NGN" && (
             <div className={styles.referralSection}>
@@ -187,7 +256,7 @@ export default function BookingDetailPayment({
             </div>
           )}
 
-        {!feeBreakdown.isActual && walletBalance === 0 && (
+        {!feeBreakdown.isActual && isHirer && walletBalance === 0 && (
           <div className={styles.referralPerk}>
             <p>
               <FaInfoCircle style={{ marginRight: "6px" }} />
@@ -256,7 +325,10 @@ export default function BookingDetailPayment({
 
   // ── Render payment banner ──────────────────────────────────────────────
   const renderPaymentBanner = () => {
+    // Only hirers should see payment options
+    if (!isHirer) return null;
     if (!paymentRequired) return null;
+
     const cur = feeBreakdown?.currency || booking.currency || "NGN";
     const grossTotal = feeBreakdown?.total || payment?.amount || 0;
     const discount =
