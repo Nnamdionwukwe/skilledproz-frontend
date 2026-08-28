@@ -1,7 +1,7 @@
 // src/pages/hirer/HirerWallet.jsx
 // Complete Hirer Wallet with Multi-Currency Support & Withdrawal Confirmation
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerWallet.module.css";
@@ -32,10 +32,16 @@ import {
   FaPoundSign,
   FaBitcoin,
   FaYenSign,
+  FaDownload,
+  FaShareAlt,
+  FaFileInvoice,
+  FaReceipt,
+  FaPrint,
 } from "react-icons/fa";
 
-// ─── Helper Functions ──────────────────────────────────────────────────────
+import { FiMail } from "react-icons/fi";
 
+// ─── Helper Functions ──────────────────────────────────────────────────────
 function formatCurrency(amount, currency = "NGN") {
   const numAmount =
     typeof amount === "number" ? amount : parseFloat(amount) || 0;
@@ -52,6 +58,18 @@ function formatDate(date) {
     month: "short",
     day: "numeric",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDateLong(date) {
+  if (!date) return "—";
+  return new Date(date).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -201,6 +219,507 @@ function CopyButton({ text, label = "Copy" }) {
   );
 }
 
+// ─── Transaction Detail Modal ──────────────────────────────────────────────
+
+function TransactionDetailModal({ transaction, onClose }) {
+  const [downloading, setDownloading] = useState(false);
+
+  if (!transaction) return null;
+
+  const isCredit =
+    transaction.type === "DEPOSIT" ||
+    transaction.type === "REFUND" ||
+    transaction.type === "BONUS";
+  const amountColor = isCredit ? "#10B981" : "#EF4444";
+  const amountPrefix = isCredit ? "+" : "-";
+
+  const handleDownloadReceipt = () => {
+    setDownloading(true);
+    try {
+      const receiptHTML = generateReceiptHTML(transaction);
+      const blob = new Blob([receiptHTML], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-${transaction.reference}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download receipt:", err);
+      alert("Failed to download receipt. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareText = `Transaction ${transaction.reference}\nType: ${getTransactionLabel(transaction.type)}\nAmount: ${formatCurrency(transaction.amount, transaction.currency)}\nStatus: ${getStatusLabel(transaction.status)}\nDate: ${formatDateLong(transaction.createdAt)}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Transaction Details",
+          text: shareText,
+        });
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          // Fallback to copy
+          await navigator.clipboard.writeText(shareText);
+          alert("Transaction details copied to clipboard!");
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        alert("Transaction details copied to clipboard!");
+      } catch (err) {
+        alert("Failed to share. Please copy the details manually.");
+      }
+    }
+  };
+
+  const handlePrint = () => {
+    const printContent = document.getElementById("receipt-print");
+    if (printContent) {
+      const originalContents = document.body.innerHTML;
+      document.body.innerHTML = printContent.innerHTML;
+      window.print();
+      document.body.innerHTML = originalContents;
+      window.location.reload();
+    }
+  };
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={`${styles.modalBox} ${styles.modalLarge}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>
+            <FaFileInvoice /> Transaction Details
+          </h3>
+          <button className={styles.modalClose} onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className={styles.modalBody}>
+          {/* Receipt Content for Printing */}
+          <div id="receipt-print" className={styles.receiptPrint}>
+            <div className={styles.receiptHeader}>
+              <div className={styles.receiptLogo}>
+                <FaWallet size={32} />
+                <h2>SkilledProz</h2>
+              </div>
+              <p className={styles.receiptSubtitle}>Transaction Receipt</p>
+            </div>
+
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Reference</span>
+              <span className={styles.receiptValue}>
+                {transaction.reference}
+              </span>
+            </div>
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Type</span>
+              <span className={styles.receiptValue}>
+                {getTransactionLabel(transaction.type)}
+              </span>
+            </div>
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Amount</span>
+              <span
+                className={styles.receiptValue}
+                style={{ color: amountColor, fontWeight: 700 }}
+              >
+                {amountPrefix}
+                {formatCurrency(transaction.amount, transaction.currency)}
+              </span>
+            </div>
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Fee</span>
+              <span className={styles.receiptValue}>
+                {formatCurrency(transaction.fee || 0, transaction.currency)}
+              </span>
+            </div>
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Net Amount</span>
+              <span className={styles.receiptValue} style={{ fontWeight: 700 }}>
+                {formatCurrency(
+                  transaction.netAmount || transaction.amount,
+                  transaction.currency,
+                )}
+              </span>
+            </div>
+            {transaction.description && (
+              <div className={styles.receiptRow}>
+                <span className={styles.receiptLabel}>Description</span>
+                <span className={styles.receiptValue}>
+                  {transaction.description}
+                </span>
+              </div>
+            )}
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Status</span>
+              <span className={styles.receiptValue}>
+                <span
+                  className={styles.statusBadge}
+                  style={{
+                    backgroundColor: getStatusColor(transaction.status) + "20",
+                    color: getStatusColor(transaction.status),
+                    padding: "2px 12px",
+                    borderRadius: "999px",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {getStatusLabel(transaction.status)}
+                </span>
+              </span>
+            </div>
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Date</span>
+              <span className={styles.receiptValue}>
+                {formatDateLong(transaction.createdAt)}
+              </span>
+            </div>
+            {transaction.completedAt && (
+              <div className={styles.receiptRow}>
+                <span className={styles.receiptLabel}>Completed</span>
+                <span className={styles.receiptValue}>
+                  {formatDateLong(transaction.completedAt)}
+                </span>
+              </div>
+            )}
+            <div className={styles.receiptFooter}>
+              <p>Thank you for using SkilledProz</p>
+              <p className={styles.receiptFooterSmall}>
+                This is an electronically generated receipt.
+              </p>
+            </div>
+          </div>
+
+          {/* Display Content */}
+          <div className={styles.detailUser}>
+            <div className={styles.userAvatarLarge}>
+              {transaction.hirer?.firstName?.[0] || "?"}
+              {transaction.hirer?.lastName?.[0] || ""}
+            </div>
+            <div>
+              <div className={styles.detailName}>
+                {transaction.hirer?.firstName} {transaction.hirer?.lastName}
+              </div>
+              <div className={styles.detailEmail}>
+                <FiMail size={12} /> {transaction.hirer?.email}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.detailGrid}>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Reference</span>
+              <span className={styles.detailValue}>
+                {transaction.reference}
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Type</span>
+              <span className={styles.detailValue}>
+                {getTransactionLabel(transaction.type)}
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Amount</span>
+              <span
+                className={styles.detailValue}
+                style={{ color: amountColor }}
+              >
+                {amountPrefix}
+                {formatCurrency(transaction.amount, transaction.currency)}
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Fee</span>
+              <span className={styles.detailValue}>
+                {formatCurrency(transaction.fee || 0, transaction.currency)}
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Net Amount</span>
+              <span className={styles.detailValue} style={{ fontWeight: 700 }}>
+                {formatCurrency(
+                  transaction.netAmount || transaction.amount,
+                  transaction.currency,
+                )}
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Status</span>
+              <span className={styles.detailValue}>
+                <span
+                  className={styles.statusBadge}
+                  style={{
+                    backgroundColor: getStatusColor(transaction.status) + "20",
+                    color: getStatusColor(transaction.status),
+                  }}
+                >
+                  {getStatusIcon(transaction.status)}{" "}
+                  {getStatusLabel(transaction.status)}
+                </span>
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Date</span>
+              <span className={styles.detailValue}>
+                {formatDateLong(transaction.createdAt)}
+              </span>
+            </div>
+            {transaction.completedAt && (
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Completed</span>
+                <span className={styles.detailValue}>
+                  {formatDateLong(transaction.completedAt)}
+                </span>
+              </div>
+            )}
+            {transaction.description && (
+              <div
+                className={styles.detailItem}
+                style={{ gridColumn: "1 / -1" }}
+              >
+                <span className={styles.detailLabel}>Description</span>
+                <span className={styles.detailValue}>
+                  {transaction.description}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.modalActions}>
+            <button
+              className={`${styles.modalCancel} ${styles.detailActionBtn}`}
+              onClick={onClose}
+            >
+              <FaTimes size={14} /> Close
+            </button>
+            <button
+              className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
+              onClick={handlePrint}
+            >
+              <FaPrint size={14} /> Print
+            </button>
+            <button
+              className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
+              onClick={handleDownloadReceipt}
+              disabled={downloading}
+            >
+              <FaDownload size={14} />
+              {downloading ? "Downloading..." : "Receipt"}
+            </button>
+            <button
+              className={`${styles.detailActionBtn} ${styles.detailActionSuccess}`}
+              onClick={handleShare}
+            >
+              <FaShareAlt size={14} /> Share
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Generate Receipt HTML ─────────────────────────────────────────────────
+
+function generateReceiptHTML(transaction) {
+  const isCredit =
+    transaction.type === "DEPOSIT" ||
+    transaction.type === "REFUND" ||
+    transaction.type === "BONUS";
+  const amountPrefix = isCredit ? "+" : "-";
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipt - ${transaction.reference}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .receipt {
+      max-width: 500px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+    .receipt-header {
+      text-align: center;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .receipt-header h1 {
+      color: #1a1a2e;
+      font-size: 24px;
+      font-weight: 800;
+      margin: 8px 0 4px;
+    }
+    .receipt-header .subtitle {
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .row:last-child {
+      border-bottom: none;
+    }
+    .label {
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .value {
+      color: #1a1a2e;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: right;
+    }
+    .value.amount {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .value.positive { color: #10b981; }
+    .value.negative { color: #ef4444; }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #10b98120;
+      color: #10b981;
+    }
+    .status-badge.pending {
+      background: #f59e0b20;
+      color: #f59e0b;
+    }
+    .status-badge.failed {
+      background: #ef444420;
+      color: #ef4444;
+    }
+    .footer {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 2px solid #f0f0f0;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+    .footer strong {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="receipt-header">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2">
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        <path d="M8 12h8" />
+        <path d="M8 8h4" />
+        <path d="M8 16h6" />
+      </svg>
+      <h1>SkilledProz</h1>
+      <p class="subtitle">Transaction Receipt</p>
+    </div>
+
+    <div class="row">
+      <span class="label">Reference</span>
+      <span class="value">${transaction.reference}</span>
+    </div>
+    <div class="row">
+      <span class="label">Type</span>
+      <span class="value">${getTransactionLabel(transaction.type)}</span>
+    </div>
+    <div class="row">
+      <span class="label">Amount</span>
+      <span class="value amount ${isCredit ? "positive" : "negative"}">
+        ${amountPrefix} ${formatCurrency(transaction.amount, transaction.currency)}
+      </span>
+    </div>
+    <div class="row">
+      <span class="label">Fee</span>
+      <span class="value">${formatCurrency(transaction.fee || 0, transaction.currency)}</span>
+    </div>
+    <div class="row" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
+      <span class="label" style="font-weight: 700;">Net Amount</span>
+      <span class="value amount" style="font-size: 20px; color: #10b981;">
+        ${formatCurrency(transaction.netAmount || transaction.amount, transaction.currency)}
+      </span>
+    </div>
+    ${
+      transaction.description
+        ? `
+    <div class="row">
+      <span class="label">Description</span>
+      <span class="value" style="text-align: right; max-width: 60%; word-break: break-word;">${transaction.description}</span>
+    </div>
+    `
+        : ""
+    }
+    <div class="row">
+      <span class="label">Status</span>
+      <span class="value">
+        <span class="status-badge ${transaction.status.toLowerCase()}">
+          ${getStatusLabel(transaction.status)}
+        </span>
+      </span>
+    </div>
+    <div class="row">
+      <span class="label">Date</span>
+      <span class="value">${formatDateLong(transaction.createdAt)}</span>
+    </div>
+    ${
+      transaction.completedAt
+        ? `
+    <div class="row">
+      <span class="label">Completed</span>
+      <span class="value">${formatDateLong(transaction.completedAt)}</span>
+    </div>
+    `
+        : ""
+    }
+
+    <div class="footer">
+      <p>Thank you for using <strong>SkilledProz</strong></p>
+      <p style="margin-top: 4px;">This is an electronically generated receipt.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 // ─── Skeleton Loader ──────────────────────────────────────────────────────
 
 function WalletSkeleton() {
@@ -253,7 +772,6 @@ function StatCard({ icon: Icon, label, value, accent }) {
 
 function CurrencyTab({ currency, balance, isActive, onClick }) {
   const symbol = getCurrencySymbol(currency);
-  // Ensure balance is a valid number
   const safeBalance =
     typeof balance === "number" ? balance : parseFloat(balance) || 0;
   const isZero = safeBalance === 0;
@@ -279,7 +797,7 @@ function CurrencyTab({ currency, balance, isActive, onClick }) {
 
 // ─── Transaction Row ───────────────────────────────────────────────────────
 
-function TransactionRow({ transaction }) {
+function TransactionRow({ transaction, onView }) {
   const isCredit =
     transaction.type === "DEPOSIT" ||
     transaction.type === "REFUND" ||
@@ -288,7 +806,11 @@ function TransactionRow({ transaction }) {
   const amountPrefix = isCredit ? "+" : "-";
 
   return (
-    <div className={styles.transactionRow}>
+    <div
+      className={styles.transactionRow}
+      onClick={() => onView(transaction)}
+      style={{ cursor: "pointer" }}
+    >
       <div className={styles.transactionIcon}>
         {getTransactionIcon(transaction.type)}
       </div>
@@ -824,6 +1346,7 @@ export default function HirerWallet() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCurrency, setActiveCurrency] = useState("NGN");
   const [currencyBalances, setCurrencyBalances] = useState({ NGN: 0 });
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   // ─── Show message modal ──────────────────────────────────────────────────
 
@@ -834,14 +1357,11 @@ export default function HirerWallet() {
 
   // ─── Fetch wallet data ────────────────────────────────────────────────────
 
-  // ─── Fetch wallet data ────────────────────────────────────────────────────
-
   const fetchWallet = useCallback(
     async (showLoadingState = true) => {
       if (showLoadingState) setLoading(true);
       setRefreshing(true);
       try {
-        // Step 1: Get all balances from the new /balances endpoint
         let balances = { NGN: 0 };
         let supportedCurrencies = ["NGN"];
         let walletData = {
@@ -857,7 +1377,6 @@ export default function HirerWallet() {
           if (balanceRes.data?.data?.balances) {
             const rawBalances = balanceRes.data.data.balances;
 
-            // Get the NGN balance data with totals
             if (rawBalances.NGN) {
               const ngnData = rawBalances.NGN;
               walletData = {
@@ -881,11 +1400,9 @@ export default function HirerWallet() {
               };
             }
 
-            // Convert all values to numbers for currency balances
             Object.keys(rawBalances).forEach((key) => {
               const val = rawBalances[key];
               if (typeof val === "object" && val !== null) {
-                // Handle nested object format { balance: 100, totalDeposited: 200 }
                 balances[key] =
                   typeof val.balance === "number"
                     ? val.balance
@@ -902,13 +1419,11 @@ export default function HirerWallet() {
           }
         } catch (err) {
           console.log("Balances endpoint not available, using fallback");
-          // Fallback: get single balance
           const walletRes = await api.get("/wallet/balance");
           walletData = walletRes.data.data;
           balances = { NGN: walletData.balance || 0 };
         }
 
-        // Step 2: Get supported currencies
         try {
           const currenciesRes = await api.get("/wallet/currencies");
           if (currenciesRes.data?.data?.currencies) {
@@ -918,19 +1433,16 @@ export default function HirerWallet() {
           console.log("Using default currencies");
         }
 
-        // Ensure all supported currencies exist in balances
         supportedCurrencies.forEach((cur) => {
           if (balances[cur] === undefined) {
             balances[cur] = 0;
           }
         });
 
-        // Set wallet state with all data
         setWallet(walletData);
         setCurrencyBalances(balances);
         setCurrencies(supportedCurrencies);
 
-        // Step 3: Get transactions
         const txRes = await api.get("/wallet/transactions", {
           params: {
             page: pagination.page,
@@ -951,7 +1463,6 @@ export default function HirerWallet() {
           },
         );
 
-        // Set active currency to first available with balance, or NGN
         const activeCur =
           Object.keys(balances).find((cur) => balances[cur] > 0) || "NGN";
         setActiveCurrency(activeCur);
@@ -1013,7 +1524,6 @@ export default function HirerWallet() {
 
         window.open(paymentLink, "_blank");
 
-        // Poll for transaction status
         let attempts = 0;
         const maxAttempts = 30;
 
@@ -1130,7 +1640,6 @@ export default function HirerWallet() {
   // ─── Filter transactions ─────────────────────────────────────────────────
 
   const filteredTransactions = transactions.filter((tx) => {
-    // Filter by active currency
     if (activeCurrency && tx.currency && tx.currency !== activeCurrency) {
       return false;
     }
@@ -1369,7 +1878,11 @@ export default function HirerWallet() {
           ) : (
             <div className={styles.transactionsList}>
               {filteredTransactions.map((tx) => (
-                <TransactionRow key={tx.id} transaction={tx} />
+                <TransactionRow
+                  key={tx.id}
+                  transaction={tx}
+                  onView={setSelectedTransaction}
+                />
               ))}
             </div>
           )}
@@ -1428,6 +1941,12 @@ export default function HirerWallet() {
           title={messageConfig.title}
           message={messageConfig.message}
           type={messageConfig.type}
+        />
+
+        {/* ─── Transaction Detail Modal ────────────────────────────────────── */}
+        <TransactionDetailModal
+          transaction={selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
         />
       </div>
     </HirerLayout>
