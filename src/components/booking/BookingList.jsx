@@ -15,27 +15,56 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 
 // ── Helper: format duration exactly like BookingDetailMain ──────────────
+// ── Helper: format duration exactly like BookingDetailMain ──────────────
 function formatDuration(booking) {
   if (!booking) return null;
+
   const unit = booking.estimatedUnit || "hours";
   const value = booking.estimatedValue || null;
   const hours = booking.estimatedHours || null;
+  const quantity = booking.quantity || 1;
+  const customLabel = booking.customLabel || "Custom";
+
+  // If no duration data, return null
   if (!value && !hours) return null;
+
+  // For custom bookings - show the number of customs
+  if (unit === "custom") {
+    const quantityNum = booking.quantity || 1;
+    return { main: `${quantityNum} ${customLabel}`, sub: null };
+  }
+
+  // For all other bookings (including negotiated)
   if (value) {
-    if (unit === "custom") return { main: value, sub: null };
-    const unitLabel = {
-      hours: "hour",
-      days: "day",
-      weeks: "week",
-      months: "month",
-      years: "year",
-    }[unit];
+    const unitLabel =
+      {
+        hours: "hour",
+        days: "day",
+        weeks: "week",
+        months: "month",
+        years: "year",
+      }[unit] || unit;
+
     const num = parseFloat(value);
+    if (isNaN(num) || num <= 0) {
+      return { main: value, sub: null };
+    }
+
     const label = unitLabel + (num !== 1 ? "s" : "");
     const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
     return { main: `${num} ${label}`, sub: eqv };
   }
-  return hours ? { main: `${hours} hours`, sub: null } : null;
+
+  // Fallback to hours
+  if (hours) {
+    const num = parseFloat(hours);
+    if (isNaN(num) || num <= 0) {
+      return { main: `${hours} hours`, sub: null };
+    }
+    return { main: `${num} hours`, sub: null };
+  }
+
+  return null;
 }
 
 const STATUSES = [
