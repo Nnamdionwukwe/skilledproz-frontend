@@ -101,7 +101,7 @@ export function calcPricing(booking, referralDiscount = 0) {
     grossTotal,
     totalCharged,
     referralSaving,
-    hasQty: hasQty || !!(value || hours),
+    hasQty: hasQty || unit === "custom", // ← This is the fix
     isNegotiated,
     negotiatedRate: isNegotiated ? booking.negotiatedRate : null,
   };
