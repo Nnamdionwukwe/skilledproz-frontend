@@ -298,11 +298,19 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       }
 
       // ── Determine the final agreed rate ──
-      // If negotiated, use the negotiated rate as the agreedRate (this is the total)
-      // Otherwise use the locked rate
       const finalAgreedRate = isNegotiated
         ? parseFloat(negotiatedRate)
         : finalRate;
+
+      // ── Calculate estimatedValue as string ──
+      let estimatedValueStr = undefined;
+      if (isNegotiated) {
+        estimatedValueStr = String(parseFloat(negotiatedRate));
+      } else if (selectedUnit === "custom") {
+        estimatedValueStr = String(form.rate * (form.quantity || 1));
+      } else if (form.estimatedValue) {
+        estimatedValueStr = String(form.estimatedValue);
+      }
 
       // ── Build payload ──
       const payload = {
@@ -316,18 +324,8 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         scheduledAt: form.scheduledAt,
         estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
-        estimatedValue: isNegotiated
-          ? String(parseFloat(negotiatedRate)) // Always convert to string
-          : selectedUnit === "custom"
-            ? String(form.rate * (form.quantity || 1)) // Always convert to string
-            : form.estimatedValue
-              ? String(form.estimatedValue) // Always convert to string
-              : undefined,
-        agreedRate: isNegotiated
-          ? parseFloat(negotiatedRate)
-          : selectedUnit === "custom"
-            ? form.rate
-            : finalRate,
+        estimatedValue: estimatedValueStr, // ← Always a string or undefined
+        agreedRate: finalAgreedRate,
         isNegotiated,
         negotiatedRate: isNegotiated ? parseFloat(negotiatedRate) : undefined,
         negotiationNote:
@@ -343,12 +341,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         quantity: selectedUnit === "custom" ? form.quantity || 1 : 1,
         customLabel: form.customLabel || null,
       };
-
-      // ── If budgetType is "CUSTOM" and NOT negotiated ──
-      if (budgetType === "CUSTOM" && form.rate > 0 && !isNegotiated) {
-        payload.estimatedValue = String(form.rate * (form.quantity || 1));
-        payload.agreedRate = form.rate;
-      }
 
       const res = await api.post("/bookings", payload);
 
