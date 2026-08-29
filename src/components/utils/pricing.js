@@ -23,8 +23,8 @@ export function calcPricing(booking, referralDiscount = 0) {
       parseFloat(booking.negotiatedRate) || parseFloat(agreedRate) || 0;
 
     // Still show duration for reference
-    if (unit === "custom" && value) {
-      qty = value;
+    if (unit === "custom" && quantity) {
+      qty = quantity;
       hasQty = true;
     } else if (value && unit !== "custom") {
       qty = value;
