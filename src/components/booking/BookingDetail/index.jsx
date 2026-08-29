@@ -35,22 +35,25 @@ function formatDuration(booking) {
   const unit = booking.estimatedUnit || "hours";
   const value = booking.estimatedValue;
   const hours = booking.estimatedHours;
+  const quantity = booking.quantity || 1;
 
   // If no duration data, return null
   if (!value && !hours) return null;
 
+  // For custom bookings, show the quantity
+  if (unit === "custom") {
+    const quantityNum = booking.quantity || 1;
+    const customLabel = booking.customLabel || "Custom";
+    return {
+      main: `${quantityNum} ${customLabel}`,
+      sub: null,
+      unit: "custom",
+      label: `${quantityNum} ${customLabel}`,
+    };
+  }
+
   // If there's a value (user entered custom duration)
   if (value) {
-    // Custom unit - just show the value as-is
-    if (unit === "custom") {
-      return {
-        main: value,
-        sub: null,
-        unit: "custom",
-        label: "Custom duration",
-      };
-    }
-
     // Standard units
     const unitMap = {
       hours: "hour",
