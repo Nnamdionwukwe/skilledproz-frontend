@@ -15,7 +15,6 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 
 // ── Helper: format duration exactly like BookingDetailMain ──────────────
-// ── Helper: format duration exactly like BookingDetailMain ──────────────
 function formatDuration(booking) {
   if (!booking) return null;
 
@@ -24,6 +23,7 @@ function formatDuration(booking) {
   const hours = booking.estimatedHours || null;
   const quantity = booking.quantity || 1;
   const customLabel = booking.customLabel || "Custom";
+  const isNegotiated = booking.isNegotiated && booking.negotiatedRate;
 
   // If no duration data, return null
   if (!value && !hours) return null;
@@ -34,7 +34,8 @@ function formatDuration(booking) {
     return { main: `${quantityNum} ${customLabel}`, sub: null };
   }
 
-  // For all other bookings (including negotiated)
+  // For negotiated bookings - show the duration from the estimated value
+  // The estimatedValue for negotiated bookings should be the duration (e.g., 4 months)
   if (value) {
     const unitLabel =
       {
@@ -45,7 +46,14 @@ function formatDuration(booking) {
         years: "year",
       }[unit] || unit;
 
-    const num = parseFloat(value);
+    // For negotiated bookings, parse the value as a number if it's a number string
+    // If it's a string like "40000 months", we need to extract just the number
+    let numValue = value;
+    if (typeof value === "string" && !isNaN(parseFloat(value))) {
+      numValue = parseFloat(value);
+    }
+
+    const num = typeof numValue === "number" ? numValue : parseFloat(value);
     if (isNaN(num) || num <= 0) {
       return { main: value, sub: null };
     }

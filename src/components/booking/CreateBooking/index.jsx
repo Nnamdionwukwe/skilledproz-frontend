@@ -305,7 +305,16 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       // ── Calculate estimatedValue as string ──
       let estimatedValueStr = undefined;
       if (isNegotiated) {
-        estimatedValueStr = String(parseFloat(negotiatedRate));
+        // For negotiated bookings, use the duration value
+        if (selectedUnit === "custom") {
+          // For custom, use the quantity as the estimated value
+          estimatedValueStr = String(form.quantity || 1);
+        } else {
+          // For other units, use the estimatedValue from the form
+          estimatedValueStr = form.estimatedValue
+            ? String(form.estimatedValue)
+            : undefined;
+        }
       } else if (selectedUnit === "custom") {
         estimatedValueStr = String(form.rate * (form.quantity || 1));
       } else if (form.estimatedValue) {
@@ -324,8 +333,14 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         scheduledAt: form.scheduledAt,
         estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
-        estimatedValue: estimatedValueStr, // ← Always a string or undefined
-        agreedRate: finalAgreedRate,
+        estimatedValue: estimatedValueStr, // ← Use the calculated value
+        quantity: selectedUnit === "custom" ? form.quantity || 1 : 1,
+        customLabel: form.customLabel || null,
+        agreedRate: isNegotiated
+          ? parseFloat(negotiatedRate) // ← This is the total amount
+          : selectedUnit === "custom"
+            ? form.rate
+            : finalRate,
         isNegotiated,
         negotiatedRate: isNegotiated ? parseFloat(negotiatedRate) : undefined,
         negotiationNote:
@@ -338,8 +353,6 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         durationType: durationType || undefined,
         requirements: form.requirements || undefined,
         responsibilities: form.responsibilities || undefined,
-        quantity: selectedUnit === "custom" ? form.quantity || 1 : 1,
-        customLabel: form.customLabel || null,
       };
 
       const res = await api.post("/bookings", payload);
