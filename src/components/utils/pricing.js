@@ -38,9 +38,9 @@ export function calcPricing(booking, referralDiscount = 0) {
       hasQty = true;
     }
   } else if (unit === "custom") {
-    // Custom booking - use the custom rate and quantity
-    const customRate = booking?.agreedRate || 0;
-    const customQty = booking?.quantity || 1;
+    // Custom booking - use the quantity from the booking
+    const customRate = agreedRate || 0;
+    const customQty = quantity || 1;
     subtotal = parseFloat((customRate * customQty).toFixed(2));
     qty = customQty;
     hasQty = true;
