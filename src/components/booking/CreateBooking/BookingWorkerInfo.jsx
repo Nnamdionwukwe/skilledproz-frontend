@@ -136,7 +136,10 @@ export default function BookingWorkerInfo({
 
     // Otherwise use the standard calculation
     if (selectedUnit === "custom") {
-      return (form.rate || worker?.customRate || 0) * (form.quantity || 1);
+      // Custom booking: rate × quantity
+      const customRate = form.rate || worker?.customRate || 0;
+      const customQty = form.quantity || 1;
+      return customRate * customQty;
     }
 
     if (estFees) {

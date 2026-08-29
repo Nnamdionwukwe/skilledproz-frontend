@@ -10,6 +10,7 @@ export function calcPricing(booking, referralDiscount = 0) {
     : null;
   const currency = booking?.currency || "USD";
   const isNegotiated = booking?.isNegotiated && booking?.negotiatedRate;
+  const quantity = booking?.quantity || 1;
 
   let qty = 1;
   let subtotal = 0;
@@ -21,8 +22,11 @@ export function calcPricing(booking, referralDiscount = 0) {
     subtotal =
       parseFloat(booking.negotiatedRate) || parseFloat(agreedRate) || 0;
 
-    // Still show duration for reference, but don't use it in calculation
-    if (value && unit !== "custom") {
+    // Still show duration for reference
+    if (unit === "custom" && value) {
+      qty = value;
+      hasQty = true;
+    } else if (value && unit !== "custom") {
       qty = value;
       hasQty = true;
     } else if (hours) {
@@ -32,13 +36,14 @@ export function calcPricing(booking, referralDiscount = 0) {
       else if (unit === "months") qty = Math.round(hours / 160);
       else if (unit === "years") qty = Math.round(hours / 1920);
       hasQty = true;
-    } else if (value) {
-      qty = value;
-      hasQty = true;
     }
-
-    // IMPORTANT: For negotiated, the "agreedRate" should be the total, not per-unit
-    // But we keep the original agreedRate for display purposes
+  } else if (unit === "custom") {
+    // Custom booking - use the custom rate and quantity
+    const customRate = booking?.agreedRate || 0;
+    const customQty = booking?.quantity || 1;
+    subtotal = parseFloat((customRate * customQty).toFixed(2));
+    qty = customQty;
+    hasQty = true;
   } else {
     // Regular calculation - multiply rate by quantity
     if (value && unit !== "custom") {
@@ -51,9 +56,6 @@ export function calcPricing(booking, referralDiscount = 0) {
       else if (unit === "months") qty = Math.round(hours / 160);
       else if (unit === "years") qty = Math.round(hours / 1920);
       hasQty = true;
-    } else if (unit === "custom" && value) {
-      qty = value;
-      hasQty = true;
     }
     subtotal = parseFloat((agreedRate * qty).toFixed(2));
   }
@@ -65,6 +67,7 @@ export function calcPricing(booking, referralDiscount = 0) {
       weeks: "/wk",
       months: "/mo",
       years: "/yr",
+      custom: "",
     }[unit] || "";
 
   const unitLabel =
@@ -74,6 +77,7 @@ export function calcPricing(booking, referralDiscount = 0) {
       weeks: "week",
       months: "month",
       years: "year",
+      custom: "custom",
     }[unit] || unit;
 
   const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
@@ -97,7 +101,7 @@ export function calcPricing(booking, referralDiscount = 0) {
     grossTotal,
     totalCharged,
     referralSaving,
-    hasQty: (hasQty || !!(value || hours)) && unit !== "custom",
+    hasQty: hasQty || !!(value || hours),
     isNegotiated,
     negotiatedRate: isNegotiated ? booking.negotiatedRate : null,
   };

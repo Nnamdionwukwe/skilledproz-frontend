@@ -220,12 +220,23 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
   const finalRate =
     isNegotiated && negotiatedRate ? parseFloat(negotiatedRate) : lockedRate;
   const estQty = parseFloat(form.estimatedValue) || 1;
-  const estFees =
+
+  // ── FIX: Calculate estFees for custom as well ──
+  let estFees = null;
+  if (selectedUnit === "custom") {
+    // Custom booking - use rate from form and quantity
+    const customRate = form.rate || worker?.customRate || 0;
+    const customQty = form.quantity || 1;
+    if (customRate > 0) {
+      estFees = computeFees(customRate, customQty);
+    }
+  } else if (
     lockedRate > 0 &&
     form.estimatedValue &&
     currentOption?.inputType === "number"
-      ? computeFees(finalRate, estQty)
-      : null;
+  ) {
+    estFees = computeFees(finalRate, estQty);
+  }
 
   // ── Handlers ──────────────────────────────────────────────────────────
   function set(key, val) {
@@ -306,11 +317,17 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
         estimatedValue: isNegotiated
-          ? String(parseFloat(negotiatedRate)) // Store the negotiated total
-          : form.estimatedValue
-            ? String(form.estimatedValue)
-            : undefined,
-        agreedRate: finalAgreedRate,
+          ? String(parseFloat(negotiatedRate))
+          : selectedUnit === "custom"
+            ? String(form.rate * (form.quantity || 1)) // ← Custom: rate × quantity
+            : form.estimatedValue
+              ? String(form.estimatedValue)
+              : undefined,
+        agreedRate: isNegotiated
+          ? parseFloat(negotiatedRate)
+          : selectedUnit === "custom"
+            ? form.rate // ← Custom: use the custom rate
+            : finalRate,
         isNegotiated,
         negotiatedRate: isNegotiated ? parseFloat(negotiatedRate) : undefined,
         negotiationNote:
@@ -323,7 +340,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         durationType: durationType || undefined,
         requirements: form.requirements || undefined,
         responsibilities: form.responsibilities || undefined,
-        quantity: form.quantity || 1,
+        quantity: selectedUnit === "custom" ? form.quantity || 1 : 1,
         customLabel: form.customLabel || null,
       };
 
