@@ -216,22 +216,6 @@ export default function BookingDetail() {
       .then((res) => {
         const b = res.data.data.booking;
 
-        // 🔥 DEBUG: Display booking data on the page
-        const debugEl = document.createElement("div");
-        debugEl.style.cssText =
-          "background: #f00; color: #fff; padding: 10px; margin: 10px; border-radius: 5px; font-family: monospace; z-index: 9999; position: relative;";
-        debugEl.innerHTML = `
-        <strong>🔍 DEBUG:</strong><br>
-        estimatedUnit: ${b.estimatedUnit}<br>
-        estimatedValue: ${b.estimatedValue}<br>
-        quantity: ${b.quantity}<br>
-        customLabel: ${b.customLabel}<br>
-        isNegotiated: ${b.isNegotiated}<br>
-        agreedRate: ${b.agreedRate}<br>
-        negotiatedRate: ${b.negotiatedRate}
-      `;
-        document.body.prepend(debugEl);
-
         setBooking(b);
         if (b.emergencyContact) {
           try {
@@ -426,7 +410,9 @@ export default function BookingDetail() {
       : null;
 
   // ── Use calcPricing for consistent breakdown ──────────────────────
+
   const p = calcPricing(booking);
+
   const feeBreakdown = {
     label: "Payment Breakdown",
     subtotal: p.subtotal,

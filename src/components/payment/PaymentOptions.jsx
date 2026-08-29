@@ -33,9 +33,14 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
     : null;
   const currency = booking.currency || "USD";
   const PLATFORM_FEE_RATE = 0.05;
+  const quantity = booking.quantity || 1;
 
   let qty = 1;
-  if (value && unit !== "custom") {
+
+  // For custom bookings, use the quantity field
+  if (unit === "custom") {
+    qty = quantity || 1;
+  } else if (value && unit !== "custom") {
     qty = value;
   } else if (hours) {
     if (unit === "hours") qty = hours;
@@ -45,9 +50,17 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
   }
 
   const unitSuffix =
-    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
+    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo", custom: "" }[
+      unit
+    ] || "";
   const unitLabel =
-    { hours: "hour", days: "day", weeks: "week", month: "month" }[unit] || unit;
+    {
+      hours: "hour",
+      days: "day",
+      weeks: "week",
+      months: "month",
+      custom: "custom",
+    }[unit] || unit;
 
   const subtotal = rate * qty;
   const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
@@ -70,7 +83,7 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
     platformFee,
     workerPayout,
     totalCharged,
-    hasQty: (value || hours) && unit !== "custom",
+    hasQty: ((value || hours) && unit !== "custom") || unit === "custom",
     referralDeduct,
   };
 }

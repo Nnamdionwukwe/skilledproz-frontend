@@ -46,10 +46,16 @@ function calcPricing(booking, referralDiscount = 0) {
     ? parseFloat(booking.estimatedValue)
     : null;
   const currency = booking?.currency || "USD";
+  const quantity = booking?.quantity || 1;
 
   let qty = 1;
-  if (value && unit !== "custom") qty = value;
-  else if (hours) {
+
+  // For custom bookings, use the quantity field
+  if (unit === "custom") {
+    qty = quantity || 1;
+  } else if (value && unit !== "custom") {
+    qty = value;
+  } else if (hours) {
     if (unit === "hours") qty = hours;
     else if (unit === "days") qty = Math.round(hours / 8);
     else if (unit === "weeks") qty = Math.round(hours / 40);
@@ -57,10 +63,18 @@ function calcPricing(booking, referralDiscount = 0) {
   }
 
   const unitSuffix =
-    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo" }[unit] || "";
+    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo", custom: "" }[
+      unit
+    ] || "";
   const unitLabel =
-    { hours: "hour", days: "day", weeks: "week", months: "month" }[unit] ||
-    unit;
+    {
+      hours: "hour",
+      days: "day",
+      weeks: "week",
+      months: "month",
+      custom: "custom",
+    }[unit] || unit;
+
   const subtotal = parseFloat((agreedRate * qty).toFixed(2));
   const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
   const workerPayout = subtotal;
@@ -83,7 +97,7 @@ function calcPricing(booking, referralDiscount = 0) {
     grossTotal,
     totalCharged,
     referralSaving,
-    hasQty: !!(value || hours) && unit !== "custom",
+    hasQty: ((value || hours) && unit !== "custom") || unit === "custom",
   };
 }
 
