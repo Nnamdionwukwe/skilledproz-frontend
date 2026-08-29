@@ -317,16 +317,16 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         estimatedHours: estimatedHours ?? undefined,
         estimatedUnit: currentOption?.unit || "hours",
         estimatedValue: isNegotiated
-          ? String(parseFloat(negotiatedRate))
+          ? String(parseFloat(negotiatedRate)) // Always convert to string
           : selectedUnit === "custom"
-            ? String(form.rate * (form.quantity || 1)) // ← Custom: rate × quantity
+            ? String(form.rate * (form.quantity || 1)) // Always convert to string
             : form.estimatedValue
-              ? String(form.estimatedValue)
+              ? String(form.estimatedValue) // Always convert to string
               : undefined,
         agreedRate: isNegotiated
           ? parseFloat(negotiatedRate)
           : selectedUnit === "custom"
-            ? form.rate // ← Custom: use the custom rate
+            ? form.rate
             : finalRate,
         isNegotiated,
         negotiatedRate: isNegotiated ? parseFloat(negotiatedRate) : undefined,
