@@ -88,6 +88,8 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
   };
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export default function PaymentOptions({
   booking,
   onSuccess,
@@ -116,6 +118,18 @@ export default function PaymentOptions({
   const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
 
   const p = calcPricing(booking, referralAmount, referralApplied);
+
+  const validateFileSize = (file) => {
+    if (!file) return true;
+    if (file.size > MAX_FILE_SIZE) {
+      setError(
+        `File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum size is 5MB.`,
+      );
+      return false;
+    }
+    setError("");
+    return true;
+  };
 
   async function handleBankInitiate() {
     setLoading(true);
@@ -418,9 +432,14 @@ export default function PaymentOptions({
                 type="file"
                 accept="image/*,application/pdf"
                 className={styles.fileInput}
-                onChange={(e) =>
-                  setBankReceiptFile(e.target.files?.[0] || null)
-                }
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file && !validateFileSize(file)) {
+                    e.target.value = "";
+                    return;
+                  }
+                  setBankReceiptFile(file);
+                }}
               />
               <span className={styles.fileBtn}>
                 <FaPaperclip style={{ marginRight: "6px" }} />
@@ -524,9 +543,14 @@ export default function PaymentOptions({
                 type="file"
                 accept="image/*"
                 className={styles.fileInput}
-                onChange={(e) =>
-                  setCryptoReceiptFile(e.target.files?.[0] || null)
-                }
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file && !validateFileSize(file)) {
+                    e.target.value = "";
+                    return;
+                  }
+                  setCryptoReceiptFile(file);
+                }}
               />
               <span className={styles.fileBtn}>
                 <FaPaperclip style={{ marginRight: "6px" }} />

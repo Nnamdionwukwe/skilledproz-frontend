@@ -29,6 +29,7 @@ import {
 import CryptoRateConverter from "./CryptoRateConverter";
 
 const HIRER_FEE_RATE = 0.05;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 function formatPrice(amount, currency = "USD") {
   if (amount == null) return `${currency} 0.00`;
@@ -165,6 +166,18 @@ export default function InitiatePayment() {
       setCopied((prev) => ({ ...prev, [key]: true }));
       setTimeout(() => setCopied((prev) => ({ ...prev, [key]: false })), 2000);
     }
+  };
+
+  const validateFileSize = (file) => {
+    if (!file) return true;
+    if (file.size > MAX_FILE_SIZE) {
+      setError(
+        `File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum size is 5MB.`,
+      );
+      return false;
+    }
+    setError("");
+    return true;
   };
 
   useEffect(() => {
@@ -575,9 +588,14 @@ export default function InitiatePayment() {
                         type="file"
                         accept="image/*,application/pdf"
                         className={styles.fileUploadInput}
-                        onChange={(e) =>
-                          setBankReceiptFile(e.target.files?.[0] || null)
-                        }
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file && !validateFileSize(file)) {
+                            e.target.value = "";
+                            return;
+                          }
+                          setBankReceiptFile(file);
+                        }}
                       />
                       <span className={styles.fileUploadBtn}>
                         {bankReceiptFile
@@ -642,9 +660,14 @@ export default function InitiatePayment() {
                         type="file"
                         accept="image/*"
                         className={styles.fileUploadInput}
-                        onChange={(e) =>
-                          setCryptoReceiptFile(e.target.files?.[0] || null)
-                        }
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file && !validateFileSize(file)) {
+                            e.target.value = "";
+                            return;
+                          }
+                          setCryptoReceiptFile(file);
+                        }}
                       />
                       <span className={styles.fileUploadBtn}>
                         {cryptoReceiptFile
