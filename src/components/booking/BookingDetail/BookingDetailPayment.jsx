@@ -188,6 +188,9 @@ export default function BookingDetailPayment({
         custom: "",
       }[unit] || "";
 
+    // Check if this is a custom booking
+    const isCustom = feeBreakdown.estimatedUnit === "custom";
+
     return (
       <div className={styles.feeBreakdown}>
         <p className={styles.feeBreakdownLabel}>
@@ -202,7 +205,7 @@ export default function BookingDetailPayment({
               <span>{formatPrice(booking.negotiatedRate, cur)}</span>
             </div>
 
-            {hasQty && (
+            {(hasQty || isCustom) && (
               <div className={styles.feeRow}>
                 <span>Duration</span>
                 <span>
@@ -234,7 +237,7 @@ export default function BookingDetailPayment({
             </div>
           </>
         ) : (
-          // Regular view
+          // Regular view - with custom booking support
           <>
             <div className={styles.feeRow}>
               <span>Agreed Rate</span>
@@ -244,7 +247,8 @@ export default function BookingDetailPayment({
               </span>
             </div>
 
-            {hasQty && (
+            {/* For custom bookings, always show duration and subtotal */}
+            {(hasQty || isCustom) && (
               <div className={styles.feeRow}>
                 <span>Duration</span>
                 <span>
@@ -254,7 +258,7 @@ export default function BookingDetailPayment({
               </div>
             )}
 
-            {hasQty && (
+            {(hasQty || isCustom) && (
               <div className={styles.feeRow}>
                 <span>
                   Subtotal ({qty} × {formatPrice(agreedRate, cur)})

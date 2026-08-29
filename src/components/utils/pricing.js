@@ -87,6 +87,28 @@ export function calcPricing(booking, referralDiscount = 0) {
   const totalCharged = parseFloat(
     Math.max(0, grossTotal - referralSaving).toFixed(2),
   );
+  // 🔥 DEBUG: Log the booking and the result
+  console.log("=== calcPricing DEBUG ===");
+  console.log("Booking:", {
+    id: booking?.id,
+    estimatedUnit: booking?.estimatedUnit,
+    estimatedValue: booking?.estimatedValue,
+    quantity: booking?.quantity,
+    isNegotiated: booking?.isNegotiated,
+    negotiatedRate: booking?.negotiatedRate,
+  });
+  console.log("Result:", {
+    unit,
+    value,
+    hours,
+    quantity,
+    isNegotiated,
+    qty,
+    subtotal,
+    hasQty,
+    unitLabel,
+  });
+  console.log("==========================");
 
   return {
     agreedRate: isNegotiated ? booking.negotiatedRate : agreedRate,
@@ -101,7 +123,8 @@ export function calcPricing(booking, referralDiscount = 0) {
     grossTotal,
     totalCharged,
     referralSaving,
-    hasQty: hasQty || unit === "custom", // ← This is the fix
+    // 🔥 FIX: For custom bookings, force hasQty to true
+    hasQty: hasQty || unit === "custom" || !!(value || hours),
     isNegotiated,
     negotiatedRate: isNegotiated ? booking.negotiatedRate : null,
   };
