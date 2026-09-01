@@ -14,6 +14,7 @@ import {
   FaMoneyBillWave,
   FaExclamationCircle,
   FaSpinner,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
@@ -202,8 +203,8 @@ export default function BookingDetailSidebar({
                   refetch();
                   onSuccess(
                     updated.status === "IN_PROGRESS"
-                      ? "✅ Checked in — job is now in progress."
-                      : "✅ Checked out — job marked as completed.",
+                      ? "Checked in — job is now in progress."
+                      : "Checked out — job marked as completed.",
                   );
                 }}
               />
@@ -226,7 +227,7 @@ export default function BookingDetailSidebar({
                 jobLongitude={booking.longitude}
                 onSuccess={() => {
                   refetch();
-                  onSuccess("✅ Checked out — job marked as completed.");
+                  onSuccess("Checked out — job marked as completed.");
                 }}
               />
             )}

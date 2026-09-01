@@ -11,8 +11,17 @@ import BookingDetailMain from "./BookingDetailMain";
 import BookingDetailSidebar from "./BookingDetailSidebar";
 import { calcPricing } from "../../utils/pricing";
 import WorkerPaymentPreview from "./WorkerPaymentPreview";
+import ConfirmationModal from "../../context/ConfirmationModal";
+import {
+  FaArrowLeft,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaTimes,
+  FaExclamationCircle,
+  FaSpinner,
+} from "react-icons/fa";
 
-// ── Helpers (unchanged) ──────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -37,10 +46,8 @@ function formatDuration(booking) {
   const hours = booking.estimatedHours;
   const quantity = booking.quantity || 1;
 
-  // If no duration data, return null
   if (!value && !hours) return null;
 
-  // For custom bookings, show the quantity
   if (unit === "custom") {
     const quantityNum = booking.quantity || 1;
     const customLabel = booking.customLabel || "Custom";
@@ -52,9 +59,7 @@ function formatDuration(booking) {
     };
   }
 
-  // If there's a value (user entered custom duration)
   if (value) {
-    // Standard units
     const unitMap = {
       hours: "hour",
       days: "day",
@@ -66,7 +71,6 @@ function formatDuration(booking) {
     const unitLabel = unitMap[unit] || unit;
     const num = parseFloat(value);
 
-    // Handle invalid numbers
     if (isNaN(num) || num <= 0) {
       return {
         main: value,
@@ -87,7 +91,6 @@ function formatDuration(booking) {
     };
   }
 
-  // Fallback to hours only
   if (hours) {
     const num = parseFloat(hours);
     if (isNaN(num) || num <= 0) {
@@ -127,19 +130,6 @@ const STATUS_META = {
 };
 
 // ── Inlined components ──────────────────────────────────────────────
-function Alert({ type, text, onClose }) {
-  return (
-    <div className={`${styles.alert} ${styles[`alert_${type}`]}`}>
-      <span>
-        {type === "error" ? "⚠️" : "✅"} {text}
-      </span>
-      <button className={styles.alertClose} onClick={onClose}>
-        ×
-      </button>
-    </div>
-  );
-}
-
 function Skeleton() {
   return (
     <>
@@ -156,12 +146,33 @@ function NotFound({ backTo = "/bookings" }) {
   return (
     <div className={styles.page}>
       <div className={styles.notFound}>
-        <span className={styles.notFoundIcon}>🔍</span>
+        <span className={styles.notFoundIcon}>
+          <FaExclamationCircle size={48} />
+        </span>
         <h2 className={styles.notFoundTitle}>Booking not found</h2>
         <Link to={backTo} className={styles.back}>
-          ← Back to Bookings
+          <FaArrowLeft style={{ marginRight: "6px" }} /> Back to Bookings
         </Link>
       </div>
+    </div>
+  );
+}
+
+function Toast({ type, message, onClose }) {
+  const isError = type === "error";
+  return (
+    <div className={`${styles.toast} ${styles[`toast_${type}`]}`}>
+      <span className={styles.toastIcon}>
+        {isError ? (
+          <FaExclamationTriangle size={18} />
+        ) : (
+          <FaCheckCircle size={18} />
+        )}
+      </span>
+      <span className={styles.toastMessage}>{message}</span>
+      <button className={styles.toastClose} onClick={onClose}>
+        <FaTimes size={16} />
+      </button>
     </div>
   );
 }
@@ -175,8 +186,8 @@ export default function BookingDetail() {
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [toast, setToast] = useState(null);
+  const [showToast, setShowToast] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewCheckDone, setReviewCheckDone] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
@@ -192,6 +203,8 @@ export default function BookingDetail() {
   const [resolvingSOS, setResolvingSOS] = useState(false);
   const [refundLoading, setRefundLoading] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [showSOSConfirm, setShowSOSConfirm] = useState(false);
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
 
   // ── Referral wallet state ──
   const [walletBalance, setWalletBalance] = useState(0);
@@ -201,6 +214,14 @@ export default function BookingDetail() {
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
+
+  const showToastMessage = (type, message) => {
+    setToast({ type, message });
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 5000);
+  };
 
   const refetch = useCallback(() => {
     api
@@ -240,14 +261,12 @@ export default function BookingDetail() {
           setReviewCheckDone(true);
         }
 
-        // ── Fetch referral wallet balance ──
         if (user?.role === "HIRER") {
           api
             .get("/referral/wallet")
             .then((res) => {
               const bal = res.data.data?.balance || 0;
               setWalletBalance(bal);
-              // Reset slider when balance loads
               setReferralPercent(0);
               setReferralAmount(0);
               setReferralApplied(false);
@@ -262,14 +281,12 @@ export default function BookingDetail() {
   // ── Silent refresh ──────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
-    const timer = setInterval(refetch, 600_000);
+    const timer = setInterval(refetch, 600000);
     return () => clearInterval(timer);
   }, [id, refetch]);
 
-  // ── RECALCULATE REFERRAL AMOUNT WHEN PERCENT, BALANCE, OR BOOKING CHANGES ──
-  // Moved to the top level (before any early returns) to keep hook order stable.
+  // ── Recalculate referral amount ──────────────────────────────────
   useEffect(() => {
-    // Only run if we have a booking
     if (!booking) return;
     const p = calcPricing(booking);
     const subtotal = p.subtotal || 0;
@@ -278,31 +295,30 @@ export default function BookingDetail() {
     const amount = Math.round(rawAmount);
     const final = Math.min(amount, maxDiscount);
 
-    // Update the amount, but do NOT auto‑apply here – that's handled in the slider change
     setReferralAmount(final);
-    // Optionally, auto‑apply can be set here if you want, but we'll keep it separate
-    // to respect manual toggle.
   }, [referralPercent, walletBalance, booking]);
 
   // ── Status update ────────────────────────────────────────────────────
   async function updateStatus(status, extra = {}) {
     setActing(true);
-    setError("");
-    setSuccess("");
     try {
       const res = await api.patch(`/bookings/${id}/status`, {
         status,
         ...extra,
       });
       setBooking(res.data.data.booking);
-      setSuccess(
+      showToastMessage(
+        "success",
         `Booking ${status.toLowerCase().replace("_", " ")} successfully.`,
       );
       setShowCancel(false);
       setCancelReason("");
       setCancelError("");
     } catch (e) {
-      setError(e.response?.data?.message || "Action failed. Please try again.");
+      showToastMessage(
+        "error",
+        e.response?.data?.message || "Action failed. Please try again.",
+      );
     } finally {
       setActing(false);
     }
@@ -318,31 +334,34 @@ export default function BookingDetail() {
 
   // ── SOS resolve ──────────────────────────────────────────────────────
   const handleResolveSOS = async () => {
-    if (!confirm("Mark this SOS as resolved?")) return;
     setResolvingSOS(true);
     try {
       await api.patch(`/bookings/${booking.id}/sos/resolve`);
-      setSuccess("SOS marked as resolved.");
+      showToastMessage("success", "SOS marked as resolved.");
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to resolve SOS");
+      showToastMessage(
+        "error",
+        err.response?.data?.message || "Failed to resolve SOS",
+      );
     } finally {
       setResolvingSOS(false);
+      setShowSOSConfirm(false);
     }
   };
 
   // ── Refund ───────────────────────────────────────────────────────────
   const handleRefund = async () => {
-    if (!confirm("Issue a full refund? This cannot be undone.")) return;
     setRefundLoading(true);
     try {
       await api.post(`/payments/refund/${booking.id}`);
-      setSuccess("Refund processed successfully.");
+      showToastMessage("success", "Refund processed successfully.");
       refetch();
     } catch (err) {
-      setError(err.response?.data?.message || "Refund failed");
+      showToastMessage("error", err.response?.data?.message || "Refund failed");
     } finally {
       setRefundLoading(false);
+      setShowRefundConfirm(false);
     }
   };
 
@@ -362,7 +381,7 @@ export default function BookingDetail() {
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Failed to download invoice");
+      showToastMessage("error", "Failed to download invoice");
     } finally {
       setInvoiceLoading(false);
     }
@@ -409,8 +428,6 @@ export default function BookingDetail() {
         )
       : null;
 
-  // ── Use calcPricing for consistent breakdown ──────────────────────
-
   const p = calcPricing(booking);
 
   const feeBreakdown = {
@@ -437,7 +454,6 @@ export default function BookingDetail() {
 
   // ── Handlers for referral slider ──────────────────────────────────
   const handlePercentChange = (pct) => {
-    // Immediately compute the discount for responsiveness
     const subtotal = feeBreakdown.subtotal || 0;
     const maxDiscount = Math.min(subtotal, walletBalance);
     const rawAmount = (pct / 100) * subtotal;
@@ -446,7 +462,6 @@ export default function BookingDetail() {
 
     setReferralPercent(pct);
     setReferralAmount(final);
-    // Auto‑apply if final > 0, otherwise remove discount
     setReferralApplied(final > 0);
   };
 
@@ -458,19 +473,22 @@ export default function BookingDetail() {
     <Layout>
       <div className={styles.page}>
         <Link to="/bookings" className={styles.back}>
-          ← Back to Bookings
+          <FaArrowLeft style={{ marginRight: "6px" }} /> Back to Bookings
         </Link>
 
-        {error && (
-          <Alert type="error" text={error} onClose={() => setError("")} />
-        )}
-        {success && (
-          <Alert type="success" text={success} onClose={() => setSuccess("")} />
+        {showToast && toast && (
+          <Toast
+            type={toast.type}
+            message={toast.message}
+            onClose={() => setShowToast(false)}
+          />
         )}
 
         {sosActive && (
           <div className={styles.sosBanner}>
-            <span className={styles.sosBannerIcon}>🆘</span>
+            <span className={styles.sosBannerIcon}>
+              <FaExclamationTriangle />
+            </span>
             <div className={styles.sosBannerBody}>
               <p className={styles.sosBannerTitle}>SOS Alert Active</p>
               <p className={styles.sosBannerDesc}>
@@ -487,10 +505,10 @@ export default function BookingDetail() {
             {(isHirer || user?.role === "ADMIN") && (
               <button
                 className={styles.sosResolveBtn}
-                onClick={handleResolveSOS}
+                onClick={() => setShowSOSConfirm(true)}
                 disabled={resolvingSOS}
               >
-                {resolvingSOS ? "Resolving…" : "Mark Resolved"}
+                {resolvingSOS ? "Resolving..." : "Mark Resolved"}
               </button>
             )}
           </div>
@@ -540,7 +558,7 @@ export default function BookingDetail() {
                 onTogglePayOptions={() => setShowPayOptions((v) => !v)}
                 paymentRequired={paymentRequired}
                 refetch={refetch}
-                onSuccess={setSuccess}
+                onSuccess={(msg) => showToastMessage("success", msg)}
                 isHirer={isHirer}
                 isWorker={isWorker}
               />
@@ -563,7 +581,7 @@ export default function BookingDetail() {
                 onTogglePayOptions={() => setShowPayOptions((v) => !v)}
                 paymentRequired={paymentRequired}
                 refetch={refetch}
-                onSuccess={setSuccess}
+                onSuccess={(msg) => showToastMessage("success", msg)}
                 isHirer={isHirer}
                 isWorker={isWorker}
               />
@@ -596,7 +614,7 @@ export default function BookingDetail() {
               }}
               onCancelSubmit={handleCancelSubmit}
               onShowDispute={() => setShowDispute(true)}
-              onSuccess={setSuccess}
+              onSuccess={(msg) => showToastMessage("success", msg)}
               refetch={refetch}
               updateStatus={updateStatus}
             />
@@ -610,10 +628,39 @@ export default function BookingDetail() {
           bookingTitle={booking.title}
           onClose={() => setShowDispute(false)}
           onSuccess={() =>
-            setSuccess(
+            showToastMessage(
+              "success",
               "Dispute raised. Our team will review within 24–48 hours.",
             )
           }
+        />
+      )}
+
+      {/* SOS Confirmation Modal */}
+      {showSOSConfirm && (
+        <ConfirmationModal
+          isOpen={showSOSConfirm}
+          onClose={() => setShowSOSConfirm(false)}
+          onConfirm={handleResolveSOS}
+          title="Resolve SOS Alert"
+          message="Are you sure you want to mark this SOS alert as resolved?"
+          confirmLabel="Yes, Resolve"
+          cancelLabel="Cancel"
+          confirmVariant="warning"
+        />
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {showRefundConfirm && (
+        <ConfirmationModal
+          isOpen={showRefundConfirm}
+          onClose={() => setShowRefundConfirm(false)}
+          onConfirm={handleRefund}
+          title="Confirm Refund"
+          message="Are you sure you want to issue a full refund? This action cannot be undone."
+          confirmLabel="Yes, Refund"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
         />
       )}
     </Layout>

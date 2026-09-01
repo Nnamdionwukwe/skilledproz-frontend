@@ -17,6 +17,13 @@ import {
   FaTools,
   FaShieldAlt,
   FaStar,
+  FaHourglassHalf,
+  FaExternalLinkAlt,
+  FaCheck,
+  FaExclamationTriangle,
+  FaMap,
+  FaSpinner,
+  FaUndo,
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing } from "../../utils/pricing";
@@ -40,6 +47,15 @@ function DetailItem({ icon, label, value, accent }) {
 
 function GpsCard({ title, dotColor, timestamp, lat, lng, distKm, cardClass }) {
   const mapsUrl = (lat, lng) => `https://www.google.com/maps?q=${lat},${lng}`;
+
+  const getDistanceIcon = () => {
+    if (distKm < 0.1)
+      return <FaCheckCircle style={{ color: "var(--green)" }} />;
+    if (distKm > 1)
+      return <FaExclamationTriangle style={{ color: "var(--orange)" }} />;
+    return <FaMap style={{ color: "var(--blue)" }} />;
+  };
+
   return (
     <div className={`${styles.gpsCard} ${cardClass}`}>
       <div className={styles.gpsCardHeader}>
@@ -69,7 +85,7 @@ function GpsCard({ title, dotColor, timestamp, lat, lng, distKm, cardClass }) {
         <div
           className={`${styles.gpsDistRow} ${distKm > 1 ? styles.gpsDistFar : styles.gpsDistNear}`}
         >
-          <span>{distKm < 0.1 ? "✅" : distKm > 1 ? "⚠️" : "📏"}</span>
+          <span>{getDistanceIcon()}</span>
           <span>
             {distKm < 0.1
               ? "Worker was at the job site"
@@ -83,7 +99,7 @@ function GpsCard({ title, dotColor, timestamp, lat, lng, distKm, cardClass }) {
         rel="noreferrer"
         className={styles.gpsMapLink}
       >
-        🗺️ View on Google Maps
+        <FaMap style={{ marginRight: "4px" }} /> View on Google Maps
       </a>
     </div>
   );
@@ -221,7 +237,7 @@ export default function BookingDetailMain({
                 <div
                   className={`${styles.timelineDot} ${i <= step ? styles.timelineDotActive : ""} ${i === step ? styles.timelineDotCurrent : ""}`}
                 >
-                  {i < step ? "✓" : i + 1}
+                  {i < step ? <FaCheck size={12} /> : i + 1}
                 </div>
                 <span
                   className={`${styles.timelineLabel} ${i <= step ? styles.timelineLabelActive : ""}`}
@@ -247,7 +263,8 @@ export default function BookingDetailMain({
           </div>
           <div className={styles.pendingBannerBody}>
             <p className={styles.pendingBannerTitle}>
-              ⏳ Waiting for {workerName || "the worker"} to respond
+              <FaHourglassHalf style={{ marginRight: "8px" }} />
+              Waiting for {workerName || "the worker"} to respond
             </p>
             <p className={styles.pendingBannerDesc}>
               Your booking request has been sent. {workerName || "The worker"}{" "}
@@ -341,7 +358,7 @@ export default function BookingDetailMain({
                       className={styles.mapLink}
                     >
                       {" "}
-                      View map ↗
+                      View map <FaExternalLinkAlt size={10} />
                     </a>
                   )}
                 </>
@@ -602,7 +619,9 @@ export default function BookingDetailMain({
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Cancellation Reason</h2>
           <div className={styles.cancelReasonCard}>
-            <span className={styles.cancelReasonIcon}>⚠️</span>
+            <span className={styles.cancelReasonIcon}>
+              <FaExclamationTriangle />
+            </span>
             <p className={styles.cancelReasonText}>{booking.cancelReason}</p>
           </div>
         </section>
@@ -616,7 +635,12 @@ export default function BookingDetailMain({
             onClick={onDownloadInvoice}
             disabled={invoiceLoading}
           >
-            {invoiceLoading ? "⏳" : <FaFileAlt />} Download Invoice
+            {invoiceLoading ? (
+              <FaSpinner className={styles.spinner} />
+            ) : (
+              <FaFileAlt />
+            )}{" "}
+            Download Invoice
           </button>
           {isHirer && paymentStatus === "RELEASED" && (
             <button
@@ -624,7 +648,13 @@ export default function BookingDetailMain({
               onClick={handleRefundClick}
               disabled={refundLoading}
             >
-              {refundLoading ? "Processing…" : "↩ Request Refund"}
+              {refundLoading ? (
+                "Processing…"
+              ) : (
+                <>
+                  <FaUndo /> Request Refund
+                </>
+              )}
             </button>
           )}
         </div>
