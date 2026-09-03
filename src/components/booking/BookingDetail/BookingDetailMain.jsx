@@ -27,6 +27,7 @@ import {
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing } from "../../utils/pricing";
+import { RefundRequest } from "../Refund";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function DetailItem({ icon, label, value, accent }) {
@@ -120,21 +121,19 @@ export default function BookingDetailMain({
   bookingId,
   invoiceLoading,
   onDownloadInvoice,
-  onRefund,
-  refundLoading,
   isHirer,
+  payment,
   paymentStatus,
   isWorker,
   workerName,
+  onRefundRequest,
+  refundLoading,
 }) {
   // ── Refund modal state ──
   const [showRefundModal, setShowRefundModal] = useState(false);
 
   const handleRefundClick = () => setShowRefundModal(true);
-  const handleConfirmRefund = () => {
-    onRefund();
-    setShowRefundModal(false);
-  };
+  const handleCloseRefundModal = () => setShowRefundModal(false);
 
   const STATUS_META = {
     PENDING: { label: "Pending", color: "yellow" },
@@ -165,9 +164,7 @@ export default function BookingDetailMain({
 
   // ── Helper to render duration with unit ─────────────────────────────
   const renderDuration = () => {
-    // If dur is null or undefined, show a placeholder
     if (!dur) {
-      // Check if there's any duration data in the booking
       if (booking.estimatedHours || booking.estimatedValue) {
         return <span className={styles.durationPlaceholder}>Loading...</span>;
       }
@@ -188,8 +185,6 @@ export default function BookingDetailMain({
 
     return (
       <span className={styles.durationDisplay}>
-        {" "}
-        {/* ← CHANGED FROM <div> TO <span> */}
         <span className={styles.durationMain}>{dur.main}</span>
         {dur.sub && <span className={styles.durationSub}> {dur.sub}</span>}
         {unitLabel && booking.estimatedUnit !== "custom" && (
@@ -642,7 +637,7 @@ export default function BookingDetailMain({
             )}{" "}
             Download Invoice
           </button>
-          {/* {isHirer && paymentStatus === "RELEASED" && (
+          {isHirer && paymentStatus === "RELEASED" && !refundLoading && (
             <button
               className={styles.refundBtn}
               onClick={handleRefundClick}
@@ -656,22 +651,35 @@ export default function BookingDetailMain({
                 </>
               )}
             </button>
-          )} */}
+          )}
         </div>
       )}
 
-      {/* ── Refund confirmation modal (Hirer only) ── */}
-      {isHirer && (
-        <ConfirmationModal
-          isOpen={showRefundModal}
-          onClose={() => setShowRefundModal(false)}
-          onConfirm={handleConfirmRefund}
-          title="Confirm Refund"
-          message="Are you sure you want to issue a full refund? This action cannot be undone."
-          confirmLabel="Yes, Refund"
-          cancelLabel="Cancel"
-          confirmVariant="danger"
-        />
+      {/* ── Refund Request Modal ── */}
+      {showRefundModal && (
+        <div className={styles.modalOverlay} onClick={handleCloseRefundModal}>
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className={styles.modalClose}
+              onClick={handleCloseRefundModal}
+            >
+              ×
+            </button>
+            <RefundRequest
+              booking={booking}
+              payment={payment}
+              onRequestRefund={(data) => {
+                onRefundRequest(data);
+                handleCloseRefundModal();
+              }}
+              isProcessing={refundLoading}
+              isHirer={isHirer}
+            />
+          </div>
+        </div>
       )}
     </>
   );

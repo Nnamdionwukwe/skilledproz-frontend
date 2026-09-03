@@ -579,11 +579,13 @@ export default function BookingDetail() {
               bookingId={booking.id}
               invoiceLoading={invoiceLoading}
               onDownloadInvoice={handleDownloadInvoice}
-              refundLoading={refundLoading}
               isHirer={isHirer}
+              payment={payment}
               paymentStatus={payment?.status}
               isWorker={isWorker}
               workerName={booking.worker?.firstName}
+              onRefundRequest={handleRefundRequest}
+              refundLoading={refundLoading}
             />
 
             {isWorker && booking.status === "PENDING" && (
@@ -674,20 +676,12 @@ export default function BookingDetail() {
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Refund</h2>
 
-              {activeRefund ? (
+              {activeRefund && (
                 <RefundStatus
                   refund={activeRefund}
                   onViewDetails={() => {
                     navigate(`/refunds/${activeRefund.id}`);
                   }}
-                  isHirer={isHirer}
-                />
-              ) : (
-                <RefundRequest
-                  booking={booking}
-                  payment={payment}
-                  onRequestRefund={handleRefundRequest}
-                  isProcessing={refundLoading}
                   isHirer={isHirer}
                 />
               )}
