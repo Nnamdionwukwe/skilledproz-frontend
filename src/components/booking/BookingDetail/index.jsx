@@ -674,13 +674,23 @@ export default function BookingDetail() {
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Refund</h2>
 
-              <RefundStatus
-                refund={activeRefund}
-                onViewDetails={() => {
-                  navigate(`/refunds/${activeRefund.id}`);
-                }}
-                isHirer={isHirer}
-              />
+              {activeRefund ? (
+                <RefundStatus
+                  refund={activeRefund}
+                  onViewDetails={() => {
+                    navigate(`/refunds/${activeRefund.id}`);
+                  }}
+                  isHirer={isHirer}
+                />
+              ) : (
+                <RefundRequest
+                  booking={booking}
+                  payment={payment}
+                  onRequestRefund={handleRefundRequest}
+                  isProcessing={refundLoading}
+                  isHirer={isHirer}
+                />
+              )}
             </div>
           </div>
         )}

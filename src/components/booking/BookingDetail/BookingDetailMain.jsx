@@ -642,7 +642,7 @@ export default function BookingDetailMain({
             )}{" "}
             Download Invoice
           </button>
-          {isHirer && paymentStatus === "RELEASED" && (
+          {/* {isHirer && paymentStatus === "RELEASED" && (
             <button
               className={styles.refundBtn}
               onClick={handleRefundClick}
@@ -656,7 +656,7 @@ export default function BookingDetailMain({
                 </>
               )}
             </button>
-          )}
+          )} */}
         </div>
       )}
 
