@@ -126,6 +126,8 @@ import HirerWallet from "./components/hirer/HirerWallet.jsx";
 import WalletCallback from "./components/hirer/WalletCallback.jsx";
 import AdminLogs from "./pages/admin/AdminLogs.jsx";
 import AdminWallet from "./pages/admin/AdminWallet.jsx";
+import RefundHistory from "./components/booking/Refund/RefundHistory.jsx";
+import RefundDetail from "./components/booking/Refund/RefundDetail.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -875,6 +877,27 @@ export default function App() {
             <RequireHirer>
               <RequireAuth>
                 <WalletCallback />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+
+        <Route
+          path="/refunds"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <RefundHistory />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/refunds/:id"
+          element={
+            <RequireHirer>
+              <RequireAuth>
+                <RefundDetail />
               </RequireAuth>
             </RequireHirer>
           }

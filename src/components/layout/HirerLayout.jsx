@@ -30,6 +30,7 @@ import {
   FaUserCircle,
   FaEnvelope,
   FaWallet,
+  FaMoneyBillWave, // Add this for refund icon
 } from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
@@ -97,6 +98,21 @@ const NAV = [
     ],
   },
   {
+    group: "Payments & Refunds",
+    items: [
+      {
+        label: "My Wallet",
+        path: "/dashboard/hirer/wallet",
+        icon: <FaWallet />,
+      },
+      {
+        label: "Refund History",
+        path: "/refunds",
+        icon: <FaMoneyBillWave />,
+      },
+    ],
+  },
+  {
     group: "Referrals",
     items: [
       {
@@ -139,16 +155,6 @@ const NAV = [
         label: "Verification",
         path: "/dashboard/hirer/verification",
         icon: <FaShieldAlt />,
-      },
-    ],
-  },
-  {
-    group: "Wallet",
-    items: [
-      {
-        label: "My Wallet",
-        path: "/dashboard/hirer/wallet",
-        icon: <FaWallet />,
       },
     ],
   },
@@ -226,6 +232,10 @@ const PAGE_TITLES = {
     title: "My Wallet",
     sub: "Manage your funds and payments",
   },
+  "/refunds": {
+    title: "Refund History",
+    sub: "View and track your refund requests",
+  },
 };
 
 function getPageInfo(pathname) {
@@ -233,6 +243,8 @@ function getPageInfo(pathname) {
   if (pathname.startsWith("/bookings/"))
     return { title: "Booking Detail", sub: "Job details and actions" };
   if (pathname.startsWith("/profile/")) return { title: "Profile", sub: "" };
+  if (pathname.startsWith("/refunds/"))
+    return { title: "Refund Details", sub: "Refund request details" };
   return { title: "SkilledProz", sub: "" };
 }
 
@@ -247,6 +259,8 @@ function isNavActive(itemPath, pathname) {
     return pathname === "/dashboard/hirer/payment-history";
   if (itemPath === "/dashboard/hirer/wallet")
     return pathname === "/dashboard/hirer/wallet";
+  if (itemPath === "/refunds")
+    return pathname === "/refunds" || pathname.startsWith("/refunds/");
   return pathname === itemPath;
 }
 

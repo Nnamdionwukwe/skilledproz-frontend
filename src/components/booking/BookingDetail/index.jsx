@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom"; // Added useNavigate
 import styles from "./BookingDetail.module.css";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
@@ -12,6 +12,7 @@ import BookingDetailSidebar from "./BookingDetailSidebar";
 import { calcPricing } from "../../utils/pricing";
 import WorkerPaymentPreview from "./WorkerPaymentPreview";
 import ConfirmationModal from "../../context/ConfirmationModal";
+import { RefundRequest, RefundStatus, RefundHistory } from "../Refund";
 import {
   FaArrowLeft,
   FaExclamationTriangle,
@@ -179,6 +180,7 @@ function Toast({ type, message, onClose }) {
 
 export default function BookingDetail() {
   const { id } = useParams();
+  const navigate = useNavigate(); // Added for navigation
   const { user } = useAuthStore();
 
   // ── State ──────────────────────────────────────────────────────────────
@@ -205,6 +207,10 @@ export default function BookingDetail() {
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [showSOSConfirm, setShowSOSConfirm] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+
+  // ── Refund state ──
+  const [refunds, setRefunds] = useState([]);
+  const [refundsLoading, setRefundsLoading] = useState(false);
 
   // ── Referral wallet state ──
   const [walletBalance, setWalletBalance] = useState(0);
@@ -273,6 +279,20 @@ export default function BookingDetail() {
             })
             .catch(() => {});
         }
+
+        // ── Fetch refunds for this booking ──
+        setRefundsLoading(true);
+        api
+          .get(`/refunds/my?bookingId=${id}`)
+          .then((res) => {
+            setRefunds(res.data.data?.refunds || []);
+          })
+          .catch(() => {
+            setRefunds([]);
+          })
+          .finally(() => {
+            setRefundsLoading(false);
+          });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -347,6 +367,26 @@ export default function BookingDetail() {
     } finally {
       setResolvingSOS(false);
       setShowSOSConfirm(false);
+    }
+  };
+
+  // ── Refund handlers ───────────────────────────────────────────────────
+  const handleRefundRequest = async (refundData) => {
+    setRefundLoading(true);
+    try {
+      const response = await api.post("/refunds/request", refundData);
+      showToastMessage("success", "Refund request submitted successfully!");
+      refetch();
+      // Refresh refunds
+      const res = await api.get(`/refunds/my?bookingId=${id}`);
+      setRefunds(res.data.data?.refunds || []);
+    } catch (error) {
+      showToastMessage(
+        "error",
+        error.response?.data?.message || "Failed to submit refund request",
+      );
+    } finally {
+      setRefundLoading(false);
     }
   };
 
@@ -468,6 +508,24 @@ export default function BookingDetail() {
   const handleReferralToggle = () => {
     setReferralApplied((prev) => !prev);
   };
+
+  // Get the most recent active refund (for status display)
+  const activeRefund = refunds.find((r) =>
+    ["PENDING", "APPROVED", "PROCESSING", "DISPUTED"].includes(r.status),
+  );
+
+  // ── Check if refund should be shown ──────────────────────────────────────
+  // Refund should only show when:
+  // 1. Booking is COMPLETED
+  // 2. Payment status is RELEASED
+  // 3. No active refund exists (the refund request form)
+  // But always show refund status if there's an active refund
+  const showRefundForm =
+    booking.status === "COMPLETED" &&
+    payment?.status === "RELEASED" &&
+    !activeRefund;
+
+  const showRefundStatus = !!activeRefund;
 
   return (
     <Layout>
@@ -620,6 +678,32 @@ export default function BookingDetail() {
             />
           </div>
         </div>
+
+        {/* ── Refund Section ────────────────────────────────────────────── */}
+        {(showRefundForm || showRefundStatus) && (
+          <div className={styles.refundSection}>
+            <div className={styles.section}>
+              <h2 className={styles.sectionTitle}>Refund</h2>
+
+              {activeRefund ? (
+                <RefundStatus
+                  refund={activeRefund}
+                  onViewDetails={() => {
+                    navigate(`/refunds/${activeRefund.id}`);
+                  }}
+                />
+              ) : (
+                <RefundRequest
+                  booking={booking}
+                  payment={payment}
+                  onRequestRefund={handleRefundRequest}
+                  isProcessing={refundLoading}
+                  isHirer={isHirer}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {showDispute && (
