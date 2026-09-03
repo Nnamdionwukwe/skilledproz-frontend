@@ -16,51 +16,79 @@ const STATUS_CONFIG = {
     icon: FaClock,
     color: "#fbbf24",
     label: "Pending Review",
-    description: "Your refund request is being reviewed by our team.",
+    description: {
+      hirer: "Your refund request is being reviewed by our team.",
+      worker:
+        "The hirer has requested a refund. This is being reviewed by our team.",
+    },
   },
   APPROVED: {
     icon: FaCheckCircle,
     color: "#22c55e",
     label: "Approved",
-    description: "Your refund has been approved and is being processed.",
+    description: {
+      hirer: "Your refund has been approved and is being processed.",
+      worker:
+        "The refund for this booking has been approved and is being processed.",
+    },
   },
   PROCESSING: {
     icon: FaSpinner,
     color: "#818cf8",
     label: "Processing",
-    description: "Your refund is being processed.",
+    description: {
+      hirer: "Your refund is currently being processed.",
+      worker: "The refund for this booking is currently being processed.",
+    },
   },
   COMPLETED: {
     icon: FaCheckCircle,
     color: "#22c55e",
     label: "Completed",
-    description: "Your refund has been completed successfully.",
+    description: {
+      hirer: "Your refund has been completed successfully.",
+      worker: "The refund for this booking has been completed.",
+    },
   },
   FAILED: {
     icon: FaTimesCircle,
     color: "#ef4444",
     label: "Failed",
-    description: "Your refund failed. Please contact support.",
+    description: {
+      hirer: "Your refund failed. Please contact support.",
+      worker: "The refund for this booking failed. Please contact support.",
+    },
   },
   REJECTED: {
     icon: FaTimesCircle,
     color: "#ef4444",
     label: "Rejected",
-    description: "Your refund request was rejected.",
+    description: {
+      hirer: "Your refund request was rejected.",
+      worker: "The refund request for this booking was rejected.",
+    },
   },
   DISPUTED: {
     icon: FaExclamationTriangle,
     color: "#f59e0b",
     label: "In Dispute",
-    description: "This refund is under dispute review.",
+    description: {
+      hirer: "This refund is under dispute review.",
+      worker: "This refund is under dispute review.",
+    },
   },
 };
 
-export default function RefundStatus({ refund, onViewDetails }) {
+export default function RefundStatus({ refund, onViewDetails, isHirer }) {
   if (!refund) return null;
 
   const config = STATUS_CONFIG[refund.status] || STATUS_CONFIG.PENDING;
   const Icon = config.icon;
+  const roleKey = isHirer ? "hirer" : "worker";
+  const description =
+    config.description?.[roleKey] ||
+    config.description?.hirer ||
+    "Your refund is being processed.";
 
   return (
     <div className={styles.refundStatusCard}>
@@ -73,7 +101,7 @@ export default function RefundStatus({ refund, onViewDetails }) {
         </div>
         <div className={styles.refundStatusInfo}>
           <h4 className={styles.refundStatusTitle}>{config.label}</h4>
-          <p className={styles.refundStatusDesc}>{config.description}</p>
+          <p className={styles.refundStatusDesc}>{description}</p>
         </div>
         <span
           className={styles.refundStatusBadge}

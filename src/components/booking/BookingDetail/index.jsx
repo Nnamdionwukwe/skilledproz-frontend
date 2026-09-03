@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom"; // Added useNavigate
+import { Link, useParams, useNavigate } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
@@ -180,7 +180,7 @@ function Toast({ type, message, onClose }) {
 
 export default function BookingDetail() {
   const { id } = useParams();
-  const navigate = useNavigate(); // Added for navigation
+  const navigate = useNavigate();
   const { user } = useAuthStore();
 
   // ── State ──────────────────────────────────────────────────────────────
@@ -206,7 +206,6 @@ export default function BookingDetail() {
   const [refundLoading, setRefundLoading] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [showSOSConfirm, setShowSOSConfirm] = useState(false);
-  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
 
   // ── Refund state ──
   const [refunds, setRefunds] = useState([]);
@@ -390,21 +389,6 @@ export default function BookingDetail() {
     }
   };
 
-  // ── Refund ───────────────────────────────────────────────────────────
-  const handleRefund = async () => {
-    setRefundLoading(true);
-    try {
-      await api.post(`/payments/refund/${booking.id}`);
-      showToastMessage("success", "Refund processed successfully.");
-      refetch();
-    } catch (err) {
-      showToastMessage("error", err.response?.data?.message || "Refund failed");
-    } finally {
-      setRefundLoading(false);
-      setShowRefundConfirm(false);
-    }
-  };
-
   // ── Invoice ──────────────────────────────────────────────────────────
   const handleDownloadInvoice = async () => {
     setInvoiceLoading(true);
@@ -509,8 +493,14 @@ export default function BookingDetail() {
     setReferralApplied((prev) => !prev);
   };
 
-  // Get the most recent active refund (for status display)
-  const activeRefund = refunds.find((r) =>
+  // ── Get refunds for this specific booking ──────────────────────────────
+  // Filter refunds by the current booking ID
+  const bookingRefunds = refunds.filter(
+    (r) => r.bookingId === id || r.booking?.id === id,
+  );
+
+  // Get the most recent active refund for THIS booking
+  const activeRefund = bookingRefunds.find((r) =>
     ["PENDING", "APPROVED", "PROCESSING", "DISPUTED"].includes(r.status),
   );
 
@@ -519,7 +509,7 @@ export default function BookingDetail() {
   // 1. Booking is COMPLETED
   // 2. Payment status is RELEASED
   // 3. No active refund exists (the refund request form)
-  // But always show refund status if there's an active refund
+  // But always show refund status if there's an active refund for THIS booking
   const showRefundForm =
     booking.status === "COMPLETED" &&
     payment?.status === "RELEASED" &&
@@ -589,7 +579,6 @@ export default function BookingDetail() {
               bookingId={booking.id}
               invoiceLoading={invoiceLoading}
               onDownloadInvoice={handleDownloadInvoice}
-              onRefund={handleRefund}
               refundLoading={refundLoading}
               isHirer={isHirer}
               paymentStatus={payment?.status}
@@ -685,22 +674,13 @@ export default function BookingDetail() {
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Refund</h2>
 
-              {activeRefund ? (
-                <RefundStatus
-                  refund={activeRefund}
-                  onViewDetails={() => {
-                    navigate(`/refunds/${activeRefund.id}`);
-                  }}
-                />
-              ) : (
-                <RefundRequest
-                  booking={booking}
-                  payment={payment}
-                  onRequestRefund={handleRefundRequest}
-                  isProcessing={refundLoading}
-                  isHirer={isHirer}
-                />
-              )}
+              <RefundStatus
+                refund={activeRefund}
+                onViewDetails={() => {
+                  navigate(`/refunds/${activeRefund.id}`);
+                }}
+                isHirer={isHirer}
+              />
             </div>
           </div>
         )}
@@ -731,20 +711,6 @@ export default function BookingDetail() {
           confirmLabel="Yes, Resolve"
           cancelLabel="Cancel"
           confirmVariant="warning"
-        />
-      )}
-
-      {/* Refund Confirmation Modal */}
-      {showRefundConfirm && (
-        <ConfirmationModal
-          isOpen={showRefundConfirm}
-          onClose={() => setShowRefundConfirm(false)}
-          onConfirm={handleRefund}
-          title="Confirm Refund"
-          message="Are you sure you want to issue a full refund? This action cannot be undone."
-          confirmLabel="Yes, Refund"
-          cancelLabel="Cancel"
-          confirmVariant="danger"
         />
       )}
     </Layout>
