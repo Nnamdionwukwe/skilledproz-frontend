@@ -66,6 +66,52 @@ const STATUS_CONFIG = {
   },
 };
 
+// ── Skeleton Loader ──────────────────────────────────────────────────────
+function SkeletonLoader() {
+  return (
+    <div className={styles.skeletonContainer}>
+      {/* Status Banner Skeleton */}
+      <div className={`${styles.statusBanner} ${styles.skeleton}`}>
+        <div
+          className={styles.skeletonCircle}
+          style={{ width: 24, height: 24 }}
+        />
+        <div className={styles.skeletonLine} style={{ width: "150px" }} />
+        <div
+          className={styles.skeletonLine}
+          style={{ width: "100px", marginLeft: "auto" }}
+        />
+      </div>
+
+      {/* Detail Grid Skeletons */}
+      <div className={styles.detailGrid}>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className={`${styles.detailSection} ${styles.skeleton}`}>
+            <div
+              className={styles.skeletonLine}
+              style={{ width: "60%", marginBottom: "1rem" }}
+            />
+            {[...Array(4)].map((_, j) => (
+              <div key={j} className={styles.detailRow}>
+                <div className={styles.skeletonLine} style={{ width: "40%" }} />
+                <div className={styles.skeletonLine} style={{ width: "30%" }} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Actions Skeleton */}
+      <div className={styles.actionsContainer}>
+        <div
+          className={styles.skeletonLine}
+          style={{ width: "150px", height: "40px", borderRadius: "8px" }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function RefundDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -108,9 +154,14 @@ export default function RefundDetail() {
   if (loading) {
     return (
       <HirerLayout>
-        <div className={styles.loadingState}>
-          <FaSpinner className={styles.spinner} />
-          <p>Loading refund details...</p>
+        <div className={styles.page}>
+          <div className={styles.header}>
+            <Link to="/refunds" className={styles.backLink}>
+              <FaArrowLeft /> Back to Refunds
+            </Link>
+            <h1 className={styles.headerTitle}>Refund Details</h1>
+          </div>
+          <SkeletonLoader />
         </div>
       </HirerLayout>
     );
