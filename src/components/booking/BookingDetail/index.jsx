@@ -586,6 +586,7 @@ export default function BookingDetail() {
               workerName={booking.worker?.firstName}
               onRefundRequest={handleRefundRequest}
               refundLoading={refundLoading}
+              hasActiveRefund={!!activeRefund}
             />
 
             {isWorker && booking.status === "PENDING" && (
@@ -674,7 +675,7 @@ export default function BookingDetail() {
         {(showRefundForm || showRefundStatus) && (
           <div className={styles.refundSection}>
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Refund</h2>
+              {/* <h2 className={styles.sectionTitle}>Refund</h2> */}
 
               {activeRefund && (
                 <RefundStatus

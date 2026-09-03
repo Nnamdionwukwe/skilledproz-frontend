@@ -92,6 +92,7 @@ export default function RefundStatus({ refund, onViewDetails, isHirer }) {
 
   return (
     <div className={styles.refundStatusCard}>
+      <h2 className={styles.sectionTitle}>Refund</h2>
       <div className={styles.refundStatusHeader}>
         <div
           className={styles.refundStatusIcon}

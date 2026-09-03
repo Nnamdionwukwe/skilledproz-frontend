@@ -128,6 +128,7 @@ export default function BookingDetailMain({
   workerName,
   onRefundRequest,
   refundLoading,
+  hasActiveRefund, // ← NEW: whether there's an active refund
 }) {
   // ── Refund modal state ──
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -202,6 +203,13 @@ export default function BookingDetailMain({
       </span>
     );
   };
+
+  // Check if refund button should be shown
+  const showRefundButton =
+    isHirer &&
+    paymentStatus === "RELEASED" &&
+    !refundLoading &&
+    !hasActiveRefund;
 
   return (
     <>
@@ -637,19 +645,14 @@ export default function BookingDetailMain({
             )}{" "}
             Download Invoice
           </button>
-          {isHirer && paymentStatus === "RELEASED" && !refundLoading && (
+          {/* Only show refund button if no active refund exists */}
+          {showRefundButton && (
             <button
               className={styles.refundBtn}
               onClick={handleRefundClick}
               disabled={refundLoading}
             >
-              {refundLoading ? (
-                "Processing…"
-              ) : (
-                <>
-                  <FaUndo /> Request Refund
-                </>
-              )}
+              <FaUndo /> Request Refund
             </button>
           )}
         </div>
