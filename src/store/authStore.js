@@ -29,6 +29,27 @@ export const useAuthStore = create(
         set({ user: null, accessToken: null, refreshToken: null });
       },
 
+      // ── Called by the axios interceptor when the server rejects the session.
+      // Clears auth state in memory + localStorage, then redirects to /login
+      // with a reason code so the login page can show the right banner.
+      handleAuthError: (code, message) => {
+        get().clearAuth();
+        try {
+          const params = new URLSearchParams();
+          if (code) params.set("code", code);
+          if (message) params.set("reason", message);
+          const qs = params.toString();
+
+          // Don't redirect if we're already on the login page (avoids loop)
+          if (!window.location.pathname.startsWith("/login")) {
+            window.location.replace(qs ? `/login?${qs}` : "/login");
+          }
+        } catch {
+          // last-resort fallback
+          window.location.replace("/login");
+        }
+      },
+
       fetchMe: async () => {
         try {
           const { data } = await api.get("/auth/me");
