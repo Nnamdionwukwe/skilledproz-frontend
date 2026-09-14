@@ -338,7 +338,7 @@ export default function WorkerRegister() {
               <h2 className={styles.stepTitle}>Create your account</h2>
 
               {/* ── Google Sign-Up ── */}
-              <GoogleSignInButton mode="signup" />
+              <GoogleSignInButton mode="signup" role="WORKER" />
               <div className={g.divider}>or continue with email</div>
 
               <div className={styles.row2}>

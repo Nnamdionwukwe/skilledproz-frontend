@@ -76,8 +76,8 @@ export const useAuthStore = create(
       },
 
       // ── Google Sign-In ─────────────────────────────────────────────────────
-      // Accepts either { idToken: "eyJ..." } (from <GoogleLogin>) or
-      // { accessToken: "ya29..." } (from useGoogleLogin hook).
+      // Accepts either { idToken } or { accessToken }, optionally with a
+      // `role` hint ("HIRER" | "WORKER") used only for NEW signups.
       googleSignIn: async (payload) => {
         set({ isLoading: true });
         try {

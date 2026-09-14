@@ -14,8 +14,16 @@ import s from "./GoogleSignInButton.module.css";
  *
  * On success, Google returns an access_token. We send it to the backend
  * to fetch the user's profile and sign them in.
+ *
+ * Props:
+ *   - mode: "signin" | "signup"  (only affects the label)
+ *   - role: "HIRER" | "WORKER"   (CHANGED — hint for NEW signups only.
+ *                                 Ignored for existing users.)
  */
-export default function GoogleSignInButton({ mode = "signin" }) {
+export default function GoogleSignInButton({
+  mode = "signin",
+  role = "HIRER",
+}) {
   const navigate = useNavigate();
   const { googleSignIn } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -28,10 +36,11 @@ export default function GoogleSignInButton({ mode = "signin" }) {
       setLoading(true);
       setError("");
       try {
-        // Send the Google access_token to our backend, which will
-        // fetch the user's Google profile and return our own JWT pair.
+        // CHANGED: include `role` in the payload. Backend uses it only
+        // when creating a brand-new Google account.
         const { user } = await googleSignIn({
           accessToken: tokenResponse.access_token,
+          role,
         });
         const dest =
           user.role === "WORKER" ? "/dashboard/worker" : "/dashboard/hirer";

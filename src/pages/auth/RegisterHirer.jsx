@@ -105,7 +105,7 @@ export default function RegisterHirer() {
         </div>
 
         {/* ── Google Sign-Up ─────────────────────────────────────────────── */}
-        <GoogleSignInButton mode="signup" />
+        <GoogleSignInButton mode="signup" role="HIRER" />
         <div className={g.divider}>or continue with email</div>
 
         {errors.api && (
