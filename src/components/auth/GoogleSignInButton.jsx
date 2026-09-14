@@ -8,17 +8,14 @@ import s from "./GoogleSignInButton.module.css";
 /**
  * Google Sign-In button built to match the SkilledProz auth UI.
  *
- * We use Google's low-level `useGoogleLogin` hook (instead of the
- * pre-styled <GoogleLogin /> component) so we can fully control the
- * button's appearance with our own CSS.
- *
- * On success, Google returns an access_token. We send it to the backend
- * to fetch the user's profile and sign them in.
- *
  * Props:
  *   - mode: "signin" | "signup"  (only affects the label)
- *   - role: "HIRER" | "WORKER"   (CHANGED — hint for NEW signups only.
- *                                 Ignored for existing users.)
+ *   - role: "HIRER" | "WORKER"   (hint for NEW signups only)
+ *
+ * On error:
+ *   - ACCOUNT_BANNED / ACCOUNT_DELETED → redirect to /login?code=... so the
+ *     Login page shows the correct banner.
+ *   - Any other error → show inline message.
  */
 export default function GoogleSignInButton({
   mode = "signin",
@@ -36,18 +33,42 @@ export default function GoogleSignInButton({
       setLoading(true);
       setError("");
       try {
-        // CHANGED: include `role` in the payload. Backend uses it only
-        // when creating a brand-new Google account.
         const { user } = await googleSignIn({
           accessToken: tokenResponse.access_token,
           role,
         });
+
+        // Success — send the user to their dashboard.
         const dest =
-          user.role === "WORKER" ? "/dashboard/worker" : "/dashboard/hirer";
+          user.role === "ADMIN"
+            ? "/admin/dashboard"
+            : user.role === "WORKER"
+              ? "/dashboard/worker"
+              : "/dashboard/hirer";
         navigate(dest, { replace: true });
       } catch (err) {
+        const res = err?.response?.data;
+        const code = res?.code;
+
+        // ── Account blocked: send the user to login with the ban banner ─────
+        // The Login page reads ?code=... from the URL and shows the correct
+        // "Account suspended" / "Account deactivated" banner with a
+        // "Contact support" button.
+        if (
+          code === "ACCOUNT_BANNED" ||
+          code === "ACCOUNT_DELETED" ||
+          code === "ACCOUNT_NOT_FOUND"
+        ) {
+          const params = new URLSearchParams();
+          params.set("code", code);
+          if (res?.message) params.set("reason", res.message);
+          navigate(`/login?${params}`, { replace: true });
+          return;
+        }
+
+        // ── Any other error: show inline, keep the user on the page ─────────
         const message =
-          err?.response?.data?.message ||
+          res?.message ||
           err?.message ||
           "Google sign-in failed. Please try again.";
         setError(message);
@@ -93,10 +114,6 @@ export default function GoogleSignInButton({
   );
 }
 
-/**
- * Google's "G" logo, rendered as an inline SVG so we don't depend on
- * external image assets and can recolour it to match our theme if needed.
- */
 function GoogleGlyph() {
   return (
     <svg

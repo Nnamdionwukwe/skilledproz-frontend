@@ -1,6 +1,6 @@
 // src/pages/auth/Login.jsx
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import AuthLayout from "../../components/auth/AuthLayout";
@@ -10,34 +10,110 @@ import g from "../../components/auth/GoogleSignInButton.module.css";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { login, isLoading } = useAuthStore();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  // Which account-block banner to show: null | "banned" | "deleted" | "not_found"
+  const [accountBlock, setAccountBlock] = useState(null);
 
-  const onChange = (e) =>
+  // ── Read ?code= and ?reason= from URL (set by GoogleSignInButton or api.js)
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const reason = searchParams.get("reason");
+    if (!code && !reason) return;
+
+    if (code === "ACCOUNT_BANNED") setAccountBlock("banned");
+    else if (code === "ACCOUNT_DELETED") setAccountBlock("deleted");
+    else if (code === "ACCOUNT_NOT_FOUND") setAccountBlock("not_found");
+    else if (reason) setError(reason);
+
+    // Clean the URL after showing, so a refresh doesn't re-trigger
+    const t = setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("code");
+      next.delete("reason");
+      setSearchParams(next, { replace: true });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [searchParams, setSearchParams]);
+
+  const onChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    if (error) setError("");
+    if (accountBlock) setAccountBlock(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setAccountBlock(null);
     try {
       const loggedInUser = await login(form.email, form.password);
-      navigate(
-        loggedInUser.role === "WORKER"
-          ? "/dashboard/worker"
-          : "/dashboard/hirer",
-        { replace: true },
-      );
+      const role = loggedInUser.role;
+      const dest =
+        role === "ADMIN"
+          ? "/admin/dashboard"
+          : role === "WORKER"
+            ? "/dashboard/worker"
+            : "/dashboard/hirer";
+      navigate(dest, { replace: true });
     } catch (err) {
-      const message =
-        err?.response?.data?.message ??
-        err?.message ??
-        "Login failed. Please try again.";
-      setError(message);
+      const res = err?.response?.data;
+      const code = res?.code;
+
+      // Account-block responses from the backend
+      if (code === "ACCOUNT_BANNED") {
+        setAccountBlock("banned");
+        return;
+      }
+      if (code === "ACCOUNT_DELETED") {
+        setAccountBlock("deleted");
+        return;
+      }
+      if (code === "ACCOUNT_NOT_FOUND") {
+        setAccountBlock("not_found");
+        return;
+      }
+
+      // Google-only account with no password set
+      if (
+        code === "GOOGLE_ACCOUNT_NO_PASSWORD" ||
+        code === "GOOGLE_ONLY_ACCOUNT"
+      ) {
+        setError(
+          res?.message ||
+            "This account was created with Google. Please sign in with Google.",
+        );
+        return;
+      }
+
+      // Fallback
+      setError(
+        res?.message ?? err?.message ?? "Login failed. Please try again.",
+      );
     }
   };
+
+  // Banner content for each account-block state
+  const blockContent = {
+    banned: {
+      title: "Account suspended",
+      body: "Your account has been suspended by an administrator. If you believe this is a mistake, contact our support team.",
+    },
+    deleted: {
+      title: "Account deactivated",
+      body: "This account has been deactivated. Contact support if you'd like to restore access.",
+    },
+    not_found: {
+      title: "Account not found",
+      body: "This account no longer exists. It may have been deleted. Contact support if this is unexpected.",
+    },
+  };
+
+  const block = accountBlock ? blockContent[accountBlock] : null;
 
   return (
     <AuthLayout>
@@ -52,10 +128,40 @@ export default function Login() {
           <p className={s.subtitle}>
             No account yet?{" "}
             <Link to="/register" className={s.link}>
-              Create one free →
+              Create one free
             </Link>
           </p>
         </div>
+
+        {/* ── Account-block banner (banned / deleted / not found) ─────────── */}
+        {block && (
+          <div
+            className={s.alertError}
+            style={{ flexDirection: "column", alignItems: "stretch" }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+              <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <strong style={{ display: "block", marginBottom: 4 }}>
+                  {block.title}
+                </strong>
+                <span>{block.body}</span>
+              </div>
+            </div>
+            <a
+              href="mailto:support@skilledproz.com"
+              className={`${s.btn} ${s.btnOutline}`}
+              style={{
+                marginTop: 10,
+                textDecoration: "none",
+                display: "inline-flex",
+                justifyContent: "center",
+              }}
+            >
+              Contact support
+            </a>
+          </div>
+        )}
 
         {/* ── Google Sign-In ─────────────────────────────────────────────── */}
         <GoogleSignInButton mode="signin" />
@@ -63,10 +169,11 @@ export default function Login() {
         {/* ── Divider ────────────────────────────────────────────────────── */}
         <div className={g.divider}>or</div>
 
-        {error && (
+        {/* ── Generic error banner (only when no account block is active) ── */}
+        {error && !block && (
           <div className={s.alertError}>
             <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-            {error}
+            <span>{error}</span>
           </div>
         )}
 
@@ -138,3 +245,4 @@ export default function Login() {
     </AuthLayout>
   );
 }
+f;
