@@ -15,7 +15,6 @@ export default function GoogleSignInButton({ mode = "signin" }) {
     setLoading(true);
     setError("");
     try {
-      // credentialResponse.credential is the ID token (JWT)
       const { user, isNewUser } = await googleSignIn(
         credentialResponse.credential,
       );
@@ -44,7 +43,7 @@ export default function GoogleSignInButton({ mode = "signin" }) {
           size="large"
           text={mode === "signup" ? "signup_with" : "continue_with"}
           logo_alignment="left"
-          width="100%"
+          width="340"
         />
       )}
       {loading && <div className={s.loading}>Connecting to Google…</div>}
