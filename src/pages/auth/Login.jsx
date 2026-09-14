@@ -16,10 +16,8 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
-  // Which account-block banner to show: null | "banned" | "deleted" | "not_found"
   const [accountBlock, setAccountBlock] = useState(null);
 
-  // ── Read ?code= and ?reason= from URL (set by GoogleSignInButton or api.js)
   useEffect(() => {
     const code = searchParams.get("code");
     const reason = searchParams.get("reason");
@@ -30,7 +28,6 @@ export default function Login() {
     else if (code === "ACCOUNT_NOT_FOUND") setAccountBlock("not_found");
     else if (reason) setError(reason);
 
-    // Clean the URL after showing, so a refresh doesn't re-trigger
     const t = setTimeout(() => {
       const next = new URLSearchParams(searchParams);
       next.delete("code");
@@ -64,7 +61,6 @@ export default function Login() {
       const res = err?.response?.data;
       const code = res?.code;
 
-      // Account-block responses from the backend
       if (code === "ACCOUNT_BANNED") {
         setAccountBlock("banned");
         return;
@@ -78,7 +74,6 @@ export default function Login() {
         return;
       }
 
-      // Google-only account with no password set
       if (
         code === "GOOGLE_ACCOUNT_NO_PASSWORD" ||
         code === "GOOGLE_ONLY_ACCOUNT"
@@ -90,14 +85,12 @@ export default function Login() {
         return;
       }
 
-      // Fallback
       setError(
         res?.message ?? err?.message ?? "Login failed. Please try again.",
       );
     }
   };
 
-  // Banner content for each account-block state
   const blockContent = {
     banned: {
       title: "Account suspended",
@@ -133,7 +126,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* ── Account-block banner (banned / deleted / not found) ─────────── */}
         {block && (
           <div
             className={s.alertError}
@@ -163,13 +155,10 @@ export default function Login() {
           </div>
         )}
 
-        {/* ── Google Sign-In ─────────────────────────────────────────────── */}
         <GoogleSignInButton mode="signin" />
 
-        {/* ── Divider ────────────────────────────────────────────────────── */}
         <div className={g.divider}>or</div>
 
-        {/* ── Generic error banner (only when no account block is active) ── */}
         {error && !block && (
           <div className={s.alertError}>
             <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -245,4 +234,3 @@ export default function Login() {
     </AuthLayout>
   );
 }
-f;
