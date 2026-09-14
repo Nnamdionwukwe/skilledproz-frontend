@@ -74,6 +74,54 @@ export const useAuthStore = create(
           set({ isLoading: false });
         }
       },
+
+      // ── Google Sign-In (popup flow with ID token) ──────────────────────────
+      googleSignIn: async (idToken) => {
+        set({ isLoading: true });
+        try {
+          const { data } = await api.post("/auth/google", { idToken });
+          get().setAuth(
+            data.data.user,
+            data.data.accessToken,
+            data.data.refreshToken,
+          );
+          return {
+            user: data.data.user,
+            isNewUser: data.data.isNewUser,
+          };
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      // ── Google Callback (redirect flow — called from /auth/google/callback) ─
+      handleGoogleCallback: async (accessToken, refreshToken) => {
+        set({ isLoading: true });
+        try {
+          // Save tokens first so subsequent calls are authorized
+          localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("refreshToken", refreshToken);
+
+          // Fetch user profile with the new token
+          const { data } = await api.get("/auth/me");
+
+          set({
+            user: data.data,
+            accessToken,
+            refreshToken,
+          });
+
+          return data.data;
+        } catch (err) {
+          // Clean up if anything failed
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          set({ user: null, accessToken: null, refreshToken: null });
+          throw err;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
     }),
     {
       name: "skilledproz-auth",

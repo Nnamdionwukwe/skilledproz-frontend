@@ -89,4 +89,19 @@ api.interceptors.response.use(
   },
 );
 
+// ── Google OAuth helpers ─────────────────────────────────────────────────────
+export const googleAuth = {
+  /**
+   * Get the Google consent URL from the backend.
+   * Returns: { url: "https://accounts.google.com/..." }
+   */
+  getAuthUrl: () => api.get("/auth/google/url"),
+
+  /**
+   * Sign in with a Google ID token (from @react-oauth/google popup flow).
+   * Returns: { accessToken, refreshToken, user, isNewUser }
+   */
+  signInWithToken: (idToken) => api.post("/auth/google", { idToken }),
+};
+
 export default api;

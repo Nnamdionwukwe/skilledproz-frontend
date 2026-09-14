@@ -1,14 +1,16 @@
 // src/pages/auth/Login.jsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import AuthLayout from "../../components/auth/AuthLayout";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 import s from "../../components/auth/form.module.css";
+import g from "../../components/auth/GoogleSignInButton.module.css";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuthStore(); // no more user/isHydrated needed here
+  const { login, isLoading } = useAuthStore();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
@@ -37,7 +39,6 @@ export default function Login() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <AuthLayout>
       <div className={s.container}>
@@ -55,6 +56,12 @@ export default function Login() {
             </Link>
           </p>
         </div>
+
+        {/* ── Google Sign-In ─────────────────────────────────────────────── */}
+        <GoogleSignInButton mode="signin" />
+
+        {/* ── Divider ────────────────────────────────────────────────────── */}
+        <div className={g.divider}>or</div>
 
         {error && (
           <div className={s.alertError}>

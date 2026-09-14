@@ -1,0 +1,312 @@
+════════════════════════════════════════════════════════════════════
+  SkilledProz FRONTEND — Full Inventory
+  Generated: Mon Sep 14 11:20:14 WAT 2026
+  Directory: /Users/onwukwennamdi/Desktop/skilledproz-frontend
+════════════════════════════════════════════════════════════════════
+
+── 1. FRAMEWORK & STACK ──────────────────────────────────────────
+Name:      skilledproz-frontend
+Version:   0.0.0
+
+Scripts:
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build",
+      "lint": "eslint .",
+      "preview": "vite preview"
+    },
+    "dependencies": {
+      "@react-oauth/google": "^0.13.4",
+      "@stripe/react-stripe-js": "^6.0.0",
+      "@stripe/stripe-js": "^9.0.0",
+      "axios": "^1.13.6",
+      "framer-motion": "^12.43.0",
+      "lucide-react": "^1.6.0",
+      "qrcode.react": "^4.2.0",
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4",
+      "react-helmet-async": "^3.0.0",
+      "react-icons": "^5.7.0",
+      "react-router-dom": "^7.13.2",
+      "zustand": "^5.0.12"
+    },
+
+Key dependencies:
+      "axios": "^1.13.6",
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4",
+      "react-helmet-async": "^3.0.0",
+      "react-icons": "^5.7.0",
+      "react-router-dom": "^7.13.2",
+      "zustand": "^5.0.12"
+      "vite": "^8.0.1"
+
+── 2. ROOT STRUCTURE ─────────────────────────────────────────────
+total 552
+drwxr-xr-x@  22 onwukwennamdi  staff     704 Sep 14 11:20 .
+drwx------+  52 onwukwennamdi  staff    1664 Sep 12 16:32 ..
+-rw-r--r--@   1 onwukwennamdi  staff     236 Aug 27 21:57 .env
+-rw-r--r--@   1 onwukwennamdi  staff       0 Mar 26 23:39 .env.production
+drwxr-xr-x@  15 onwukwennamdi  staff     480 Sep  3 03:15 .git
+-rw-r--r--@   1 onwukwennamdi  staff     285 Mar 28 12:07 .gitignore
+-rw-r--r--@   1 onwukwennamdi  staff    1027 Mar 24 18:22 README.md
+drwxr-xr-x@   5 onwukwennamdi  staff     160 Aug 29 21:35 dist
+-rw-r--r--@   1 onwukwennamdi  staff     758 Mar 24 18:22 eslint.config.js
+-rw-r--r--@   1 onwukwennamdi  staff   16243 May 31 13:39 frontend-audit-v2.js
+-rw-r--r--@   1 onwukwennamdi  staff   41112 May 31 13:32 frontend-audit.js
+-rw-r--r--@   1 onwukwennamdi  staff    1786 Sep 14 11:20 frontend-inventory-2026-09-14-1120.txt
+-rw-r--r--@   1 onwukwennamdi  staff    2949 Aug 19 23:18 index.html
+-rw-r--r--@   1 onwukwennamdi  staff   64560 May 31 13:32 output report.txt
+-rw-r--r--@   1 onwukwennamdi  staff  110411 Aug 26 03:55 package-lock.json
+-rw-r--r--@   1 onwukwennamdi  staff    1012 Aug 26 03:55 package.json
+drwxr-xr-x@   3 onwukwennamdi  staff      96 Aug  1 13:43 public
+-rwxr-xr-x@   1 onwukwennamdi  staff    6117 Sep 14 11:19 scan-frontend.sh
+drwxr-xr-x@  15 onwukwennamdi  staff     480 Aug  8 21:14 src
+-rw-r--r--@   1 onwukwennamdi  staff     126 Mar 25 12:23 vercel.json
+-rw-r--r--@   1 onwukwennamdi  staff     283 Mar 24 22:23 vite.config.js
+
+── 3. SRC/ TREE (2 levels) ───────────────────────────────────────
+src
+src/app
+src/app/auth
+src/components
+src/components/AppDownload
+src/components/Feedback
+src/components/SocialQR
+src/components/WaitlistSection
+src/components/auth
+src/components/booking
+src/components/categories
+src/components/common
+src/components/context
+src/components/disputes
+src/components/featured
+src/components/hirer
+src/components/layout
+src/components/messages
+src/components/payment
+src/components/posts
+src/components/review
+src/components/search
+src/components/seo
+src/components/settimg
+src/components/subscription
+src/components/survey
+src/components/ui
+src/components/user
+src/components/utils
+src/components/worker
+src/context
+src/hooks
+src/lib
+src/pages
+src/pages/Blog
+src/pages/Terms pages
+src/pages/admin
+src/pages/auth
+src/pages/feed
+src/pages/referral
+src/pages/reports
+src/pages/worker
+src/store
+src/styles
+src/types
+
+── 4. PAGES / SCREENS ────────────────────────────────────────────
+src/pages/Blog/BlogPage.jsx
+src/pages/DownloadPage.jsx
+src/pages/Terms pages/About.jsx
+src/pages/Terms pages/Contact.jsx
+src/pages/Terms pages/PrivacyPolicy.jsx
+src/pages/Terms pages/Terms.jsx
+src/pages/admin/AdminAnalytics.jsx
+src/pages/admin/AdminAuditLog.jsx
+src/pages/admin/AdminBookings.jsx
+src/pages/admin/AdminBroadcast.jsx
+src/pages/admin/AdminCampaign.jsx
+src/pages/admin/AdminCategories.jsx
+src/pages/admin/AdminDashboard.jsx
+src/pages/admin/AdminDisputes.jsx
+src/pages/admin/AdminExternalJobStats.jsx
+src/pages/admin/AdminExternalJobs.jsx
+src/pages/admin/AdminFeatured.jsx
+src/pages/admin/AdminFeedback.jsx
+src/pages/admin/AdminInsurance.jsx
+src/pages/admin/AdminJobPost.jsx
+src/pages/admin/AdminLogs.jsx
+src/pages/admin/AdminManualPayments.jsx
+src/pages/admin/AdminMessages.jsx
+src/pages/admin/AdminPayments.jsx
+src/pages/admin/AdminPlatformJobs.jsx.jsx
+src/pages/admin/AdminPosts.jsx
+src/pages/admin/AdminPromoCodes.jsx
+src/pages/admin/AdminReferrals.jsx
+src/pages/admin/AdminReports.jsx
+src/pages/admin/AdminReviews.jsx
+src/pages/admin/AdminSettings.jsx
+src/pages/admin/AdminSubscriptions.module.jsx
+src/pages/admin/AdminSurveys.jsx
+src/pages/admin/AdminUsers.jsx
+src/pages/admin/AdminVerifications.jsx
+src/pages/admin/AdminVideoCalls.jsx
+src/pages/admin/AdminWaitlist.jsx
+src/pages/admin/AdminWallet.jsx
+src/pages/admin/AdminWithdrawals.jsx
+src/pages/auth/ForgotPassword.jsx
+src/pages/auth/Login.jsx
+src/pages/auth/Register.jsx
+src/pages/auth/RegisterHirer.jsx
+src/pages/auth/RegisterWorker.jsx
+src/pages/auth/ResetPassword.jsx
+src/pages/auth/VerifyEmail.jsx
+src/pages/feed/FeedPage.jsx
+src/pages/feed/MyPosts.jsx
+src/pages/referral/CampaignDashboard.jsx
+src/pages/referral/ReferralDashboard.jsx
+src/pages/reports/MyReports.jsx
+src/pages/reports/ReportButton.jsx
+src/pages/worker/CompletedJobs/CompletedJobs.jsx
+src/pages/worker/ExternalJobBoard/ExternalJobBoard.jsx
+src/pages/worker/ExternalJobBoard/ExternalJobDetail.jsx
+src/pages/worker/MyJobApplications/MyJobApplications.jsx
+src/pages/worker/VideoIntro.jsx
+src/pages/worker/WorkerSavedJobs/WorkerSavedJobs.jsx
+src/pages/worker/availability/Availability.jsx
+src/pages/worker/categories/Categories.jsx
+src/pages/worker/certifications/Certifications.jsx
+src/pages/worker/dashboard/WorkerDashboard.jsx
+src/pages/worker/dashboard/earnings/WithdrawalPinSection.jsx
+src/pages/worker/dashboard/earnings/WorkerEarningsPage.jsx
+src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx
+src/pages/worker/dashboard/notifications/Notifications.jsx
+src/pages/worker/dashboard/portfolio/Portfolio.jsx
+src/pages/worker/dashboard/profile/Profile.jsx
+src/pages/worker/dashboard/reviews/Profile.jsx
+src/pages/worker/verification/BackgroundCheck.jsx
+src/pages/worker/verification/WorkerVerification.jsx
+
+── 5. COMPONENTS ─────────────────────────────────────────────────
+src/components/AppDownload/AppDownload.jsx
+src/components/AppDownload/FloatingDownloadButton.jsx
+src/components/AppDownload/QRCodeDownload.jsx
+src/components/Feedback/FeedbackButton.jsx
+src/components/SocialQR/SocialQR.jsx
+src/components/UserActivityLog.jsx
+src/components/WaitlistSection/WaitlistSection.jsx
+src/components/auth/AuthGuard.jsx
+src/components/auth/AuthLayout.jsx
+src/components/auth/CategorySuggest.jsx
+src/components/booking/BookingDetail/BookingDetailMain.jsx
+src/components/booking/BookingDetail/BookingDetailPayment.jsx
+src/components/booking/BookingDetail/BookingDetailSidebar.jsx
+src/components/booking/BookingDetail/WorkerPaymentPreview.jsx
+src/components/booking/BookingDetail/common/Alert.jsx
+src/components/booking/BookingDetail/common/NotFound.jsx
+src/components/booking/BookingDetail/common/Skeleton.jsx
+src/components/booking/BookingDetail/index.jsx
+src/components/booking/BookingInvoice.jsx
+src/components/booking/BookingList.jsx
+src/components/booking/CreateBooking/BookingFormFields.jsx
+src/components/booking/CreateBooking/BookingWorkerInfo.jsx
+src/components/booking/CreateBooking/index.jsx
+src/components/booking/EmergencyContact.jsx
+src/components/booking/GpsCheckIn.jsx
+src/components/booking/Refund/RefundDetail.jsx
+src/components/booking/Refund/RefundHistory.jsx
+src/components/booking/Refund/RefundRequest.jsx
+src/components/booking/Refund/RefundStatus.jsx
+src/components/booking/SOSButton.jsx
+src/components/booking/VideoCallButton.jsx
+src/components/categories/CategoriesBrowse.jsx
+src/components/categories/CategoryDetail.jsx
+src/components/common/DashboardCurrencySwitch.jsx
+src/components/common/DurationBadge.jsx
+src/components/common/TranslateButton.jsx
+src/components/common/Translator.jsx
+src/components/context/ConfirmationModal.jsx
+src/components/context/SubscriptionContext.jsx
+src/components/disputes/MyDisputes.jsx
+src/components/disputes/RaiseDisputeModal.jsx
+src/components/featured/FeaturedBoost.jsx
+src/components/hirer/AIJobAssistant.jsx
+src/components/hirer/HirerBookings.jsx
+src/components/hirer/HirerDashboard.jsx
+src/components/hirer/HirerNotifications.jsx
+src/components/hirer/HirerPaymentHistory.jsx
+src/components/hirer/HirerProfile.jsx
+src/components/hirer/HirerPublicProfile.jsx
+src/components/hirer/HirerReviewsGiven.jsx
+src/components/hirer/HirerReviewsReceived.jsx
+src/components/hirer/HirerSavedWorkers.jsx
+src/components/hirer/HirerWallet.jsx
+src/components/hirer/InsuranceAddon.jsx
+src/components/hirer/InsuranceSuccess.jsx
+src/components/hirer/JobApplications.jsx
+src/components/hirer/JobDetail.jsx
+src/components/hirer/PostJob.jsx
+src/components/hirer/WalletCallback.jsx
+src/components/hirer/hirerjobs/HirerJobBoard.jsx
+
+── 6. ROUTES / ROUTER FILES ──────────────────────────────────────
+src/App.jsx
+src/app/auth/login/AuthLayout.jsx
+src/components/auth/AuthLayout.jsx
+src/components/layout/AdminLayout.jsx
+src/components/layout/HirerLayout.jsx
+src/components/layout/WorkerLayout.jsx
+src/main.jsx
+src/pages/Terms pages/About.jsx
+
+── 7. API / AXIOS / FETCH ────────────────────────────────────────
+src/lib/api.js
+
+── 8. AUTH-RELATED FILES ─────────────────────────────────────────
+src/app/auth/login/AuthLayout.jsx
+src/app/auth/login/AuthLayout.module.css
+src/components/auth/AuthGuard.jsx
+src/components/auth/AuthLayout.jsx
+src/components/auth/AuthLayout.module.css
+src/pages/auth/Login.jsx
+src/store/authStore.js
+
+── 9. STATE MANAGEMENT ───────────────────────────────────────────
+src/store/socket.store.jsx
+
+── 10. ENV FILES ─────────────────────────────────────────────────
+-rw-r--r--@ 1 onwukwennamdi  staff  236 Aug 27 21:57 .env
+-rw-r--r--@ 1 onwukwennamdi  staff    0 Mar 26 23:39 .env.production
+
+  ENV keys (values hidden):
+  ── .env ──
+    VITE_API_URL=<hidden>
+    VITE_STRIPE_PUBLIC_KEY=<hidden>
+  ── .env.production ──
+
+── 11. HTTP CLIENT SETUP ─────────────────────────────────────────
+src/app/LandingPage.jsx:242:      `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/categories?limit=1000`,
+src/app/LandingPage.jsx:263:        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/categories/suggest`,
+src/components/WaitlistSection/WaitlistSection.jsx:90:        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/waitlist`,
+src/components/Feedback/FeedbackButton.jsx:119:        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/feedback`,
+src/components/survey/SurveyModal.jsx:183:        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/survey`,
+src/lib/api.js:4:const api = axios.create({
+src/lib/api.js:5:  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+src/lib/api.js:65:          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/auth/refresh`,
+src/pages/worker/certifications/Certifications.jsx:61:        `${import.meta.env.VITE_API_URL || "/api"}/workers/certifications`,
+
+── 12. EXISTING GOOGLE REFERENCES ────────────────────────────────
+src/context/ThemeContext.jsx:14:// ── The one function that controls Google Translate ───────────────────────────
+src/components/AppDownload/AppDownload.jsx:44:      storeUrl: "https://play.google.com/store/apps/details?id=com.skilledproz",
+src/components/booking/BookingDetail/index.jsx:39:  return `https://www.google.com/maps?q=${lat},${lng}`;
+src/components/booking/BookingDetail/BookingDetailMain.jsx:50:  const mapsUrl = (lat, lng) => `https://www.google.com/maps?q=${lat},${lng}`;
+src/components/booking/BookingDetail/BookingDetailMain.jsx:103:        <FaMap style={{ marginRight: "4px" }} /> View on Google Maps
+src/components/survey/SurveyModal.jsx:91:  { id: "google", label: "Google Search" },
+src/App.jsx:199:      <div id="google_translate_element" style={{ display: "none" }} />
+
+── 13. FILE COUNTS ───────────────────────────────────────────────
+  Pages/Screens:  180
+  Components:     95
+  Total src/:     336
+
+════════════════════════════════════════════════════════════════════
+  END OF INVENTORY
+════════════════════════════════════════════════════════════════════

@@ -128,6 +128,7 @@ import AdminLogs from "./pages/admin/AdminLogs.jsx";
 import AdminWallet from "./pages/admin/AdminWallet.jsx";
 import RefundHistory from "./components/booking/Refund/RefundHistory.jsx";
 import RefundDetail from "./components/booking/Refund/RefundDetail.jsx";
+import GoogleCallback from "./pages/auth/GoogleCallback.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -211,6 +212,7 @@ export default function App() {
             // </GuestOnly>
           }
         />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route
           path="/register"
           element={
