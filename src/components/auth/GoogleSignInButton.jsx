@@ -1,53 +1,117 @@
 // src/components/auth/GoogleSignInButton.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { useAuthStore } from "../../store/authStore";
 import s from "./GoogleSignInButton.module.css";
 
+/**
+ * Google Sign-In button built to match the SkilledProz auth UI.
+ *
+ * We use Google's low-level `useGoogleLogin` hook (instead of the
+ * pre-styled <GoogleLogin /> component) so we can fully control the
+ * button's appearance with our own CSS.
+ *
+ * On success, Google returns an access_token. We send it to the backend
+ * to fetch the user's profile and sign them in.
+ */
 export default function GoogleSignInButton({ mode = "signin" }) {
   const navigate = useNavigate();
   const { googleSignIn } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSuccess = async (credentialResponse) => {
-    setLoading(true);
-    setError("");
-    try {
-      const { user, isNewUser } = await googleSignIn(
-        credentialResponse.credential,
-      );
-      const dest =
-        user.role === "WORKER" ? "/dashboard/worker" : "/dashboard/hirer";
-      navigate(dest, { replace: true });
-    } catch (err) {
-      const message =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Google sign-in failed. Please try again.";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const googleLogin = useGoogleLogin({
+    flow: "implicit",
+    scope: "openid email profile",
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError("");
+      try {
+        // Send the Google access_token to our backend, which will
+        // fetch the user's Google profile and return our own JWT pair.
+        const { user } = await googleSignIn({
+          accessToken: tokenResponse.access_token,
+        });
+        const dest =
+          user.role === "WORKER" ? "/dashboard/worker" : "/dashboard/hirer";
+        navigate(dest, { replace: true });
+      } catch (err) {
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Google sign-in failed. Please try again.";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      setError("Google sign-in was cancelled or failed.");
+    },
+  });
 
   return (
     <div className={s.wrap}>
-      {!loading && (
-        <GoogleLogin
-          onSuccess={handleSuccess}
-          onError={() => setError("Google sign-in was cancelled or failed.")}
-          shape="rectangular"
-          theme="outline"
-          size="large"
-          text={mode === "signup" ? "signup_with" : "continue_with"}
-          logo_alignment="left"
-          width="340"
-        />
-      )}
-      {loading && <div className={s.loading}>Connecting to Google…</div>}
+      <button
+        type="button"
+        className={s.googleBtn}
+        onClick={() => googleLogin()}
+        disabled={loading}
+        aria-label={
+          mode === "signup" ? "Sign up with Google" : "Sign in with Google"
+        }
+      >
+        {loading ? (
+          <>
+            <span className={s.spinner} />
+            <span>Connecting…</span>
+          </>
+        ) : (
+          <>
+            <GoogleGlyph />
+            <span>
+              {mode === "signup"
+                ? "Sign up with Google"
+                : "Continue with Google"}
+            </span>
+          </>
+        )}
+      </button>
+
       {error && <div className={s.error}>{error}</div>}
     </div>
+  );
+}
+
+/**
+ * Google's "G" logo, rendered as an inline SVG so we don't depend on
+ * external image assets and can recolour it to match our theme if needed.
+ */
+function GoogleGlyph() {
+  return (
+    <svg
+      className={s.glyph}
+      viewBox="0 0 48 48"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
   );
 }

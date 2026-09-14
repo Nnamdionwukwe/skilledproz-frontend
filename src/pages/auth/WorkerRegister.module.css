@@ -493,3 +493,35 @@
   align-items: center;
   gap: 4px;
 }
+
+/* Aligns Lucide icons inside step dots */
+.stepDot svg {
+  display: block;
+}
+
+/* Error box: align icon with text */
+.errorBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+/* Add-category button: inline icon + text */
+.addCatBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Primary button: keep icon + label aligned */
+.primaryBtn svg {
+  display: block;
+}
+
+/* Star button inside selected chip */
+.setPrimaryBtn {
+  display: inline-flex;
+  align-items: center;
+}

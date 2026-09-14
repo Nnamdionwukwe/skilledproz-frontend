@@ -1,9 +1,23 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  User,
+  HardHat,
+  Tag,
+  Wallet,
+  Check,
+  Star,
+  Plus,
+  Search,
+  Rocket,
+  AlertTriangle,
+} from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
+import g from "../../components/auth/GoogleSignInButton.module.css";
 import styles from "./WorkerRegister.module.css";
-import { ArrowLeft } from "lucide-react";
 
 const ALL_CURRENCIES = [
   "USD",
@@ -41,10 +55,10 @@ const ALL_CURRENCIES = [
 ];
 
 const STEPS = [
-  { id: "account", label: "Account", icon: "👤" },
-  { id: "profile", label: "Profile", icon: "👷" },
-  { id: "category", label: "Category", icon: "🏷️" },
-  { id: "pricing", label: "Pricing", icon: "💰" },
+  { id: "account", label: "Account", Icon: User },
+  { id: "profile", label: "Profile", Icon: HardHat },
+  { id: "category", label: "Category", Icon: Tag },
+  { id: "pricing", label: "Pricing", Icon: Wallet },
 ];
 
 export default function WorkerRegister() {
@@ -289,29 +303,44 @@ export default function WorkerRegister() {
 
         {/* Step indicators */}
         <div className={styles.steps}>
-          {STEPS.map((s, i) => (
-            <div
-              key={s.id}
-              className={`${styles.stepItem} ${i <= step ? styles.stepActive : ""} ${i < step ? styles.stepDone : ""}`}
-            >
-              <div className={styles.stepDot}>{i < step ? "✓" : s.icon}</div>
-              <span className={styles.stepLabel}>{s.label}</span>
-              {i < STEPS.length - 1 && (
-                <div
-                  className={`${styles.stepLine} ${i < step ? styles.stepLineDone : ""}`}
-                />
-              )}
-            </div>
-          ))}
+          {STEPS.map((s, i) => {
+            const StepIcon = s.Icon;
+            return (
+              <div
+                key={s.id}
+                className={`${styles.stepItem} ${i <= step ? styles.stepActive : ""} ${i < step ? styles.stepDone : ""}`}
+              >
+                <div className={styles.stepDot}>
+                  {i < step ? <Check size={15} /> : <StepIcon size={15} />}
+                </div>
+                <span className={styles.stepLabel}>{s.label}</span>
+                {i < STEPS.length - 1 && (
+                  <div
+                    className={`${styles.stepLine} ${i < step ? styles.stepLineDone : ""}`}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {error && <div className={styles.errorBox}>⚠️ {error}</div>}
+        {error && (
+          <div className={styles.errorBox}>
+            <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>{error}</span>
+          </div>
+        )}
 
         <div className={styles.card}>
           {/* ── STEP 0: Account ── */}
           {step === 0 && (
             <div className={styles.stepContent}>
               <h2 className={styles.stepTitle}>Create your account</h2>
+
+              {/* ── Google Sign-Up ── */}
+              <GoogleSignInButton mode="signup" />
+              <div className={g.divider}>or continue with email</div>
+
               <div className={styles.row2}>
                 <Field
                   label="First Name *"
@@ -451,12 +480,16 @@ export default function WorkerRegister() {
                           c.id === primaryCatId ? "Primary" : "Set as primary"
                         }
                       >
-                        {c.id === primaryCatId ? "⭐" : "☆"}
+                        <Star
+                          size={13}
+                          fill={c.id === primaryCatId ? "currentColor" : "none"}
+                        />
                       </button>
                       <button
                         type="button"
                         onClick={() => toggleCat(c)}
                         className={styles.removeCatBtn}
+                        aria-label="Remove category"
                       >
                         ×
                       </button>
@@ -465,12 +498,26 @@ export default function WorkerRegister() {
                 </div>
               )}
 
-              <input
-                className={styles.input}
-                placeholder="🔍 Search categories..."
-                value={catSearch}
-                onChange={(e) => setCatSearch(e.target.value)}
-              />
+              <div style={{ position: "relative" }}>
+                <Search
+                  size={14}
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-muted)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <input
+                  className={styles.input}
+                  placeholder="Search categories..."
+                  value={catSearch}
+                  onChange={(e) => setCatSearch(e.target.value)}
+                  style={{ paddingLeft: 36 }}
+                />
+              </div>
 
               <div className={styles.catGrid}>
                 {filteredCats.slice(0, 60).map((c) => {
@@ -484,7 +531,11 @@ export default function WorkerRegister() {
                     >
                       {c.icon && <span>{c.icon}</span>}
                       <span>{c.name}</span>
-                      {selected && <span className={styles.catCheck}>✓</span>}
+                      {selected && (
+                        <span className={styles.catCheck}>
+                          <Check size={11} />
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -496,7 +547,7 @@ export default function WorkerRegister() {
                   className={styles.addCatBtn}
                   onClick={() => setShowCustomCat(true)}
                 >
-                  + Add a custom category
+                  <Plus size={13} /> Add a custom category
                 </button>
               ) : (
                 <div className={styles.customCatBox}>
@@ -561,25 +612,25 @@ export default function WorkerRegister() {
 
               <div className={styles.pricingGrid}>
                 <PriceField
-                  label="⏱ Hourly Rate"
+                  label="Hourly Rate"
                   suffix="/hr"
                   value={pricing.hourlyRate}
                   onChange={(v) => pr("hourlyRate", v)}
                 />
                 <PriceField
-                  label="📅 Daily Rate"
+                  label="Daily Rate"
                   suffix="/day"
                   value={pricing.dailyRate}
                   onChange={(v) => pr("dailyRate", v)}
                 />
                 <PriceField
-                  label="📆 Weekly Rate"
+                  label="Weekly Rate"
                   suffix="/wk"
                   value={pricing.weeklyRate}
                   onChange={(v) => pr("weeklyRate", v)}
                 />
                 <PriceField
-                  label="🗓 Monthly Rate"
+                  label="Monthly Rate"
                   suffix="/mo"
                   value={pricing.monthlyRate}
                   onChange={(v) => pr("monthlyRate", v)}
@@ -705,7 +756,9 @@ export default function WorkerRegister() {
                     <span className={styles.spinner} /> Creating account...
                   </>
                 ) : (
-                  "🚀 Create Account"
+                  <>
+                    <Rocket size={14} /> Create Account
+                  </>
                 )}
               </button>
             )}

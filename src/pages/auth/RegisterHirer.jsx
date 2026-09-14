@@ -1,3 +1,4 @@
+// src/pages/auth/RegisterHirer.jsx
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -14,6 +15,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import AuthLayout from "../../components/auth/AuthLayout";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
+import g from "../../components/auth/GoogleSignInButton.module.css";
 import s from "../../components/auth/form.module.css";
 
 const INIT = {
@@ -100,12 +103,18 @@ export default function RegisterHirer() {
             skilled proz
           </h1>
         </div>
+
+        {/* ── Google Sign-Up ─────────────────────────────────────────────── */}
+        <GoogleSignInButton mode="signup" />
+        <div className={g.divider}>or continue with email</div>
+
         {errors.api && (
           <div className={s.alertError}>
             <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
             {errors.api}
           </div>
         )}
+
         <form className={s.form} onSubmit={handleSubmit} noValidate>
           <div className={s.row}>
             <div
@@ -148,6 +157,7 @@ export default function RegisterHirer() {
               )}
             </div>
           </div>
+
           <div className={`${s.field} ${errors.email ? s.fieldError : ""}`}>
             <label className={s.label}>Email address</label>
             <div className={s.inputWrap}>
@@ -165,6 +175,7 @@ export default function RegisterHirer() {
             </div>
             {errors.email && <span className={s.errMsg}>{errors.email}</span>}
           </div>
+
           <div className={s.field}>
             <label className={s.label}>
               Phone{" "}
@@ -186,6 +197,7 @@ export default function RegisterHirer() {
               />
             </div>
           </div>
+
           <div className={s.row}>
             <div className={s.field}>
               <label className={s.label}>Country</label>
@@ -293,6 +305,7 @@ export default function RegisterHirer() {
               )}
             </div>
           </div>
+
           <label className={s.checkRow}>
             <input
               type="checkbox"
@@ -310,6 +323,7 @@ export default function RegisterHirer() {
             </Link>
           </label>
           {errors.agree && <span className={s.errMsg}>{errors.agree}</span>}
+
           <button
             type="submit"
             className={`${s.btn} ${s.btnPrimary}`}
@@ -317,9 +331,10 @@ export default function RegisterHirer() {
             style={{ marginTop: 2 }}
           >
             {isLoading && <span className={s.spinner} />}
-            {isLoading ? "Creating account…" : "Create Hirer Account →"}
+            {isLoading ? "Creating account…" : "Create Hirer Account"}
           </button>
         </form>
+
         <p className={s.footer}>
           Already have an account?{" "}
           <Link to="/login" className={s.link}>

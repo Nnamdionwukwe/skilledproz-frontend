@@ -75,11 +75,13 @@ export const useAuthStore = create(
         }
       },
 
-      // ── Google Sign-In (popup flow with ID token) ──────────────────────────
-      googleSignIn: async (idToken) => {
+      // ── Google Sign-In ─────────────────────────────────────────────────────
+      // Accepts either { idToken: "eyJ..." } (from <GoogleLogin>) or
+      // { accessToken: "ya29..." } (from useGoogleLogin hook).
+      googleSignIn: async (payload) => {
         set({ isLoading: true });
         try {
-          const { data } = await api.post("/auth/google", { idToken });
+          const { data } = await api.post("/auth/google", payload);
           get().setAuth(
             data.data.user,
             data.data.accessToken,
