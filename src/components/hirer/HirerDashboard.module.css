@@ -1,9 +1,22 @@
-/* ── Page Layout ── */
+/* ── Page Layout — full-bleed, hugs both screen edges ── */
 .page {
-  padding: clamp(4px, 1vw, 16px);
-  max-width: 100%;
-  margin: 0;
+  /* Pull out to escape WorkerLayout/HirerLayout `.content` padding (2rem
+     desktop / 1.25rem mobile). Negative margins on both sides + auto width
+     make the block stretch to the true edges of the main area. */
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding: clamp(8px, 1vw, 16px);
+  max-width: none;
   animation: fadeUp 0.4s ease both;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: clamp(4px, 1vw, 8px);
+  }
 }
 
 .header {
@@ -552,7 +565,9 @@
 /* Fix for very small screens */
 @media (max-width: 359px) {
   .page {
-    padding: 2px;
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 4px 6px;
   }
   .statCard {
     padding: 4px 6px;
@@ -592,7 +607,7 @@
 /* Fix for landscape phones */
 @media (max-height: 500px) and (orientation: landscape) {
   .page {
-    padding: 2px 6px;
+    padding: 4px 8px;
   }
   .statsGrid {
     gap: 4px;
