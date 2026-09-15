@@ -1,7 +1,7 @@
 // src/pages/hirer/HirerWallet.jsx
 // Complete Hirer Wallet with Multi-Currency Support & Withdrawal Confirmation
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import HirerLayout from "../../components/layout/HirerLayout";
 import styles from "./HirerWallet.module.css";
@@ -9,31 +9,37 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 
 import {
-  FiCreditCard,
-  FiClock,
-  FiCheckCircle,
-  FiXCircle,
-  FiPlus,
-  FiMinus,
-  FiSearch,
-  FiArrowRight,
-  FiArrowLeft,
-  FiX,
-  FiCopy,
-  FiAlertTriangle,
-  FiCheck,
-  FiDownload,
-  FiShare2,
-  FiFileText,
-  FiMail,
-  FiRefreshCw,
-  FiArrowDown,
-  FiArrowUp,
-  FiDollarSign,
-  FiLoader,
-  FiPrinter,
-  FiBriefcase,
-} from "react-icons/fi";
+  FaWallet,
+  FaArrowDown,
+  FaArrowUp,
+  FaCreditCard,
+  FaClock,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaSpinner,
+  FaPlus,
+  FaMinus,
+  FaSearch,
+  FaArrowRight,
+  FaArrowLeft,
+  FaTimes,
+  FaCopy,
+  FaExclamationTriangle,
+  FaCheck,
+  FaMoneyBillWave,
+  FaDollarSign,
+  FaEuroSign,
+  FaPoundSign,
+  FaBitcoin,
+  FaYenSign,
+  FaDownload,
+  FaShareAlt,
+  FaFileInvoice,
+  FaReceipt,
+  FaPrint,
+} from "react-icons/fa";
+
+import { FiMail } from "react-icons/fi";
 
 // ─── Helper Functions ──────────────────────────────────────────────────────
 function formatCurrency(amount, currency = "NGN") {
@@ -98,25 +104,25 @@ function getStatusLabel(status) {
 }
 
 function getStatusIcon(status) {
-  if (status === "COMPLETED" || status === "SUCCESS") return <FiCheckCircle />;
+  if (status === "COMPLETED" || status === "SUCCESS") return <FaCheckCircle />;
   if (status === "PENDING" || status === "INITIATED" || status === "PROCESSING")
-    return <FiLoader className={styles.spinning} />;
+    return <FaSpinner className={styles.spinning} />;
   if (status === "FAILED" || status === "REVERSED" || status === "CANCELLED")
-    return <FiXCircle />;
-  return <FiClock />;
+    return <FaTimesCircle />;
+  return <FaClock />;
 }
 
 function getTransactionIcon(type) {
   const icons = {
-    DEPOSIT: <FiArrowDown className={styles.depositIcon} />,
-    WITHDRAWAL: <FiArrowUp className={styles.withdrawIcon} />,
-    PAYMENT: <FiCreditCard className={styles.paymentIcon} />,
-    SUBSCRIPTION: <FiCreditCard className={styles.subscriptionIcon} />,
-    REFUND: <FiArrowUp className={styles.refundIcon} />,
-    BONUS: <FiPlus className={styles.bonusIcon} />,
-    ADJUSTMENT: <FiMinus className={styles.adjustmentIcon} />,
+    DEPOSIT: <FaArrowDown className={styles.depositIcon} />,
+    WITHDRAWAL: <FaArrowUp className={styles.withdrawIcon} />,
+    PAYMENT: <FaCreditCard className={styles.paymentIcon} />,
+    SUBSCRIPTION: <FaWallet className={styles.subscriptionIcon} />,
+    REFUND: <FaArrowUp className={styles.refundIcon} />,
+    BONUS: <FaPlus className={styles.bonusIcon} />,
+    ADJUSTMENT: <FaMinus className={styles.adjustmentIcon} />,
   };
-  return icons[type] || <FiCreditCard />;
+  return icons[type] || <FaWallet />;
 }
 
 function getTransactionLabel(type) {
@@ -133,9 +139,16 @@ function getTransactionLabel(type) {
 }
 
 function getCurrencyIcon(currency) {
-  // Feather doesn't have specific currency glyph icons; use FiDollarSign
-  // for all as a consistent visual marker. The currency code is the label.
-  return <FiDollarSign />;
+  const icons = {
+    NGN: <FaMoneyBillWave />,
+    USD: <FaDollarSign />,
+    EUR: <FaEuroSign />,
+    GBP: <FaPoundSign />,
+    JPY: <FaYenSign />,
+    CNY: <FaYenSign />,
+    BTC: <FaBitcoin />,
+  };
+  return icons[currency] || <FaMoneyBillWave />;
 }
 
 function getCurrencySymbol(currency) {
@@ -200,16 +213,15 @@ function CopyButton({ text, label = "Copy" }) {
 
   return (
     <button className={styles.copyBtn} onClick={handleCopy}>
-      {copied ? <FiCheck size={12} /> : <FiCopy size={12} />}
+      {copied ? <FaCheck size={12} /> : <FaCopy size={12} />}
       <span>{copied ? "Copied!" : label}</span>
     </button>
   );
 }
 
 // ─── Transaction Detail Modal ──────────────────────────────────────────────
-// (Unchanged logic — uses `showMessage` callback for the download-fail path)
 
-function TransactionDetailModal({ transaction, onClose, showMessage }) {
+function TransactionDetailModal({ transaction, onClose }) {
   const [downloading, setDownloading] = useState(false);
 
   if (!transaction) return null;
@@ -236,11 +248,7 @@ function TransactionDetailModal({ transaction, onClose, showMessage }) {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to download receipt:", err);
-      showMessage(
-        "Download Failed",
-        "Failed to download receipt. Please try again.",
-        "error",
-      );
+      alert("Failed to download receipt. Please try again.");
     } finally {
       setDownloading(false);
     }
@@ -257,28 +265,18 @@ function TransactionDetailModal({ transaction, onClose, showMessage }) {
         });
       } catch (err) {
         if (err.name !== "AbortError") {
+          // Fallback to copy
           await navigator.clipboard.writeText(shareText);
-          showMessage(
-            "Copied",
-            "Transaction details copied to clipboard!",
-            "success",
-          );
+          alert("Transaction details copied to clipboard!");
         }
       }
     } else {
+      // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareText);
-        showMessage(
-          "Copied",
-          "Transaction details copied to clipboard!",
-          "success",
-        );
+        alert("Transaction details copied to clipboard!");
       } catch (err) {
-        showMessage(
-          "Share Failed",
-          "Failed to share. Please copy the details manually.",
-          "error",
-        );
+        alert("Failed to share. Please copy the details manually.");
       }
     }
   };
@@ -302,18 +300,19 @@ function TransactionDetailModal({ transaction, onClose, showMessage }) {
       >
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>
-            <FiFileText /> Transaction Details
+            <FaFileInvoice /> Transaction Details
           </h3>
           <button className={styles.modalClose} onClick={onClose}>
-            <FiX />
+            <FaTimes />
           </button>
         </div>
 
         <div className={styles.modalBody}>
+          {/* Receipt Content for Printing */}
           <div id="receipt-print" className={styles.receiptPrint}>
             <div className={styles.receiptHeader}>
               <div className={styles.receiptLogo}>
-                <FiCreditCard size={32} />
+                <FaWallet size={32} />
                 <h2>SkilledProz</h2>
               </div>
               <p className={styles.receiptSubtitle}>Transaction Receipt</p>
@@ -404,6 +403,7 @@ function TransactionDetailModal({ transaction, onClose, showMessage }) {
             </div>
           </div>
 
+          {/* Display Content */}
           <div className={styles.detailUser}>
             <div className={styles.userAvatarLarge}>
               {transaction.hirer?.firstName?.[0] || "?"}
@@ -504,27 +504,27 @@ function TransactionDetailModal({ transaction, onClose, showMessage }) {
               className={`${styles.modalCancel} ${styles.detailActionBtn}`}
               onClick={onClose}
             >
-              <FiX size={14} /> Close
+              <FaTimes size={14} /> Close
             </button>
             <button
               className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
               onClick={handlePrint}
             >
-              <FiPrinter size={14} /> Print
+              <FaPrint size={14} /> Print
             </button>
             <button
               className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
               onClick={handleDownloadReceipt}
               disabled={downloading}
             >
-              <FiDownload size={14} />
+              <FaDownload size={14} />
               {downloading ? "Downloading..." : "Receipt"}
             </button>
             <button
               className={`${styles.detailActionBtn} ${styles.detailActionSuccess}`}
               onClick={handleShare}
             >
-              <FiShare2 size={14} /> Share
+              <FaShareAlt size={14} /> Share
             </button>
           </div>
         </div>
@@ -644,8 +644,10 @@ function generateReceiptHTML(transaction) {
   <div class="receipt">
     <div class="receipt-header">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2">
-        <rect x="2" y="5" width="20" height="14" rx="2" />
-        <path d="M2 10h20" />
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        <path d="M8 12h8" />
+        <path d="M8 8h4" />
+        <path d="M8 16h6" />
       </svg>
       <h1>SkilledProz</h1>
       <p class="subtitle">Transaction Receipt</p>
@@ -701,7 +703,7 @@ function generateReceiptHTML(transaction) {
       transaction.completedAt
         ? `
     <div class="row">
-      <span className="label">Completed</span>
+      <span class="label">Completed</span>
       <span class="value">${formatDateLong(transaction.completedAt)}</span>
     </div>
     `
@@ -752,7 +754,7 @@ function WalletSkeleton() {
   );
 }
 
-// ─── Stat Card ─────────────────────────────────────────────────────────────
+// ─── Stat Card ──────────────────────────────────────────────────────────────
 
 function StatCard({ icon: Icon, label, value, accent }) {
   return (
@@ -821,7 +823,7 @@ function TransactionRow({ transaction, onView }) {
         </div>
         <div className={styles.transactionMeta}>
           <span className={styles.transactionDate}>
-            <FiClock size={10} /> {formatDate(transaction.createdAt)}
+            <FaClock size={10} /> {formatDate(transaction.createdAt)}
           </span>
           <span className={styles.transactionCurrency}>
             {transaction.currency || "NGN"}
@@ -853,14 +855,7 @@ function TransactionRow({ transaction, onView }) {
 
 // ─── Deposit Modal ─────────────────────────────────────────────────────────
 
-function DepositModal({
-  isOpen,
-  onClose,
-  onDeposit,
-  loading,
-  currencies,
-  showMessage,
-}) {
+function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("NGN");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -869,7 +864,7 @@ function DepositModal({
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 100) {
-      showMessage("Invalid Amount", "Minimum deposit amount is ₦100", "error");
+      alert("Minimum deposit amount is ₦100");
       return;
     }
     setIsSubmitting(true);
@@ -887,10 +882,10 @@ function DepositModal({
       <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>
-            <FiPlus /> Fund Wallet
+            <FaPlus /> Fund Wallet
           </h3>
           <button className={styles.modalClose} onClick={onClose}>
-            <FiX />
+            <FaTimes />
           </button>
         </div>
         <div className={styles.modalBody}>
@@ -945,7 +940,7 @@ function DepositModal({
                 disabled={loading || isSubmitting}
               >
                 {loading || isSubmitting ? (
-                  <FiLoader className={styles.spinning} />
+                  <FaSpinner className={styles.spinning} />
                 ) : (
                   "Proceed to Pay"
                 )}
@@ -983,15 +978,15 @@ function WithdrawalConfirmModal({
       >
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>
-            <FiAlertTriangle /> Confirm Withdrawal
+            <FaExclamationTriangle /> Confirm Withdrawal
           </h3>
           <button className={styles.modalClose} onClick={onClose}>
-            <FiX />
+            <FaTimes />
           </button>
         </div>
         <div className={styles.modalBody}>
           <div className={styles.confirmDisclaimer}>
-            <FiAlertTriangle className={styles.disclaimerIcon} />
+            <FaExclamationTriangle className={styles.disclaimerIcon} />
             <p className={styles.disclaimerText}>
               Please <strong>verify your bank details carefully</strong> before
               confirming. Withdrawals cannot be reversed once approved by our
@@ -1060,7 +1055,7 @@ function WithdrawalConfirmModal({
           </div>
 
           <div className={styles.confirmWarning}>
-            <FiAlertTriangle size={16} />
+            <FaExclamationTriangle size={16} />
             <span>
               This request will be reviewed by our admin team. Processing may
               take 24-48 hours.
@@ -1083,10 +1078,10 @@ function WithdrawalConfirmModal({
               disabled={loading}
             >
               {loading ? (
-                <FiLoader className={styles.spinning} />
+                <FaSpinner className={styles.spinning} />
               ) : (
                 <>
-                  <FiCheck /> Confirm Withdrawal
+                  <FaCheck /> Confirm Withdrawal
                 </>
               )}
             </button>
@@ -1107,7 +1102,6 @@ function WithdrawModal({
   balance,
   currency,
   currencies,
-  showMessage,
 }) {
   const [amount, setAmount] = useState("");
   const [bankName, setBankName] = useState("");
@@ -1120,27 +1114,17 @@ function WithdrawModal({
   const handleWithdraw = () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 100) {
-      showMessage(
-        "Invalid Amount",
-        `Minimum withdrawal amount is ${getCurrencySymbol(currency)}100`,
-        "error",
-      );
+      alert(`Minimum withdrawal amount is ${getCurrencySymbol(currency)}100`);
       return;
     }
     if (numAmount > balance) {
-      showMessage(
-        "Insufficient Balance",
-        `You have ${getCurrencySymbol(currency)}${balance.toFixed(2)}`,
-        "error",
+      alert(
+        `Insufficient balance. You have ${getCurrencySymbol(currency)}${balance.toFixed(2)}`,
       );
       return;
     }
     if (!bankName || !accountNumber || !accountName) {
-      showMessage(
-        "Missing Details",
-        "Please fill in all bank details",
-        "error",
-      );
+      alert("Please fill in all bank details");
       return;
     }
 
@@ -1178,10 +1162,10 @@ function WithdrawModal({
         <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
           <div className={styles.modalHeader}>
             <h3 className={styles.modalTitle}>
-              <FiMinus /> Withdraw Funds
+              <FaMinus /> Withdraw Funds
             </h3>
             <button className={styles.modalClose} onClick={handleClose}>
-              <FiX />
+              <FaTimes />
             </button>
           </div>
           <div className={styles.modalBody}>
@@ -1276,7 +1260,7 @@ function WithdrawModal({
                   disabled={loading}
                 >
                   {loading ? (
-                    <FiLoader className={styles.spinning} />
+                    <FaSpinner className={styles.spinning} />
                   ) : (
                     "Review Withdrawal"
                   )}
@@ -1307,9 +1291,9 @@ function MessageModal({ isOpen, onClose, title, message, type = "success" }) {
   if (!isOpen) return null;
 
   const icons = {
-    success: <FiCheckCircle className={styles.messageIconSuccess} />,
-    error: <FiXCircle className={styles.messageIconError} />,
-    info: <FiClock className={styles.messageIconInfo} />,
+    success: <FaCheckCircle className={styles.messageIconSuccess} />,
+    error: <FaTimesCircle className={styles.messageIconError} />,
+    info: <FaClock className={styles.messageIconInfo} />,
   };
 
   return (
@@ -1364,10 +1348,14 @@ export default function HirerWallet() {
   const [currencyBalances, setCurrencyBalances] = useState({ NGN: 0 });
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
+  // ─── Show message modal ──────────────────────────────────────────────────
+
   const showMessage = (title, message, type = "success") => {
     setMessageConfig({ title, message, type });
     setShowMessageModal(true);
   };
+
+  // ─── Fetch wallet data ────────────────────────────────────────────────────
 
   const fetchWallet = useCallback(
     async (showLoadingState = true) => {
@@ -1506,10 +1494,14 @@ export default function HirerWallet() {
     fetchWallet(false);
   };
 
+  // ─── Get current currency balance ────────────────────────────────────────
+
   const getCurrentBalance = () => {
     const bal = currencyBalances[activeCurrency];
     return typeof bal === "number" ? bal : parseFloat(bal) || 0;
   };
+
+  // ─── Deposit ──────────────────────────────────────────────────────────────
 
   const handleDeposit = async (amount, currency) => {
     setSubmitting(true);
@@ -1542,7 +1534,7 @@ export default function HirerWallet() {
 
             if (status === "SUCCESS") {
               showMessage(
-                "Payment Successful",
+                "Payment Successful! 🎉",
                 `Your wallet has been funded with ${formatCurrency(amount, currency)}.`,
                 "success",
               );
@@ -1616,6 +1608,8 @@ export default function HirerWallet() {
     }
   };
 
+  // ─── Withdraw ─────────────────────────────────────────────────────────────
+
   const handleWithdraw = async (data) => {
     setSubmitting(true);
     try {
@@ -1624,7 +1618,7 @@ export default function HirerWallet() {
       const netAmount = data.amount - fee;
 
       showMessage(
-        "Withdrawal Request Submitted",
+        "Withdrawal Request Submitted ✅",
         `Your withdrawal of ${formatCurrency(data.amount, data.currency)} has been submitted for admin approval.\n\n` +
           `Fee: ${formatCurrency(fee, data.currency)}\n` +
           `Net Amount: ${formatCurrency(netAmount, data.currency)}\n` +
@@ -1643,6 +1637,8 @@ export default function HirerWallet() {
     }
   };
 
+  // ─── Filter transactions ─────────────────────────────────────────────────
+
   const filteredTransactions = transactions.filter((tx) => {
     if (activeCurrency && tx.currency && tx.currency !== activeCurrency) {
       return false;
@@ -1656,12 +1652,16 @@ export default function HirerWallet() {
     );
   });
 
+  // ─── Get available currencies with balance > 0 ──────────────────────────
+
   const availableCurrencies = Object.keys(currencyBalances).filter(
     (cur) =>
       (typeof currencyBalances[cur] === "number"
         ? currencyBalances[cur]
         : parseFloat(currencyBalances[cur]) || 0) > 0,
   );
+
+  // ─── Loading state ───────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -1677,10 +1677,11 @@ export default function HirerWallet() {
   return (
     <HirerLayout>
       <div className={styles.page}>
+        {/* ─── Header ────────────────────────────────────────────────────────── */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <h1 className={styles.title}>
-              <FiCreditCard /> Wallet
+              <FaWallet /> Wallet
             </h1>
             <p className={styles.subtitle}>
               Manage your funds across multiple currencies
@@ -1691,18 +1692,13 @@ export default function HirerWallet() {
               className={styles.refreshBtn}
               onClick={refreshWallet}
               disabled={refreshing}
-              aria-label="Refresh wallet"
             >
-              {refreshing ? (
-                <FiLoader className={styles.spinning} />
-              ) : (
-                <FiRefreshCw />
-              )}
+              {refreshing ? <FaSpinner className={styles.spinning} /> : "⟳"}
             </button>
           </div>
         </div>
 
-        {/* Currency Tabs */}
+        {/* ─── Currency Tabs ────────────────────────────────────────────────── */}
         <div className={styles.currencyTabsContainer}>
           <div className={styles.currencyTabs}>
             {currencies.map((cur) => {
@@ -1725,7 +1721,7 @@ export default function HirerWallet() {
           <div className={styles.currencyTabHint}>
             {availableCurrencies.length === 0 ? (
               <span className={styles.hintText}>
-                Fund your wallet to see currency balances
+                💡 Fund your wallet to see currency balances
               </span>
             ) : (
               <span className={styles.hintText}>
@@ -1736,7 +1732,7 @@ export default function HirerWallet() {
           </div>
         </div>
 
-        {/* Balance Card */}
+        {/* ─── Balance Card ──────────────────────────────────────────────────── */}
         <div className={styles.balanceCard}>
           <div className={styles.balanceInfo}>
             <div className={styles.balanceLabel}>
@@ -1774,45 +1770,45 @@ export default function HirerWallet() {
               className={styles.quickAction}
               onClick={() => setShowDepositModal(true)}
             >
-              <FiPlus /> Add Money
+              <FaPlus /> Add Money
             </button>
             <button
               className={`${styles.quickAction} ${!hasBalance ? styles.quickActionDisabled : ""}`}
               onClick={() => hasBalance && setShowWithdrawModal(true)}
               disabled={!hasBalance}
             >
-              <FiMinus /> Withdraw
+              <FaMinus /> Withdraw
             </button>
           </div>
         </div>
 
-        {/* Stats */}
+        {/* ─── Stats ────────────────────────────────────────────────────────── */}
         <div className={styles.statsGrid}>
           <StatCard
-            icon={FiArrowDown}
+            icon={FaArrowDown}
             label="Total Deposits"
             value={formatCurrency(wallet?.totalDeposited || 0, "NGN")}
             accent="green"
           />
           <StatCard
-            icon={FiCreditCard}
+            icon={FaCreditCard}
             label="Total Spent"
             value={formatCurrency(wallet?.totalSpent || 0, "NGN")}
             accent="orange"
           />
           <StatCard
-            icon={FiArrowUp}
+            icon={FaArrowUp}
             label="Total Withdrawn"
             value={formatCurrency(wallet?.totalWithdrawn || 0, "NGN")}
           />
           <StatCard
-            icon={FiClock}
+            icon={FaClock}
             label="Transactions"
             value={pagination.total || 0}
           />
         </div>
 
-        {/* Transactions */}
+        {/* ─── Transactions ──────────────────────────────────────────────────── */}
         <div className={styles.transactionsSection}>
           <div className={styles.transactionsHeader}>
             <h2 className={styles.sectionTitle}>
@@ -1820,7 +1816,7 @@ export default function HirerWallet() {
             </h2>
             <div className={styles.transactionControls}>
               <div className={styles.searchWrapper}>
-                <FiSearch className={styles.searchIcon} />
+                <FaSearch className={styles.searchIcon} />
                 <input
                   type="text"
                   className={styles.searchInput}
@@ -1857,7 +1853,7 @@ export default function HirerWallet() {
 
           {filteredTransactions.length === 0 ? (
             <div className={styles.emptyState}>
-              <FiCreditCard size={48} />
+              <FaWallet size={48} />
               <h3>No transactions found</h3>
               <p>
                 Your transaction history for {activeCurrency} will appear here
@@ -1884,7 +1880,7 @@ export default function HirerWallet() {
                   setPagination((p) => ({ ...p, page: p.page - 1 }))
                 }
               >
-                <FiArrowLeft /> Prev
+                <FaArrowLeft /> Prev
               </button>
               <span className={styles.pageInfo}>
                 Page {pagination.page} of {pagination.pages}
@@ -1896,23 +1892,22 @@ export default function HirerWallet() {
                   setPagination((p) => ({ ...p, page: p.page + 1 }))
                 }
               >
-                Next <FiArrowRight />
+                Next <FaArrowRight />
               </button>
             </div>
           )}
         </div>
 
-        {/* Deposit Modal */}
+        {/* ─── Deposit Modal ────────────────────────────────────────────────── */}
         <DepositModal
           isOpen={showDepositModal}
           onClose={() => setShowDepositModal(false)}
           onDeposit={handleDeposit}
           loading={submitting}
           currencies={currencies}
-          showMessage={showMessage}
         />
 
-        {/* Withdraw Modal */}
+        {/* ─── Withdraw Modal ───────────────────────────────────────────────── */}
         <WithdrawModal
           isOpen={showWithdrawModal}
           onClose={() => setShowWithdrawModal(false)}
@@ -1921,10 +1916,9 @@ export default function HirerWallet() {
           balance={currentBalance}
           currency={activeCurrency}
           currencies={currencies}
-          showMessage={showMessage}
         />
 
-        {/* Message Modal */}
+        {/* ─── Message Modal ────────────────────────────────────────────────── */}
         <MessageModal
           isOpen={showMessageModal}
           onClose={() => setShowMessageModal(false)}
@@ -1933,11 +1927,10 @@ export default function HirerWallet() {
           type={messageConfig.type}
         />
 
-        {/* Transaction Detail Modal */}
+        {/* ─── Transaction Detail Modal ────────────────────────────────────── */}
         <TransactionDetailModal
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
-          showMessage={showMessage}
         />
       </div>
     </HirerLayout>
