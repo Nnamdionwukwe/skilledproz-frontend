@@ -7,12 +7,12 @@ import {
   FiArrowLeft,
   FiArrowRight,
 } from "react-icons/fi";
-import api from "../../../lib/api";
-import styles from "./WorkerRefunds.module.css";
-import RefundSummaryCard from "./components/RefundSummaryCard";
-import RefundFilters from "./components/RefundFilters";
-import RefundCard from "./components/RefundCard";
+import styles from "../WorkerRefunds.module.css";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
+import api from "../../../../lib/api";
+import RefundFilters from "./RefundFilters";
+import RefundCard from "./RefundCard";
+import RefundSummaryCard from "./RefundSummaryCard";
 
 const LIMIT = 15;
 
