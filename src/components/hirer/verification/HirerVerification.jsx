@@ -2,16 +2,33 @@ import { useState, useEffect } from "react";
 import HirerLayout from "../../../components/layout/HirerLayout";
 import api from "../../../lib/api";
 import styles from "../../../pages/worker/verification/Verification.module.css";
+import {
+  FiCheckCircle,
+  FiClock,
+  FiXCircle,
+  FiUnlock,
+  FiBriefcase,
+  FiCreditCard,
+  FiUploadCloud,
+  FiFileText,
+  FiFolder,
+  FiAlertTriangle,
+  FiX,
+} from "react-icons/fi";
 
 function StatusBadge({ status }) {
   const map = {
     UNVERIFIED: { label: "Unverified", cls: "badgeDefault" },
     PENDING: { label: "Pending Review", cls: "badgePending" },
-    VERIFIED: { label: "Verified ✓", cls: "badgeVerified" },
+    VERIFIED: { label: "Verified", cls: "badgeVerified" },
     REJECTED: { label: "Rejected", cls: "badgeRejected" },
   };
   const s = map[status] || map.UNVERIFIED;
-  return <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>;
+  return (
+    <span className={`${styles.badge} ${styles[s.cls]}`}>
+      {s.cls === "badgeVerified" && <FiCheckCircle size={11} />} {s.label}
+    </span>
+  );
 }
 
 export default function HirerVerification() {
@@ -96,6 +113,23 @@ export default function HirerVerification() {
   const isVerified = currentStatus === "VERIFIED";
   const isPending = currentStatus === "PENDING";
 
+  // Status hero icon
+  const StatusIcon = isVerified
+    ? FiCheckCircle
+    : isPending
+      ? FiClock
+      : currentStatus === "REJECTED"
+        ? FiXCircle
+        : FiUnlock;
+
+  const statusColor = isVerified
+    ? "var(--green)"
+    : isPending
+      ? "var(--orange)"
+      : currentStatus === "REJECTED"
+        ? "var(--red)"
+        : "var(--text-muted)";
+
   return (
     <HirerLayout>
       <div className={styles.page}>
@@ -113,14 +147,8 @@ export default function HirerVerification() {
         {!loading && status && (
           <div className={styles.statusCard}>
             <div className={styles.statusLeft}>
-              <div className={styles.statusIcon}>
-                {isVerified
-                  ? "✅"
-                  : isPending
-                    ? "⏳"
-                    : currentStatus === "REJECTED"
-                      ? "❌"
-                      : "🔓"}
+              <div className={styles.statusIcon} style={{ color: statusColor }}>
+                <StatusIcon size={30} />
               </div>
               <div>
                 <div className={styles.statusRow}>
@@ -151,9 +179,11 @@ export default function HirerVerification() {
               <div className={styles.statusRight}>
                 <div className={styles.checkItem}>
                   <span className={styles.checkIcon}>
-                    {status.latestSubmission.verificationType === "BUSINESS"
-                      ? "🏢"
-                      : "🪪"}
+                    {status.latestSubmission.verificationType === "BUSINESS" ? (
+                      <FiBriefcase size={16} />
+                    ) : (
+                      <FiCreditCard size={16} />
+                    )}
                   </span>
                   <span className={styles.checkLabel}>
                     {status.latestSubmission.verificationType === "BUSINESS"
@@ -186,7 +216,9 @@ export default function HirerVerification() {
                 className={`${styles.typeBtn} ${verType === "INDIVIDUAL" ? styles.typeBtnActive : ""}`}
                 onClick={() => setVerType("INDIVIDUAL")}
               >
-                <span className={styles.typeBtnIcon}>🪪</span>
+                <span className={styles.typeBtnIcon}>
+                  <FiCreditCard size={24} />
+                </span>
                 <span className={styles.typeBtnLabel}>Individual</span>
                 <span className={styles.typeBtnSub}>
                   Personal ID verification
@@ -197,7 +229,9 @@ export default function HirerVerification() {
                 className={`${styles.typeBtn} ${verType === "BUSINESS" ? styles.typeBtnActive : ""}`}
                 onClick={() => setVerType("BUSINESS")}
               >
-                <span className={styles.typeBtnIcon}>🏢</span>
+                <span className={styles.typeBtnIcon}>
+                  <FiBriefcase size={24} />
+                </span>
                 <span className={styles.typeBtnLabel}>Business</span>
                 <span className={styles.typeBtnSub}>Company registration</span>
               </button>
@@ -299,7 +333,9 @@ export default function HirerVerification() {
                   />
                   {docFile ? (
                     <div className={styles.fileSelected}>
-                      <span className={styles.fileIcon}>📄</span>
+                      <span className={styles.fileIcon}>
+                        <FiFileText size={18} />
+                      </span>
                       <span className={styles.fileName}>{docFile.name}</span>
                       <button
                         type="button"
@@ -309,12 +345,14 @@ export default function HirerVerification() {
                           setDocFile(null);
                         }}
                       >
-                        ×
+                        <FiX size={16} />
                       </button>
                     </div>
                   ) : (
                     <div className={styles.dropzoneInner}>
-                      <span className={styles.dropzoneIcon}>📁</span>
+                      <span className={styles.dropzoneIcon}>
+                        <FiUploadCloud size={28} />
+                      </span>
                       <p className={styles.dropzoneText}>
                         Click to upload or drag and drop
                       </p>
@@ -328,12 +366,12 @@ export default function HirerVerification() {
 
               {error && (
                 <div className={styles.errorBox}>
-                  <span>⚠️</span> {error}
+                  <FiAlertTriangle size={14} /> {error}
                 </div>
               )}
               {success && (
                 <div className={styles.successBox}>
-                  <span>✅</span> {success}
+                  <FiCheckCircle size={14} /> {success}
                 </div>
               )}
 
@@ -357,7 +395,9 @@ export default function HirerVerification() {
         {/* Already verified */}
         {isVerified && (
           <div className={styles.alreadyVerified}>
-            <span className={styles.bigIcon}>✅</span>
+            <span className={styles.bigIcon}>
+              <FiCheckCircle size={48} />
+            </span>
             <h3>Your account is fully verified</h3>
             <p>
               Workers can see your Verified badge when browsing your profile.
@@ -368,7 +408,9 @@ export default function HirerVerification() {
         {/* Pending */}
         {isPending && (
           <div className={styles.pendingBox}>
-            <span className={styles.bigIcon}>⏳</span>
+            <span className={styles.bigIcon}>
+              <FiClock size={48} />
+            </span>
             <h3>Verification under review</h3>
             <p>
               Your documents have been submitted and are being reviewed by our

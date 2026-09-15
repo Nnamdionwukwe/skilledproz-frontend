@@ -1,7 +1,19 @@
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 2rem;
-  max-width: 760px;
+  max-width: none;
   animation: fadeUp 0.5s ease both;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 1.25rem;
+  }
 }
 
 /* Header */
@@ -59,7 +71,9 @@
 }
 
 .statusIcon {
-  font-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   margin-top: 0.1rem;
 }
@@ -113,7 +127,10 @@
   gap: 0.5rem;
 }
 .checkIcon {
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
 }
 .checkLabel {
   font-size: 0.8rem;
@@ -259,6 +276,7 @@
     border-color 0.2s,
     background 0.2s;
   gap: 0.3rem;
+  font-family: var(--font-body);
 }
 
 .typeBtn:hover {
@@ -271,7 +289,11 @@
 }
 
 .typeBtnIcon {
-  font-size: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
+  margin-bottom: 4px;
 }
 .typeBtnLabel {
   font-size: 0.9rem;
@@ -318,6 +340,8 @@
   outline: none;
   transition: border-color 0.2s;
   width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-body);
 }
 
 .input:focus {
@@ -359,7 +383,11 @@
 }
 
 .dropzoneIcon {
-  font-size: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
+  margin-bottom: 4px;
 }
 
 .dropzoneText {
@@ -381,7 +409,10 @@
 }
 
 .fileIcon {
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green);
 }
 
 .fileName {
@@ -417,6 +448,10 @@
   font-size: 0.85rem;
 }
 
+.errorBox svg {
+  flex-shrink: 0;
+}
+
 .successBox {
   display: flex;
   align-items: center;
@@ -427,6 +462,10 @@
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 0.85rem;
+}
+
+.successBox svg {
+  flex-shrink: 0;
 }
 
 /* Submit button */
@@ -445,6 +484,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  font-family: var(--font-body);
 }
 
 .submitBtn:hover:not(:disabled) {
@@ -492,7 +532,10 @@
 }
 
 .certIcon {
-  font-size: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
   flex-shrink: 0;
 }
 
@@ -567,7 +610,14 @@
 }
 
 .bigIcon {
-  font-size: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green);
+}
+
+.pendingBox .bigIcon {
+  color: var(--orange);
 }
 
 .alreadyVerified h3,
@@ -603,8 +653,5 @@
   }
   .typeSelector {
     grid-template-columns: 1fr;
-  }
-  .page {
-    padding: 1.25rem;
   }
 }
