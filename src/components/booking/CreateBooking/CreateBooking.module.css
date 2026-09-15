@@ -1,10 +1,20 @@
-/* ── Page ──────────────────────────────────────────────────── */
+/* ── Page — full-bleed, hugs both screen edges ─────────────── */
 .page {
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 24px 16px 48px;
-  max-width: 680px;
-  margin: 0 auto;
+  max-width: none;
   animation: fadeUp 0.4s ease both;
 }
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+  }
+}
+
 .back {
   display: inline-flex;
   align-items: center;
@@ -18,6 +28,7 @@
   transition: all 0.15s;
   text-decoration: none;
   margin-bottom: 20px;
+  margin-left: 16px;
 }
 .back:hover {
   border-color: var(--orange);
@@ -781,7 +792,6 @@
 @media (max-width: 480px) {
   .page {
     padding: 12px 12px 32px;
-    max-width: 100%;
   }
 
   .rateLockedRow {
@@ -796,7 +806,7 @@
 
   /* ── Worker card – prevent vertical stacking ── */
   .workerCard {
-    flex-wrap: nowrap; /* force horizontal */
+    flex-wrap: nowrap;
     align-items: center;
     padding: 10px 12px;
     gap: 10px;
@@ -811,8 +821,8 @@
 
   .workerCardInfo {
     flex: 1;
-    min-width: 0; /* allow truncation */
-    overflow: hidden; /* contain long content */
+    min-width: 0;
+    overflow: hidden;
   }
 
   .workerCardName {
@@ -844,8 +854,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    /* optional: limit height and allow scroll if many chips */
-    max-height: 2.6em; /* ~2 lines */
+    max-height: 2.6em;
     overflow-y: auto;
     margin-top: 2px;
   }
@@ -853,10 +862,9 @@
   .catChip {
     font-size: 9px;
     padding: 2px 6px;
-    white-space: nowrap; /* keep chips on one line */
+    white-space: nowrap;
   }
 
-  /* Hide lock icon on mobile (already hidden) */
   .workerCardLock {
     display: none;
   }
@@ -977,11 +985,10 @@
   color: var(--orange);
 }
 
-/* ── Mobile‑first adjustments ────────────────────────────── */
+/* ── Mobile-first adjustments ────────────────────────────── */
 @media (max-width: 480px) {
   .page {
     padding: 12px 8px 32px;
-    max-width: 100%;
   }
 
   .header {
@@ -1060,7 +1067,7 @@
     padding: 2px 6px;
   }
   .workerCardLock {
-    display: none; /* hide on mobile to save space */
+    display: none;
   }
 
   .unitGrid {
@@ -1274,63 +1281,4 @@
   padding: 4px 0;
   font-size: 13px;
   color: var(--text-dim);
-}
-
-.feeRow span:last-child {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.feeTotal {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0 0;
-  margin-top: 4px;
-  border-top: 1px solid var(--border);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.feeTotal span:last-child {
-  color: var(--orange);
-  font-weight: 900;
-}
-.typeListDisabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.typeListDisabled:hover {
-  background: transparent;
-}
-
-.typeListLock {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.lockedBadge {
-  font-size: 10px;
-  color: var(--text-muted);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.lockedHint {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
