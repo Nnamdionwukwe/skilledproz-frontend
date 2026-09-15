@@ -1,8 +1,19 @@
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
-  max-width: 960px;
-  margin: 0 auto;
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 1.5rem 1rem 5rem;
+  max-width: none;
   animation: fadeUp 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 1.25rem 0.75rem 5rem;
+  }
 }
 
 .toast {
@@ -18,6 +29,12 @@
   white-space: nowrap;
   animation: fadeUp 0.2s ease;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.toast svg {
+  flex-shrink: 0;
 }
 .toast_success {
   background: var(--green);
@@ -109,7 +126,10 @@
   color: var(--orange);
 }
 .navIcon {
-  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .navLabel {
   flex: 1;
@@ -138,7 +158,10 @@
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.03), transparent);
 }
 .cardIcon {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -181,6 +204,7 @@
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0;
+  color: var(--orange);
 }
 .avatarCircle:hover .avatarOverlay {
   opacity: 1;
@@ -203,9 +227,13 @@
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
+  color: #fff;
   opacity: 0;
   transition: opacity 0.15s;
   border-radius: 50%;
+}
+.avatarOverlay svg {
+  flex-shrink: 0;
 }
 .avatarMeta {
   flex: 1;
@@ -301,6 +329,7 @@
   font-family: var(--font-body);
   transition: border-color 0.15s;
   width: 100%;
+  box-sizing: border-box;
 }
 .input:focus,
 .select:focus,
@@ -454,6 +483,14 @@
   font-size: 0.75rem;
   color: var(--text-muted);
   line-height: 1.5;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.infoBox svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--orange);
 }
 
 /* Theme */
@@ -485,7 +522,10 @@
   background: var(--orange-dim);
 }
 .themeIcon {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
 }
 .themeLabel {
   font-size: 0.78rem;
@@ -499,9 +539,9 @@
   position: absolute;
   top: 5px;
   right: 8px;
-  font-size: 0.65rem;
   color: var(--orange);
   font-weight: 800;
+  display: inline-flex;
 }
 
 /* Language */
@@ -534,6 +574,13 @@
   font-weight: 600;
   color: var(--text);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.toggleLabel svg {
+  flex-shrink: 0;
+  color: var(--orange);
 }
 .toggleDesc {
   font-size: 0.72rem;
@@ -591,6 +638,12 @@
 .secValue {
   color: var(--text);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.secValue svg {
+  flex-shrink: 0;
 }
 
 /* Danger zone */
@@ -656,7 +709,10 @@
   gap: 0.25rem;
 }
 .statIcon {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
 }
 .statVal {
   font-size: 1.5rem;
@@ -687,7 +743,10 @@
   padding: 0.75rem;
 }
 .actIcon {
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -764,9 +823,6 @@
 }
 
 @media (max-width: 480px) {
-  .page {
-    padding: 1rem 0.75rem 5rem;
-  }
   .themeGrid {
     gap: 0.375rem;
   }
@@ -838,7 +894,10 @@
   padding: 1rem;
 }
 .currencySummaryIcon {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
   flex-shrink: 0;
 }
 .currencySummaryLabel {
@@ -905,6 +964,12 @@
   font-size: 0.8rem;
   font-weight: 600;
   line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pinStatusBadge svg {
+  flex-shrink: 0;
 }
 
 .pinAttemptsNote {
@@ -912,6 +977,12 @@
   color: #fbbf24;
   margin: 0;
   padding: 0.375rem 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pinAttemptsNote svg {
+  flex-shrink: 0;
 }
 
 .pinFields {

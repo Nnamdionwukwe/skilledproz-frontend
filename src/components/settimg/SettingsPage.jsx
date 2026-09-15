@@ -10,6 +10,38 @@ import {
   CURRENCY_META,
   ALL_CURRENCIES,
 } from "../../context/CurrencyContext";
+import {
+  FiUser,
+  FiBriefcase,
+  FiDollarSign,
+  FiRefreshCw,
+  FiSun,
+  FiMoon,
+  FiMonitor,
+  FiBell,
+  FiLock,
+  FiShield,
+  FiBarChart2,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiXCircle,
+  FiCamera,
+  FiInfo,
+  FiCheck,
+  FiCreditCard,
+  FiGlobe,
+  FiKey,
+  FiTag,
+  FiFileText,
+  FiClipboard,
+  FiStar,
+  FiTrendingUp,
+  FiSmartphone,
+  FiMessageCircle,
+  FiShieldOff,
+  FiSearch,
+  FiMapPin,
+} from "react-icons/fi";
 
 const ALL_LANGUAGES = [
   { code: "af", name: "Afrikaans" },
@@ -145,27 +177,27 @@ const DURATION_UNITS = [
 ];
 
 const TABS_WORKER = [
-  { id: "profile", icon: "👤", label: "Profile" },
-  { id: "work", icon: "👷", label: "Work Profile" },
-  { id: "pricing", icon: "💰", label: "Pricing" },
-  { id: "currencies", icon: "💱", label: "Currencies" },
-  { id: "appearance", icon: "🎨", label: "Appearance" },
-  { id: "notifications", icon: "🔔", label: "Notifications" },
-  { id: "privacy", icon: "🔒", label: "Privacy" },
-  { id: "security", icon: "🛡️", label: "Security" },
-  { id: "activity", icon: "📊", label: "Activity" },
+  { id: "profile", icon: FiUser, label: "Profile" },
+  { id: "work", icon: FiBriefcase, label: "Work Profile" },
+  { id: "pricing", icon: FiDollarSign, label: "Pricing" },
+  { id: "currencies", icon: FiRefreshCw, label: "Currencies" },
+  { id: "appearance", icon: FiSun, label: "Appearance" },
+  { id: "notifications", icon: FiBell, label: "Notifications" },
+  { id: "privacy", icon: FiLock, label: "Privacy" },
+  { id: "security", icon: FiShield, label: "Security" },
+  { id: "activity", icon: FiBarChart2, label: "Activity" },
 ];
 
 const TABS_HIRER = [
-  { id: "profile", icon: "👤", label: "Profile" },
-  { id: "company", icon: "🏢", label: "Company" },
-  { id: "hiring", icon: "📋", label: "Hiring Prefs" },
-  { id: "currencies", icon: "💱", label: "Currencies" },
-  { id: "appearance", icon: "🎨", label: "Appearance" },
-  { id: "notifications", icon: "🔔", label: "Notifications" },
-  { id: "privacy", icon: "🔒", label: "Privacy" },
-  { id: "security", icon: "🛡️", label: "Security" },
-  { id: "activity", icon: "📊", label: "Activity" },
+  { id: "profile", icon: FiUser, label: "Profile" },
+  { id: "company", icon: FiBriefcase, label: "Company" },
+  { id: "hiring", icon: FiClipboard, label: "Hiring Prefs" },
+  { id: "currencies", icon: FiRefreshCw, label: "Currencies" },
+  { id: "appearance", icon: FiSun, label: "Appearance" },
+  { id: "notifications", icon: FiBell, label: "Notifications" },
+  { id: "privacy", icon: FiLock, label: "Privacy" },
+  { id: "security", icon: FiShield, label: "Security" },
+  { id: "activity", icon: FiBarChart2, label: "Activity" },
 ];
 
 export default function SettingsPage() {
@@ -186,7 +218,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
-  // Profile form — pre-populated from user store immediately
   const [form, setForm] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
@@ -216,7 +247,6 @@ export default function SettingsPage() {
     showGender: user?.showGender ?? false,
   });
 
-  // Worker pricing
   const [pricing, setPricing] = useState({
     hourlyRate: "",
     dailyRate: "",
@@ -229,7 +259,6 @@ export default function SettingsPage() {
     currency: "USD",
   });
 
-  // Worker work profile
   const [workForm, setWorkForm] = useState({
     title: "",
     description: "",
@@ -238,28 +267,24 @@ export default function SettingsPage() {
     isAvailable: true,
   });
 
-  // Hirer company
   const [companyForm, setCompanyForm] = useState({
     companyName: "",
     companySize: "",
     website: "",
   });
 
-  // Hirer hiring prefs (default estimated unit)
   const [hiringPrefs, setHiringPrefs] = useState({
     defaultEstimatedUnit: user?.defaultEstUnit || "hours",
     defaultEstimatedValue: user?.defaultEstValue || "",
   });
 
-  // Password
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
 
   const [pin, setPin] = useState({ new: "", confirm: "", current: "" });
-  const [pinStatus, setPinStatus] = useState(null); // { pinSet, isLocked, attemptsRemaining }
+  const [pinStatus, setPinStatus] = useState(null);
   const [pinError, setPinError] = useState("");
 
-  // Activity
   const [activity, setActivity] = useState(null);
   const [security, setSecurity] = useState(null);
 
@@ -271,14 +296,12 @@ export default function SettingsPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Load full profile from API on mount
   useEffect(() => {
     api
       .get("/settings/profile")
       .then((res) => {
         const u = res.data.data.user;
         setProfile(u);
-        // Update form states
         setForm({
           firstName: u.firstName || "",
           lastName: u.lastName || "",
@@ -337,14 +360,11 @@ export default function SettingsPage() {
             website: u.hirerProfile.website || "",
           });
         }
-        // Also update Zustand store with latest data
         updateUser?.(u);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-
-  // ── Savers ──────────────────────────────────────────────────────────────────
 
   async function saveProfile() {
     setSaving("profile");
@@ -352,7 +372,7 @@ export default function SettingsPage() {
       const res = await api.patch("/settings/profile", form);
       const updated = res.data.data.user;
       setProfile((p) => ({ ...p, ...updated }));
-      updateUser?.(updated); // Instant update across platform
+      updateUser?.(updated);
       showToast("Profile saved");
     } catch (e) {
       showToast(e.response?.data?.message || "Save failed", "error");
@@ -384,13 +404,12 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // ── Size check — show alert for > 5MB ──
     if (file.size > 5 * 1024 * 1024) {
       showToast(
         "Image is larger than 5MB. Please choose a smaller photo.",
         "error",
       );
-      e.target.value = ""; // reset input
+      e.target.value = "";
       return;
     }
 
@@ -567,7 +586,6 @@ export default function SettingsPage() {
     }
   }
 
-  // Load activity/security lazily
   useEffect(() => {
     if (tab === "activity" && !activity) {
       api
@@ -592,10 +610,14 @@ export default function SettingsPage() {
   return (
     <Layout>
       <div className={styles.page}>
-        {/* Toast */}
         {toast && (
           <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-            {toast.type === "success" ? "✅" : "⚠️"} {toast.msg}
+            {toast.type === "success" ? (
+              <FiCheckCircle size={14} />
+            ) : (
+              <FiAlertTriangle size={14} />
+            )}
+            {toast.msg}
           </div>
         )}
 
@@ -609,16 +631,21 @@ export default function SettingsPage() {
         <div className={styles.layout}>
           {/* ── Tab nav ── */}
           <nav className={styles.nav}>
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                className={`${styles.navBtn} ${tab === t.id ? styles.navBtnActive : ""}`}
-                onClick={() => setTab(t.id)}
-              >
-                <span className={styles.navIcon}>{t.icon}</span>
-                <span className={styles.navLabel}>{t.label}</span>
-              </button>
-            ))}
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  className={`${styles.navBtn} ${tab === t.id ? styles.navBtnActive : ""}`}
+                  onClick={() => setTab(t.id)}
+                >
+                  <span className={styles.navIcon}>
+                    <Icon size={16} />
+                  </span>
+                  <span className={styles.navLabel}>{t.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
           <div className={styles.content}>
@@ -626,10 +653,9 @@ export default function SettingsPage() {
             {tab === "profile" && (
               <Card
                 title="Profile Information"
-                icon="👤"
+                icon={<FiUser size={20} />}
                 desc="Your personal details visible to others"
               >
-                {/* Avatar */}
                 <div className={styles.avatarBlock}>
                   <div
                     className={styles.avatarCircle}
@@ -651,7 +677,7 @@ export default function SettingsPage() {
                       {saving === "avatar" ? (
                         <span className={styles.spinner} />
                       ) : (
-                        "📷"
+                        <FiCamera size={20} />
                       )}
                     </div>
                   </div>
@@ -762,7 +788,7 @@ export default function SettingsPage() {
             {tab === "work" && isWorker && (
               <Card
                 title="Work Profile"
-                icon="👷"
+                icon={<FiBriefcase size={20} />}
                 desc="Professional details hirers see on your profile"
               >
                 <FI
@@ -821,7 +847,7 @@ export default function SettingsPage() {
             {tab === "pricing" && isWorker && (
               <Card
                 title="Pricing"
-                icon="💰"
+                icon={<FiDollarSign size={20} />}
                 desc="Set your rates for different engagement types"
               >
                 <p className={styles.sectionNote}>
@@ -838,7 +864,7 @@ export default function SettingsPage() {
 
                 <div className={styles.pricingGrid}>
                   <PriceField
-                    label="⏱ Hourly Rate"
+                    label="Hourly Rate"
                     suffix="/hr"
                     value={pricing.hourlyRate}
                     onChange={(v) =>
@@ -846,7 +872,7 @@ export default function SettingsPage() {
                     }
                   />
                   <PriceField
-                    label="📅 Daily Rate"
+                    label="Daily Rate"
                     suffix="/day"
                     value={pricing.dailyRate}
                     onChange={(v) =>
@@ -854,7 +880,7 @@ export default function SettingsPage() {
                     }
                   />
                   <PriceField
-                    label="📆 Weekly Rate"
+                    label="Weekly Rate"
                     suffix="/wk"
                     value={pricing.weeklyRate}
                     onChange={(v) =>
@@ -862,7 +888,7 @@ export default function SettingsPage() {
                     }
                   />
                   <PriceField
-                    label="🗓 Monthly Rate"
+                    label="Monthly Rate"
                     suffix="/mo"
                     value={pricing.monthlyRate}
                     onChange={(v) =>
@@ -870,7 +896,7 @@ export default function SettingsPage() {
                     }
                   />
                   <PriceField
-                    label="📆 Yearly Rate"
+                    label="Yearly Rate"
                     suffix="/yr"
                     value={pricing.yearlyRate}
                     onChange={(v) =>
@@ -924,17 +950,22 @@ export default function SettingsPage() {
               <>
                 <Card
                   title="Currency Settings"
-                  icon="💱"
+                  icon={<FiRefreshCw size={20} />}
                   desc="Control how currencies appear across the platform"
                 >
                   <div className={styles.infoBox}>
-                    💡 SkilledProz supports multi-currency. Each setting serves
-                    a different purpose — set them independently for the best
-                    experience.
+                    <FiInfo size={14} />
+                    <span>
+                      SkilledProz supports multi-currency. Each setting serves a
+                      different purpose — set them independently for the best
+                      experience.
+                    </span>
                   </div>
 
-                  {/* ── Dashboard Currency ── */}
-                  <Section label="📊 Dashboard Display Currency">
+                  <Section
+                    label="Dashboard Display Currency"
+                    labelIcon={<FiBarChart2 size={13} />}
+                  >
                     <p className={styles.sectionNote}>
                       The currency your dashboard stats, earnings totals, and
                       summaries are displayed in. This is a display preference
@@ -968,11 +999,9 @@ export default function SettingsPage() {
 
                   <Divider />
 
-                  {/* ── Payment Currency ── */}
                   <Section
-                    label={
-                      isWorker ? "💳 Payout Currency" : "💳 Payment Currency"
-                    }
+                    label={isWorker ? "Payout Currency" : "Payment Currency"}
+                    labelIcon={<FiCreditCard size={13} />}
                   >
                     <p className={styles.sectionNote}>
                       {isWorker
@@ -1005,11 +1034,13 @@ export default function SettingsPage() {
                     </div>
                   </Section>
 
-                  {/* ── Profile Currency (Workers only) ── */}
                   {isWorker && (
                     <>
                       <Divider />
-                      <Section label="🏷️ Profile Rate Currency">
+                      <Section
+                        label="Profile Rate Currency"
+                        labelIcon={<FiTag size={13} />}
+                      >
                         <p className={styles.sectionNote}>
                           The currency displayed on your profile cards and
                           search results — what hirers see your rates quoted in.
@@ -1069,18 +1100,18 @@ export default function SettingsPage() {
 
                 <Card
                   title="Currency Summary"
-                  icon="📋"
+                  icon={<FiFileText size={20} />}
                   desc="How your currencies are configured"
                 >
                   <div className={styles.currencySummaryGrid}>
                     <CurrencySummaryItem
-                      icon="📊"
+                      icon={<FiBarChart2 size={20} />}
                       label="Dashboard shows stats in"
                       value={`${CURRENCY_META[dashboardCurrency]?.symbol} ${dashboardCurrency}`}
                       hint="Change anytime — display only"
                     />
                     <CurrencySummaryItem
-                      icon="💳"
+                      icon={<FiCreditCard size={20} />}
                       label={
                         isWorker ? "You receive payments in" : "You pay in"
                       }
@@ -1089,7 +1120,7 @@ export default function SettingsPage() {
                     />
                     {isWorker && (
                       <CurrencySummaryItem
-                        icon="🏷️"
+                        icon={<FiTag size={20} />}
                         label="Your profile rates shown in"
                         value={`${CURRENCY_META[pricing.currency || "USD"]?.symbol} ${pricing.currency || "USD"}`}
                         hint="Displayed to hirers searching"
@@ -1104,7 +1135,7 @@ export default function SettingsPage() {
             {tab === "company" && !isWorker && (
               <Card
                 title="Company Profile"
-                icon="🏢"
+                icon={<FiBriefcase size={20} />}
                 desc="Company information visible to workers you hire"
               >
                 <FI
@@ -1150,7 +1181,7 @@ export default function SettingsPage() {
             {tab === "hiring" && !isWorker && (
               <Card
                 title="Hiring Preferences"
-                icon="📋"
+                icon={<FiClipboard size={20} />}
                 desc="Default settings when creating bookings"
               >
                 <p className={styles.sectionNote}>
@@ -1204,8 +1235,11 @@ export default function SettingsPage() {
                 )}
 
                 <div className={styles.infoBox}>
-                  ℹ️ These are defaults only — you can always change duration
-                  per booking when creating it.
+                  <FiInfo size={14} />
+                  <span>
+                    These are defaults only — you can always change duration per
+                    booking when creating it.
+                  </span>
                 </div>
 
                 <SaveBtn
@@ -1220,35 +1254,42 @@ export default function SettingsPage() {
             {tab === "appearance" && (
               <Card
                 title="Appearance"
-                icon="🎨"
+                icon={<FiSun size={20} />}
                 desc="Theme and language preferences"
               >
-                <Section label="🌗 Theme">
+                <Section label="Theme" labelIcon={<FiMoon size={13} />}>
                   <p className={styles.sectionNote}>
                     Choose how SkilledProz looks on your device.
                   </p>
                   <div className={styles.themeGrid}>
                     {[
-                      { id: "light", icon: "☀️", label: "Light" },
-                      { id: "dark", icon: "🌙", label: "Dark" },
-                      { id: "system", icon: "💻", label: "System" },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        className={`${styles.themeCard} ${theme === t.id ? styles.themeCardActive : ""}`}
-                        onClick={() => changeTheme(t.id)}
-                      >
-                        <span className={styles.themeIcon}>{t.icon}</span>
-                        <span className={styles.themeLabel}>{t.label}</span>
-                        {theme === t.id && (
-                          <span className={styles.themeCheck}>✓</span>
-                        )}
-                      </button>
-                    ))}
+                      { id: "light", icon: FiSun, label: "Light" },
+                      { id: "dark", icon: FiMoon, label: "Dark" },
+                      { id: "system", icon: FiMonitor, label: "System" },
+                    ].map((t) => {
+                      const ThemeIcon = t.icon;
+                      return (
+                        <button
+                          key={t.id}
+                          className={`${styles.themeCard} ${theme === t.id ? styles.themeCardActive : ""}`}
+                          onClick={() => changeTheme(t.id)}
+                        >
+                          <span className={styles.themeIcon}>
+                            <ThemeIcon size={20} />
+                          </span>
+                          <span className={styles.themeLabel}>{t.label}</span>
+                          {theme === t.id && (
+                            <span className={styles.themeCheck}>
+                              <FiCheck size={12} />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </Section>
 
-                <Section label="🌐 Language">
+                <Section label="Language" labelIcon={<FiGlobe size={13} />}>
                   <p className={styles.sectionNote} translate="no">
                     Select your preferred language.
                   </p>
@@ -1256,7 +1297,10 @@ export default function SettingsPage() {
                     <LangSelect value={language} onChange={changeLanguage} />
                   </div>
                   <div className={styles.infoBox} translate="no">
-                    ℹ️ Select <strong>English</strong> to revert back.
+                    <FiInfo size={14} />
+                    <span>
+                      Select <strong>English</strong> to revert back.
+                    </span>
                   </div>
                 </Section>
               </Card>
@@ -1266,46 +1310,65 @@ export default function SettingsPage() {
             {tab === "notifications" && (
               <Card
                 title="Notifications"
-                icon="🔔"
+                icon={<FiBell size={20} />}
                 desc="Choose what you get notified about"
               >
                 {[
                   {
                     key: "notifBookings",
-                    label: "📋 Booking updates",
+                    label: "Booking updates",
                     desc: "New bookings, status changes, confirmations",
+                    icon: FiClipboard,
                   },
                   {
                     key: "notifMessages",
-                    label: "💬 Messages",
+                    label: "Messages",
                     desc: "New messages from hirers or workers",
+                    icon: FiMessageCircle,
                   },
                   {
                     key: "notifPayments",
-                    label: "💳 Payment alerts",
+                    label: "Payment alerts",
                     desc: "Escrow releases, payment confirmations",
+                    icon: FiCreditCard,
                   },
                   {
                     key: "notifReviews",
-                    label: "⭐ Reviews",
+                    label: "Reviews",
                     desc: "New reviews on your profile",
+                    icon: FiStar,
                   },
                   {
                     key: "notifMarketing",
-                    label: "📣 Product updates",
+                    label: "Product updates",
                     desc: "New features and platform news",
+                    icon: FiTrendingUp,
                   },
-                ].map((item) => (
-                  <Toggle
-                    key={item.key}
-                    label={item.label}
-                    desc={item.desc}
-                    checked={notifs[item.key] ?? true}
-                    onChange={(v) =>
-                      setNotifs((n) => ({ ...n, [item.key]: v }))
-                    }
-                  />
-                ))}
+                ].map((item) => {
+                  const ItemIcon = item.icon;
+                  return (
+                    <Toggle
+                      key={item.key}
+                      label={
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <ItemIcon size={14} />
+                          {item.label}
+                        </span>
+                      }
+                      desc={item.desc}
+                      checked={notifs[item.key] ?? true}
+                      onChange={(v) =>
+                        setNotifs((n) => ({ ...n, [item.key]: v }))
+                      }
+                    />
+                  );
+                })}
                 <SaveBtn
                   label="Save Notification Preferences"
                   loading={saving === "notifs"}
@@ -1318,7 +1381,7 @@ export default function SettingsPage() {
             {tab === "privacy" && (
               <Card
                 title="Privacy"
-                icon="🔒"
+                icon={<FiLock size={20} />}
                 desc="Control who sees your information"
               >
                 <Toggle
@@ -1368,7 +1431,7 @@ export default function SettingsPage() {
               <>
                 <Card
                   title="Change Password"
-                  icon="🔑"
+                  icon={<FiKey size={20} />}
                   desc="Keep your account secure"
                 >
                   <FI
@@ -1403,14 +1466,13 @@ export default function SettingsPage() {
                 {isWorker && (
                   <Card
                     title="Withdrawal PIN"
-                    icon="🔐"
+                    icon={<FiLock size={20} />}
                     desc="4-digit PIN required to authorise every withdrawal"
                   >
                     {pinStatus === null ? (
                       <Skeleton />
                     ) : (
                       <>
-                        {/* Status banner */}
                         <div className={styles.pinStatusRow}>
                           {pinStatus.pinSet ? (
                             <div
@@ -1421,7 +1483,8 @@ export default function SettingsPage() {
                                 color: "var(--green)",
                               }}
                             >
-                              ✅ PIN is set — required for all withdrawals
+                              <FiCheckCircle size={14} /> PIN is set — required
+                              for all withdrawals
                             </div>
                           ) : (
                             <div
@@ -1432,8 +1495,8 @@ export default function SettingsPage() {
                                 color: "var(--red)",
                               }}
                             >
-                              ⚠️ No PIN set — you must set one before
-                              withdrawing
+                              <FiAlertTriangle size={14} /> No PIN set — you
+                              must set one before withdrawing
                             </div>
                           )}
                           {pinStatus.isLocked && (
@@ -1446,14 +1509,16 @@ export default function SettingsPage() {
                                 marginTop: 6,
                               }}
                             >
-                              🔒 PIN locked — too many wrong attempts
+                              <FiLock size={14} /> PIN locked — too many wrong
+                              attempts
                             </div>
                           )}
                           {!pinStatus.isLocked &&
                             pinStatus.pinSet &&
                             pinStatus.attemptsRemaining < 3 && (
                               <p className={styles.pinAttemptsNote}>
-                                ⚠️ {pinStatus.attemptsRemaining} attempt
+                                <FiAlertTriangle size={13} />{" "}
+                                {pinStatus.attemptsRemaining} attempt
                                 {pinStatus.attemptsRemaining !== 1
                                   ? "s"
                                   : ""}{" "}
@@ -1462,7 +1527,6 @@ export default function SettingsPage() {
                             )}
                         </div>
 
-                        {/* Set PIN form */}
                         {!pinStatus.pinSet && (
                           <>
                             <p className={styles.sectionNote}>
@@ -1523,12 +1587,11 @@ export default function SettingsPage() {
                             <SaveBtn
                               label="Set Withdrawal PIN"
                               loading={saving === "pin"}
-                              onClick={setPin}
+                              onClick={setPins}
                             />
                           </>
                         )}
 
-                        {/* Change PIN form */}
                         {pinStatus.pinSet && (
                           <>
                             <p className={styles.sectionNote}>
@@ -1622,7 +1685,7 @@ export default function SettingsPage() {
 
                 <Card
                   title="Account Info"
-                  icon="🛡️"
+                  icon={<FiShield size={20} />}
                   desc="Your verification and account status"
                 >
                   {security ? (
@@ -1631,25 +1694,44 @@ export default function SettingsPage() {
                       <SecRow
                         label="Email Verified"
                         value={
-                          security.isEmailVerified
-                            ? "✅ Verified"
-                            : "❌ Not verified"
+                          security.isEmailVerified ? (
+                            <>
+                              <FiCheckCircle size={13} /> Verified
+                            </>
+                          ) : (
+                            <>
+                              <FiXCircle size={13} /> Not verified
+                            </>
+                          )
                         }
                       />
                       <SecRow
                         label="Phone Verified"
                         value={
-                          security.isPhoneVerified
-                            ? "✅ Verified"
-                            : "❌ Not verified"
+                          security.isPhoneVerified ? (
+                            <>
+                              <FiCheckCircle size={13} /> Verified
+                            </>
+                          ) : (
+                            <>
+                              <FiXCircle size={13} /> Not verified
+                            </>
+                          )
                         }
                       />
                       <SecRow
                         label="2FA"
                         value={
-                          security.twoFactorEnabled
-                            ? "✅ Enabled"
-                            : "⚠️ Not enabled (coming soon)"
+                          security.twoFactorEnabled ? (
+                            <>
+                              <FiCheckCircle size={13} /> Enabled
+                            </>
+                          ) : (
+                            <>
+                              <FiAlertTriangle size={13} /> Not enabled (coming
+                              soon)
+                            </>
+                          )
                         }
                       />
                       <SecRow
@@ -1680,7 +1762,11 @@ export default function SettingsPage() {
                   )}
                 </Card>
 
-                <Card title="Danger Zone" icon="⚠️" desc="Irreversible actions">
+                <Card
+                  title="Danger Zone"
+                  icon={<FiAlertTriangle size={20} />}
+                  desc="Irreversible actions"
+                >
                   <div className={styles.dangerBlock}>
                     <div>
                       <p className={styles.dangerTitle}>Deactivate Account</p>
@@ -1704,24 +1790,24 @@ export default function SettingsPage() {
             {tab === "activity" && (
               <Card
                 title="Account Activity"
-                icon="📊"
+                icon={<FiBarChart2 size={20} />}
                 desc="Your recent platform activity"
               >
                 {activity ? (
                   <>
                     <div className={styles.statsGrid}>
                       <StatCard
-                        icon="🔔"
+                        icon={<FiBell size={18} />}
                         label="Unread notifications"
                         value={activity.summary.unreadNotifications}
                       />
                       <StatCard
-                        icon="📋"
+                        icon={<FiClipboard size={18} />}
                         label="Total bookings"
                         value={activity.summary.totalBookings}
                       />
                       <StatCard
-                        icon="⭐"
+                        icon={<FiStar size={18} />}
                         label="Reviews received"
                         value={activity.summary.totalReviews}
                       />
@@ -1737,7 +1823,9 @@ export default function SettingsPage() {
                           key={n.id}
                           className={`${styles.actItem} ${!n.isRead ? styles.actItemUnread : ""}`}
                         >
-                          <span className={styles.actIcon}>🔔</span>
+                          <span className={styles.actIcon}>
+                            <FiBell size={14} />
+                          </span>
                           <div className={styles.actBody}>
                             <p className={styles.actTitle}>{n.title}</p>
                             <p className={styles.actDesc}>{n.body}</p>
@@ -1762,7 +1850,7 @@ export default function SettingsPage() {
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+/* ── Sub-components ─────────────────────────────────────────── */
 
 function Card({ title, icon, desc, children }) {
   return (
@@ -1792,10 +1880,16 @@ function CurrencySummaryItem({ icon, label, value, hint }) {
   );
 }
 
-function Section({ label, children }) {
+function Section({ label, labelIcon, children }) {
   return (
     <div className={styles.section}>
-      <p className={styles.sectionLabel}>{label}</p>
+      <p
+        className={styles.sectionLabel}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+      >
+        {labelIcon}
+        {label}
+      </p>
       {children}
     </div>
   );
@@ -1817,7 +1911,6 @@ function Row({ children }) {
   return <div className={styles.row}>{children}</div>;
 }
 
-// Field Input
 function FI({
   label,
   value,
@@ -1851,7 +1944,6 @@ function FI({
   );
 }
 
-// Select Field
 function SF({ label, value, onChange, options }) {
   return (
     <div className={styles.field}>
@@ -1964,7 +2056,7 @@ function LangSelect({ value, onChange }) {
     <div className={styles.langWrap} translate="no">
       <input
         className={styles.input}
-        placeholder="🔍 Search language..."
+        placeholder="Search language..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         translate="no"
@@ -1979,10 +2071,9 @@ function LangSelect({ value, onChange }) {
         size={search ? Math.min(filtered.length, 6) : 1}
         translate="no"
       >
-        {/* Always show English as first option for easy revert */}
         {!search && (
           <option value="en" style={{ fontWeight: 600 }}>
-            🇬🇧 English (Default)
+            English (Default)
           </option>
         )}
         {(search ? filtered : ALL_LANGUAGES.filter((l) => l.code !== "en")).map(
