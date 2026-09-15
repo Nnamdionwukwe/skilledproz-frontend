@@ -1,9 +1,21 @@
 /* HirerWallet.module.css */
 
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  animation: fadeUp 0.3s ease both;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 1rem;
+  }
 }
 
 /* ─── Loading ────────────────────────────────────────────────────────────── */
@@ -929,10 +941,6 @@
 /* ─── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  .page {
-    padding: 1rem;
-  }
-
   .balanceCard {
     padding: 1.5rem;
     flex-direction: column;
@@ -1225,33 +1233,6 @@
 
 .messageBtn:hover {
   opacity: 0.88;
-}
-
-.refreshBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 1.2rem;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-family: var(--font-body);
-  transition: all 0.15s;
-}
-
-.refreshBtn:hover:not(:disabled) {
-  border-color: var(--orange);
-  color: var(--orange);
-}
-
-.refreshBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 @media (max-width: 480px) {
