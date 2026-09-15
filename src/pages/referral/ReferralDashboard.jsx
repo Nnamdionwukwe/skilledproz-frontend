@@ -48,6 +48,12 @@ function timeAgo(d) {
   return `${days}d ago`;
 }
 
+// ─── Production domain — always used for referral links ─────────────────────
+const PROD_DOMAIN = "https://skilledproz.com";
+function buildRefLink(code) {
+  return `${PROD_DOMAIN}/signup?ref=${code || ""}`;
+}
+
 // ─── Tier config — icon instead of emoji ─────────────────────────────────────
 const TIER_STYLES = {
   BRONZE: {
@@ -357,9 +363,20 @@ export default function ReferralDashboard() {
       .catch(() => {});
   }, [tab, leaderboard]);
 
+  // ── Referral code + shareable link ────────────────────────────────────────
+  // We ignore the backend-provided `link` entirely — it may contain localhost
+  // during development. The canonical production link is built locally from
+  // the user's referral code.
+  const referralCode = dashboard?.code || user?.referralCode || "";
+  const refLink = buildRefLink(referralCode);
+
   async function copyLink() {
+    if (!referralCode) {
+      showToast("Referral code not loaded yet", "error");
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(dashboard?.link || "");
+      await navigator.clipboard.writeText(refLink);
       setCopied(true);
       showToast("Link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
@@ -404,15 +421,15 @@ export default function ReferralDashboard() {
             {loading ? (
               <div className={styles.skCode} />
             ) : (
-              <p className={styles.codeValue}>{d?.code || "—"}</p>
+              <p className={styles.codeValue}>{referralCode || "—"}</p>
             )}
-            <p className={styles.codeLinkText}>{d?.link || "Loading…"}</p>
+            <p className={styles.codeLinkText}>{refLink}</p>
           </div>
           <div className={styles.codeCardRight}>
             <button
               className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`}
               onClick={copyLink}
-              disabled={!d?.link}
+              disabled={!referralCode}
             >
               {copied ? (
                 <>
@@ -428,7 +445,10 @@ export default function ReferralDashboard() {
           {d && (
             <div className={styles.codeCardShare}>
               <p className={styles.shareLabel}>Share via</p>
-              <ShareButtons link={d.link} shareText={d.shareText} />
+              <ShareButtons
+                link={refLink}
+                shareText={`Join SkilledProz! Sign up with my referral code ${referralCode}: ${refLink}`}
+              />
             </div>
           )}
         </div>

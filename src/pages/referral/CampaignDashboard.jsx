@@ -1,11 +1,41 @@
 // src/pages/referral/CampaignDashboard.jsx
-// Daily Referral Campaign — shared by Hirer and Worker
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./CampaignDashboard.module.css";
 import WorkerLayout from "../../components/layout/WorkerLayout";
 import HirerLayout from "../../components/layout/HirerLayout";
+import {
+  FiSmartphone,
+  FiUser,
+  FiUsers,
+  FiCamera,
+  FiMusic,
+  FiCheckCircle,
+  FiCheck,
+  FiXCircle,
+  FiX,
+  FiClock,
+  FiInfo,
+  FiAlertTriangle,
+  FiPaperclip,
+  FiUpload,
+  FiSend,
+  FiZap,
+  FiGift,
+  FiCreditCard,
+  FiTarget,
+  FiLink,
+  FiCopy,
+  FiShare2,
+  FiArrowUp,
+  FiArrowDown,
+  FiDollarSign,
+  FiChevronUp,
+  FiChevronDown,
+  FiFileText,
+  FiLoader,
+} from "react-icons/fi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtAmt(n) {
@@ -37,35 +67,35 @@ const TASKS = [
   {
     key: "hasDownloadedApp",
     label: "Download App",
-    icon: "📱",
+    icon: FiSmartphone,
     color: "#60a5fa",
     auto: true,
   },
   {
     key: "hasSetupProfile",
     label: "Setup Profile",
-    icon: "👤",
+    icon: FiUser,
     color: "#a78bfa",
     auto: true,
   },
   {
     key: "hasFollowedFb",
     label: "Follow Facebook",
-    icon: "👥",
+    icon: FiUsers,
     color: "#3b82f6",
     platform: "facebook",
   },
   {
     key: "hasFollowedIg",
     label: "Follow Instagram",
-    icon: "📸",
+    icon: FiCamera,
     color: "#ec4899",
     platform: "instagram",
   },
   {
     key: "hasFollowedTt",
     label: "Follow TikTok",
-    icon: "🎵",
+    icon: FiMusic,
     color: "#000",
     platform: "tiktok",
   },
@@ -89,8 +119,10 @@ const REFERRAL_META = {
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
+  const Icon = toast.type === "success" ? FiCheckCircle : FiXCircle;
   return (
     <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+      <Icon size={14} />
       {toast.msg}
     </div>
   );
@@ -118,24 +150,6 @@ function Avatar({ name, avatar }) {
   );
 }
 
-// ─── Task Dots ─────────────────────────────────────────────────────────────────
-function TaskDots({ ref: r }) {
-  return (
-    <div className={styles.taskDots}>
-      {TASKS.map((t) => (
-        <span
-          key={t.key}
-          className={`${styles.taskDot} ${r[t.key] ? styles.taskDotDone : ""}`}
-          style={r[t.key] ? { background: t.color } : {}}
-          title={t.label}
-        >
-          {r[t.key] ? "✓" : ""}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 // ─── Social Platform Card ─────────────────────────────────────────────────────
 function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
   const [showUpload, setShowUpload] = useState(false);
@@ -159,6 +173,7 @@ function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
     },
   };
   const pc = platformColors[task.platform] || {};
+  const TaskIcon = task.icon;
 
   return (
     <div
@@ -169,13 +184,17 @@ function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
       }}
     >
       <div className={styles.socialCardTop}>
-        <span className={styles.socialIcon}>{task.icon}</span>
+        <span className={styles.socialIcon} style={{ color: pc.color }}>
+          <TaskIcon size={24} />
+        </span>
         <div className={styles.socialInfo}>
           <p className={styles.socialName}>{task.label}</p>
           <p className={styles.socialHint}>@skilledproz</p>
         </div>
         {done ? (
-          <span className={styles.socialDoneCheck}>✅ Done</span>
+          <span className={styles.socialDoneCheck}>
+            <FiCheckCircle size={14} /> Done
+          </span>
         ) : (
           <div className={styles.socialActions}>
             <a
@@ -210,7 +229,7 @@ function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
             className={styles.socialProofToggle}
             onClick={() => setShowUpload((v) => !v)}
           >
-            📎 Add screenshot (optional)
+            <FiPaperclip size={12} /> Add screenshot (optional)
           </button>
           {showUpload && (
             <input
@@ -272,9 +291,11 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <p className={styles.modalTitle}>💸 Withdraw Campaign Earnings</p>
+          <p className={styles.modalTitle}>
+            <FiCreditCard size={16} /> Withdraw Campaign Earnings
+          </p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <FiX size={14} />
           </button>
         </div>
         <form className={styles.modalForm} onSubmit={handleSubmit}>
@@ -323,7 +344,11 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
               />
             </div>
           ))}
-          {error && <div className={styles.formError}>⚠️ {error}</div>}
+          {error && (
+            <div className={styles.formError}>
+              <FiAlertTriangle size={14} /> {error}
+            </div>
+          )}
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? (
               <>
@@ -343,7 +368,6 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
 // ─── Submission Card ──────────────────────────────────────────────────────────
 function SubmissionCard({ sub }) {
   const [open, setOpen] = useState(false);
-  const s = SUBMISSION_META[sub.status] || SUBMISSION_META.PENDING;
 
   return (
     <div
@@ -362,12 +386,12 @@ function SubmissionCard({ sub }) {
             </span>
             {sub.totalApproved > 0 && (
               <span className={styles.submissionApproved}>
-                ✓ {sub.totalApproved} approved
+                <FiCheck size={11} /> {sub.totalApproved} approved
               </span>
             )}
             {sub.totalRejected > 0 && (
               <span className={styles.submissionRejected}>
-                ✗ {sub.totalRejected} rejected
+                <FiX size={11} /> {sub.totalRejected} rejected
               </span>
             )}
           </div>
@@ -376,7 +400,9 @@ function SubmissionCard({ sub }) {
           {sub.netAmount > 0 && (
             <p className={styles.submissionEarned}>{fmtAmt(sub.netAmount)}</p>
           )}
-          <span className={styles.submissionToggle}>{open ? "▲" : "▼"}</span>
+          <span className={styles.submissionToggle}>
+            {open ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+          </span>
         </div>
       </div>
 
@@ -384,7 +410,7 @@ function SubmissionCard({ sub }) {
         <div className={styles.submissionExpanded}>
           {sub.adminNote && (
             <div className={styles.adminNoteBox}>
-              <span>📝 Admin:</span> {sub.adminNote}
+              <FiFileText size={13} /> <span>Admin:</span> {sub.adminNote}
             </div>
           )}
           <div className={styles.submissionReferralList}>
@@ -398,7 +424,7 @@ function SubmissionCard({ sub }) {
                 )}
                 {r.note && (
                   <span className={styles.subNote} title={r.note}>
-                    ⚠️
+                    <FiAlertTriangle size={12} />
                   </span>
                 )}
               </div>
@@ -426,7 +452,7 @@ export default function CampaignDashboard() {
   const [copied, setCopied] = useState(false);
   const [showWd, setShowWd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [reporting, setReporting] = useState(null); // platform being reported
+  const [reporting, setReporting] = useState(null);
   const [toast, setToast] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -435,7 +461,6 @@ export default function CampaignDashboard() {
     setTimeout(() => setToast(null), 3500);
   }
 
-  // ── Load all data ──────────────────────────────────────────────────────────
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -464,9 +489,8 @@ export default function CampaignDashboard() {
     loadAll();
   }, [loadAll]);
 
-  // ── Copy referral link ─────────────────────────────────────────────────────
   async function copyLink() {
-    const link = `${status?.social ? window.location.origin : "https://skilledproz.com"}/signup?ref=${user?.referralCode || ""}`;
+    const link = `https://skilledproz.com/signup?ref=${user?.referralCode || ""}`;
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -477,7 +501,6 @@ export default function CampaignDashboard() {
     }
   }
 
-  // ── Submit daily campaign ──────────────────────────────────────────────────
   async function handleSubmit() {
     setSubmitting(true);
     setShowConfirm(false);
@@ -492,7 +515,6 @@ export default function CampaignDashboard() {
     }
   }
 
-  // ── Report social follow ───────────────────────────────────────────────────
   async function reportFollow(platform, screenshotUrl = "") {
     setReporting(platform);
     try {
@@ -501,7 +523,7 @@ export default function CampaignDashboard() {
         screenshotUrl: screenshotUrl || undefined,
       });
       showToast(
-        `${platform} follow recorded${res.data.data?.allDone ? " 🎉 All tasks done!" : ""}!`,
+        `${platform} follow recorded${res.data.data?.allDone ? " — all tasks done!" : ""}`,
       );
       await loadAll();
     } catch (e) {
@@ -511,7 +533,6 @@ export default function CampaignDashboard() {
     }
   }
 
-  // ── Derived ────────────────────────────────────────────────────────────────
   const st = status;
   const readyCount = st?.stats?.readyToSubmit || 0;
   const alreadySubmitted = st?.alreadySubmittedToday;
@@ -520,12 +541,13 @@ export default function CampaignDashboard() {
   const walletBalance = st?.wallet?.balance || 0;
 
   const TABS = [
-    { key: "earn", label: "💰 Earn Daily" },
-    ...(hasMyTasks ? [{ key: "tasks", label: "✅ My Tasks" }] : []),
-    { key: "history", label: "📋 History" },
+    { key: "earn", label: "Earn Daily", icon: FiDollarSign },
+    ...(hasMyTasks
+      ? [{ key: "tasks", label: "My Tasks", icon: FiCheckCircle }]
+      : []),
+    { key: "history", label: "History", icon: FiFileText },
   ];
 
-  // today's referrals
   const todayStr = todayString();
   const todayRefs = referrals.filter(
     (r) => r.joinedAt?.slice(0, 10) === todayStr,
@@ -550,13 +572,12 @@ export default function CampaignDashboard() {
             </p>
           </div>
           <div className={styles.headerBadge}>
-            <span>💵</span> ₦100 / referral
+            <FiDollarSign size={14} /> ₦100 / referral
           </div>
         </div>
 
         {/* ── Wallet + Stats Row ── */}
         <div className={styles.topRow}>
-          {/* Wallet Card */}
           <div className={styles.walletCard}>
             <p className={styles.walletLabel}>Campaign Wallet</p>
             {loading ? (
@@ -577,7 +598,7 @@ export default function CampaignDashboard() {
                       : ""
                   }
                 >
-                  💸 Withdraw
+                  <FiCreditCard size={14} /> Withdraw
                 </button>
                 {!st?.wallet?.canWithdraw && (
                   <p className={styles.walletHint}>
@@ -589,44 +610,48 @@ export default function CampaignDashboard() {
             )}
           </div>
 
-          {/* Stats */}
           <div className={styles.statsGrid}>
             {[
               {
-                icon: "👥",
+                icon: FiUsers,
                 val: st?.stats?.totalReferred,
                 label: "Total Referred",
               },
               {
-                icon: "✅",
+                icon: FiCheckCircle,
                 val: readyCount,
                 label: "Ready Today",
                 accent: readyCount > 0 ? "green" : "",
               },
               {
-                icon: "📋",
+                icon: FiClock,
                 val: st?.stats?.pendingTasks,
                 label: "Tasks Pending",
               },
               {
-                icon: "💰",
+                icon: FiDollarSign,
                 val: fmtAmt(st?.stats?.totalEarnings),
                 label: "Total Earned",
                 accent: "orange",
               },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                <span className={styles.statIcon}>{s.icon}</span>
-                <p className={styles.statVal}>
-                  {loading ? "—" : (s.val ?? "0")}
-                </p>
-                <p className={styles.statLabel}>{s.label}</p>
-              </div>
-            ))}
+            ].map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div
+                  key={i}
+                  className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <span className={styles.statIcon}>
+                    <Icon size={18} />
+                  </span>
+                  <p className={styles.statVal}>
+                    {loading ? "—" : (s.val ?? "0")}
+                  </p>
+                  <p className={styles.statLabel}>{s.label}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -637,7 +662,9 @@ export default function CampaignDashboard() {
           >
             {alreadySubmitted ? (
               <div className={styles.submitBannerContent}>
-                <span className={styles.submitBannerIcon}>📤</span>
+                <span className={styles.submitBannerIcon}>
+                  <FiUpload size={24} />
+                </span>
                 <div>
                   <p className={styles.submitBannerTitle}>Submitted today!</p>
                   <p className={styles.submitBannerSub}>
@@ -653,7 +680,9 @@ export default function CampaignDashboard() {
               </div>
             ) : canSubmit ? (
               <div className={styles.submitBannerContent}>
-                <span className={styles.submitBannerIcon}>🚀</span>
+                <span className={styles.submitBannerIcon}>
+                  <FiZap size={24} />
+                </span>
                 <div>
                   <p className={styles.submitBannerTitle}>
                     {readyCount} referral{readyCount !== 1 ? "s" : ""} ready —
@@ -673,13 +702,17 @@ export default function CampaignDashboard() {
                       <span className={styles.spinner} /> Submitting…
                     </>
                   ) : (
-                    "Submit Now →"
+                    <>
+                      Submit Now <FiSend size={14} />
+                    </>
                   )}
                 </button>
               </div>
             ) : (
               <div className={styles.submitBannerContent}>
-                <span className={styles.submitBannerIcon}>⏳</span>
+                <span className={styles.submitBannerIcon}>
+                  <FiClock size={24} />
+                </span>
                 <div>
                   <p className={styles.submitBannerTitle}>
                     {pendingRefs.length > 0
@@ -716,7 +749,7 @@ export default function CampaignDashboard() {
                   className={styles.modalClose}
                   onClick={() => setShowConfirm(false)}
                 >
-                  ×
+                  <FiX size={14} />
                 </button>
               </div>
               <div className={styles.confirmBody}>
@@ -732,8 +765,11 @@ export default function CampaignDashboard() {
                   .
                 </p>
                 <p className={styles.confirmNote}>
-                  ⚠️ Admin has final say. Any referral that didn't fully
-                  complete tasks will be declined and deducted.
+                  <FiAlertTriangle size={14} />
+                  <span>
+                    Admin has final say. Any referral that didn't fully complete
+                    tasks will be declined and deducted.
+                  </span>
                 </p>
                 <div className={styles.confirmActions}>
                   <button
@@ -764,15 +800,19 @@ export default function CampaignDashboard() {
         {/* ── Tabs ── */}
         <div className={styles.tabsWrap}>
           <div className={styles.tabBar}>
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-                onClick={() => setTab(t.key)}
-              >
-                {t.label}
-              </button>
-            ))}
+            {TABS.map((t) => {
+              const TabIcon = t.icon;
+              return (
+                <button
+                  key={t.key}
+                  className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
+                  onClick={() => setTab(t.key)}
+                >
+                  <TabIcon size={13} />
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* ── EARN TAB ── */}
@@ -786,19 +826,27 @@ export default function CampaignDashboard() {
                     {user?.referralCode || "Loading…"}
                   </p>
                   <p className={styles.codeLink}>
-                    {`${window.location.origin}/signup?ref=${user?.referralCode || ""}`}
+                    {`https://skilledproz.com/signup?ref=${user?.referralCode || ""}`}
                   </p>
                 </div>
                 <button
                   className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`}
                   onClick={copyLink}
                 >
-                  {copied ? "✅ Copied!" : "📋 Copy Link"}
+                  {copied ? (
+                    <>
+                      <FiCheck size={14} /> Copied!
+                    </>
+                  ) : (
+                    <>
+                      <FiCopy size={14} /> Copy Link
+                    </>
+                  )}
                 </button>
                 <div className={styles.shareRow}>
                   <p className={styles.shareLabel}>Share via:</p>
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Join SkilledProz! Download the app, sign up with my code ${user?.referralCode} and follow us on social media. I earn ₦100 when you complete all tasks! ${window.location.origin}/signup?ref=${user?.referralCode}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(`Join SkilledProz! Download the app, sign up with my code ${user?.referralCode} and follow us on social media. I earn ₦100 when you complete all tasks! https://skilledproz.com/signup?ref=${user?.referralCode}`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnWa}`}
@@ -814,7 +862,7 @@ export default function CampaignDashboard() {
                     WhatsApp
                   </a>
                   <a
-                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Earn with me on SkilledProz! Use my referral code ${user?.referralCode} when you sign up 👇`)}`}
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Earn with me on SkilledProz! Use my referral code ${user?.referralCode} when you sign up`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnX}`}
@@ -839,52 +887,60 @@ export default function CampaignDashboard() {
                   {[
                     {
                       step: "1",
-                      icon: "🔗",
+                      icon: FiLink,
                       text: "Share your referral code or link",
                     },
                     {
                       step: "2",
-                      icon: "📱",
+                      icon: FiSmartphone,
                       text: "They download & sign up with your code",
                     },
                     {
                       step: "3",
-                      icon: "👤",
+                      icon: FiUser,
                       text: "They complete their profile setup",
                     },
                     {
                       step: "4",
-                      icon: "📲",
+                      icon: FiUsers,
                       text: "They follow us on Facebook, Instagram & TikTok",
                     },
                     {
                       step: "5",
-                      icon: "📤",
+                      icon: FiUpload,
                       text: "You submit daily — admin verifies — ₦100 credited!",
                     },
-                  ].map((s) => (
-                    <div key={s.step} className={styles.howStep}>
-                      <div className={styles.howStepNum}>{s.step}</div>
-                      <span className={styles.howStepIcon}>{s.icon}</span>
-                      <p className={styles.howStepText}>{s.text}</p>
-                    </div>
-                  ))}
+                  ].map((s) => {
+                    const StepIcon = s.icon;
+                    return (
+                      <div key={s.step} className={styles.howStep}>
+                        <div className={styles.howStepNum}>{s.step}</div>
+                        <span className={styles.howStepIcon}>
+                          <StepIcon size={16} />
+                        </span>
+                        <p className={styles.howStepText}>{s.text}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Task legend */}
               <div className={styles.taskLegend}>
-                {TASKS.map((t) => (
-                  <span key={t.key} className={styles.taskLegendItem}>
-                    <span
-                      className={styles.taskDot}
-                      style={{ background: t.color }}
-                    >
-                      ✓
+                {TASKS.map((t) => {
+                  const TIcon = t.icon;
+                  return (
+                    <span key={t.key} className={styles.taskLegendItem}>
+                      <span
+                        className={styles.taskDot}
+                        style={{ background: t.color }}
+                      >
+                        <FiCheck size={9} />
+                      </span>
+                      {t.label}
                     </span>
-                    {t.label}
-                  </span>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Today's Referrals */}
@@ -909,7 +965,9 @@ export default function CampaignDashboard() {
                 ))
               ) : referrals.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <span>👥</span>
+                  <span>
+                    <FiUsers size={36} />
+                  </span>
                   <p>No referrals yet — share your code to start earning!</p>
                 </div>
               ) : (
@@ -927,11 +985,15 @@ export default function CampaignDashboard() {
                           <span
                             className={`${styles.rolePill} ${r.role === "WORKER" ? styles.rolePillW : styles.rolePillH}`}
                           >
-                            {r.role === "WORKER" ? "🔨" : "🧑"} {r.role}
+                            {r.role === "WORKER" ? (
+                              <FiTarget size={10} />
+                            ) : (
+                              <FiUser size={10} />
+                            )}{" "}
+                            {r.role}
                           </span>
                           <span>· {timeAgo(r.joinedAt)}</span>
                         </p>
-                        {/* Task progress */}
                         <div className={styles.taskProgress}>
                           {TASKS.map((t) => (
                             <span
@@ -942,7 +1004,7 @@ export default function CampaignDashboard() {
                               }
                               title={t.label}
                             >
-                              {r.tasks[t.key] ? "✓" : ""}
+                              {r.tasks[t.key] ? <FiCheck /> : ""}
                             </span>
                           ))}
                           <span className={styles.taskScore}>
@@ -970,7 +1032,9 @@ export default function CampaignDashboard() {
             <div className={styles.tabContent}>
               {!hasMyTasks ? (
                 <div className={styles.emptyState}>
-                  <span>ℹ️</span>
+                  <span>
+                    <FiInfo size={36} />
+                  </span>
                   <p>
                     You didn't sign up with a referral code, so you have no
                     tasks to complete.
@@ -978,7 +1042,6 @@ export default function CampaignDashboard() {
                 </div>
               ) : (
                 <>
-                  {/* Progress header */}
                   <div className={styles.tasksHeader}>
                     <div className={styles.tasksProgress}>
                       <div className={styles.tasksProgressBar}>
@@ -992,18 +1055,16 @@ export default function CampaignDashboard() {
                       <p className={styles.tasksProgressText}>
                         {myTasks.completedCount}/{myTasks.totalCount} tasks
                         complete
-                        {myTasks.allDone && " 🎉"}
                       </p>
                     </div>
                     {myTasks.allDone && (
                       <div className={styles.allDoneBanner}>
-                        ✅ All tasks done! Your referrer can now submit you for
-                        the ₦100 reward.
+                        <FiCheckCircle size={14} /> All tasks done! Your
+                        referrer can now submit you for the ₦100 reward.
                       </div>
                     )}
                   </div>
 
-                  {/* Auto tasks */}
                   <div className={styles.autoTasks}>
                     {myTasks.tasks
                       ?.filter((t) => t.auto)
@@ -1012,8 +1073,19 @@ export default function CampaignDashboard() {
                           key={t.key}
                           className={`${styles.autoTaskRow} ${t.done ? styles.autoTaskDone : ""}`}
                         >
-                          <span className={styles.autoTaskIcon}>
-                            {t.done ? "✅" : "⏳"}
+                          <span
+                            className={styles.autoTaskIcon}
+                            style={{
+                              color: t.done
+                                ? "var(--green)"
+                                : "var(--text-muted)",
+                            }}
+                          >
+                            {t.done ? (
+                              <FiCheckCircle size={20} />
+                            ) : (
+                              <FiClock size={20} />
+                            )}
                           </span>
                           <div>
                             <p className={styles.autoTaskLabel}>{t.label}</p>
@@ -1028,7 +1100,6 @@ export default function CampaignDashboard() {
                       ))}
                   </div>
 
-                  {/* Social tasks */}
                   <p className={styles.socialTasksTitle}>
                     Follow us on social media
                   </p>
@@ -1053,8 +1124,8 @@ export default function CampaignDashboard() {
                   </div>
 
                   <div className={styles.tasksNote}>
-                    📝 Screenshots are optional but help if admin needs to
-                    verify your follows.
+                    <FiFileText size={12} /> Screenshots are optional but help
+                    if admin needs to verify your follows.
                   </div>
                 </>
               )}
@@ -1074,7 +1145,9 @@ export default function CampaignDashboard() {
                 ))
               ) : submissions.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <span>📋</span>
+                  <span>
+                    <FiFileText size={36} />
+                  </span>
                   <p>
                     No submissions yet. Submit your first daily batch to see
                     history here.
@@ -1100,7 +1173,7 @@ export default function CampaignDashboard() {
           onClose={() => setShowWd(false)}
           onSuccess={() => {
             setShowWd(false);
-            showToast("Withdrawal submitted! Processing in 1–3 days 💸");
+            showToast("Withdrawal submitted! Processing in 1–3 days");
             loadAll();
           }}
         />

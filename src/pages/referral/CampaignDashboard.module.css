@@ -1,14 +1,25 @@
 /* CampaignDashboard.module.css */
 
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 20px 16px 60px;
-  max-width: 860px;
-  margin: 0 auto;
+  max-width: none;
   display: flex;
   flex-direction: column;
   gap: 14px;
   animation: fadeUp 0.35s ease both;
   position: relative;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 16px 12px 60px;
+  }
 }
 
 /* ── Toast ─────────────────────────────────────────────────────────────────── */
@@ -24,6 +35,12 @@
   animation: slideIn 0.2s ease;
   pointer-events: none;
   max-width: 320px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.toast svg {
+  flex-shrink: 0;
 }
 .toast_success {
   background: var(--green-dim);
@@ -82,6 +99,9 @@
   font-weight: 800;
   color: var(--orange);
   white-space: nowrap;
+}
+.headerBadge svg {
+  flex-shrink: 0;
 }
 
 /* ── Top Row (wallet + stats) ────────────────────────────────────────────────── */
@@ -145,6 +165,9 @@
     opacity 0.15s,
     transform 0.1s;
 }
+.withdrawBtn svg {
+  flex-shrink: 0;
+}
 .withdrawBtn:hover:not(:disabled) {
   opacity: 0.88;
   transform: translateY(-1px);
@@ -201,6 +224,9 @@
 .accent_green .statVal {
   color: var(--green);
 }
+.accent_green .statIcon {
+  color: var(--green);
+}
 .accent_orange {
   border-color: rgba(249, 115, 22, 0.25);
   background: var(--orange-dim);
@@ -208,8 +234,15 @@
 .accent_orange .statVal {
   color: var(--orange);
 }
+.accent_orange .statIcon {
+  color: var(--orange);
+}
 .statIcon {
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  margin-bottom: 2px;
 }
 .statVal {
   font-family: var(--font-display);
@@ -254,8 +287,14 @@
   flex-wrap: wrap;
 }
 .submitBannerIcon {
-  font-size: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
   flex-shrink: 0;
+}
+.submitBannerDone .submitBannerIcon {
+  color: var(--green);
 }
 .submitBannerTitle {
   font-family: var(--font-display);
@@ -268,6 +307,10 @@
   font-size: 12px;
   color: var(--text-dim);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .submitBannerBtn {
   margin-left: auto;
@@ -287,6 +330,9 @@
   transition:
     opacity 0.15s,
     transform 0.1s;
+}
+.submitBannerBtn svg {
+  flex-shrink: 0;
 }
 .submitBannerBtn:hover:not(:disabled) {
   opacity: 0.88;
@@ -320,6 +366,13 @@
   border: 1px solid rgba(239, 68, 68, 0.15);
   border-radius: 8px;
   padding: 8px 12px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.confirmNote svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 .confirmActions {
   display: flex;
@@ -387,6 +440,13 @@
   transition: all 0.15s;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.tab svg {
+  flex-shrink: 0;
 }
 .tab:hover {
   background: var(--bg-card);
@@ -470,6 +530,12 @@
   font-family: var(--font-body);
   cursor: pointer;
   transition: opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.copyBtn svg {
+  flex-shrink: 0;
 }
 .copyBtn:hover {
   opacity: 0.88;
@@ -504,6 +570,9 @@
   text-decoration: none;
   border: 1px solid var(--border);
   transition: all 0.15s;
+}
+.shareBtn svg {
+  flex-shrink: 0;
 }
 .shareBtnWa {
   color: #25d366;
@@ -558,7 +627,10 @@
   font-family: var(--font-display);
 }
 .howStepIcon {
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
   flex-shrink: 0;
 }
 .howStepText {
@@ -685,6 +757,10 @@
   font-weight: 700;
   transition: all 0.2s;
 }
+.taskPip svg {
+  width: 10px;
+  height: 10px;
+}
 .taskPipDone {
   border-color: transparent;
 }
@@ -713,6 +789,10 @@
   color: #fff;
   font-weight: 700;
 }
+.taskDot svg {
+  width: 9px;
+  height: 9px;
+}
 .taskDotDone {
   border-color: transparent;
 }
@@ -723,6 +803,12 @@
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.rolePill svg {
+  flex-shrink: 0;
 }
 .rolePillW {
   background: rgba(249, 115, 22, 0.12);
@@ -771,6 +857,12 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.allDoneBanner svg {
+  flex-shrink: 0;
 }
 
 .autoTasks {
@@ -793,8 +885,16 @@
   background: var(--green-dim);
 }
 .autoTaskIcon {
-  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+.autoTaskDone .autoTaskIcon {
+  color: var(--green);
+}
+.autoTaskIcon:not(.autoTaskDone *) {
+  color: var(--text-muted);
 }
 .autoTaskLabel {
   font-size: 14px;
@@ -848,7 +948,11 @@
   gap: 12px;
 }
 .socialIcon {
-  font-size: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
 .socialInfo {
@@ -870,6 +974,12 @@
   font-weight: 700;
   color: var(--green);
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.socialDoneCheck svg {
+  flex-shrink: 0;
 }
 .socialActions {
   display: flex;
@@ -924,6 +1034,12 @@
   font-family: var(--font-body);
   text-align: left;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.socialProofToggle svg {
+  flex-shrink: 0;
 }
 .socialProofToggle:hover {
   color: var(--text);
@@ -949,6 +1065,10 @@
   color: var(--text-muted);
   text-align: center;
   padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 /* ── History Tab ─────────────────────────────────────────────────────────────── */
@@ -1019,11 +1139,23 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.submissionApproved svg {
+  flex-shrink: 0;
 }
 .submissionRejected {
   font-size: 11px;
   font-weight: 700;
   color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.submissionRejected svg {
+  flex-shrink: 0;
 }
 .submissionEarned {
   font-family: var(--font-display);
@@ -1033,8 +1165,9 @@
   margin: 0;
 }
 .submissionToggle {
-  font-size: 10px;
   color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
 }
 .submissionExpanded {
   padding: 0 16px 14px;
@@ -1051,6 +1184,14 @@
   padding: 8px 12px;
   font-size: 12px;
   color: var(--text-dim);
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.adminNoteBox svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--orange);
 }
 .submissionReferralList {
   display: flex;
@@ -1082,7 +1223,9 @@
   white-space: nowrap;
 }
 .subNote {
-  font-size: 14px;
+  color: var(--orange);
+  display: inline-flex;
+  align-items: center;
   cursor: help;
 }
 
@@ -1189,6 +1332,13 @@
   font-weight: 800;
   color: var(--text);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.modalTitle svg {
+  flex-shrink: 0;
+  color: var(--green);
 }
 .modalClose {
   background: var(--bg-card);
@@ -1204,6 +1354,9 @@
   justify-content: center;
   font-family: var(--font-body);
   transition: all 0.12s;
+}
+.modalClose svg {
+  flex-shrink: 0;
 }
 .modalClose:hover {
   color: var(--text);
@@ -1265,6 +1418,7 @@
   font-family: var(--font-body);
   transition: border-color 0.15s;
   width: 100%;
+  box-sizing: border-box;
 }
 .input:focus {
   border-color: var(--border-focus);
@@ -1279,6 +1433,12 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
   padding: 9px 13px;
   border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.formError svg {
+  flex-shrink: 0;
 }
 .formHint {
   font-size: 11px;
@@ -1301,6 +1461,9 @@
   justify-content: center;
   gap: 8px;
   transition: opacity 0.15s;
+}
+.submitBtn svg {
+  flex-shrink: 0;
 }
 .submitBtn:hover:not(:disabled) {
   opacity: 0.88;
@@ -1334,9 +1497,13 @@
   padding: 36px 20px;
   text-align: center;
 }
-.emptyState span {
-  font-size: 2.5rem;
-  opacity: 0.4;
+.emptyState span:first-child,
+.emptyState > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.5;
 }
 .emptyState p {
   font-size: 13px;
@@ -1426,7 +1593,7 @@
 }
 @media (min-width: 900px) {
   .page {
-    padding: 28px 0 60px;
+    padding: 28px 24px 60px;
   }
 }
 @media (max-width: 420px) {
