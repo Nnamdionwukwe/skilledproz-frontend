@@ -30,6 +30,17 @@ import {
   FiMoon,
   FiLayers,
   FiShuffle,
+  // ── NEW icons for the external-style fields ──
+  FiAward,
+  FiBookOpen,
+  FiLink,
+  FiMail,
+  FiPhone,
+  FiMessageCircle,
+  FiTrendingUp,
+  FiCheckSquare,
+  FiAlignLeft,
+  FiExternalLink,
 } from "react-icons/fi";
 
 export default function JobDetail() {
@@ -166,9 +177,63 @@ export default function JobDetail() {
     CUSTOM: { icon: FiEdit3, label: "Custom" },
   }[jobPost.budgetType];
 
+  const salaryPeriodLabel = {
+    HOURLY: "Per Hour",
+    DAILY: "Per Day",
+    WEEKLY: "Per Week",
+    MONTHLY: "Per Month",
+    YEARLY: "Per Year",
+  }[jobPost.salaryPeriod];
+
+  const educationLevelLabel = {
+    HIGH_SCHOOL: "High School",
+    DIPLOMA: "Diploma",
+    BACHELOR: "Bachelor's Degree",
+    MASTER: "Master's Degree",
+    DOCTORATE: "Doctorate",
+    CERTIFICATION: "Certification",
+    OTHER: "Other",
+  }[jobPost.educationLevel];
+
   const JobTypeIcon = jobTypeMeta?.icon;
   const LocationTypeIcon = locationTypeMeta?.icon;
   const BudgetTypeIcon = budgetTypeMeta?.icon;
+
+  // ── Derived: whether to show a link-based application channel ─────────
+  const hasExternalApplyChannels =
+    jobPost.applicationUrl ||
+    jobPost.applicationEmail ||
+    jobPost.applicationWhatsApp ||
+    jobPost.applicationPhone;
+
+  const hasSalaryRange =
+    jobPost.salaryAmount ||
+    jobPost.salaryMin ||
+    jobPost.salaryMax ||
+    jobPost.salaryText;
+
+  const hasRequirementsBlock =
+    jobPost.responsibilities ||
+    jobPost.requirements ||
+    jobPost.minQualification ||
+    jobPost.experienceLevel ||
+    jobPost.experienceLength ||
+    jobPost.educationLevel ||
+    jobPost.languageRequirement ||
+    jobPost.workingHours ||
+    jobPost.applicantLocation;
+
+  // Formatted salary range for display
+  let salaryRangeText = null;
+  if (jobPost.salaryText) {
+    salaryRangeText = jobPost.salaryText;
+  } else if (jobPost.salaryMin && jobPost.salaryMax) {
+    const cur = jobPost.salaryCurrency || jobPost.currency || "";
+    salaryRangeText = `${cur} ${Number(jobPost.salaryMin).toLocaleString()} – ${Number(jobPost.salaryMax).toLocaleString()}${salaryPeriodLabel ? ` · ${salaryPeriodLabel}` : ""}`;
+  } else if (jobPost.salaryAmount) {
+    const cur = jobPost.salaryCurrency || jobPost.currency || "";
+    salaryRangeText = `${cur} ${Number(jobPost.salaryAmount).toLocaleString()}${salaryPeriodLabel ? ` · ${salaryPeriodLabel}` : ""}`;
+  }
 
   return (
     <div className={styles.page}>
@@ -208,6 +273,11 @@ export default function JobDetail() {
               )}
             </div>
 
+            {/* Company name (external-style only) — rendered above title if present */}
+            {jobPost.companyName && (
+              <p className={styles.jobCompany}>{jobPost.companyName}</p>
+            )}
+
             <h1 className={styles.jobTitle}>{jobPost.title}</h1>
 
             {(jobPost.jobType ||
@@ -231,6 +301,16 @@ export default function JobDetail() {
                       <BudgetTypeIcon size={12} /> {budgetTypeMeta.label}
                     </span>
                   )}
+                {jobPost.experienceLevel && (
+                  <span className={styles.typePill}>
+                    <FiTrendingUp size={12} /> {jobPost.experienceLevel}
+                  </span>
+                )}
+                {jobPost.sourcePlatform && (
+                  <span className={styles.typePill}>
+                    <FiExternalLink size={12} /> via {jobPost.sourcePlatform}
+                  </span>
+                )}
               </div>
             )}
 
@@ -248,10 +328,20 @@ export default function JobDetail() {
             </div>
 
             <div className={styles.budgetBlock}>
+              {/* Prefer salaryText / salary range when provided, fallback to budget */}
               <span className={styles.budgetAmount}>
-                {jobPost.currency} {parseFloat(jobPost.budget).toLocaleString()}
+                {jobPost.salaryText ? (
+                  jobPost.salaryText
+                ) : (
+                  <>
+                    {jobPost.currency}{" "}
+                    {parseFloat(jobPost.budget).toLocaleString()}
+                  </>
+                )}
               </span>
-              <span className={styles.budgetLabel}>Budget</span>
+              <span className={styles.budgetLabel}>
+                {jobPost.salaryText ? "Salary" : "Budget"}
+              </span>
               <span className={styles.applicantCount}>
                 <FiUsers size={12} /> {jobPost._count?.applications || 0}{" "}
                 applicant
@@ -270,6 +360,22 @@ export default function JobDetail() {
               </div>
             )}
           </section>
+
+          {/* ── NEW: Responsibilities (only if present) ── */}
+          {jobPost.responsibilities && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Responsibilities</h2>
+              <p className={styles.description}>{jobPost.responsibilities}</p>
+            </section>
+          )}
+
+          {/* ── NEW: Requirements (only if present) ── */}
+          {jobPost.requirements && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Requirements</h2>
+              <p className={styles.description}>{jobPost.requirements}</p>
+            </section>
+          )}
 
           {jobPost.skills?.length > 0 && (
             <section className={styles.section}>
@@ -294,8 +400,12 @@ export default function JobDetail() {
               />
               <DetailCard
                 icon={<FiDollarSign size={14} />}
-                label="Budget"
-                value={`${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`}
+                label={jobPost.salaryText ? "Salary" : "Budget"}
+                value={
+                  jobPost.salaryText
+                    ? jobPost.salaryText
+                    : `${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`
+                }
                 accent
               />
               <DetailCard
@@ -382,8 +492,145 @@ export default function JobDetail() {
                   value={`${jobPost.durationValue} ${jobPost.durationType.toLowerCase()}`}
                 />
               )}
+
+              {/* ── NEW: Salary range detail card ── */}
+              {salaryRangeText && jobPost.salaryText && (
+                <DetailCard
+                  icon={<FiDollarSign size={14} />}
+                  label="Salary Range"
+                  value={salaryRangeText}
+                />
+              )}
+
+              {/* ── NEW: Experience Level ── */}
+              {jobPost.experienceLevel && (
+                <DetailCard
+                  icon={<FiTrendingUp size={14} />}
+                  label="Experience"
+                  value={
+                    jobPost.experienceLength
+                      ? `${jobPost.experienceLevel} · ${jobPost.experienceLength}`
+                      : jobPost.experienceLevel
+                  }
+                />
+              )}
+
+              {/* ── NEW: Minimum Qualification ── */}
+              {jobPost.minQualification && (
+                <DetailCard
+                  icon={<FiAward size={14} />}
+                  label="Min. Qualification"
+                  value={jobPost.minQualification}
+                />
+              )}
+
+              {/* ── NEW: Education Level ── */}
+              {educationLevelLabel && (
+                <DetailCard
+                  icon={<FiBookOpen size={14} />}
+                  label="Education"
+                  value={educationLevelLabel}
+                />
+              )}
+
+              {/* ── NEW: Language Requirement ── */}
+              {jobPost.languageRequirement && (
+                <DetailCard
+                  icon={<FiGlobe size={14} />}
+                  label="Language"
+                  value={jobPost.languageRequirement}
+                />
+              )}
+
+              {/* ── NEW: Working Hours ── */}
+              {jobPost.workingHours && (
+                <DetailCard
+                  icon={<FiClock size={14} />}
+                  label="Working Hours"
+                  value={jobPost.workingHours}
+                />
+              )}
+
+              {/* ── NEW: Applicant Location ── */}
+              {jobPost.applicantLocation && (
+                <DetailCard
+                  icon={<FiMapPin size={14} />}
+                  label="Applicant Location"
+                  value={jobPost.applicantLocation}
+                />
+              )}
+
+              {/* ── NEW: Expiry Date ── */}
+              {jobPost.expiryDate && (
+                <DetailCard
+                  icon={<FiCalendar size={14} />}
+                  label="Expires"
+                  value={new Date(jobPost.expiryDate).toLocaleDateString(
+                    "en-GB",
+                    { day: "numeric", month: "long", year: "numeric" },
+                  )}
+                />
+              )}
+
+              {/* ── NEW: Source Platform ── */}
+              {jobPost.sourcePlatform && (
+                <DetailCard
+                  icon={<FiExternalLink size={14} />}
+                  label="Source"
+                  value={jobPost.sourcePlatform}
+                />
+              )}
             </div>
           </section>
+
+          {/* ── NEW: How to Apply (external channels only) ── */}
+          {hasExternalApplyChannels && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>How to Apply</h2>
+              <div className={styles.applyChannels}>
+                {jobPost.applicationUrl && (
+                  <a
+                    href={jobPost.applicationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.applyChannel}
+                  >
+                    <FiLink size={14} />
+                    <span>Apply via link</span>
+                  </a>
+                )}
+                {jobPost.applicationEmail && (
+                  <a
+                    href={`mailto:${jobPost.applicationEmail}`}
+                    className={styles.applyChannel}
+                  >
+                    <FiMail size={14} />
+                    <span>{jobPost.applicationEmail}</span>
+                  </a>
+                )}
+                {jobPost.applicationWhatsApp && (
+                  <a
+                    href={`https://wa.me/${jobPost.applicationWhatsApp.replace(/[^0-9]/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.applyChannel}
+                  >
+                    <FiMessageCircle size={14} />
+                    <span>{jobPost.applicationWhatsApp}</span>
+                  </a>
+                )}
+                {jobPost.applicationPhone && (
+                  <a
+                    href={`tel:${jobPost.applicationPhone}`}
+                    className={styles.applyChannel}
+                  >
+                    <FiPhone size={14} />
+                    <span>{jobPost.applicationPhone}</span>
+                  </a>
+                )}
+              </div>
+            </section>
+          )}
 
           {isWorker && isOpen && (
             <section className={styles.section}>
@@ -536,12 +783,16 @@ export default function JobDetail() {
           <div className={styles.quickFacts}>
             <p className={styles.quickFactsTitle}>Quick Facts</p>
             <div className={styles.factRow}>
-              <span className={styles.factLabel}>Budget</span>
+              <span className={styles.factLabel}>
+                {jobPost.salaryText ? "Salary" : "Budget"}
+              </span>
               <span
                 className={styles.factValue}
                 style={{ color: "var(--orange)" }}
               >
-                {jobPost.currency} {parseFloat(jobPost.budget).toLocaleString()}
+                {jobPost.salaryText
+                  ? jobPost.salaryText
+                  : `${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`}
               </span>
             </div>
             <div className={styles.factRow}>
@@ -609,6 +860,34 @@ export default function JobDetail() {
                       ({formatJobDurationParts(jobPost).equivalents[0].label})
                     </span>
                   )}
+                </span>
+              </div>
+            )}
+
+            {/* ── NEW: Quick fact for experience level ── */}
+            {jobPost.experienceLevel && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Experience</span>
+                <span className={styles.factValue}>
+                  {jobPost.experienceLevel}
+                </span>
+              </div>
+            )}
+
+            {/* ── NEW: Quick fact for education level ── */}
+            {educationLevelLabel && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Education</span>
+                <span className={styles.factValue}>{educationLevelLabel}</span>
+              </div>
+            )}
+
+            {/* ── NEW: Quick fact for applicant location ── */}
+            {jobPost.applicantLocation && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Preferred Location</span>
+                <span className={styles.factValue}>
+                  {jobPost.applicantLocation}
                 </span>
               </div>
             )}
