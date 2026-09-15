@@ -129,6 +129,8 @@ import AdminWallet from "./pages/admin/AdminWallet.jsx";
 import RefundHistory from "./components/booking/Refund/RefundHistory.jsx";
 import RefundDetail from "./components/booking/Refund/RefundDetail.jsx";
 import GoogleCallback from "./pages/auth/GoogleCallback.jsx";
+import WorkerRefundDetailPage from "./pages/worker/refunds/components/WorkerRefundDetailPage.jsx";
+import WorkerRefundsPage from "./pages/worker/refunds/components/WorkerRefundsPage.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -725,6 +727,26 @@ export default function App() {
             <RequireWorker>
               <RequireAuth>
                 <CompletedJobs />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/refunds"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerRefundsPage />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+        <Route
+          path="/dashboard/worker/refunds/:refundId"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerRefundDetailPage />
               </RequireAuth>
             </RequireWorker>
           }

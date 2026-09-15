@@ -26,6 +26,7 @@ import {
   FiSettings,
   FiLogOut,
   FiMenu,
+  FiRotateCcw,
 } from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
@@ -78,9 +79,14 @@ const NAV = [
         icon: FiDollarSign,
       },
       {
-        label: "Withdrawals",
+        label: "Wallet",
         path: "/dashboard/worker/withdrawals",
         icon: FiArrowUp,
+      },
+      {
+        label: "Refunds",
+        path: "/dashboard/worker/refunds",
+        icon: FiRotateCcw,
       },
       { label: "Referrals", path: "/referrals", icon: FiUsers },
       { label: "Campaigns", path: "/campaign", icon: FiSpeaker },
@@ -185,6 +191,10 @@ const PAGE_TITLES = {
     title: "Jobs Done",
     sub: "View your Jobs Done",
   },
+  "/dashboard/worker/refunds": {
+    title: "Refund History",
+    sub: "Refunds affecting your earnings",
+  },
   "/my-reports": { title: "My Reports", sub: "Track your reports" },
   "/settings": { title: "Settings", sub: "Manage your preferences" },
 };
@@ -195,6 +205,8 @@ function getPageInfo(pathname) {
     return { title: "Booking Detail", sub: "Job details and actions" };
   if (pathname.startsWith("/profile/")) return { title: "Profile", sub: "" };
   if (pathname.startsWith("/jobs/")) return { title: "Job Detail", sub: "" };
+  if (pathname.startsWith("/dashboard/worker/refunds/"))
+    return { title: "Refund Detail", sub: "Full refund breakdown" };
   return { title: "Worker Portal", sub: "Manage your work" };
 }
 
