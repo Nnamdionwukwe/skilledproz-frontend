@@ -14,7 +14,7 @@ import {
   FiFrown,
   FiArrowLeft,
   FiArrowRight,
-  FiWrench,
+  FiTool,
 } from "react-icons/fi";
 
 const RATINGS = [
@@ -295,7 +295,7 @@ export default function SearchPage() {
                         handleSearch();
                       }}
                     >
-                      {c.icon ? <span>{c.icon}</span> : <FiWrench size={14} />}
+                      {c.icon ? <span>{c.icon}</span> : <FiTool size={14} />}
                       <span>{c.name}</span>
                     </button>
                   ))}
@@ -617,7 +617,7 @@ export default function SearchPage() {
                           }}
                         >
                           <span className={styles.catIcon}>
-                            {c.icon || <FiWrench size={24} />}
+                            {c.icon || <FiTool size={24} />}
                           </span>
                           <span className={styles.catName}>{c.name}</span>
                           <span className={styles.catCount}>
