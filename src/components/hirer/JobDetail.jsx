@@ -16,7 +16,6 @@ import {
   FiUsers,
   FiDollarSign,
   FiCreditCard,
-  FiRuler,
   FiTag,
   FiEdit3,
   FiBookmark,
@@ -26,7 +25,7 @@ import {
   FiSearch,
   FiChevronLeft,
   FiArrowRight,
-  FiRocket,
+  FiSend,
   FiSun,
   FiMoon,
   FiLayers,
@@ -145,7 +144,6 @@ export default function JobDetail() {
   };
   const sm = statusMeta[jobPost.status] || statusMeta.OPEN;
 
-  // Job type icon + label
   const jobTypeMeta = {
     FULL_TIME: { icon: FiBriefcase, label: "Full-time" },
     PART_TIME: { icon: FiClock, label: "Part-time" },
@@ -153,14 +151,12 @@ export default function JobDetail() {
     TEMPORARY: { icon: FiClock, label: "Temporary" },
   }[jobPost.jobType];
 
-  // Location type icon + label
   const locationTypeMeta = {
     REMOTE: { icon: FiGlobe, label: "Remote" },
     ON_SITE: { icon: FiMapPin, label: "On-site" },
     HYBRID: { icon: FiShuffle, label: "Hybrid" },
   }[jobPost.locationType];
 
-  // Budget type icon + label
   const budgetTypeMeta = {
     FIXED: { icon: FiDollarSign, label: "Fixed" },
     HOURLY: { icon: FiClock, label: "Hourly" },
@@ -176,12 +172,10 @@ export default function JobDetail() {
 
   return (
     <div className={styles.page}>
-      {/* Back */}
       <Link to={backDestination} className={styles.backLink}>
         <FiChevronLeft size={14} /> Back to Jobs
       </Link>
 
-      {/* Alerts */}
       {error && (
         <Alert type="error" text={error} onClose={() => setError("")} />
       )}
@@ -190,9 +184,7 @@ export default function JobDetail() {
       )}
 
       <div className={styles.layout}>
-        {/* ── Main ── */}
         <div className={styles.main}>
-          {/* Header card */}
           <div className={styles.headerCard}>
             <div className={styles.headerTop}>
               <div className={styles.categoryChip}>
@@ -218,7 +210,6 @@ export default function JobDetail() {
 
             <h1 className={styles.jobTitle}>{jobPost.title}</h1>
 
-            {/* Job type / location type / budget type pills */}
             {(jobPost.jobType ||
               jobPost.locationType ||
               jobPost.budgetType) && (
@@ -256,7 +247,6 @@ export default function JobDetail() {
               />
             </div>
 
-            {/* Budget hero */}
             <div className={styles.budgetBlock}>
               <span className={styles.budgetAmount}>
                 {jobPost.currency} {parseFloat(jobPost.budget).toLocaleString()}
@@ -270,7 +260,6 @@ export default function JobDetail() {
             </div>
           </div>
 
-          {/* Description */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Job Description</h2>
             <p className={styles.description}>{jobPost.description}</p>
@@ -295,7 +284,6 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* Details grid */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Details</h2>
             <div className={styles.detailGrid}>
@@ -389,7 +377,7 @@ export default function JobDetail() {
               )}
               {jobPost.durationValue && jobPost.durationType && (
                 <DetailCard
-                  icon={<FiRuler size={14} />}
+                  icon={<FiClock size={14} />}
                   label="Job Duration"
                   value={`${jobPost.durationValue} ${jobPost.durationType.toLowerCase()}`}
                 />
@@ -397,7 +385,6 @@ export default function JobDetail() {
             </div>
           </section>
 
-          {/* Apply form */}
           {isWorker && isOpen && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Apply for this Job</h2>
@@ -450,7 +437,7 @@ export default function JobDetail() {
                   className={styles.applyTriggerBtn}
                   onClick={() => setShowForm(true)}
                 >
-                  <FiRocket size={15} /> Apply Now
+                  <FiSend size={15} /> Apply Now
                 </button>
               )}
               <ReportButton
@@ -461,7 +448,6 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* Hirer manage actions */}
           {isOwner && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Manage Job</h2>
@@ -502,9 +488,7 @@ export default function JobDetail() {
           )}
         </div>
 
-        {/* ── Sidebar ── */}
         <div className={styles.sidebar}>
-          {/* Hirer card */}
           <div className={styles.hirerCard}>
             <p className={styles.hirerCardLabel}>Posted by</p>
             <div className={styles.hirerAvatar}>
@@ -549,7 +533,6 @@ export default function JobDetail() {
             </Link>
           </div>
 
-          {/* Quick facts */}
           <div className={styles.quickFacts}>
             <p className={styles.quickFactsTitle}>Quick Facts</p>
             <div className={styles.factRow}>
@@ -631,7 +614,6 @@ export default function JobDetail() {
             )}
           </div>
 
-          {/* CTA if guest */}
           {!user && (
             <div className={styles.guestCta}>
               <p>Sign in as a worker to apply for this job.</p>
