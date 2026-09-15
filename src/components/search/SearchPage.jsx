@@ -4,6 +4,18 @@ import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import VoiceSearch from "./VoiceSearch";
 import { ShieldCheck } from "lucide-react";
+import {
+  FiSearch,
+  FiMapPin,
+  FiSliders,
+  FiX,
+  FiStar,
+  FiInfo,
+  FiFrown,
+  FiArrowLeft,
+  FiArrowRight,
+  FiWrench,
+} from "react-icons/fi";
 
 const RATINGS = [
   { label: "4★ & above", value: 4 },
@@ -22,7 +34,7 @@ const GENDERS = [
 
 const VERIFICATIONS = [
   { label: "Any", value: "" },
-  { label: "Verified ✅", value: "VERIFIED" },
+  { label: "Verified", value: "VERIFIED" },
 ];
 
 const DEFAULT_FILTERS = {
@@ -196,7 +208,6 @@ export default function SearchPage() {
               }),
             },
           });
-          // In findNearby(), replace setNearbyWorkers(res.data.data.workers || []) with:
           const data = res.data.data;
           const workersWithNote = data.workers || [];
           workersWithNote._expansionNote = data.expansionNote || null;
@@ -226,7 +237,9 @@ export default function SearchPage() {
         {/* Search bar */}
         <div className={styles.searchWrap} ref={sugRef}>
           <form className={styles.searchBar} onSubmit={handleSearch}>
-            <span className={styles.searchIcon}>🔍</span>
+            <span className={styles.searchIcon}>
+              <FiSearch size={16} />
+            </span>
             <input
               className={styles.searchInput}
               value={input}
@@ -242,8 +255,9 @@ export default function SearchPage() {
                   setInput("");
                   setSuggestions(null);
                 }}
+                aria-label="Clear search"
               >
-                ×
+                <FiX size={18} />
               </button>
             )}
             <VoiceSearch onResult={(t) => setInput(t)} onError={() => {}} />
@@ -252,8 +266,13 @@ export default function SearchPage() {
               className={styles.nearbyBtn}
               onClick={findNearby}
               title="Find nearby"
+              aria-label="Find nearby workers"
             >
-              {locating ? <span className={styles.spinner} /> : "📍"}
+              {locating ? (
+                <span className={styles.spinner} />
+              ) : (
+                <FiMapPin size={16} />
+              )}
             </button>
             <button type="submit" className={styles.searchSubmit}>
               Search
@@ -276,7 +295,8 @@ export default function SearchPage() {
                         handleSearch();
                       }}
                     >
-                      <span>{c.icon || "🔧"}</span> {c.name}
+                      {c.icon ? <span>{c.icon}</span> : <FiWrench size={14} />}
+                      <span>{c.name}</span>
                     </button>
                   ))}
                 </div>
@@ -323,7 +343,7 @@ export default function SearchPage() {
                         setSuggestions(null);
                       }}
                     >
-                      📍 {c.city}, {c.country}
+                      <FiMapPin size={13} /> {c.city}, {c.country}
                     </button>
                   ))}
                 </div>
@@ -334,8 +354,6 @@ export default function SearchPage() {
 
         <div className={styles.layout}>
           {/* Filter sidebar */}
-
-          {/* Filter sidebar — overlay on mobile, permanent on desktop */}
           <>
             {/* Mobile overlay backdrop */}
             {showFilters && (
@@ -376,8 +394,9 @@ export default function SearchPage() {
                   <button
                     className={styles.filterCloseBtn}
                     onClick={() => setShowFilters(false)}
+                    aria-label="Close filters"
                   >
-                    ✕
+                    <FiX size={14} />
                   </button>
                 </div>
               </div>
@@ -400,7 +419,7 @@ export default function SearchPage() {
                 </label>
               </FilterSection>
 
-              {/* ── CATEGORY — all categories from API ── */}
+              {/* ── CATEGORY ── */}
               <FilterSection title="Category">
                 <select
                   className={styles.filterSelect}
@@ -482,12 +501,12 @@ export default function SearchPage() {
                 </select>
                 {filters.radius && !filters.lat && (
                   <p className={styles.filterHint}>
-                    📍 Allow location for distance filter
+                    <FiMapPin size={12} /> Allow location for distance filter
                   </p>
                 )}
               </FilterSection>
 
-              {/* ── LANGUAGE — all from API ── */}
+              {/* ── LANGUAGE ── */}
               <FilterSection title="Language">
                 <select
                   className={styles.filterSelect}
@@ -572,7 +591,7 @@ export default function SearchPage() {
                 className={styles.mobileFilterBtn}
                 onClick={() => setShowFilters((s) => !s)}
               >
-                🔧 Filters{" "}
+                <FiSliders size={14} /> Filters{" "}
                 {activeFiltersCount > 0 && (
                   <span className={styles.filterCount}>
                     {activeFiltersCount}
@@ -598,7 +617,7 @@ export default function SearchPage() {
                           }}
                         >
                           <span className={styles.catIcon}>
-                            {c.icon || "🔧"}
+                            {c.icon || <FiWrench size={24} />}
                           </span>
                           <span className={styles.catName}>{c.name}</span>
                           <span className={styles.catCount}>
@@ -637,7 +656,9 @@ export default function SearchPage() {
               <>
                 {!query ? (
                   <div className={styles.promptSearch}>
-                    <span className={styles.promptIcon}>🔍</span>
+                    <span className={styles.promptIcon}>
+                      <FiSearch size={40} />
+                    </span>
                     <p className={styles.promptTitle}>
                       Search for a skilled worker
                     </p>
@@ -653,7 +674,9 @@ export default function SearchPage() {
                   </div>
                 ) : workers.length === 0 ? (
                   <div className={styles.empty}>
-                    <span className={styles.emptyIcon}>😕</span>
+                    <span className={styles.emptyIcon}>
+                      <FiFrown size={40} />
+                    </span>
                     <p className={styles.emptyTitle}>
                       No workers found for "{query}"
                     </p>
@@ -686,7 +709,7 @@ export default function SearchPage() {
                           disabled={page === 1}
                           onClick={() => changePage(page - 1)}
                         >
-                          ← Prev
+                          <FiArrowLeft size={14} /> Prev
                         </button>
                         <span className={styles.pageInfo}>
                           {page} / {pages}
@@ -696,7 +719,7 @@ export default function SearchPage() {
                           disabled={page === pages}
                           onClick={() => changePage(page + 1)}
                         >
-                          Next →
+                          Next <FiArrowRight size={14} />
                         </button>
                       </div>
                     )}
@@ -715,10 +738,17 @@ export default function SearchPage() {
                 </div>
               ) : nearbyWorkers.length === 0 ? (
                 <div className={styles.empty}>
-                  <span className={styles.emptyIcon}>📍</span>
+                  <span className={styles.emptyIcon}>
+                    <FiMapPin size={40} />
+                  </span>
                   <p className={styles.emptyTitle}>No nearby workers found</p>
                   <p className={styles.emptyText}>
-                    Allow location access and tap 📍 to find workers near you.
+                    Allow location access and tap the{" "}
+                    <FiMapPin
+                      size={12}
+                      style={{ verticalAlign: "middle", margin: "0 2px" }}
+                    />{" "}
+                    button to find workers near you.
                   </p>
                   <button className={styles.emptyBtn} onClick={findNearby}>
                     Try Again
@@ -726,10 +756,9 @@ export default function SearchPage() {
                 </div>
               ) : (
                 <>
-                  {/* Show expansion note if radius was expanded */}
                   {nearbyWorkers._expansionNote && (
                     <div className={styles.expansionNote}>
-                      ℹ️ {nearbyWorkers._expansionNote}
+                      <FiInfo size={14} /> {nearbyWorkers._expansionNote}
                     </div>
                   )}
                   <p className={styles.resultsMeta}>
@@ -802,7 +831,9 @@ function WorkerCard({
           {isNew && <span className={styles.newBadge}>New</span>}
           {verificationStatus === "VERIFIED" && <ShieldCheck size={18} />}
           {showDistance && dist != null && (
-            <span className={styles.distBadge}>📍 {dist} km</span>
+            <span className={styles.distBadge}>
+              <FiMapPin size={10} /> {dist} km
+            </span>
           )}
         </div>
       </div>
@@ -816,18 +847,16 @@ function WorkerCard({
             {primaryCat.category?.icon} {primaryCat.category?.name}
           </span>
         )}
-        {user?.language && (
-          <span className={styles.wcLang}>🗣 {user.language}</span>
-        )}
       </div>
       {(user?.city || user?.country) && (
         <p className={styles.wcLocation}>
-          📍 {[user.city, user.country].filter(Boolean).join(", ")}
+          <FiMapPin size={11} />{" "}
+          {[user.city, user.country].filter(Boolean).join(", ")}
         </p>
       )}
       <div className={styles.wcStats}>
         <span className={styles.wcRating}>
-          ★ {avgRating > 0 ? avgRating.toFixed(1) : "New"}
+          <FiStar size={12} /> {avgRating > 0 ? avgRating.toFixed(1) : "New"}
           <span className={styles.wcReviews}> ({totalReviews})</span>
         </span>
         <span className={styles.wcJobs}>{completedJobs} jobs</span>
