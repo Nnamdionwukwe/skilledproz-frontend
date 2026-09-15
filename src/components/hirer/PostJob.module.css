@@ -50,12 +50,21 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+}
+
+/* Every direct child of .field should also shrink properly — critical
+   for datetime-local inputs and grid/flex siblings. */
+.field > * {
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .label {
@@ -82,6 +91,8 @@
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .input:focus,
 .select:focus,
@@ -113,10 +124,54 @@
   line-height: 1.6;
 }
 
+/* ── Native date/time inputs ────────────────────────────────
+   Browsers give these an intrinsic min width driven by the
+   native calendar/time segments + picker icon. Without these
+   rules they can overflow their container on narrow screens. */
+.input[type="datetime-local"],
+.input[type="date"],
+.input[type="time"] {
+  color-scheme: dark;
+  min-width: 0;
+  max-width: 100%;
+  padding-right: 8px; /* room for the picker icon */
+  font-family: var(--font-body);
+  /* Kill any default browser auto-widen behaviour */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Make the native calendar/clock icon visible on dark themes */
+.input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.input[type="date"]::-webkit-calendar-picker-indicator,
+.input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  filter: invert(1);
+  padding: 0;
+  margin-left: 4px;
+}
+.input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+.input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Firefox-specific tweaks for datetime-local */
+.input[type="datetime-local"]::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
 .row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  min-width: 0;
+}
+
+.row2 > * {
+  min-width: 0;
 }
 
 .error {
@@ -317,6 +372,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
 }
 .unitPills {
   display: flex;
@@ -361,6 +417,7 @@
   border-radius: 8px;
   padding: 6px 10px;
   margin-top: 6px;
+  min-width: 0;
 }
 .clearCat {
   background: none;
@@ -394,6 +451,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 .customCatActions {
   display: flex;
