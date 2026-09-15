@@ -4,6 +4,25 @@ import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import AIJobAssistant from "./AIJobAssistant";
 import { Link } from "react-router-dom";
+import {
+  FiBriefcase,
+  FiClock,
+  FiFileText,
+  FiMapPin,
+  FiGlobe,
+  FiShuffle,
+  FiDollarSign,
+  FiCreditCard,
+  FiCalendar,
+  FiEdit3,
+  FiCheckCircle,
+  FiPlus,
+  FiSearch,
+  FiX,
+  FiTarget,
+  FiZap,
+  FiTag,
+} from "react-icons/fi";
 
 const ALL_CURRENCIES = [
   "USD",
@@ -48,6 +67,56 @@ const DURATION_UNITS = [
   { value: "custom", label: "Custom", hint: "e.g. Full project" },
 ];
 
+// ── New: Job type options (matches backend JobType enum) ────────────────────
+const JOB_TYPES = [
+  { value: "FULL_TIME", label: "Full-time", icon: FiBriefcase },
+  { value: "PART_TIME", label: "Part-time", icon: FiClock },
+  { value: "CONTRACT", label: "Contract", icon: FiFileText },
+  { value: "TEMPORARY", label: "Temporary", icon: FiClock },
+];
+
+// ── New: Location type options (matches backend LocationType enum) ──────────
+const LOCATION_TYPES = [
+  { value: "REMOTE", label: "Remote", icon: FiGlobe },
+  { value: "ON_SITE", label: "On-site", icon: FiMapPin },
+  { value: "HYBRID", label: "Hybrid", icon: FiShuffle },
+];
+
+// ── New: Budget type options (matches backend BudgetType enum) ──────────────
+const BUDGET_TYPES = [
+  { value: "FIXED", label: "Fixed" },
+  { value: "HOURLY", label: "Hourly" },
+  { value: "DAILY", label: "Daily" },
+  { value: "WEEKLY", label: "Weekly" },
+  { value: "MONTHLY", label: "Monthly" },
+  { value: "CUSTOM", label: "Custom" },
+];
+
+// ── New: Duration type options (matches backend DurationType enum) ──────────
+const DURATION_TYPES = [
+  { value: "HOURS", label: "Hours" },
+  { value: "DAYS", label: "Days" },
+  { value: "WEEKS", label: "Weeks" },
+  { value: "MONTHS", label: "Months" },
+  { value: "CUSTOM", label: "Custom" },
+];
+
+// ── New: Common skill suggestions ───────────────────────────────────────────
+const SKILL_SUGGESTIONS = [
+  "Communication",
+  "Time Management",
+  "Problem Solving",
+  "Customer Service",
+  "Teamwork",
+  "Attention to Detail",
+  "Physical Stamina",
+  "Technical Skills",
+  "Safety Awareness",
+  "Driving License",
+  "Own Tools",
+  "Own Transport",
+];
+
 export default function PostJob() {
   const [categories, setCategories] = useState([]);
   const [catSearch, setCatSearch] = useState("");
@@ -58,6 +127,9 @@ export default function PostJob() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  // ── New: skill input state ───────────────────────────────────────────────
+  const [skillInput, setSkillInput] = useState("");
 
   const [form, setForm] = useState({
     categoryId: "",
@@ -70,6 +142,13 @@ export default function PostJob() {
     budget: "",
     currency: "NGN",
     notes: "",
+    // ── New backend fields ──────────────────────────────────────────────
+    jobType: "FULL_TIME",
+    locationType: "REMOTE",
+    budgetType: "FIXED",
+    durationType: "HOURS",
+    durationValue2: "", // ← the DurationType's numeric value, separate from estimate
+    skills: [],
   });
 
   useEffect(() => {
@@ -106,14 +185,13 @@ export default function PostJob() {
     }
   }
 
-  // Convert duration to estimatedHours for DB
   function toEstimatedHours(unit, value) {
     const v = parseFloat(value) || 0;
     if (unit === "hours") return v;
     if (unit === "days") return v * 8;
     if (unit === "weeks") return v * 40;
     if (unit === "months") return v * 160;
-    return null; // custom
+    return null;
   }
 
   function set(key, val) {
@@ -121,23 +199,70 @@ export default function PostJob() {
     setError("");
   }
 
+  // ── New: skill management ────────────────────────────────────────────────
+  function addSkill(skill) {
+    const trimmed = skill.trim();
+    if (!trimmed) return;
+    if (form.skills.includes(trimmed)) {
+      setSkillInput("");
+      return;
+    }
+    if (form.skills.length >= 15) {
+      setError("Maximum 15 skills");
+      return;
+    }
+    setForm((f) => ({ ...f, skills: [...f.skills, trimmed] }));
+    setSkillInput("");
+    setError("");
+  }
+
+  function removeSkill(skill) {
+    setForm((f) => ({
+      ...f,
+      skills: f.skills.filter((s) => s !== skill),
+    }));
+  }
+
+  function handleSkillKeyDown(e) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addSkill(skillInput);
+    } else if (e.key === "Backspace" && !skillInput && form.skills.length) {
+      // Remove last skill on backspace when input is empty
+      removeSkill(form.skills[form.skills.length - 1]);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (
-      !form.categoryId ||
-      !form.title ||
-      !form.description ||
-      !form.address ||
-      !form.scheduledAt ||
-      !form.budget
-    ) {
-      setError("Please fill in all required fields.");
+
+    // ── Validation ─────────────────────────────────────────────────────────
+    if (!form.categoryId) {
+      setError("Please select a category.");
+      return;
+    }
+    if (!form.title || !form.description) {
+      setError("Title and description are required.");
+      return;
+    }
+    // Address only required for ON_SITE or HYBRID
+    if (form.locationType !== "REMOTE" && !form.address) {
+      setError("Please enter a service address for on-site or hybrid jobs.");
+      return;
+    }
+    if (!form.scheduledAt) {
+      setError("Please choose a scheduled date and time.");
+      return;
+    }
+    if (!form.budget) {
+      setError("Please enter a budget.");
       return;
     }
     if (!form.durationValue) {
       setError("Please enter an estimated duration.");
       return;
     }
+
     setLoading(true);
     try {
       const estimatedHours = toEstimatedHours(
@@ -145,10 +270,11 @@ export default function PostJob() {
         form.durationValue,
       );
       const payload = {
+        // Existing fields
         categoryId: form.categoryId,
         title: form.title,
         description: form.description,
-        address: form.address,
+        address: form.locationType === "REMOTE" ? undefined : form.address,
         scheduledAt: form.scheduledAt,
         estimatedHours: estimatedHours || undefined,
         estimatedUnit: form.durationUnit,
@@ -156,6 +282,13 @@ export default function PostJob() {
         budget: parseFloat(form.budget),
         currency: form.currency,
         notes: form.notes,
+        // ── New fields ───────────────────────────────────────────────────
+        jobType: form.jobType,
+        locationType: form.locationType,
+        budgetType: form.budgetType,
+        durationType: form.durationType,
+        durationValue: form.durationValue2 || undefined,
+        skills: form.skills,
       };
       const res = await api.post("/jobs", payload);
       setPostedJob(res.data.data.jobPost);
@@ -182,17 +315,27 @@ export default function PostJob() {
       budget: "",
       currency: "NGN",
       notes: "",
+      jobType: "FULL_TIME",
+      locationType: "REMOTE",
+      budgetType: "FIXED",
+      durationType: "HOURS",
+      durationValue2: "",
+      skills: [],
     });
+    setSkillInput("");
   }
 
   const selectedCat = categories.find((c) => c.id === form.categoryId);
 
+  // ── Success state ──────────────────────────────────────────────────────
   if (submitted && postedJob) {
     return (
       <HirerLayout>
         <div className={styles.page}>
           <div className={styles.successState}>
-            <div className={styles.successIcon}>🎯</div>
+            <div className={styles.successIcon}>
+              <FiTarget size={56} />
+            </div>
             <h2 className={styles.successTitle}>Job Posted!</h2>
             <p className={styles.successText}>
               Your job <strong>"{postedJob.title}"</strong> is now live on the
@@ -203,14 +346,28 @@ export default function PostJob() {
                 {postedJob.category?.icon} {postedJob.category?.name}
               </div>
               <div className={styles.successJobTitle}>{postedJob.title}</div>
-              <div className={styles.successMeta}>📍 {postedJob.address}</div>
               <div className={styles.successMeta}>
-                💰 {postedJob.currency}{" "}
+                <FiMapPin size={12} /> {postedJob.address || "Remote"}
+              </div>
+              <div className={styles.successMeta}>
+                <FiDollarSign size={12} /> {postedJob.currency}{" "}
                 {Number(postedJob.budget).toLocaleString()}
               </div>
               {postedJob.estimatedHours && (
                 <div className={styles.successMeta}>
-                  ⏱ Est. {postedJob.estimatedHours}h
+                  <FiClock size={12} /> Est. {postedJob.estimatedHours}h
+                </div>
+              )}
+              {postedJob.jobType && (
+                <div className={styles.successMeta}>
+                  <FiBriefcase size={12} />{" "}
+                  {JOB_TYPES.find((t) => t.value === postedJob.jobType)?.label}
+                </div>
+              )}
+              {postedJob.skills?.length > 0 && (
+                <div className={styles.successMeta}>
+                  <FiTag size={12} /> {postedJob.skills.length} skill
+                  {postedJob.skills.length !== 1 ? "s" : ""} required
                 </div>
               )}
             </div>
@@ -256,10 +413,9 @@ export default function PostJob() {
               Category <span className={styles.req}>*</span>
             </label>
 
-            {/* Search filter */}
             <input
               className={styles.input}
-              placeholder="🔍 Search categories..."
+              placeholder="Search categories..."
               value={catSearch}
               onChange={(e) => setCatSearch(e.target.value)}
               style={{ marginBottom: 6 }}
@@ -283,7 +439,7 @@ export default function PostJob() {
 
             {selectedCat && (
               <div className={styles.selectedCat}>
-                ✅ Selected:{" "}
+                <FiCheckCircle size={13} /> Selected:{" "}
                 <strong>
                   {selectedCat.icon} {selectedCat.name}
                 </strong>
@@ -295,19 +451,18 @@ export default function PostJob() {
                     setCatSearch("");
                   }}
                 >
-                  ×
+                  <FiX size={14} />
                 </button>
               </div>
             )}
 
-            {/* Custom category option */}
             {!showCustomCat ? (
               <button
                 type="button"
                 className={styles.addCatBtn}
                 onClick={() => setShowCustomCat(true)}
               >
-                + Can't find your category? Add a custom one
+                <FiPlus size={13} /> Can't find your category? Add a custom one
               </button>
             ) : (
               <div className={styles.customCatBox}>
@@ -371,18 +526,68 @@ export default function PostJob() {
             />
           </div>
 
-          {/* ── Address ── */}
+          {/* ── NEW: Job Type ── */}
           <div className={styles.field}>
-            <label className={styles.label}>
-              Service Address <span className={styles.req}>*</span>
-            </label>
-            <input
-              className={styles.input}
-              placeholder="Full address where work will be done"
-              value={form.address}
-              onChange={(e) => set("address", e.target.value)}
-            />
+            <label className={styles.label}>Job Type</label>
+            <div className={styles.optionGrid}>
+              {JOB_TYPES.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <button
+                    type="button"
+                    key={t.value}
+                    className={`${styles.optionCard} ${
+                      form.jobType === t.value ? styles.optionCardActive : ""
+                    }`}
+                    onClick={() => set("jobType", t.value)}
+                  >
+                    <Icon size={18} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* ── NEW: Location Type ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>Work Location</label>
+            <div className={styles.optionGrid}>
+              {LOCATION_TYPES.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <button
+                    type="button"
+                    key={t.value}
+                    className={`${styles.optionCard} ${
+                      form.locationType === t.value
+                        ? styles.optionCardActive
+                        : ""
+                    }`}
+                    onClick={() => set("locationType", t.value)}
+                  >
+                    <Icon size={18} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Address (only when not Remote) ── */}
+          {form.locationType !== "REMOTE" && (
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Service Address <span className={styles.req}>*</span>
+              </label>
+              <input
+                className={styles.input}
+                placeholder="Full address where work will be done"
+                value={form.address}
+                onChange={(e) => set("address", e.target.value)}
+              />
+            </div>
+          )}
 
           {/* ── Schedule ── */}
           <div className={styles.field}>
@@ -397,7 +602,7 @@ export default function PostJob() {
             />
           </div>
 
-          {/* ── Duration ── */}
+          {/* ── Estimated Duration ── */}
           <div className={styles.field}>
             <label className={styles.label}>
               Estimated Duration <span className={styles.req}>*</span>
@@ -411,7 +616,9 @@ export default function PostJob() {
                   <button
                     type="button"
                     key={u.value}
-                    className={`${styles.unitPill} ${form.durationUnit === u.value ? styles.unitPillActive : ""}`}
+                    className={`${styles.unitPill} ${
+                      form.durationUnit === u.value ? styles.unitPillActive : ""
+                    }`}
                     onClick={() => set("durationUnit", u.value)}
                   >
                     {u.label}
@@ -439,20 +646,52 @@ export default function PostJob() {
               />
               {form.durationValue && form.durationUnit !== "custom" && (
                 <p className={styles.durationSummary}>
-                  Est. {form.durationValue} {form.durationUnit}
-                  {parseFloat(form.durationValue) !== 1 ? "" : ""} = approx.{" "}
+                  Est. {form.durationValue} {form.durationUnit} = approx.{" "}
                   {toEstimatedHours(form.durationUnit, form.durationValue)}h
                 </p>
               )}
             </div>
           </div>
 
-          {/* ── Budget + Currency ── */}
-          <div className={styles.row2}>
-            <div className={styles.field}>
-              <label className={styles.label}>
-                Budget <span className={styles.req}>*</span>
-              </label>
+          {/* ── NEW: Job Duration (backend durationType + durationValue) ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>Project Duration</label>
+            <p className={styles.fieldHint}>
+              How long is the overall engagement expected to run?
+            </p>
+            <div className={styles.row2} style={{ marginTop: 4 }}>
+              <select
+                className={styles.select}
+                value={form.durationType}
+                onChange={(e) => set("durationType", e.target.value)}
+              >
+                {DURATION_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                className={styles.input}
+                type={form.durationType === "CUSTOM" ? "text" : "number"}
+                min="0"
+                placeholder={
+                  form.durationType === "CUSTOM"
+                    ? "Describe the duration"
+                    : "Enter duration"
+                }
+                value={form.durationValue2}
+                onChange={(e) => set("durationValue2", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* ── Budget + Currency + Budget Type ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>
+              Budget <span className={styles.req}>*</span>
+            </label>
+            <div className={styles.row2}>
               <input
                 className={styles.input}
                 type="number"
@@ -462,9 +701,6 @@ export default function PostJob() {
                 value={form.budget}
                 onChange={(e) => set("budget", e.target.value)}
               />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Currency</label>
               <select
                 className={styles.select}
                 value={form.currency}
@@ -477,6 +713,76 @@ export default function PostJob() {
                 ))}
               </select>
             </div>
+            {/* Budget type pills */}
+            <div className={styles.unitPills} style={{ marginTop: 8 }}>
+              {BUDGET_TYPES.map((t) => (
+                <button
+                  type="button"
+                  key={t.value}
+                  className={`${styles.unitPill} ${
+                    form.budgetType === t.value ? styles.unitPillActive : ""
+                  }`}
+                  onClick={() => set("budgetType", t.value)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── NEW: Skills ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>Required Skills</label>
+            <p className={styles.fieldHint}>
+              Add skills the worker should have. Press Enter or comma to add.
+            </p>
+
+            <div className={styles.skillBox}>
+              {form.skills.map((skill) => (
+                <span key={skill} className={styles.skillTag}>
+                  {skill}
+                  <button
+                    type="button"
+                    className={styles.skillRemove}
+                    onClick={() => removeSkill(skill)}
+                  >
+                    <FiX size={12} />
+                  </button>
+                </span>
+              ))}
+              <input
+                className={styles.skillInput}
+                placeholder={
+                  form.skills.length === 0
+                    ? "Type a skill and press Enter..."
+                    : ""
+                }
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={handleSkillKeyDown}
+                onBlur={() => {
+                  if (skillInput.trim()) addSkill(skillInput);
+                }}
+              />
+            </div>
+
+            {/* Quick-add suggestions */}
+            {form.skills.length < 15 && (
+              <div className={styles.skillSuggestions}>
+                {SKILL_SUGGESTIONS.filter((s) => !form.skills.includes(s))
+                  .slice(0, 8)
+                  .map((s) => (
+                    <button
+                      type="button"
+                      key={s}
+                      className={styles.skillSuggestion}
+                      onClick={() => addSkill(s)}
+                    >
+                      <FiPlus size={11} /> {s}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
 
           {/* ── Notes ── */}
@@ -499,7 +805,9 @@ export default function PostJob() {
                 <span className={styles.spinner} /> Posting...
               </>
             ) : (
-              <>🎯 Post Job</>
+              <>
+                <FiZap size={16} /> Post Job
+              </>
             )}
           </button>
         </form>

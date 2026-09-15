@@ -1,4 +1,4 @@
-/* ── Page — full-bleed, hugs both screen edges ── */
+/* ── Page — full-bleed, hugs both screen edges, fits every screen ── */
 .page {
   width: auto;
   margin-left: -2rem;
@@ -13,6 +13,12 @@
     margin-left: -1.25rem;
     margin-right: -1.25rem;
     padding: 20px 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding: 16px 12px;
   }
 }
 
@@ -41,6 +47,15 @@
   line-height: 1.6;
 }
 
+@media (max-width: 420px) {
+  .title {
+    font-size: 22px;
+  }
+  .subtitle {
+    font-size: 13px;
+  }
+}
+
 /* ── Form ──────────────────────────────────────────────────── */
 .form {
   background: var(--bg-panel);
@@ -50,21 +65,20 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .form {
+    padding: 20px 16px;
+    gap: 16px;
+    border-radius: 16px;
+  }
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 0;
-}
-
-/* Every direct child of .field should also shrink properly — critical
-   for datetime-local inputs and grid/flex siblings. */
-.field > * {
-  min-width: 0;
-  box-sizing: border-box;
 }
 
 .label {
@@ -91,8 +105,8 @@
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
-  min-width: 0;
   box-sizing: border-box;
+  font-family: var(--font-body);
 }
 .input:focus,
 .select:focus,
@@ -122,45 +136,6 @@
   padding: 12px 14px;
   resize: vertical;
   line-height: 1.6;
-}
-
-/* ── Native date/time inputs ────────────────────────────────
-   Browsers give these an intrinsic min width driven by the
-   native calendar/time segments + picker icon. Without these
-   rules they can overflow their container on narrow screens. */
-.input[type="datetime-local"],
-.input[type="date"],
-.input[type="time"] {
-  color-scheme: dark;
-  min-width: 0;
-  max-width: 100%;
-  padding-right: 8px; /* room for the picker icon */
-  font-family: var(--font-body);
-  /* Kill any default browser auto-widen behaviour */
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-/* Make the native calendar/clock icon visible on dark themes */
-.input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-.input[type="date"]::-webkit-calendar-picker-indicator,
-.input[type="time"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.55;
-  filter: invert(1);
-  padding: 0;
-  margin-left: 4px;
-}
-.input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
-.input[type="date"]::-webkit-calendar-picker-indicator:hover,
-.input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* Firefox-specific tweaks for datetime-local */
-.input[type="datetime-local"]::-moz-focus-inner {
-  border: 0;
-  padding: 0;
 }
 
 .row2 {
@@ -231,7 +206,10 @@
 }
 
 .successIcon {
-  font-size: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
   margin-bottom: 16px;
 }
 .successTitle {
@@ -345,6 +323,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
+  font-family: var(--font-body);
 }
 .resetBtn:hover {
   border-color: var(--orange);
@@ -372,7 +351,6 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  min-width: 0;
 }
 .unitPills {
   display: flex;
@@ -417,7 +395,9 @@
   border-radius: 8px;
   padding: 6px 10px;
   margin-top: 6px;
-  min-width: 0;
+}
+.selectedCat svg {
+  flex-shrink: 0;
 }
 .clearCat {
   background: none;
@@ -427,6 +407,12 @@
   cursor: pointer;
   margin-left: auto;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.clearCat svg {
+  flex-shrink: 0;
 }
 .addCatBtn {
   background: none;
@@ -441,6 +427,13 @@
   width: 100%;
   transition: all 0.15s;
   font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.addCatBtn svg {
+  flex-shrink: 0;
 }
 .addCatBtn:hover {
   border-color: var(--orange);
@@ -451,7 +444,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 0;
 }
 .customCatActions {
   display: flex;
@@ -466,6 +458,7 @@
   text-align: left;
   max-width: 480px;
   width: 100%;
+  box-sizing: border-box;
 }
 .successCat {
   font-size: 11px;
@@ -485,6 +478,13 @@
   font-size: 13px;
   color: var(--text-dim);
   margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.successMeta svg {
+  flex-shrink: 0;
+  color: var(--orange);
 }
 .successActions {
   display: flex;
@@ -492,4 +492,182 @@
   margin-top: 2rem;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+/* ── Job type / Location type option cards ─────────────────── */
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+.optionCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 0;
+}
+.optionCard svg {
+  flex-shrink: 0;
+}
+.optionCard span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.optionCard:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.optionCardActive {
+  background: var(--orange-dim);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+@media (max-width: 420px) {
+  .optionGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .optionCard {
+    padding: 10px 10px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .optionCard svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ── Skills input box ──────────────────────────────────────── */
+.skillBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  min-height: 48px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.skillBox:focus-within {
+  border-color: var(--border-focus);
+}
+
+.skillTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 100%;
+}
+
+.skillRemove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.skillRemove:hover {
+  opacity: 1;
+}
+.skillRemove svg {
+  flex-shrink: 0;
+}
+
+.skillInput {
+  flex: 1;
+  min-width: 120px;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-body);
+  padding: 4px 0;
+}
+.skillInput::placeholder {
+  color: var(--text-muted);
+}
+
+.skillSuggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.skillSuggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 100px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.skillSuggestion:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  border-style: solid;
+}
+.skillSuggestion svg {
+  flex-shrink: 0;
+}
+
+/* ── Very small phones (<360px) ─────────────────────────────── */
+@media (max-width: 359px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 14px 10px;
+  }
+  .form {
+    padding: 16px 12px;
+    gap: 14px;
+  }
+  .input,
+  .select {
+    height: 40px;
+    font-size: 13px;
+  }
+  .title {
+    font-size: 20px;
+  }
+  .optionCard {
+    font-size: 11px;
+    padding: 8px 8px;
+  }
 }

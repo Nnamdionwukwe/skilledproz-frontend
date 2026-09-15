@@ -6,6 +6,32 @@ import { useAuthStore } from "../../store/authStore";
 import DurationBadge from "../common/DurationBadge";
 import { formatJobDurationParts } from "../utils/formatDuration";
 import ReportButton from "../../pages/reports/ReportButton";
+import {
+  FiBriefcase,
+  FiClock,
+  FiFileText,
+  FiCalendar,
+  FiGlobe,
+  FiMapPin,
+  FiUsers,
+  FiDollarSign,
+  FiCreditCard,
+  FiRuler,
+  FiTag,
+  FiEdit3,
+  FiBookmark,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiX,
+  FiSearch,
+  FiChevronLeft,
+  FiArrowRight,
+  FiRocket,
+  FiSun,
+  FiMoon,
+  FiLayers,
+  FiShuffle,
+} from "react-icons/fi";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -30,7 +56,7 @@ export default function JobDetail() {
       ? "/jobs"
       : user?.role === "HIRER"
         ? "/dashboard/hirer/jobs-management"
-        : "/landingpage"; // Default for Guests
+        : "/landingpage";
 
   useEffect(() => {
     api
@@ -98,10 +124,12 @@ export default function JobDetail() {
     return (
       <div className={styles.page}>
         <div className={styles.notFound}>
-          <span className={styles.notFoundIcon}>🔍</span>
+          <span className={styles.notFoundIcon}>
+            <FiSearch size={48} />
+          </span>
           <h2 className={styles.notFoundTitle}>Job not found</h2>
           <Link to={backDestination} className={styles.backLink}>
-            ← Back to Jobs
+            <FiChevronLeft size={14} /> Back to Jobs
           </Link>
         </div>
       </div>
@@ -117,11 +145,40 @@ export default function JobDetail() {
   };
   const sm = statusMeta[jobPost.status] || statusMeta.OPEN;
 
+  // Job type icon + label
+  const jobTypeMeta = {
+    FULL_TIME: { icon: FiBriefcase, label: "Full-time" },
+    PART_TIME: { icon: FiClock, label: "Part-time" },
+    CONTRACT: { icon: FiFileText, label: "Contract" },
+    TEMPORARY: { icon: FiClock, label: "Temporary" },
+  }[jobPost.jobType];
+
+  // Location type icon + label
+  const locationTypeMeta = {
+    REMOTE: { icon: FiGlobe, label: "Remote" },
+    ON_SITE: { icon: FiMapPin, label: "On-site" },
+    HYBRID: { icon: FiShuffle, label: "Hybrid" },
+  }[jobPost.locationType];
+
+  // Budget type icon + label
+  const budgetTypeMeta = {
+    FIXED: { icon: FiDollarSign, label: "Fixed" },
+    HOURLY: { icon: FiClock, label: "Hourly" },
+    DAILY: { icon: FiSun, label: "Daily" },
+    WEEKLY: { icon: FiCalendar, label: "Weekly" },
+    MONTHLY: { icon: FiCalendar, label: "Monthly" },
+    CUSTOM: { icon: FiEdit3, label: "Custom" },
+  }[jobPost.budgetType];
+
+  const JobTypeIcon = jobTypeMeta?.icon;
+  const LocationTypeIcon = locationTypeMeta?.icon;
+  const BudgetTypeIcon = budgetTypeMeta?.icon;
+
   return (
     <div className={styles.page}>
       {/* Back */}
       <Link to={backDestination} className={styles.backLink}>
-        ← Back to Jobs
+        <FiChevronLeft size={14} /> Back to Jobs
       </Link>
 
       {/* Alerts */}
@@ -153,7 +210,8 @@ export default function JobDetail() {
                   className={`${styles.saveJobBtn} ${isSaved ? styles.saveJobBtnActive : ""}`}
                   onClick={handleSave}
                 >
-                  {isSaved ? "🔖 Saved" : "🔖 Save Job"}
+                  <FiBookmark size={13} />
+                  {isSaved ? "Saved" : "Save Job"}
                 </button>
               )}
             </div>
@@ -165,49 +223,35 @@ export default function JobDetail() {
               jobPost.locationType ||
               jobPost.budgetType) && (
               <div className={styles.typePillRow}>
-                {jobPost.jobType && (
+                {jobTypeMeta && (
                   <span className={styles.typePill}>
-                    {jobPost.jobType === "FULL_TIME"
-                      ? "💼 Full-time"
-                      : jobPost.jobType === "PART_TIME"
-                        ? "⏰ Part-time"
-                        : jobPost.jobType === "CONTRACT"
-                          ? "📄 Contract"
-                          : "⏳ Temporary"}
+                    <JobTypeIcon size={12} /> {jobTypeMeta.label}
                   </span>
                 )}
-                {jobPost.locationType && (
+                {locationTypeMeta && (
                   <span className={styles.typePill}>
-                    {jobPost.locationType === "REMOTE"
-                      ? "🌐 Remote"
-                      : jobPost.locationType === "ON_SITE"
-                        ? "📍 On-site"
-                        : "🔀 Hybrid"}
+                    <LocationTypeIcon size={12} /> {locationTypeMeta.label}
                   </span>
                 )}
-                {jobPost.budgetType && jobPost.budgetType !== "FIXED" && (
-                  <span className={styles.typePill}>
-                    {{
-                      HOURLY: "🕐 Hourly",
-                      DAILY: "🌤 Daily",
-                      WEEKLY: "📅 Weekly",
-                      MONTHLY: "📆 Monthly",
-                      CUSTOM: "✏️ Custom",
-                    }[jobPost.budgetType] ?? jobPost.budgetType}
-                  </span>
-                )}
+                {jobPost.budgetType &&
+                  jobPost.budgetType !== "FIXED" &&
+                  budgetTypeMeta && (
+                    <span className={styles.typePill}>
+                      <BudgetTypeIcon size={12} /> {budgetTypeMeta.label}
+                    </span>
+                  )}
               </div>
             )}
 
             <div className={styles.metaRow}>
               <MetaItem
-                icon="📅"
+                icon={<FiCalendar size={12} />}
                 text={`${scheduled.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })} at ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
               />
-              <MetaItem icon="📍" text={jobPost.address} />
+              <MetaItem icon={<FiMapPin size={12} />} text={jobPost.address} />
               <DurationBadge job={jobPost} size="sm" />
               <MetaItem
-                icon="🗓️"
+                icon={<FiCalendar size={12} />}
                 text={`Posted ${timeAgo(new Date(jobPost.createdAt))}`}
               />
             </div>
@@ -219,7 +263,8 @@ export default function JobDetail() {
               </span>
               <span className={styles.budgetLabel}>Budget</span>
               <span className={styles.applicantCount}>
-                👥 {jobPost._count?.applications || 0} applicant
+                <FiUsers size={12} /> {jobPost._count?.applications || 0}{" "}
+                applicant
                 {jobPost._count?.applications !== 1 ? "s" : ""}
               </span>
             </div>
@@ -231,7 +276,7 @@ export default function JobDetail() {
             <p className={styles.description}>{jobPost.description}</p>
             {jobPost.notes && (
               <div className={styles.notes}>
-                <span>📝</span>
+                <FiFileText size={14} />
                 <p>{jobPost.notes}</p>
               </div>
             )}
@@ -255,18 +300,18 @@ export default function JobDetail() {
             <h2 className={styles.sectionTitle}>Details</h2>
             <div className={styles.detailGrid}>
               <DetailCard
-                icon="📂"
+                icon={<FiFileText size={14} />}
                 label="Category"
                 value={jobPost.category?.name || "—"}
               />
               <DetailCard
-                icon="💰"
+                icon={<FiDollarSign size={14} />}
                 label="Budget"
                 value={`${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`}
                 accent
               />
               <DetailCard
-                icon="📅"
+                icon={<FiCalendar size={14} />}
                 label="Scheduled"
                 value={scheduled.toLocaleDateString("en-GB", {
                   day: "numeric",
@@ -276,7 +321,7 @@ export default function JobDetail() {
               />
               {formatJobDurationParts(jobPost) && (
                 <DetailCard
-                  icon={formatJobDurationParts(jobPost).icon}
+                  icon={<FiClock size={14} />}
                   label="Est. Duration"
                   value={
                     <span>
@@ -301,46 +346,34 @@ export default function JobDetail() {
                   }
                 />
               )}
-              <DetailCard icon="📍" label="Location" value={jobPost.address} />
-              <DetailCard icon="🏷️" label="Status" value={sm.label} />
+              <DetailCard
+                icon={<FiMapPin size={14} />}
+                label="Location"
+                value={jobPost.address}
+              />
+              <DetailCard
+                icon={<FiTag size={14} />}
+                label="Status"
+                value={sm.label}
+              />
 
-              {jobPost.jobType && (
+              {jobTypeMeta && (
                 <DetailCard
-                  icon="💼"
+                  icon={<JobTypeIcon size={14} />}
                   label="Job Type"
-                  value={
-                    jobPost.jobType === "FULL_TIME"
-                      ? "Full-time"
-                      : jobPost.jobType === "PART_TIME"
-                        ? "Part-time"
-                        : jobPost.jobType === "CONTRACT"
-                          ? "Contract"
-                          : "Temporary"
-                  }
+                  value={jobTypeMeta.label}
                 />
               )}
-              {jobPost.locationType && (
+              {locationTypeMeta && (
                 <DetailCard
-                  icon={
-                    jobPost.locationType === "REMOTE"
-                      ? "🌐"
-                      : jobPost.locationType === "ON_SITE"
-                        ? "📍"
-                        : "🔀"
-                  }
+                  icon={<LocationTypeIcon size={14} />}
                   label="Work Style"
-                  value={
-                    jobPost.locationType === "REMOTE"
-                      ? "Remote"
-                      : jobPost.locationType === "ON_SITE"
-                        ? "On-site"
-                        : "Hybrid"
-                  }
+                  value={locationTypeMeta.label}
                 />
               )}
-              {jobPost.budgetType && (
+              {jobPost.budgetType && budgetTypeMeta && (
                 <DetailCard
-                  icon="💳"
+                  icon={<FiCreditCard size={14} />}
                   label="Payment Type"
                   value={
                     {
@@ -356,7 +389,7 @@ export default function JobDetail() {
               )}
               {jobPost.durationValue && jobPost.durationType && (
                 <DetailCard
-                  icon="📐"
+                  icon={<FiRuler size={14} />}
                   label="Job Duration"
                   value={`${jobPost.durationValue} ${jobPost.durationType.toLowerCase()}`}
                 />
@@ -370,7 +403,7 @@ export default function JobDetail() {
               <h2 className={styles.sectionTitle}>Apply for this Job</h2>
               {hasApplied ? (
                 <div className={styles.appliedBanner}>
-                  <span>✅</span>
+                  <FiCheckCircle size={16} />
                   <p>
                     You've already applied to this job. The hirer will review
                     your application.
@@ -417,7 +450,7 @@ export default function JobDetail() {
                   className={styles.applyTriggerBtn}
                   onClick={() => setShowForm(true)}
                 >
-                  🚀 Apply Now
+                  <FiRocket size={15} /> Apply Now
                 </button>
               )}
               <ReportButton
@@ -437,7 +470,8 @@ export default function JobDetail() {
                   to={`/jobs/${id}/applications`}
                   className={styles.manageBtn}
                 >
-                  👥 View Applications ({jobPost._count?.applications || 0})
+                  <FiUsers size={14} /> View Applications (
+                  {jobPost._count?.applications || 0})
                 </Link>
                 {isOpen && (
                   <>
@@ -493,7 +527,7 @@ export default function JobDetail() {
             )}
             {(jobPost.hirer?.city || jobPost.hirer?.country) && (
               <p className={styles.hirerLocation}>
-                📍{" "}
+                <FiMapPin size={11} />{" "}
                 {[jobPost.hirer.city, jobPost.hirer.country]
                   .filter(Boolean)
                   .join(", ")}
@@ -511,7 +545,7 @@ export default function JobDetail() {
               to={`/hirers/${jobPost.hirer?.id}`}
               className={styles.viewHirerBtn}
             >
-              View Profile →
+              View Profile <FiArrowRight size={12} />
             </Link>
           </div>
 
@@ -546,29 +580,17 @@ export default function JobDetail() {
               </span>
             </div>
 
-            {jobPost.jobType && (
+            {jobTypeMeta && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Job Type</span>
-                <span className={styles.factValue}>
-                  {jobPost.jobType === "FULL_TIME"
-                    ? "Full-time"
-                    : jobPost.jobType === "PART_TIME"
-                      ? "Part-time"
-                      : jobPost.jobType === "CONTRACT"
-                        ? "Contract"
-                        : "Temporary"}
-                </span>
+                <span className={styles.factValue}>{jobTypeMeta.label}</span>
               </div>
             )}
-            {jobPost.locationType && (
+            {locationTypeMeta && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Work Style</span>
                 <span className={styles.factValue}>
-                  {jobPost.locationType === "REMOTE"
-                    ? "Remote"
-                    : jobPost.locationType === "ON_SITE"
-                      ? "On-site"
-                      : "Hybrid"}
+                  {locationTypeMeta.label}
                 </span>
               </div>
             )}
@@ -650,13 +672,14 @@ function DetailCard({ icon, label, value, accent }) {
 }
 
 function Alert({ type, text, onClose }) {
+  const Icon = type === "error" ? FiAlertTriangle : FiCheckCircle;
   return (
     <div className={`${styles.alert} ${styles[`alert_${type}`]}`}>
-      <span>
-        {type === "error" ? "⚠️" : "✅"} {text}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <Icon size={14} /> {text}
       </span>
       <button className={styles.alertClose} onClick={onClose}>
-        ×
+        <FiX size={14} />
       </button>
     </div>
   );
