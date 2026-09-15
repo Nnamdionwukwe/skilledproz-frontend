@@ -22,6 +22,32 @@
   }
 }
 
+@media (max-width: 359px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 14px 10px;
+  }
+}
+
+@media (min-width: 640px) {
+  .page {
+    padding: 40px 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding: 40px 56px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .page {
+    padding: 40px 80px;
+  }
+}
+
 /* ── Back link ─────────────────────────────────────────────── */
 .backLink {
   display: inline-flex;
@@ -92,6 +118,8 @@
   grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
 /* ── Header card ───────────────────────────────────────────── */
@@ -755,9 +783,6 @@
   .detailGrid {
     grid-template-columns: repeat(3, 1fr);
   }
-  .page {
-    padding: 40px 32px;
-  }
 }
 @media (min-width: 900px) {
   .layout {
@@ -892,13 +917,4 @@
 .applyChannel:hover {
   border-color: var(--orange);
   color: var(--orange);
-}
-
-/* ── Very small phones (<360px) ─────────────────────────────── */
-@media (max-width: 359px) {
-  .page {
-    margin-left: -1.25rem;
-    margin-right: -1.25rem;
-    padding: 14px 10px;
-  }
 }
