@@ -1,16 +1,24 @@
-/* ── Page ── */
-/* ── Page ── */
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 1rem 0.75rem;
-  max-width: 100%;
+  max-width: none;
   animation: fadeUp 0.5s ease both;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 0.75rem 0.5rem;
+  }
 }
 
 @media (min-width: 768px) {
   .page {
     padding: 2rem 2rem;
-    max-width: 860px;
-    margin: 0 auto;
   }
 }
 
