@@ -4,6 +4,13 @@ import api from "../../lib/api";
 import styles from "./SubscriptionPlans.module.css";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import {
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiX,
+  FiTag,
+  FiCheck,
+} from "react-icons/fi";
 
 export default function SubscriptionPlans({ onClose }) {
   const { user } = useAuthStore();
@@ -57,8 +64,6 @@ export default function SubscriptionPlans({ onClose }) {
     setPromoSuccess("");
 
     try {
-      // Validate without planId — backend returns discountType + discountValue
-      // so we can compute per-plan discounts client-side
       const res = await api.get(`/subscriptions/promo/validate/${code}`);
       const data = res.data.data;
 
@@ -104,7 +109,6 @@ export default function SubscriptionPlans({ onClose }) {
         planId,
         ...(promoApplied ? { promoCode: promoApplied.code } : {}),
       });
-      // Redirect to Paystack hosted checkout page
       window.location.href = res.data.data.url;
     } catch (err) {
       setError(err.response?.data?.message || "Failed to start checkout.");
@@ -138,7 +142,7 @@ export default function SubscriptionPlans({ onClose }) {
           </div>
           {onClose && (
             <button className={styles.closeBtn} onClick={onClose}>
-              ×
+              <FiX size={20} />
             </button>
           )}
         </div>
@@ -146,7 +150,7 @@ export default function SubscriptionPlans({ onClose }) {
         {/* Current plan banner */}
         {current && current.subscription?.tier !== "FREE" && (
           <div className={styles.currentBanner}>
-            <span>✅</span>
+            <FiCheckCircle size={16} />
             <div>
               <p className={styles.currentTitle}>
                 Active: <strong>{current.plan?.name}</strong>
@@ -168,16 +172,24 @@ export default function SubscriptionPlans({ onClose }) {
           </div>
         )}
 
-        {error && <div className={styles.errorBox}>⚠️ {error}</div>}
-        {success && <div className={styles.successBox}>✅ {success}</div>}
+        {error && (
+          <div className={styles.errorBox}>
+            <FiAlertTriangle size={14} /> {error}
+          </div>
+        )}
+        {success && (
+          <div className={styles.successBox}>
+            <FiCheckCircle size={14} /> {success}
+          </div>
+        )}
 
         {/* ── Promo code section ─────────────────────────────────────────────── */}
         <div className={styles.promoSection}>
           {promoApplied ? (
-            /* Applied state — show the active code as a dismissible tag */
             <div className={styles.promoAppliedRow}>
               <span className={styles.promoTag}>
-                🏷️ <strong>{promoApplied.code}</strong>
+                <FiTag size={13} />
+                <strong>{promoApplied.code}</strong>
                 {promoApplied.discountType === "PERCENT"
                   ? ` — ${promoApplied.discountValue}% off`
                   : ` — ₦${Number(promoApplied.discountValue).toLocaleString()} off`}
@@ -186,11 +198,10 @@ export default function SubscriptionPlans({ onClose }) {
                 className={styles.promoRemoveBtn}
                 onClick={handleRemovePromo}
               >
-                ✕ Remove
+                <FiX size={12} /> Remove
               </button>
             </div>
           ) : (
-            /* Input state */
             <div className={styles.promoInputRow}>
               <input
                 className={styles.promoInput}
@@ -213,9 +224,15 @@ export default function SubscriptionPlans({ onClose }) {
             </div>
           )}
           {promoSuccess && (
-            <p className={styles.promoSuccessMsg}>✓ {promoSuccess}</p>
+            <p className={styles.promoSuccessMsg}>
+              <FiCheck size={12} /> {promoSuccess}
+            </p>
           )}
-          {promoError && <p className={styles.promoErrorMsg}>✗ {promoError}</p>}
+          {promoError && (
+            <p className={styles.promoErrorMsg}>
+              <FiX size={12} /> {promoError}
+            </p>
+          )}
         </div>
 
         {/* ── Plans grid ────────────────────────────────────────────────────── */}
@@ -255,7 +272,6 @@ export default function SubscriptionPlans({ onClose }) {
                     {plan.price === 0 ? (
                       <span className={styles.priceAmount}>Free</span>
                     ) : discounted ? (
-                      /* Show discounted price when promo is applied */
                       <div className={styles.priceDiscountWrap}>
                         <span className={styles.priceStrike}>
                           {plan.currency} {plan.price.toLocaleString()}
@@ -293,7 +309,9 @@ export default function SubscriptionPlans({ onClose }) {
                   <ul className={styles.featureList}>
                     {plan.features.map((f, i) => (
                       <li key={i}>
-                        <span className={styles.featureCheck}>✓</span>
+                        <span className={styles.featureCheck}>
+                          <FiCheck size={14} />
+                        </span>
                         {f}
                       </li>
                     ))}

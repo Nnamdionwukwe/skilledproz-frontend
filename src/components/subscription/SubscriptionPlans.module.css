@@ -1,10 +1,21 @@
-/* SubscriptionPlans.module.css — all original rules preserved, promo additions appended */
+/* SubscriptionPlans.module.css */
 
+/* ── Wrap — full-bleed, hugs both screen edges ── */
 .wrap {
-  max-width: 960px;
-  margin: 0 auto;
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 2rem;
+  max-width: none;
   animation: fadeUp 0.4s ease;
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 1.25rem;
+  }
 }
 
 .header {
@@ -12,6 +23,7 @@
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 2rem;
+  gap: 0.75rem;
 }
 
 .title {
@@ -34,6 +46,18 @@
   font-size: 1.5rem;
   cursor: pointer;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.closeBtn svg {
+  flex-shrink: 0;
+}
+.closeBtn:hover {
+  color: var(--text);
 }
 
 /* Current plan */
@@ -47,6 +71,10 @@
   padding: 0.875rem 1.25rem;
   margin-bottom: 1.5rem;
   font-size: 0.875rem;
+}
+.currentBanner svg {
+  flex-shrink: 0;
+  color: var(--green);
 }
 .currentTitle {
   font-weight: 600;
@@ -76,6 +104,12 @@
   padding: 0.75rem 1rem;
   font-size: 0.85rem;
   margin-bottom: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.errorBox svg {
+  flex-shrink: 0;
 }
 .successBox {
   background: var(--green-dim);
@@ -85,6 +119,12 @@
   padding: 0.75rem 1rem;
   font-size: 0.85rem;
   margin-bottom: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.successBox svg {
+  flex-shrink: 0;
 }
 
 /* ── Promo code section ─────────────────────────────────────────────────────── */
@@ -109,6 +149,8 @@
   font-size: 0.875rem;
   letter-spacing: 0.08em;
   transition: border-color 0.2s;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .promoInput::placeholder {
   color: var(--text-muted);
@@ -164,6 +206,9 @@
   font-size: 0.82rem;
   color: var(--orange);
 }
+.promoTag svg {
+  flex-shrink: 0;
+}
 
 .promoRemoveBtn {
   font-size: 0.72rem;
@@ -174,6 +219,12 @@
   font-family: var(--font-body);
   white-space: nowrap;
   padding: 0.2rem 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.promoRemoveBtn svg {
+  flex-shrink: 0;
 }
 .promoRemoveBtn:hover {
   color: var(--red);
@@ -183,11 +234,23 @@
   margin-top: 0.4rem;
   font-size: 0.78rem;
   color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.promoSuccessMsg svg {
+  flex-shrink: 0;
 }
 .promoErrorMsg {
   margin-top: 0.4rem;
   font-size: 0.78rem;
   color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.promoErrorMsg svg {
+  flex-shrink: 0;
 }
 
 /* Plans grid */
@@ -316,6 +379,7 @@
   gap: 0.5rem;
   flex: 1;
   margin-bottom: 1.5rem;
+  padding: 0;
 }
 .featureList li {
   display: flex;
@@ -326,8 +390,10 @@
 }
 .featureCheck {
   color: var(--green);
-  font-weight: 700;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
 }
 
 /* Plan button */
