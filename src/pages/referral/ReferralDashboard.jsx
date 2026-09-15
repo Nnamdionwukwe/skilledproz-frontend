@@ -1,10 +1,32 @@
 // src/pages/referral/ReferralDashboard.jsx
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./ReferralDashboard.module.css";
 import WorkerLayout from "../../components/layout/WorkerLayout";
 import HirerLayout from "../../components/layout/HirerLayout";
+import {
+  FiAward,
+  FiZap,
+  FiCheckCircle,
+  FiClock,
+  FiUsers,
+  FiUser,
+  FiUserCheck,
+  FiCreditCard,
+  FiArrowUpRight,
+  FiAlertTriangle,
+  FiCheck,
+  FiX,
+  FiSend,
+  FiTarget,
+  FiEdit3,
+  FiDollarSign,
+  FiTrendingUp,
+  FiCopy,
+  FiShare2,
+  FiSlash,
+} from "react-icons/fi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtAmt(n) {
@@ -26,33 +48,34 @@ function timeAgo(d) {
   return `${days}d ago`;
 }
 
-// ─── Tier config (mirrors backend) ───────────────────────────────────────────
+// ─── Tier config — icon instead of emoji ─────────────────────────────────────
 const TIER_STYLES = {
   BRONZE: {
     color: "#cd7f32",
     bg: "rgba(205,127,50,0.12)",
     border: "rgba(205,127,50,0.3)",
-    emoji: "🥉",
+    icon: FiAward,
   },
   SILVER: {
     color: "#94a3b8",
     bg: "rgba(148,163,184,0.12)",
     border: "rgba(148,163,184,0.3)",
-    emoji: "🥈",
+    icon: FiAward,
   },
   GOLD: {
     color: "#fbbf24",
     bg: "rgba(251,191,36,0.12)",
     border: "rgba(251,191,36,0.3)",
-    emoji: "🥇",
+    icon: FiAward,
   },
   DIAMOND: {
     color: "#67e8f9",
     bg: "rgba(103,232,249,0.12)",
     border: "rgba(103,232,249,0.3)",
-    emoji: "💎",
+    icon: FiZap,
   },
 };
+
 const STATUS_META = {
   PENDING: { label: "Pending", cls: "yellow" },
   QUALIFIED: { label: "Qualified", cls: "indigo" },
@@ -65,8 +88,10 @@ const STATUS_META = {
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
+  const Icon = toast.type === "success" ? FiCheckCircle : FiAlertTriangle;
   return (
     <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+      <Icon size={14} />
       {toast.msg}
     </div>
   );
@@ -74,6 +99,7 @@ function Toast({ toast }) {
 
 function TierBadge({ tier }) {
   const s = TIER_STYLES[tier] || TIER_STYLES.BRONZE;
+  const Icon = s.icon;
   return (
     <span
       className={styles.tierBadge}
@@ -83,7 +109,7 @@ function TierBadge({ tier }) {
         border: `1px solid ${s.border}`,
       }}
     >
-      {s.emoji} {tier}
+      <Icon size={11} /> {tier}
     </span>
   );
 }
@@ -112,7 +138,7 @@ function Avatar({ name, avatar, size = "sm" }) {
   );
 }
 
-// ─── Share buttons ────────────────────────────────────────────────────────────
+// ─── Share buttons — inline SVGs kept for brand icons (WhatsApp/X) ──────────
 function ShareButtons({ link, shareText }) {
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   const twitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
@@ -125,7 +151,7 @@ function ShareButtons({ link, shareText }) {
         rel="noreferrer"
         className={`${styles.shareBtn} ${styles.shareBtnWa}`}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
         </svg>
         WhatsApp
@@ -136,7 +162,7 @@ function ShareButtons({ link, shareText }) {
         rel="noreferrer"
         className={`${styles.shareBtn} ${styles.shareBtnX}`}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
         Post
@@ -150,7 +176,7 @@ function ShareButtons({ link, shareText }) {
               .catch(() => {})
           }
         >
-          ↗ More
+          <FiShare2 size={13} /> More
         </button>
       )}
     </div>
@@ -210,9 +236,11 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <p className={styles.modalTitle}>💸 Withdraw Earnings</p>
+          <p className={styles.modalTitle}>
+            <FiCreditCard size={16} /> Withdraw Earnings
+          </p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <FiX size={14} />
           </button>
         </div>
         <form className={styles.modalForm} onSubmit={handleSubmit}>
@@ -264,7 +292,11 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
             />
           </div>
 
-          {error && <div className={styles.formError}>⚠️ {error}</div>}
+          {error && (
+            <div className={styles.formError}>
+              <FiAlertTriangle size={14} /> {error}
+            </div>
+          )}
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? (
@@ -302,7 +334,6 @@ export default function ReferralDashboard() {
     setTimeout(() => setToast(null), 3500);
   }
 
-  // ── Load dashboard ────────────────────────────────────────────────────────
   const loadDashboard = useCallback(async () => {
     try {
       const res = await api.get("/referral/dashboard");
@@ -318,7 +349,6 @@ export default function ReferralDashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // ── Load leaderboard on tab select ────────────────────────────────────────
   useEffect(() => {
     if (tab !== "leaderboard" || leaderboard) return;
     api
@@ -327,7 +357,6 @@ export default function ReferralDashboard() {
       .catch(() => {});
   }, [tab, leaderboard]);
 
-  // ── Copy link ─────────────────────────────────────────────────────────────
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(dashboard?.link || "");
@@ -339,12 +368,12 @@ export default function ReferralDashboard() {
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
   const d = dashboard;
   const tier = d?.tier;
   const ts = tier
     ? TIER_STYLES[tier.key] || TIER_STYLES.BRONZE
     : TIER_STYLES.BRONZE;
+  const TierIcon = ts.icon;
 
   return (
     <Layout>
@@ -362,7 +391,9 @@ export default function ReferralDashboard() {
             </p>
           </div>
           {d && (
-            <div className={styles.rankPill}>🏅 Rank #{d.leaderboardRank}</div>
+            <div className={styles.rankPill}>
+              <FiAward size={13} /> Rank #{d.leaderboardRank}
+            </div>
           )}
         </div>
 
@@ -383,7 +414,15 @@ export default function ReferralDashboard() {
               onClick={copyLink}
               disabled={!d?.link}
             >
-              {copied ? "✅ Copied!" : "📋 Copy Link"}
+              {copied ? (
+                <>
+                  <FiCheck size={14} /> Copied!
+                </>
+              ) : (
+                <>
+                  <FiCopy size={14} /> Copy Link
+                </>
+              )}
             </button>
           </div>
           {d && (
@@ -398,42 +437,47 @@ export default function ReferralDashboard() {
         <div className={styles.statsGrid}>
           {[
             {
-              icon: "👥",
+              icon: FiUsers,
               label: "Total Invited",
               val: d?.stats?.totalReferrals,
               accent: "",
             },
             {
-              icon: "✅",
+              icon: FiCheckCircle,
               label: "Conversions",
               val: d?.stats?.successfulReferrals,
               accent: "green",
             },
             {
-              icon: "⏳",
+              icon: FiClock,
               label: "Pending",
               val: d?.stats?.pendingReferrals,
               accent: "",
             },
             {
-              icon: "💰",
+              icon: FiCreditCard,
               label: "Wallet Balance",
               val: fmtAmt(d?.wallet?.balance),
               accent: "orange",
             },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <span className={styles.statIcon}>{s.icon}</span>
-              <div className={styles.statVal}>
-                {loading ? "—" : (s.val ?? "0")}
+          ].map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={i}
+                className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <span className={styles.statIcon}>
+                  <Icon size={18} />
+                </span>
+                <div className={styles.statVal}>
+                  {loading ? "—" : (s.val ?? "0")}
+                </div>
+                <div className={styles.statLabel}>{s.label}</div>
               </div>
-              <div className={styles.statLabel}>{s.label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── Tier + Wallet ── */}
@@ -456,7 +500,12 @@ export default function ReferralDashboard() {
               ) : tier ? (
                 <>
                   <div className={styles.tierDisplay}>
-                    <span className={styles.tierEmoji}>{ts.emoji}</span>
+                    <span
+                      className={styles.tierEmoji}
+                      style={{ color: ts.color }}
+                    >
+                      <TierIcon size={32} />
+                    </span>
                     <div>
                       <p
                         className={styles.tierName}
@@ -487,7 +536,7 @@ export default function ReferralDashboard() {
                       <span className={styles.tierProgressNext}>
                         {tier.referralsToNext > 0
                           ? `${tier.referralsToNext} more to ${tier.nextTierLabel}`
-                          : "Maximum tier reached 🎉"}
+                          : "Maximum tier reached"}
                       </span>
                     </div>
                   </div>
@@ -495,7 +544,9 @@ export default function ReferralDashboard() {
                   {/* Earnings per referral */}
                   <div className={styles.tierEarnings}>
                     <div className={styles.tierEarnRow}>
-                      <span>🔨 Per Worker referral</span>
+                      <span>
+                        <FiTarget size={12} /> Per Worker referral
+                      </span>
                       <span
                         className={styles.tierEarnVal}
                         style={{ color: ts.color }}
@@ -504,7 +555,9 @@ export default function ReferralDashboard() {
                       </span>
                     </div>
                     <div className={styles.tierEarnRow}>
-                      <span>🧑 Per Hirer referral</span>
+                      <span>
+                        <FiUser size={12} /> Per Hirer referral
+                      </span>
                       <span
                         className={styles.tierEarnVal}
                         style={{ color: ts.color }}
@@ -551,7 +604,7 @@ export default function ReferralDashboard() {
                         : `Min. ${fmtAmt(d.wallet.minWithdrawal)} required`
                     }
                   >
-                    💸 Withdraw Earnings
+                    <FiCreditCard size={14} /> Withdraw Earnings
                   </button>
                   {!d.wallet.canWithdraw && (
                     <p className={styles.walletMinNote}>
@@ -599,7 +652,9 @@ export default function ReferralDashboard() {
           </div>
           <div className={styles.perksGrid}>
             <div className={styles.perkCard}>
-              <div className={styles.perkIcon}>🔗</div>
+              <div className={styles.perkIcon}>
+                <FiCopy size={16} />
+              </div>
               <p className={styles.perkStep}>Step 1</p>
               <p className={styles.perkTitle}>Share your code</p>
               <p className={styles.perkDesc}>
@@ -608,7 +663,9 @@ export default function ReferralDashboard() {
               </p>
             </div>
             <div className={styles.perkCard}>
-              <div className={styles.perkIcon}>📝</div>
+              <div className={styles.perkIcon}>
+                <FiEdit3 size={16} />
+              </div>
               <p className={styles.perkStep}>Step 2</p>
               <p className={styles.perkTitle}>They sign up</p>
               <p className={styles.perkDesc}>
@@ -617,7 +674,9 @@ export default function ReferralDashboard() {
               </p>
             </div>
             <div className={styles.perkCard}>
-              <div className={styles.perkIcon}>✅</div>
+              <div className={styles.perkIcon}>
+                <FiCheckCircle size={16} />
+              </div>
               <p className={styles.perkStep}>Step 3</p>
               <p className={styles.perkTitle}>They complete a booking</p>
               <p className={styles.perkDesc}>
@@ -632,7 +691,9 @@ export default function ReferralDashboard() {
                 background: "rgba(249,115,22,0.05)",
               }}
             >
-              <div className={styles.perkIcon}>💰</div>
+              <div className={styles.perkIcon}>
+                <FiDollarSign size={16} />
+              </div>
               <p className={styles.perkStep}>You earn</p>
               <p className={styles.perkTitle}>Cash in your wallet</p>
               <p className={styles.perkDesc}>
@@ -659,7 +720,7 @@ export default function ReferralDashboard() {
           <div className={styles.refereePerkRow}>
             <div className={styles.refereePerkCard}>
               <p className={styles.refereePerkRole}>
-                🔨 Workers who use your code get
+                <FiTarget size={12} /> Workers who use your code get
               </p>
               <p className={styles.refereePerkDesc}>
                 {d?.perks?.whatTheyGet?.worker ||
@@ -668,7 +729,7 @@ export default function ReferralDashboard() {
             </div>
             <div className={styles.refereePerkCard}>
               <p className={styles.refereePerkRole}>
-                🧑 Hirers who use your code get
+                <FiUser size={12} /> Hirers who use your code get
               </p>
               <p className={styles.refereePerkDesc}>
                 {d?.perks?.whatTheyGet?.hirer ||
@@ -686,16 +747,20 @@ export default function ReferralDashboard() {
                 key: "referrals",
                 label: `My Referrals${d?.stats?.totalReferrals > 0 ? ` (${d.stats.totalReferrals})` : ""}`,
               },
-              { key: "leaderboard", label: "🏆 Leaderboard" },
-            ].map((t) => (
-              <button
-                key={t.key}
-                className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-                onClick={() => setTab(t.key)}
-              >
-                {t.label}
-              </button>
-            ))}
+              { key: "leaderboard", label: "Leaderboard", icon: FiAward },
+            ].map((t) => {
+              const TabIcon = t.icon;
+              return (
+                <button
+                  key={t.key}
+                  className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
+                  onClick={() => setTab(t.key)}
+                >
+                  {TabIcon && <TabIcon size={13} />}
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* My Referrals */}
@@ -711,7 +776,9 @@ export default function ReferralDashboard() {
                 ))
               ) : !d?.referrals?.length ? (
                 <div className={styles.emptyState}>
-                  <span className={styles.emptyIcon}>👥</span>
+                  <span className={styles.emptyIcon}>
+                    <FiUsers size={40} />
+                  </span>
                   <p className={styles.emptyTitle}>No referrals yet</p>
                   <p className={styles.emptySub}>
                     Share your referral code to get started and start earning!
@@ -735,7 +802,12 @@ export default function ReferralDashboard() {
                           <span
                             className={`${styles.rolePill} ${r.role === "WORKER" ? styles.rolePillWorker : styles.rolePillHirer}`}
                           >
-                            {r.role === "WORKER" ? "🔨" : "🧑"} {r.role}
+                            {r.role === "WORKER" ? (
+                              <FiTarget size={10} />
+                            ) : (
+                              <FiUser size={10} />
+                            )}{" "}
+                            {r.role}
                           </span>
                           <span>· Joined {timeAgo(r.joinedAt)}</span>
                         </p>
@@ -773,11 +845,10 @@ export default function ReferralDashboard() {
                 ))
               ) : (
                 <>
-                  {/* My rank highlight */}
                   {d?.leaderboardRank && (
                     <div className={styles.myRankBanner}>
-                      🏅 You are rank <strong>#{d.leaderboardRank}</strong> on
-                      the leaderboard
+                      <FiAward size={14} /> You are rank{" "}
+                      <strong>#{d.leaderboardRank}</strong> on the leaderboard
                     </div>
                   )}
                   <div className={styles.leaderboardList}>
@@ -785,7 +856,7 @@ export default function ReferralDashboard() {
                       const ts2 =
                         TIER_STYLES[u.tier?.replace(/[^A-Z]/g, "")] ||
                         TIER_STYLES.BRONZE;
-                      const medalEmoji =
+                      const medal =
                         i === 0
                           ? "🥇"
                           : i === 1
@@ -800,7 +871,7 @@ export default function ReferralDashboard() {
                           style={{ animationDelay: `${i * 35}ms` }}
                         >
                           <span className={styles.leaderboardRank}>
-                            {medalEmoji}
+                            {medal}
                           </span>
                           <Avatar name={u.name} avatar={u.avatar} />
                           <div className={styles.leaderboardInfo}>
@@ -826,7 +897,6 @@ export default function ReferralDashboard() {
                       );
                     })}
                   </div>
-                  {/* Tiers reference */}
                   <div className={styles.tiersRef}>
                     <p className={styles.tiersRefTitle}>Tier requirements</p>
                     <div className={styles.tiersRefGrid}>
@@ -872,9 +942,7 @@ export default function ReferralDashboard() {
           onClose={() => setShowWd(false)}
           onSuccess={() => {
             setShowWd(false);
-            showToast(
-              "Withdrawal request submitted! Processing in 1–3 days 💸",
-            );
+            showToast("Withdrawal request submitted! Processing in 1–3 days");
             loadDashboard();
           }}
         />
