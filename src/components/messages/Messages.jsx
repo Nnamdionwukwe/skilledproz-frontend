@@ -83,7 +83,7 @@ function TranslateButton({ text }) {
     try {
       const res = await api.post("/translate", {
         text,
-        targetLanguage: langCode,
+        targetLang: langCode, // ← was: targetLanguage
       });
       setTranslated(res.data.data.translated);
     } catch {
