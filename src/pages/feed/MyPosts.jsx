@@ -6,6 +6,7 @@ import WorkerLayout from "../../components/layout/WorkerLayout";
 import CreatePost from "../../components/posts/CreatePost";
 import PostCard from "../../components/posts/PostCard";
 import styles from "./FeedPage.module.css";
+import { FiEdit3 } from "react-icons/fi";
 
 export default function MyPostsPage() {
   const { user } = useAuthStore();
@@ -32,23 +33,10 @@ export default function MyPostsPage() {
 
   return (
     <Layout>
-      <div
-        className={styles.main}
-        style={{ maxWidth: 680, margin: "0 auto", padding: "1.5rem" }}
-      >
-        <div style={{ marginBottom: "0.5rem" }}>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1.5rem",
-              fontWeight: 800,
-              color: "var(--text)",
-              marginBottom: "0.25rem",
-            }}
-          >
-            My Posts
-          </h1>
-          <p style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>
+      <div className={styles.myPostsPage}>
+        <div className={styles.myPostsHeader}>
+          <h1 className={styles.myPostsTitle}>My Posts</h1>
+          <p className={styles.myPostsSub}>
             Share updates, achievements, and opportunities with the SkilledProz
             community.
           </p>
@@ -56,22 +44,15 @@ export default function MyPostsPage() {
 
         <CreatePost onPostCreated={handlePostCreated} />
 
-        <div style={{ height: "0.875rem" }} />
+        <div className={styles.myPostsSpacer} />
 
         {loading ? (
-          <p
-            style={{
-              fontSize: "0.875rem",
-              color: "var(--text-muted)",
-              textAlign: "center",
-              padding: "2rem",
-            }}
-          >
-            Loading...
-          </p>
+          <p className={styles.myPostsLoading}>Loading...</p>
         ) : posts.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>✍️</span>
+            <span className={styles.emptyIcon}>
+              <FiEdit3 size={32} />
+            </span>
             <h3>No posts yet</h3>
             <p>Create your first post above to share with the community.</p>
           </div>

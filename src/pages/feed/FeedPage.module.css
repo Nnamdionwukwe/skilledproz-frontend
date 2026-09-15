@@ -280,3 +280,57 @@
   width: 100%;
   animation: pulse 1.4s ease infinite;
 }
+/* ── MyPostsPage — full-bleed wrapper + header ── */
+.myPostsPage {
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding: 1.5rem;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  animation: fadeUp 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .myPostsPage {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 0.75rem 0.75rem 4rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .myPostsPage {
+    padding: 1.5rem;
+  }
+}
+
+.myPostsHeader {
+  margin-bottom: 0.5rem;
+}
+
+.myPostsTitle {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.myPostsSub {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.myPostsSpacer {
+  height: 0.875rem;
+}
+
+.myPostsLoading {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem;
+}

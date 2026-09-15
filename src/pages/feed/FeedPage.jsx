@@ -7,13 +7,43 @@ import CreatePost from "../../components/posts/CreatePost";
 import PostCard from "../../components/posts/PostCard";
 import styles from "./FeedPage.module.css";
 import { Link } from "react-router-dom";
+import {
+  FiInbox,
+  FiAward,
+  FiImage,
+  FiSpeaker,
+  FiZap,
+  FiUsers,
+  FiBookmark,
+} from "react-icons/fi";
 
 const FILTERS = [
   { value: "ALL", label: "All" },
   { value: "GENERAL", label: "General" },
-  { value: "HIRING", label: "Hiring 📢" },
-  { value: "ACHIEVEMENT", label: "Achievements 🏆" },
-  { value: "PORTFOLIO", label: "Portfolio 🎨" },
+  {
+    value: "HIRING",
+    label: (
+      <>
+        Hiring <FiSpeaker size={12} />
+      </>
+    ),
+  },
+  {
+    value: "ACHIEVEMENT",
+    label: (
+      <>
+        Achievements <FiAward size={12} />
+      </>
+    ),
+  },
+  {
+    value: "PORTFOLIO",
+    label: (
+      <>
+        Portfolio <FiImage size={12} />
+      </>
+    ),
+  },
   { value: "ANNOUNCEMENT", label: "Announcements" },
 ];
 
@@ -115,7 +145,9 @@ export default function FeedPage() {
             </div>
           ) : posts.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.emptyIcon}>📭</span>
+              <span className={styles.emptyIcon}>
+                <FiInbox size={32} />
+              </span>
               <h3>No posts yet</h3>
               <p>Be the first to share something with the community!</p>
             </div>
@@ -179,13 +211,25 @@ function FeedSidebar() {
 
       {/* Tips card */}
       <div className={styles.tipsCard}>
-        <p className={styles.tipsTitle}>📌 What to post</p>
+        <p className={styles.tipsTitle}>
+          <FiBookmark size={12} /> What to post
+        </p>
         <ul className={styles.tipsList}>
-          <li>🏆 Share job achievements</li>
-          <li>🎨 Show your portfolio</li>
-          <li>📢 Post hiring opportunities</li>
-          <li>💡 Share industry tips</li>
-          <li>🤝 Connect with others</li>
+          <li>
+            <FiAward size={11} /> Share job achievements
+          </li>
+          <li>
+            <FiImage size={11} /> Show your portfolio
+          </li>
+          <li>
+            <FiSpeaker size={11} /> Post hiring opportunities
+          </li>
+          <li>
+            <FiZap size={11} /> Share industry tips
+          </li>
+          <li>
+            <FiUsers size={11} /> Connect with others
+          </li>
         </ul>
       </div>
     </div>
