@@ -105,6 +105,8 @@
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   font-family: var(--font-body);
 }
@@ -356,6 +358,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-width: 100%;
 }
 .unitPill {
   padding: 5px 14px;
@@ -701,4 +704,37 @@
   border-color: var(--orange);
   color: var(--orange);
   border-style: solid;
+}
+
+/* ── Fix: Application channel rows (icon + input) ───────────── */
+.applyChannelList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.applyChannelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.applyChannelIcon {
+  flex-shrink: 0;
+  color: var(--orange);
+}
+.applyChannelRow .input {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Fix: prevent grid children from overflowing ────────────── */
+.row2 > .input,
+.row2 > .select,
+.row2 > .textarea {
+  min-width: 0;
+  width: 100%;
 }

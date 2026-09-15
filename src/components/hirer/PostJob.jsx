@@ -156,7 +156,6 @@ export default function PostJob() {
   const [error, setError] = useState("");
   const [skillInput, setSkillInput] = useState("");
 
-  // ── NEW: toggle for the "advanced / external-style fields" panel ──
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [form, setForm] = useState({
@@ -188,18 +187,18 @@ export default function PostJob() {
     skills: [],
     notes: "",
 
-    // ── NEW: external-style display ──
+    // external-style display
     companyName: "",
     salaryText: "",
 
-    // ── NEW: salary range ──
+    // salary range
     salaryAmount: "",
     salaryMin: "",
     salaryMax: "",
     salaryCurrency: "",
     salaryPeriod: "",
 
-    // ── NEW: requirements ──
+    // requirements
     minQualification: "",
     experienceLevel: "",
     experienceLength: "",
@@ -209,12 +208,12 @@ export default function PostJob() {
     responsibilities: "",
     requirements: "",
 
-    // ── NEW: education / misc ──
+    // education / misc
     educationLevel: "",
     sourcePlatform: "",
     expiryDate: "",
 
-    // ── NEW: application channels ──
+    // application channels
     applicationUrl: "",
     applicationEmail: "",
     applicationWhatsApp: "",
@@ -301,7 +300,6 @@ export default function PostJob() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // ── Validation ──
     if (!form.categoryId) return setError("Please select a category.");
     if (!form.title) return setError("Job title is required.");
     if (!form.description) return setError("Description is required.");
@@ -312,7 +310,6 @@ export default function PostJob() {
     if (!form.scheduledAt)
       return setError("Please choose a scheduled date and time.");
 
-    // Budget OR salary range required (matches backend)
     const hasBudget = form.budget !== "" && form.budget !== null;
     const hasSalary =
       form.salaryAmount !== "" ||
@@ -324,7 +321,6 @@ export default function PostJob() {
       );
     }
 
-    // Salary range sanity
     if (
       form.salaryMin !== "" &&
       form.salaryMax !== "" &&
@@ -342,25 +338,20 @@ export default function PostJob() {
         form.estimatedValue,
       );
 
-      // ── Build payload, omitting empty strings so backend "optional" rules kick in ──
       const clean = (v) =>
         v === "" || v === null || v === undefined ? undefined : v;
 
       const payload = {
-        // core
         categoryId: form.categoryId,
         title: form.title,
         description: form.description,
 
-        // location
         locationType: form.locationType,
         address: form.locationType !== "REMOTE" ? form.address : undefined,
         latitude: form.latitude ? parseFloat(form.latitude) : undefined,
         longitude: form.longitude ? parseFloat(form.longitude) : undefined,
 
-        // job meta
         jobType: form.jobType,
-        // FIX: datetime-local → full ISO string with seconds (required by .isISO8601())
         scheduledAt: form.scheduledAt
           ? new Date(form.scheduledAt).toISOString()
           : undefined,
@@ -368,22 +359,18 @@ export default function PostJob() {
         estimatedUnit: clean(form.durationUnit),
         estimatedValue: clean(form.estimatedValue),
 
-        // payment / duration
         budget: hasBudget ? parseFloat(form.budget) : undefined,
         currency: clean(form.currency),
         budgetType: clean(form.budgetType),
         durationType: clean(form.durationType),
         durationValue: clean(form.durationValue),
 
-        // extras
         skills: form.skills,
         notes: clean(form.notes),
 
-        // external-style display
         companyName: clean(form.companyName),
         salaryText: clean(form.salaryText),
 
-        // salary range
         salaryAmount:
           form.salaryAmount !== "" ? parseFloat(form.salaryAmount) : undefined,
         salaryMin:
@@ -393,7 +380,6 @@ export default function PostJob() {
         salaryCurrency: clean(form.salaryCurrency),
         salaryPeriod: clean(form.salaryPeriod),
 
-        // requirements
         minQualification: clean(form.minQualification),
         experienceLevel: clean(form.experienceLevel),
         experienceLength: clean(form.experienceLength),
@@ -403,14 +389,12 @@ export default function PostJob() {
         responsibilities: clean(form.responsibilities),
         requirements: clean(form.requirements),
 
-        // education / misc
         educationLevel: clean(form.educationLevel),
         sourcePlatform: clean(form.sourcePlatform),
         expiryDate: form.expiryDate
           ? new Date(form.expiryDate).toISOString()
           : undefined,
 
-        // application channels
         applicationUrl: clean(form.applicationUrl),
         applicationEmail: clean(form.applicationEmail),
         applicationWhatsApp: clean(form.applicationWhatsApp),
@@ -479,7 +463,6 @@ export default function PostJob() {
 
   const selectedCat = categories.find((c) => c.id === form.categoryId);
 
-  // ── Success state — renders full backend payload ─────────────────────
   if (submitted && postedJob) {
     const hirer = postedJob.hirer;
     const applicationsCount = postedJob._count?.applications ?? 0;
@@ -531,7 +514,6 @@ export default function PostJob() {
                   }`}
               </div>
 
-              {/* Budget OR salary text */}
               {postedJob.salaryText ? (
                 <div className={styles.successMeta}>
                   <FiDollarSign size={12} /> {postedJob.salaryText}
@@ -1059,10 +1041,7 @@ export default function PostJob() {
             />
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* ── NEW: Advanced / External-Style Fields (collapsible) ── */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-
+          {/* ── Advanced / External-Style Fields (collapsible) ── */}
           <div className={styles.field} style={{ marginTop: 8 }}>
             <button
               type="button"
@@ -1302,13 +1281,9 @@ export default function PostJob() {
                   external-style job (with company name / salary text).
                 </p>
 
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <FiLink size={16} color="var(--orange)" />
+                <div className={styles.applyChannelList}>
+                  <div className={styles.applyChannelRow}>
+                    <FiLink size={16} className={styles.applyChannelIcon} />
                     <input
                       className={styles.input}
                       type="url"
@@ -1317,10 +1292,8 @@ export default function PostJob() {
                       onChange={(e) => set("applicationUrl", e.target.value)}
                     />
                   </div>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <FiMail size={16} color="var(--orange)" />
+                  <div className={styles.applyChannelRow}>
+                    <FiMail size={16} className={styles.applyChannelIcon} />
                     <input
                       className={styles.input}
                       type="email"
@@ -1329,10 +1302,11 @@ export default function PostJob() {
                       onChange={(e) => set("applicationEmail", e.target.value)}
                     />
                   </div>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <FiMessageCircle size={16} color="var(--orange)" />
+                  <div className={styles.applyChannelRow}>
+                    <FiMessageCircle
+                      size={16}
+                      className={styles.applyChannelIcon}
+                    />
                     <input
                       className={styles.input}
                       placeholder="WhatsApp number (e.g. +2348012345678)"
@@ -1342,10 +1316,8 @@ export default function PostJob() {
                       }
                     />
                   </div>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <FiPhone size={16} color="var(--orange)" />
+                  <div className={styles.applyChannelRow}>
+                    <FiPhone size={16} className={styles.applyChannelIcon} />
                     <input
                       className={styles.input}
                       placeholder="Phone number (e.g. +2348012345678)"
