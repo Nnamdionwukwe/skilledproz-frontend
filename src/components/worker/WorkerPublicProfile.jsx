@@ -1,3 +1,4 @@
+// src/components/worker/WorkerPublicProfile.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import styles from "./WorkerPublicProfile.module.css";
@@ -5,7 +6,29 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, CheckCircle2 } from "lucide-react";
+import {
+  FiStar,
+  FiCheckCircle,
+  FiMapPin,
+  FiZap,
+  FiPhone,
+  FiMail,
+  FiUser,
+  FiMessageCircle,
+  FiEdit3,
+  FiAward,
+  FiRadio,
+  FiCalendar,
+  FiShield,
+  FiImage,
+  FiFileText,
+  FiChevronRight,
+  FiExternalLink,
+  FiLock,
+  FiSearch,
+  FiArrowLeft,
+} from "react-icons/fi";
 import VideoIntroSection from "./VideoIntroSection";
 import ReportButton from "../../pages/reports/ReportButton";
 
@@ -15,12 +38,10 @@ export default function WorkerPublicProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
 
-  // ── CRITICAL: always use the *viewer's* identity, never the profile owner ──
   const { user: viewerUser } = useAuthStore();
 
   const [lightbox, setLightbox] = useState(null);
 
-  // Layout is driven by WHO IS VIEWING, not whose profile it is
   const Layout = viewerUser?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   const [worker, setWorker] = useState(null);
@@ -76,7 +97,6 @@ export default function WorkerPublicProfile() {
   const availDay = (day) =>
     availability.find((a) => a.dayOfWeek === day && a.isAvailable);
 
-  // Has any multi-rate pricing?
   const hasDailyRate = worker.dailyRate > 0;
   const hasWeeklyRate = worker.weeklyRate > 0;
   const hasMonthlyRate = worker.monthlyRate > 0;
@@ -123,7 +143,8 @@ export default function WorkerPublicProfile() {
                 <span
                   className={`${styles.availBadge} ${worker.isAvailable ? styles.availBadgeOn : styles.availBadgeOff}`}
                 >
-                  {worker.isAvailable ? "● Available" : "○ Unavailable"}
+                  <span className={styles.availBadgeDot} />
+                  {worker.isAvailable ? "Available" : "Unavailable"}
                 </span>
               </div>
 
@@ -143,7 +164,7 @@ export default function WorkerPublicProfile() {
               {/* Stats */}
               <div className={styles.statsRow}>
                 <Stat
-                  icon="⭐"
+                  icon={<FiStar size={12} />}
                   value={
                     worker.avgRating > 0 ? worker.avgRating.toFixed(1) : "New"
                   }
@@ -151,7 +172,7 @@ export default function WorkerPublicProfile() {
                 />
                 <div className={styles.statDivider} />
                 <Stat
-                  icon="✅"
+                  icon={<FiCheckCircle size={12} />}
                   value={worker.completedJobs}
                   label="jobs done"
                 />
@@ -159,7 +180,7 @@ export default function WorkerPublicProfile() {
                   <>
                     <div className={styles.statDivider} />
                     <Stat
-                      icon="📍"
+                      icon={<FiMapPin size={12} />}
                       value={[user.city, user.country]
                         .filter(Boolean)
                         .join(", ")}
@@ -169,17 +190,17 @@ export default function WorkerPublicProfile() {
                 ) : null}
                 <div className={styles.statDivider} />
                 <Stat
-                  icon="⚡"
+                  icon={<FiZap size={12} />}
                   value={`${worker.responseRate}%`}
                   label="response"
                 />
               </div>
 
-              {/* Contact info — only shown if privacy allows */}
+              {/* Contact info */}
               <div className={styles.contactRow}>
                 {user.phone && (
                   <a href={`tel:${user.phone}`} className={styles.contactItem}>
-                    📱 <span>{user.phone}</span>
+                    <FiPhone size={12} /> <span>{user.phone}</span>
                   </a>
                 )}
                 {user.email && (
@@ -187,17 +208,12 @@ export default function WorkerPublicProfile() {
                     href={`mailto:${user.email}`}
                     className={styles.contactItem}
                   >
-                    ✉️ <span>{user.email}</span>
+                    <FiMail size={12} /> <span>{user.email}</span>
                   </a>
                 )}
                 {user.gender && (
                   <span className={styles.contactItem}>
-                    🪪 <span>{user.gender}</span>
-                  </span>
-                )}
-                {user.language && (
-                  <span className={styles.contactItem}>
-                    🗣 <span>{user.language}</span>
+                    <FiUser size={12} /> <span>{user.gender}</span>
                   </span>
                 )}
               </div>
@@ -205,7 +221,6 @@ export default function WorkerPublicProfile() {
           </div>
 
           {/* Rate + CTA */}
-          {/* Hero action — find this section and replace */}
           <div className={styles.heroAction}>
             <div className={styles.rateBlock}>
               <span className={styles.rateAmount}>
@@ -262,7 +277,6 @@ export default function WorkerPublicProfile() {
               <p className={styles.pricingNote}>{worker.pricingNote}</p>
             )}
 
-            {/* Wrap buttons in actionBtns div */}
             {!isOwnProfile && (
               <div className={styles.actionBtns}>
                 <button
@@ -276,8 +290,9 @@ export default function WorkerPublicProfile() {
                 <button
                   className={styles.msgBtn}
                   onClick={() => navigate(`/messages?with=${userId}`)}
+                  title="Message"
                 >
-                  💬
+                  <FiMessageCircle size={16} />
                 </button>
                 <ReportButton
                   targetType="USER"
@@ -289,7 +304,7 @@ export default function WorkerPublicProfile() {
 
             {isOwnProfile && (
               <Link to="/settings" className={styles.editBtn}>
-                ✏️ Edit Profile
+                <FiEdit3 size={14} /> Edit Profile
               </Link>
             )}
           </div>
@@ -335,17 +350,17 @@ export default function WorkerPublicProfile() {
                 </p>
                 <div className={styles.infoCards}>
                   <InfoCard
-                    icon="🏆"
+                    icon={<FiAward size={16} />}
                     label="Years Experience"
                     value={`${worker.yearsExperience || 0} yr${worker.yearsExperience !== 1 ? "s" : ""}`}
                   />
                   <InfoCard
-                    icon="📡"
+                    icon={<FiRadio size={16} />}
                     label="Service Radius"
                     value={`${worker.serviceRadius} km`}
                   />
                   <InfoCard
-                    icon="🗓️"
+                    icon={<FiCalendar size={16} />}
                     label="Member Since"
                     value={new Date(user.createdAt).toLocaleDateString(
                       "en-GB",
@@ -354,7 +369,7 @@ export default function WorkerPublicProfile() {
                   />
                   {worker.backgroundCheck && (
                     <InfoCard
-                      icon="🛡️"
+                      icon={<FiShield size={16} />}
                       label="Background Check"
                       value="Cleared"
                       accent
@@ -395,7 +410,10 @@ export default function WorkerPublicProfile() {
                 <span className={styles.count}>{portfolio.length}</span>
               </h2>
               {portfolio.length === 0 ? (
-                <Empty icon="🖼️" text="No portfolio items yet." />
+                <Empty
+                  icon={<FiImage size={36} />}
+                  text="No portfolio items yet."
+                />
               ) : (
                 <div className={styles.portfolioGrid}>
                   {portfolio.map((item) => (
@@ -436,12 +454,17 @@ export default function WorkerPublicProfile() {
                 <span className={styles.count}>{certifications.length}</span>
               </h2>
               {certifications.length === 0 ? (
-                <Empty icon="📜" text="No certifications added." />
+                <Empty
+                  icon={<FiFileText size={36} />}
+                  text="No certifications added."
+                />
               ) : (
                 <div className={styles.certList}>
                   {certifications.map((cert) => (
                     <div key={cert.id} className={styles.certCard}>
-                      <div className={styles.certIcon}>📜</div>
+                      <div className={styles.certIcon}>
+                        <FiFileText size={20} />
+                      </div>
                       <div className={styles.certInfo}>
                         <p className={styles.certName}>{cert.name}</p>
                         <p className={styles.certIssuer}>
@@ -459,7 +482,9 @@ export default function WorkerPublicProfile() {
                         )}
                       </div>
                       {cert.verified && (
-                        <span className={styles.certVerified}>✓ Verified</span>
+                        <span className={styles.certVerified}>
+                          <FiCheckCircle size={11} /> Verified
+                        </span>
                       )}
                       {cert.documentUrl && (
                         <a
@@ -468,7 +493,7 @@ export default function WorkerPublicProfile() {
                           rel="noreferrer"
                           className={styles.certLink}
                         >
-                          View →
+                          View <FiChevronRight size={12} />
                         </a>
                       )}
                     </div>
@@ -483,7 +508,10 @@ export default function WorkerPublicProfile() {
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Availability</h2>
               {availability.length === 0 ? (
-                <Empty icon="📅" text="No availability set." />
+                <Empty
+                  icon={<FiCalendar size={36} />}
+                  text="No availability set."
+                />
               ) : (
                 <div className={styles.availList}>
                   {DAYS.map((day, i) => {
@@ -535,14 +563,14 @@ export default function WorkerPublicProfile() {
                             : styles.starOff
                         }
                       >
-                        ★
+                        <FiStar size={14} />
                       </span>
                     ))}
                   </div>
                 </div>
               </div>
               {reviews.length === 0 ? (
-                <Empty icon="⭐" text="No reviews yet." />
+                <Empty icon={<FiStar size={36} />} text="No reviews yet." />
               ) : (
                 <div className={styles.reviewList}>
                   {reviews.map((r) => (
@@ -569,10 +597,9 @@ export default function WorkerPublicProfile() {
               className={styles.lightboxClose}
               onClick={() => setLightbox(null)}
             >
-              ✕
+              <FiX size={16} />
             </button>
 
-            {/* Portfolio lightbox */}
             {lightbox.type === "portfolio" && (
               <>
                 {lightbox.item.imageUrl && (
@@ -595,11 +622,10 @@ export default function WorkerPublicProfile() {
               </>
             )}
 
-            {/* Certification lightbox */}
             {lightbox.type === "cert" && (
               <div className={styles.lightboxCert}>
                 <div className={styles.lightboxCertIcon}>
-                  <Award size={40} />
+                  <FiAward size={40} />
                 </div>
                 <h2 className={styles.lightboxTitle}>{lightbox.item.name}</h2>
                 {lightbox.item.issuer && (
@@ -646,7 +672,7 @@ export default function WorkerPublicProfile() {
                     rel="noreferrer"
                     className={styles.lightboxDocLink}
                   >
-                    📄 View Certificate Document →
+                    <FiFileText size={14} /> View Certificate Document
                   </a>
                 )}
               </div>
@@ -725,7 +751,7 @@ function ReviewCard({ review }) {
               key={s}
               className={s <= review.rating ? styles.starOn : styles.starOff}
             >
-              ★
+              <FiStar size={12} />
             </span>
           ))}
         </div>
@@ -764,18 +790,19 @@ function ProfileSkeleton() {
 }
 
 function ProfileError({ msg }) {
+  const isPrivate = msg?.includes("private");
   return (
     <div className={styles.page}>
       <div className={styles.notFound}>
         <span className={styles.notFoundIcon}>
-          {msg?.includes("private") ? "🔒" : "🔍"}
+          {isPrivate ? <FiLock size={48} /> : <FiSearch size={48} />}
         </span>
         <h2 className={styles.notFoundTitle}>
-          {msg?.includes("private") ? "Private Profile" : "Worker not found"}
+          {isPrivate ? "Private Profile" : "Worker not found"}
         </h2>
         <p className={styles.notFoundSub}>{msg}</p>
         <Link to="/search" className={styles.notFoundLink}>
-          ← Back to Search
+          <FiArrowLeft size={13} /> Back to Search
         </Link>
       </div>
     </div>
