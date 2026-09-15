@@ -1,22 +1,7 @@
-/* ── Page Layout — full-bleed, hugs both screen edges ── */
+/* ── Page Layout — matches BookingList edge spacing (relies on
+   WorkerLayout/HirerLayout `.content` padding: 2rem desktop / 1.25rem mobile) ── */
 .page {
-  /* Pull out to escape WorkerLayout/HirerLayout `.content` padding (2rem
-     desktop / 1.25rem mobile). Negative margins on both sides + auto width
-     make the block stretch to the true edges of the main area. */
-  width: auto;
-  margin-left: -2rem;
-  margin-right: -2rem;
-  padding: clamp(8px, 1vw, 16px);
-  max-width: none;
   animation: fadeUp 0.4s ease both;
-}
-
-@media (max-width: 640px) {
-  .page {
-    margin-left: -1.25rem;
-    margin-right: -1.25rem;
-    padding: clamp(4px, 1vw, 8px);
-  }
 }
 
 .header {
@@ -467,9 +452,6 @@
 
 /* Small phones (portrait) */
 @media (min-width: 360px) {
-  .page {
-    padding: clamp(4px, 1vw, 8px);
-  }
   .statValue {
     font-size: clamp(14px, 3.5vw, 18px);
   }
@@ -480,9 +462,6 @@
 
 /* Medium phones and small tablets */
 @media (min-width: 480px) {
-  .page {
-    padding: clamp(6px, 1.5vw, 12px);
-  }
   .statValue {
     font-size: clamp(16px, 3.5vw, 20px);
   }
@@ -503,9 +482,6 @@
   .statValue {
     font-size: clamp(18px, 3.5vw, 24px);
   }
-  .page {
-    padding: clamp(8px, 1.5vw, 16px);
-  }
 }
 
 /* Large tablets */
@@ -523,9 +499,6 @@
   .title {
     font-size: clamp(22px, 3.5vw, 28px);
   }
-  .page {
-    padding: clamp(10px, 1.8vw, 20px);
-  }
 }
 
 /* Desktops */
@@ -533,9 +506,6 @@
   .grid2 {
     grid-template-columns: 1fr 1fr;
     gap: clamp(10px, 1.8vw, 18px);
-  }
-  .page {
-    padding: clamp(12px, 2vw, 24px);
   }
   .statValue {
     font-size: clamp(22px, 2.8vw, 28px);
@@ -547,28 +517,13 @@
 
 /* Large screens */
 @media (min-width: 1200px) {
-  .page {
-    padding: clamp(16px, 2.5vw, 32px);
-  }
   .statValue {
     font-size: clamp(24px, 2.5vw, 32px);
   }
 }
 
-/* Extra large screens */
-@media (min-width: 1600px) {
-  .page {
-    padding: clamp(20px, 3vw, 40px);
-  }
-}
-
 /* Fix for very small screens */
 @media (max-width: 359px) {
-  .page {
-    margin-left: -1.25rem;
-    margin-right: -1.25rem;
-    padding: 4px 6px;
-  }
   .statCard {
     padding: 4px 6px;
   }
@@ -606,9 +561,6 @@
 
 /* Fix for landscape phones */
 @media (max-height: 500px) and (orientation: landscape) {
-  .page {
-    padding: 4px 8px;
-  }
   .statsGrid {
     gap: 4px;
   }
