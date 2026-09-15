@@ -1,37 +1,57 @@
 // src/pages/reports/MyReports.jsx
-// Shared by Hirer and Worker — "My Reports" dashboard
-// Shows all reports the user has submitted with status tracking
-
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../../components/layout/HirerLayout";
 import WorkerLayout from "../../components/layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./MyReports.module.css";
+import {
+  FiClock,
+  FiSearch,
+  FiCheckCircle,
+  FiXCircle,
+  FiSlash,
+  FiUser,
+  FiBriefcase,
+  FiEdit3,
+  FiStar,
+  FiCalendar,
+  FiMessageCircle,
+  FiShield,
+  FiLock,
+  FiAlertTriangle,
+  FiTrash2,
+  FiFileText,
+  FiFlag,
+  FiInfo,
+  FiCheck,
+  FiArrowRight,
+  FiArrowLeft,
+} from "react-icons/fi";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants — icons are now React components, not emoji strings ─────────────
 const STATUS_META = {
-  PENDING: { label: "Pending Review", icon: "⏳", cls: "yellow" },
-  REVIEWING: { label: "Under Review", icon: "🔍", cls: "blue" },
-  RESOLVED: { label: "Resolved", icon: "✅", cls: "green" },
-  DISMISSED: { label: "Dismissed", icon: "🚫", cls: "dim" },
+  PENDING: { label: "Pending Review", icon: FiClock, cls: "yellow" },
+  REVIEWING: { label: "Under Review", icon: FiSearch, cls: "blue" },
+  RESOLVED: { label: "Resolved", icon: FiCheckCircle, cls: "green" },
+  DISMISSED: { label: "Dismissed", icon: FiSlash, cls: "dim" },
 };
 
 const ACTION_META = {
-  NO_ACTION: { label: "No action taken", icon: "—" },
-  WARNING_ISSUED: { label: "Warning issued", icon: "⚠️" },
-  CONTENT_REMOVED: { label: "Content removed", icon: "🗑️" },
-  USER_SUSPENDED: { label: "User suspended", icon: "🔒" },
-  USER_BANNED: { label: "User banned", icon: "🚫" },
+  NO_ACTION: { label: "No action taken", icon: null },
+  WARNING_ISSUED: { label: "Warning issued", icon: FiAlertTriangle },
+  CONTENT_REMOVED: { label: "Content removed", icon: FiTrash2 },
+  USER_SUSPENDED: { label: "User suspended", icon: FiLock },
+  USER_BANNED: { label: "User banned", icon: FiSlash },
 };
 
 const TYPE_LABEL = {
-  USER: { label: "User", icon: "👤" },
-  JOB_POST: { label: "Job Post", icon: "💼" },
-  POST: { label: "Community Post", icon: "📝" },
-  REVIEW: { label: "Review", icon: "⭐" },
-  BOOKING: { label: "Booking", icon: "📅" },
-  MESSAGE: { label: "Message", icon: "💬" },
+  USER: { label: "User", icon: FiUser },
+  JOB_POST: { label: "Job Post", icon: FiBriefcase },
+  POST: { label: "Community Post", icon: FiEdit3 },
+  REVIEW: { label: "Review", icon: FiStar },
+  BOOKING: { label: "Booking", icon: FiCalendar },
+  MESSAGE: { label: "Message", icon: FiMessageCircle },
 };
 
 const REASON_LABEL = {
@@ -80,10 +100,17 @@ function timeAgo(d) {
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
-  const m = STATUS_META[status] ?? { label: status, icon: "•", cls: "dim" };
+  const m = STATUS_META[status] ?? {
+    label: status,
+    icon: FiInfo,
+    cls: "dim",
+  };
+  const Icon = m.icon;
   return (
     <span className={`${styles.badge} ${styles[`badge_${m.cls}`]}`}>
-      <span className={styles.badgeIcon}>{m.icon}</span>
+      <span className={styles.badgeIcon}>
+        <Icon size={12} />
+      </span>
       {m.label}
     </span>
   );
@@ -114,7 +141,9 @@ function CancelConfirm({ report, onClose, onSuccess }) {
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.confirmIcon}>🗑️</div>
+        <div className={styles.confirmIcon}>
+          <FiTrash2 size={22} />
+        </div>
         <h3 className={styles.confirmTitle}>Cancel this report?</h3>
         <p className={styles.confirmSub}>
           Ref <strong>{report.ref}</strong> — {REASON_LABEL[report.reason]}
@@ -147,23 +176,26 @@ function CancelConfirm({ report, onClose, onSuccess }) {
 function DetailDrawer({ report, onClose, onCancel }) {
   const typeMeta = TYPE_LABEL[report.targetType] ?? {
     label: report.targetType,
-    icon: "📄",
+    icon: FiFileText,
   };
   const statusMeta = STATUS_META[report.status] ?? {
     label: report.status,
-    icon: "•",
+    icon: FiInfo,
     cls: "dim",
   };
   const actionMeta = ACTION_META[report.actionTaken] ?? {
     label: report.actionTaken,
-    icon: "—",
+    icon: null,
   };
   const canCancel = report.status === "PENDING";
+
+  const TypeIcon = typeMeta.icon;
+  const StatusIcon = statusMeta.icon;
+  const ActionIcon = actionMeta.icon;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
-        {/* Handle */}
         <div className={styles.drawerHandle} />
 
         {/* Header */}
@@ -173,7 +205,7 @@ function DetailDrawer({ report, onClose, onCancel }) {
             <h3 className={styles.drawerTitle}>{report.ref}</h3>
           </div>
           <button className={styles.drawerClose} onClick={onClose}>
-            ✕
+            <FiXCircle size={16} />
           </button>
         </div>
 
@@ -182,7 +214,9 @@ function DetailDrawer({ report, onClose, onCancel }) {
           <div
             className={`${styles.statusHero} ${styles[`statusHero_${statusMeta.cls}`]}`}
           >
-            <span className={styles.statusHeroIcon}>{statusMeta.icon}</span>
+            <span className={styles.statusHeroIcon}>
+              <StatusIcon size={26} />
+            </span>
             <div>
               <p className={styles.statusHeroLabel}>{statusMeta.label}</p>
               <p className={styles.statusHeroDate}>
@@ -198,7 +232,7 @@ function DetailDrawer({ report, onClose, onCancel }) {
             <div className={styles.detailCell}>
               <span className={styles.detailLabel}>Reported</span>
               <span className={styles.detailVal}>
-                {typeMeta.icon} {typeMeta.label}
+                <TypeIcon size={12} /> {typeMeta.label}
               </span>
             </div>
             <div className={styles.detailCell}>
@@ -234,7 +268,8 @@ function DetailDrawer({ report, onClose, onCancel }) {
             <div className={styles.outcomeBox}>
               <p className={styles.outcomeLabel}>Outcome</p>
               <p className={styles.outcomeAction}>
-                {actionMeta.icon} {actionMeta.label}
+                {ActionIcon && <ActionIcon size={14} />}
+                {actionMeta.label}
               </p>
               {report.adminNote && (
                 <p className={styles.outcomeNote}>"{report.adminNote}"</p>
@@ -286,7 +321,7 @@ function DetailDrawer({ report, onClose, onCancel }) {
                 onCancel(report);
               }}
             >
-              🗑️ Cancel this report
+              <FiTrash2 size={14} /> Cancel this report
             </button>
           )}
         </div>
@@ -299,16 +334,20 @@ function DetailDrawer({ report, onClose, onCancel }) {
 function ReportCard({ report, index, onView, onCancel }) {
   const typeMeta = TYPE_LABEL[report.targetType] ?? {
     label: report.targetType,
-    icon: "📄",
+    icon: FiFileText,
   };
   const canCancel = report.status === "PENDING";
+  const TypeIcon = typeMeta.icon;
+  const action = ACTION_META[report.actionTaken];
+  const ActionIcon = action?.icon;
 
   return (
     <div className={styles.card} style={{ animationDelay: `${index * 0.04}s` }}>
-      {/* Top row */}
       <div className={styles.cardTop}>
         <div className={styles.cardTopLeft}>
-          <span className={styles.cardTypeIcon}>{typeMeta.icon}</span>
+          <span className={styles.cardTypeIcon}>
+            <TypeIcon size={18} />
+          </span>
           <div>
             <p className={styles.cardRef}>{report.ref}</p>
             <p className={styles.cardType}>{typeMeta.label}</p>
@@ -317,7 +356,6 @@ function ReportCard({ report, index, onView, onCancel }) {
         <StatusBadge status={report.status} />
       </div>
 
-      {/* Reason + description */}
       <div className={styles.cardBody}>
         <p className={styles.cardReason}>{REASON_LABEL[report.reason]}</p>
         {report.description && (
@@ -325,20 +363,17 @@ function ReportCard({ report, index, onView, onCancel }) {
         )}
       </div>
 
-      {/* Outcome if resolved */}
       {report.actionTaken && report.actionTaken !== "NO_ACTION" && (
         <div className={styles.cardOutcome}>
-          {ACTION_META[report.actionTaken]?.icon}{" "}
-          {ACTION_META[report.actionTaken]?.label}
+          {ActionIcon && <ActionIcon size={12} />} {action?.label}
         </div>
       )}
       {report.actionTaken === "NO_ACTION" && report.status === "RESOLVED" && (
         <div className={`${styles.cardOutcome} ${styles.cardOutcomeDim}`}>
-          — No action taken
+          No action taken
         </div>
       )}
 
-      {/* Footer */}
       <div className={styles.cardFooter}>
         <span className={styles.cardDate}>{timeAgo(report.createdAt)}</span>
         <div className={styles.cardActions}>
@@ -348,11 +383,11 @@ function ReportCard({ report, index, onView, onCancel }) {
               onClick={() => onCancel(report)}
               title="Cancel report"
             >
-              🗑️
+              <FiTrash2 size={14} />
             </button>
           )}
           <button className={styles.cardViewBtn} onClick={() => onView(report)}>
-            View details →
+            View details <FiArrowRight size={12} />
           </button>
         </div>
       </div>
@@ -418,7 +453,6 @@ export default function MyReports() {
     load(page, tab);
   }
 
-  // Summary counts from current loaded data (approximate)
   const pending = reports.filter((r) => r.status === "PENDING").length;
   const reviewing = reports.filter((r) => r.status === "REVIEWING").length;
   const resolved = reports.filter((r) => r.status === "RESOLVED").length;
@@ -426,10 +460,14 @@ export default function MyReports() {
   return (
     <Layout>
       <div className={styles.page}>
-        {/* Toast */}
         {toast && (
           <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-            {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+            {toast.type === "success" ? (
+              <FiCheckCircle size={14} />
+            ) : (
+              <FiXCircle size={14} />
+            )}
+            {toast.msg}
           </div>
         )}
 
@@ -452,19 +490,25 @@ export default function MyReports() {
         {!loading && reports.length > 0 && (
           <div className={styles.summaryStrip}>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryIcon}>⏳</span>
+              <span className={styles.summaryIcon}>
+                <FiClock size={16} />
+              </span>
               <span className={styles.summaryVal}>{pending}</span>
               <span className={styles.summaryLabel}>Pending</span>
             </div>
             <div className={styles.summaryDivider} />
             <div className={styles.summaryItem}>
-              <span className={styles.summaryIcon}>🔍</span>
+              <span className={styles.summaryIcon}>
+                <FiSearch size={16} />
+              </span>
               <span className={styles.summaryVal}>{reviewing}</span>
               <span className={styles.summaryLabel}>Under review</span>
             </div>
             <div className={styles.summaryDivider} />
             <div className={styles.summaryItem}>
-              <span className={styles.summaryIcon}>✅</span>
+              <span className={styles.summaryIcon}>
+                <FiCheckCircle size={16} />
+              </span>
               <span className={styles.summaryVal}>{resolved}</span>
               <span className={styles.summaryLabel}>Resolved</span>
             </div>
@@ -473,7 +517,9 @@ export default function MyReports() {
 
         {/* Info banner */}
         <div className={styles.infoBanner}>
-          <span className={styles.infoBannerIcon}>🔒</span>
+          <span className={styles.infoBannerIcon}>
+            <FiShield size={16} />
+          </span>
           <p className={styles.infoBannerText}>
             All reports are confidential. The reported party is never told who
             filed the report. If you need urgent help, please contact{" "}
@@ -503,7 +549,9 @@ export default function MyReports() {
             Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
           ) : reports.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.emptyIcon}>🚩</span>
+              <span className={styles.emptyIcon}>
+                <FiFlag size={40} />
+              </span>
               <p className={styles.emptyTitle}>
                 {tab === "ALL"
                   ? "No reports submitted yet"
@@ -544,7 +592,7 @@ export default function MyReports() {
               disabled={page === 1 || loading}
               onClick={() => load(page - 1)}
             >
-              ← Prev
+              <FiArrowLeft size={13} /> Prev
             </button>
             <span className={styles.pageInfo}>
               Page {page} of {pages}
@@ -554,13 +602,12 @@ export default function MyReports() {
               disabled={page === pages || loading}
               onClick={() => load(page + 1)}
             >
-              Next →
+              Next <FiArrowRight size={13} />
             </button>
           </div>
         )}
       </div>
 
-      {/* Detail drawer */}
       {viewTarget && (
         <DetailDrawer
           report={viewTarget}
@@ -572,7 +619,6 @@ export default function MyReports() {
         />
       )}
 
-      {/* Cancel confirm */}
       {cancelTarget && (
         <CancelConfirm
           report={cancelTarget}
