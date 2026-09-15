@@ -875,7 +875,7 @@ export default function App() {
             </RequireHirer>
           }
         />
-        <Route
+        {/* <Route
           path="/dashboard/hirer/featured"
           element={
             <RequireHirer>
@@ -884,7 +884,7 @@ export default function App() {
               </RequireAuth>
             </RequireHirer>
           }
-        />
+        /> */}
         <Route
           path="/dashboard/hirer/wallet"
           element={

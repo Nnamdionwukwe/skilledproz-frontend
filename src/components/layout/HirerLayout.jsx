@@ -166,11 +166,11 @@ const NAV = [
         path: "/dashboard/hirer/subscription",
         icon: <FaGem />,
       },
-      {
-        label: "Boost Listing",
-        path: "/dashboard/hirer/featured",
-        icon: <FaRocket />,
-      },
+      // {
+      //   label: "Boost Listing",
+      //   path: "/dashboard/hirer/featured",
+      //   icon: <FaRocket />,
+      // },
       { label: "Settings", path: "/settings", icon: <FaCog /> },
     ],
   },
@@ -223,10 +223,10 @@ const PAGE_TITLES = {
     title: "Subscriptions",
     sub: "Manage your subscription",
   },
-  "/dashboard/worker/featured": {
-    title: "Featured Boost",
-    sub: "Boost your listing",
-  },
+  // "/dashboard/worker/featured": {
+  //   title: "Featured Boost",
+  //   sub: "Boost your listing",
+  // },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
   "/dashboard/hirer/wallet": {
     title: "My Wallet",
