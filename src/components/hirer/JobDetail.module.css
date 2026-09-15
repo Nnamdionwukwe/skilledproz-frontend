@@ -3,7 +3,7 @@
   width: auto;
   margin-left: -2rem;
   margin-right: -2rem;
-  padding: 24px;
+  padding: 32px 24px;
   max-width: none;
   animation: fadeUp 0.4s ease both;
 }
@@ -12,6 +12,12 @@
   .page {
     margin-left: -1.25rem;
     margin-right: -1.25rem;
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
     padding: 16px 12px;
   }
 }
@@ -749,18 +755,13 @@
   .detailGrid {
     grid-template-columns: repeat(3, 1fr);
   }
+  .page {
+    padding: 40px 32px;
+  }
 }
 @media (min-width: 900px) {
   .layout {
     grid-template-columns: 1fr 300px;
-  }
-  .page {
-    padding: 32px;
-  }
-}
-@media (min-width: 1024px) {
-  .page {
-    padding: 40px 32px;
   }
 }
 
@@ -853,7 +854,7 @@
   text-decoration: underline;
 }
 
-/* ── NEW: Company name line (external-style jobs) ───────────── */
+/* ── Company name line (external-style jobs) ────────────────── */
 .jobCompany {
   font-size: 13px;
   font-weight: 600;
@@ -862,7 +863,7 @@
   letter-spacing: 0.02em;
 }
 
-/* ── NEW: Application channels (external-style jobs) ─────────── */
+/* ── Application channels (external-style jobs) ─────────────── */
 .applyChannels {
   display: flex;
   flex-wrap: wrap;
@@ -891,4 +892,13 @@
 .applyChannel:hover {
   border-color: var(--orange);
   color: var(--orange);
+}
+
+/* ── Very small phones (<360px) ─────────────────────────────── */
+@media (max-width: 359px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 14px 10px;
+  }
 }
