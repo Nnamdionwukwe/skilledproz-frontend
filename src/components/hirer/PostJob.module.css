@@ -671,3 +671,34 @@
     padding: 8px 8px;
   }
 }
+
+/* Separator before the advanced toggle */
+.advancedToggle {
+  border-top: 1px dashed var(--border);
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+/* Reuse .unitPill for the toggle button style */
+.advancedToggleBtn {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.advancedToggleBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  border-style: solid;
+}

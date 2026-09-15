@@ -12,16 +12,24 @@ import {
   FiGlobe,
   FiShuffle,
   FiDollarSign,
-  FiCreditCard,
-  FiCalendar,
-  FiEdit3,
   FiCheckCircle,
   FiPlus,
-  FiSearch,
   FiX,
   FiTarget,
   FiZap,
   FiTag,
+  FiUser,
+  FiUsers,
+  FiCalendar,
+  FiAlignLeft,
+  FiAward,
+  FiBookOpen,
+  FiLink,
+  FiMail,
+  FiPhone,
+  FiMessageCircle,
+  FiTrendingUp,
+  FiCheckSquare,
 } from "react-icons/fi";
 
 const ALL_CURRENCIES = [
@@ -67,7 +75,6 @@ const DURATION_UNITS = [
   { value: "custom", label: "Custom", hint: "e.g. Full project" },
 ];
 
-// ── New: Job type options (matches backend JobType enum) ────────────────────
 const JOB_TYPES = [
   { value: "FULL_TIME", label: "Full-time", icon: FiBriefcase },
   { value: "PART_TIME", label: "Part-time", icon: FiClock },
@@ -75,14 +82,12 @@ const JOB_TYPES = [
   { value: "TEMPORARY", label: "Temporary", icon: FiClock },
 ];
 
-// ── New: Location type options (matches backend LocationType enum) ──────────
 const LOCATION_TYPES = [
   { value: "REMOTE", label: "Remote", icon: FiGlobe },
   { value: "ON_SITE", label: "On-site", icon: FiMapPin },
   { value: "HYBRID", label: "Hybrid", icon: FiShuffle },
 ];
 
-// ── New: Budget type options (matches backend BudgetType enum) ──────────────
 const BUDGET_TYPES = [
   { value: "FIXED", label: "Fixed" },
   { value: "HOURLY", label: "Hourly" },
@@ -92,7 +97,6 @@ const BUDGET_TYPES = [
   { value: "CUSTOM", label: "Custom" },
 ];
 
-// ── New: Duration type options (matches backend DurationType enum) ──────────
 const DURATION_TYPES = [
   { value: "HOURS", label: "Hours" },
   { value: "DAYS", label: "Days" },
@@ -101,7 +105,30 @@ const DURATION_TYPES = [
   { value: "CUSTOM", label: "Custom" },
 ];
 
-// ── New: Common skill suggestions ───────────────────────────────────────────
+const SALARY_PERIODS = [
+  { value: "HOURLY", label: "Per Hour" },
+  { value: "DAILY", label: "Per Day" },
+  { value: "WEEKLY", label: "Per Week" },
+  { value: "MONTHLY", label: "Per Month" },
+  { value: "YEARLY", label: "Per Year" },
+];
+
+const EDUCATION_LEVELS = [
+  { value: "HIGH_SCHOOL", label: "High School" },
+  { value: "DIPLOMA", label: "Diploma" },
+  { value: "BACHELOR", label: "Bachelor's Degree" },
+  { value: "MASTER", label: "Master's Degree" },
+  { value: "DOCTORATE", label: "Doctorate" },
+  { value: "CERTIFICATION", label: "Certification" },
+  { value: "OTHER", label: "Other" },
+];
+
+const EXPERIENCE_LEVELS = [
+  { value: "Entry level", label: "Entry Level" },
+  { value: "Mid level", label: "Mid Level" },
+  { value: "Senior level", label: "Senior Level" },
+];
+
 const SKILL_SUGGESTIONS = [
   "Communication",
   "Time Management",
@@ -127,28 +154,71 @@ export default function PostJob() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
-
-  // ── New: skill input state ───────────────────────────────────────────────
   const [skillInput, setSkillInput] = useState("");
 
+  // ── NEW: toggle for the "advanced / external-style fields" panel ──
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const [form, setForm] = useState({
+    // core
     categoryId: "",
     title: "",
     description: "",
+
+    // location
+    locationType: "REMOTE",
     address: "",
+    latitude: "",
+    longitude: "",
+
+    // job meta
+    jobType: "FULL_TIME",
     scheduledAt: "",
+    estimatedValue: "",
     durationUnit: "hours",
-    durationValue: "",
+
+    // payment / duration
     budget: "",
     currency: "NGN",
-    notes: "",
-    // ── New backend fields ──────────────────────────────────────────────
-    jobType: "FULL_TIME",
-    locationType: "REMOTE",
     budgetType: "FIXED",
     durationType: "HOURS",
-    durationValue2: "", // ← the DurationType's numeric value, separate from estimate
+    durationValue: "",
+
+    // extras
     skills: [],
+    notes: "",
+
+    // ── NEW: external-style display ──
+    companyName: "",
+    salaryText: "",
+
+    // ── NEW: salary range ──
+    salaryAmount: "",
+    salaryMin: "",
+    salaryMax: "",
+    salaryCurrency: "",
+    salaryPeriod: "",
+
+    // ── NEW: requirements ──
+    minQualification: "",
+    experienceLevel: "",
+    experienceLength: "",
+    languageRequirement: "",
+    workingHours: "",
+    applicantLocation: "",
+    responsibilities: "",
+    requirements: "",
+
+    // ── NEW: education / misc ──
+    educationLevel: "",
+    sourcePlatform: "",
+    expiryDate: "",
+
+    // ── NEW: application channels ──
+    applicationUrl: "",
+    applicationEmail: "",
+    applicationWhatsApp: "",
+    applicationPhone: "",
   });
 
   useEffect(() => {
@@ -199,7 +269,6 @@ export default function PostJob() {
     setError("");
   }
 
-  // ── New: skill management ────────────────────────────────────────────────
   function addSkill(skill) {
     const trimmed = skill.trim();
     if (!trimmed) return;
@@ -207,8 +276,8 @@ export default function PostJob() {
       setSkillInput("");
       return;
     }
-    if (form.skills.length >= 15) {
-      setError("Maximum 15 skills");
+    if (form.skills.length >= 20) {
+      setError("Maximum 20 skills");
       return;
     }
     setForm((f) => ({ ...f, skills: [...f.skills, trimmed] }));
@@ -217,10 +286,7 @@ export default function PostJob() {
   }
 
   function removeSkill(skill) {
-    setForm((f) => ({
-      ...f,
-      skills: f.skills.filter((s) => s !== skill),
-    }));
+    setForm((f) => ({ ...f, skills: f.skills.filter((s) => s !== skill) }));
   }
 
   function handleSkillKeyDown(e) {
@@ -228,7 +294,6 @@ export default function PostJob() {
       e.preventDefault();
       addSkill(skillInput);
     } else if (e.key === "Backspace" && !skillInput && form.skills.length) {
-      // Remove last skill on backspace when input is empty
       removeSkill(form.skills[form.skills.length - 1]);
     }
   }
@@ -236,60 +301,122 @@ export default function PostJob() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // ── Validation ─────────────────────────────────────────────────────────
-    if (!form.categoryId) {
-      setError("Please select a category.");
-      return;
+    // ── Validation ──
+    if (!form.categoryId) return setError("Please select a category.");
+    if (!form.title) return setError("Job title is required.");
+    if (!form.description) return setError("Description is required.");
+    if (form.locationType !== "REMOTE" && !form.address)
+      return setError(
+        "Please enter a service address for on-site or hybrid jobs.",
+      );
+    if (!form.scheduledAt)
+      return setError("Please choose a scheduled date and time.");
+
+    // Budget OR salary range required (matches backend)
+    const hasBudget = form.budget !== "" && form.budget !== null;
+    const hasSalary =
+      form.salaryAmount !== "" ||
+      form.salaryMin !== "" ||
+      form.salaryMax !== "";
+    if (!hasBudget && !hasSalary) {
+      return setError(
+        "Please enter a budget, or provide a salary range (amount / min / max).",
+      );
     }
-    if (!form.title || !form.description) {
-      setError("Title and description are required.");
-      return;
-    }
-    // Address only required for ON_SITE or HYBRID
-    if (form.locationType !== "REMOTE" && !form.address) {
-      setError("Please enter a service address for on-site or hybrid jobs.");
-      return;
-    }
-    if (!form.scheduledAt) {
-      setError("Please choose a scheduled date and time.");
-      return;
-    }
-    if (!form.budget) {
-      setError("Please enter a budget.");
-      return;
-    }
-    if (!form.durationValue) {
-      setError("Please enter an estimated duration.");
-      return;
+
+    // Salary range sanity
+    if (
+      form.salaryMin !== "" &&
+      form.salaryMax !== "" &&
+      parseFloat(form.salaryMax) < parseFloat(form.salaryMin)
+    ) {
+      return setError(
+        "Salary maximum must be greater than or equal to minimum.",
+      );
     }
 
     setLoading(true);
     try {
       const estimatedHours = toEstimatedHours(
         form.durationUnit,
-        form.durationValue,
+        form.estimatedValue,
       );
+
+      // ── Build payload, omitting empty strings so backend "optional" rules kick in ──
+      const clean = (v) =>
+        v === "" || v === null || v === undefined ? undefined : v;
+
       const payload = {
-        // Existing fields
+        // core
         categoryId: form.categoryId,
         title: form.title,
         description: form.description,
-        address: form.locationType === "REMOTE" ? undefined : form.address,
-        scheduledAt: form.scheduledAt,
-        estimatedHours: estimatedHours || undefined,
-        estimatedUnit: form.durationUnit,
-        estimatedValue: form.durationValue,
-        budget: parseFloat(form.budget),
-        currency: form.currency,
-        notes: form.notes,
-        // ── New fields ───────────────────────────────────────────────────
-        jobType: form.jobType,
+
+        // location
         locationType: form.locationType,
-        budgetType: form.budgetType,
-        durationType: form.durationType,
-        durationValue: form.durationValue2 || undefined,
+        address: form.locationType !== "REMOTE" ? form.address : undefined,
+        latitude: form.latitude ? parseFloat(form.latitude) : undefined,
+        longitude: form.longitude ? parseFloat(form.longitude) : undefined,
+
+        // job meta
+        jobType: form.jobType,
+        // FIX: datetime-local → full ISO string with seconds (required by .isISO8601())
+        scheduledAt: form.scheduledAt
+          ? new Date(form.scheduledAt).toISOString()
+          : undefined,
+        estimatedHours: estimatedHours ?? undefined,
+        estimatedUnit: clean(form.durationUnit),
+        estimatedValue: clean(form.estimatedValue),
+
+        // payment / duration
+        budget: hasBudget ? parseFloat(form.budget) : undefined,
+        currency: clean(form.currency),
+        budgetType: clean(form.budgetType),
+        durationType: clean(form.durationType),
+        durationValue: clean(form.durationValue),
+
+        // extras
         skills: form.skills,
+        notes: clean(form.notes),
+
+        // external-style display
+        companyName: clean(form.companyName),
+        salaryText: clean(form.salaryText),
+
+        // salary range
+        salaryAmount:
+          form.salaryAmount !== "" ? parseFloat(form.salaryAmount) : undefined,
+        salaryMin:
+          form.salaryMin !== "" ? parseFloat(form.salaryMin) : undefined,
+        salaryMax:
+          form.salaryMax !== "" ? parseFloat(form.salaryMax) : undefined,
+        salaryCurrency: clean(form.salaryCurrency),
+        salaryPeriod: clean(form.salaryPeriod),
+
+        // requirements
+        minQualification: clean(form.minQualification),
+        experienceLevel: clean(form.experienceLevel),
+        experienceLength: clean(form.experienceLength),
+        languageRequirement: clean(form.languageRequirement),
+        workingHours: clean(form.workingHours),
+        applicantLocation: clean(form.applicantLocation),
+        responsibilities: clean(form.responsibilities),
+        requirements: clean(form.requirements),
+
+        // education / misc
+        educationLevel: clean(form.educationLevel),
+        sourcePlatform: clean(form.sourcePlatform),
+        expiryDate: form.expiryDate
+          ? new Date(form.expiryDate).toISOString()
+          : undefined,
+
+        // application channels
+        applicationUrl: clean(form.applicationUrl),
+        applicationEmail: clean(form.applicationEmail),
+        applicationWhatsApp: clean(form.applicationWhatsApp),
+        applicationPhone: clean(form.applicationPhone),
       };
+
       const res = await api.post("/jobs", payload);
       setPostedJob(res.data.data.jobPost);
       setSubmitted(true);
@@ -304,31 +431,59 @@ export default function PostJob() {
     setSubmitted(false);
     setPostedJob(null);
     setError("");
+    setShowAdvanced(false);
     setForm({
       categoryId: "",
       title: "",
       description: "",
+      locationType: "REMOTE",
       address: "",
+      latitude: "",
+      longitude: "",
+      jobType: "FULL_TIME",
       scheduledAt: "",
+      estimatedValue: "",
       durationUnit: "hours",
-      durationValue: "",
       budget: "",
       currency: "NGN",
-      notes: "",
-      jobType: "FULL_TIME",
-      locationType: "REMOTE",
       budgetType: "FIXED",
       durationType: "HOURS",
-      durationValue2: "",
+      durationValue: "",
       skills: [],
+      notes: "",
+      companyName: "",
+      salaryText: "",
+      salaryAmount: "",
+      salaryMin: "",
+      salaryMax: "",
+      salaryCurrency: "",
+      salaryPeriod: "",
+      minQualification: "",
+      experienceLevel: "",
+      experienceLength: "",
+      languageRequirement: "",
+      workingHours: "",
+      applicantLocation: "",
+      responsibilities: "",
+      requirements: "",
+      educationLevel: "",
+      sourcePlatform: "",
+      expiryDate: "",
+      applicationUrl: "",
+      applicationEmail: "",
+      applicationWhatsApp: "",
+      applicationPhone: "",
     });
     setSkillInput("");
   }
 
   const selectedCat = categories.find((c) => c.id === form.categoryId);
 
-  // ── Success state ──────────────────────────────────────────────────────
+  // ── Success state — renders full backend payload ─────────────────────
   if (submitted && postedJob) {
+    const hirer = postedJob.hirer;
+    const applicationsCount = postedJob._count?.applications ?? 0;
+
     return (
       <HirerLayout>
         <div className={styles.page}>
@@ -341,36 +496,123 @@ export default function PostJob() {
               Your job <strong>"{postedJob.title}"</strong> is now live on the
               platform.
             </p>
+
             <div className={styles.successCard}>
               <div className={styles.successCat}>
                 {postedJob.category?.icon} {postedJob.category?.name}
               </div>
+
               <div className={styles.successJobTitle}>{postedJob.title}</div>
+
+              {postedJob.companyName && (
+                <div className={styles.successMeta}>
+                  <FiUser size={12} /> {postedJob.companyName}
+                </div>
+              )}
+
+              {hirer && !postedJob.companyName && (
+                <div className={styles.successMeta}>
+                  <FiUser size={12} />
+                  {hirer.firstName} {hirer.lastName}
+                </div>
+              )}
+
               <div className={styles.successMeta}>
-                <FiMapPin size={12} /> {postedJob.address || "Remote"}
+                <FiMapPin size={12} />
+                {postedJob.locationType === "REMOTE"
+                  ? "Remote"
+                  : postedJob.address || "—"}
+                {postedJob.locationType &&
+                  postedJob.locationType !== "REMOTE" &&
+                  ` · ${
+                    LOCATION_TYPES.find(
+                      (t) => t.value === postedJob.locationType,
+                    )?.label
+                  }`}
               </div>
-              <div className={styles.successMeta}>
-                <FiDollarSign size={12} /> {postedJob.currency}{" "}
-                {Number(postedJob.budget).toLocaleString()}
-              </div>
+
+              {/* Budget OR salary text */}
+              {postedJob.salaryText ? (
+                <div className={styles.successMeta}>
+                  <FiDollarSign size={12} /> {postedJob.salaryText}
+                </div>
+              ) : (
+                <div className={styles.successMeta}>
+                  <FiDollarSign size={12} /> {postedJob.currency}{" "}
+                  {Number(postedJob.budget).toLocaleString()}
+                  {postedJob.budgetType &&
+                    ` · ${
+                      BUDGET_TYPES.find((t) => t.value === postedJob.budgetType)
+                        ?.label
+                    }`}
+                </div>
+              )}
+
               {postedJob.estimatedHours && (
                 <div className={styles.successMeta}>
                   <FiClock size={12} /> Est. {postedJob.estimatedHours}h
+                  {postedJob.estimatedUnit &&
+                    ` (${postedJob.estimatedValue} ${postedJob.estimatedUnit})`}
                 </div>
               )}
+
+              {postedJob.durationType && postedJob.durationValue && (
+                <div className={styles.successMeta}>
+                  <FiCalendar size={12} /> Duration: {postedJob.durationValue}{" "}
+                  {postedJob.durationType.toLowerCase()}
+                </div>
+              )}
+
               {postedJob.jobType && (
                 <div className={styles.successMeta}>
                   <FiBriefcase size={12} />{" "}
                   {JOB_TYPES.find((t) => t.value === postedJob.jobType)?.label}
                 </div>
               )}
+
+              {postedJob.experienceLevel && (
+                <div className={styles.successMeta}>
+                  <FiTrendingUp size={12} /> {postedJob.experienceLevel}
+                  {postedJob.experienceLength &&
+                    ` · ${postedJob.experienceLength}`}
+                </div>
+              )}
+
+              {postedJob.educationLevel && (
+                <div className={styles.successMeta}>
+                  <FiBookOpen size={12} />{" "}
+                  {EDUCATION_LEVELS.find(
+                    (t) => t.value === postedJob.educationLevel,
+                  )?.label || postedJob.educationLevel}
+                </div>
+              )}
+
+              {postedJob.scheduledAt && (
+                <div className={styles.successMeta}>
+                  <FiCalendar size={12} />{" "}
+                  {new Date(postedJob.scheduledAt).toLocaleString()}
+                </div>
+              )}
+
               {postedJob.skills?.length > 0 && (
                 <div className={styles.successMeta}>
                   <FiTag size={12} /> {postedJob.skills.length} skill
                   {postedJob.skills.length !== 1 ? "s" : ""} required
                 </div>
               )}
+
+              <div className={styles.successMeta}>
+                <FiUsers size={12} /> {applicationsCount} applicant
+                {applicationsCount !== 1 ? "s" : ""} so far
+              </div>
+
+              {postedJob.notes && (
+                <div className={styles.successMeta}>
+                  <FiAlignLeft size={12} /> {postedJob.notes}
+                </div>
+              )}
             </div>
+
             <div className={styles.successActions}>
               <Link
                 to="/dashboard/hirer/jobs-management"
@@ -526,7 +768,7 @@ export default function PostJob() {
             />
           </div>
 
-          {/* ── NEW: Job Type ── */}
+          {/* ── Job Type ── */}
           <div className={styles.field}>
             <label className={styles.label}>Job Type</label>
             <div className={styles.optionGrid}>
@@ -549,7 +791,7 @@ export default function PostJob() {
             </div>
           </div>
 
-          {/* ── NEW: Location Type ── */}
+          {/* ── Location Type ── */}
           <div className={styles.field}>
             <label className={styles.label}>Work Location</label>
             <div className={styles.optionGrid}>
@@ -574,7 +816,7 @@ export default function PostJob() {
             </div>
           </div>
 
-          {/* ── Address (only when not Remote) ── */}
+          {/* ── Address ── */}
           {form.locationType !== "REMOTE" && (
             <div className={styles.field}>
               <label className={styles.label}>
@@ -586,6 +828,24 @@ export default function PostJob() {
                 value={form.address}
                 onChange={(e) => set("address", e.target.value)}
               />
+              <div className={styles.row2} style={{ marginTop: 8 }}>
+                <input
+                  className={styles.input}
+                  type="number"
+                  step="any"
+                  placeholder="Latitude (optional)"
+                  value={form.latitude}
+                  onChange={(e) => set("latitude", e.target.value)}
+                />
+                <input
+                  className={styles.input}
+                  type="number"
+                  step="any"
+                  placeholder="Longitude (optional)"
+                  value={form.longitude}
+                  onChange={(e) => set("longitude", e.target.value)}
+                />
+              </div>
             </div>
           )}
 
@@ -640,20 +900,20 @@ export default function PostJob() {
                   DURATION_UNITS.find((u) => u.value === form.durationUnit)
                     ?.hint || ""
                 }
-                value={form.durationValue}
-                onChange={(e) => set("durationValue", e.target.value)}
+                value={form.estimatedValue}
+                onChange={(e) => set("estimatedValue", e.target.value)}
                 style={{ marginTop: 8 }}
               />
-              {form.durationValue && form.durationUnit !== "custom" && (
+              {form.estimatedValue && form.durationUnit !== "custom" && (
                 <p className={styles.durationSummary}>
-                  Est. {form.durationValue} {form.durationUnit} = approx.{" "}
-                  {toEstimatedHours(form.durationUnit, form.durationValue)}h
+                  Est. {form.estimatedValue} {form.durationUnit} = approx.{" "}
+                  {toEstimatedHours(form.durationUnit, form.estimatedValue)}h
                 </p>
               )}
             </div>
           </div>
 
-          {/* ── NEW: Job Duration (backend durationType + durationValue) ── */}
+          {/* ── Project Duration ── */}
           <div className={styles.field}>
             <label className={styles.label}>Project Duration</label>
             <p className={styles.fieldHint}>
@@ -680,8 +940,8 @@ export default function PostJob() {
                     ? "Describe the duration"
                     : "Enter duration"
                 }
-                value={form.durationValue2}
-                onChange={(e) => set("durationValue2", e.target.value)}
+                value={form.durationValue}
+                onChange={(e) => set("durationValue", e.target.value)}
               />
             </div>
           </div>
@@ -691,6 +951,10 @@ export default function PostJob() {
             <label className={styles.label}>
               Budget <span className={styles.req}>*</span>
             </label>
+            <p className={styles.fieldHint}>
+              Enter a fixed budget, or scroll down to provide a salary range
+              instead.
+            </p>
             <div className={styles.row2}>
               <input
                 className={styles.input}
@@ -713,7 +977,6 @@ export default function PostJob() {
                 ))}
               </select>
             </div>
-            {/* Budget type pills */}
             <div className={styles.unitPills} style={{ marginTop: 8 }}>
               {BUDGET_TYPES.map((t) => (
                 <button
@@ -730,7 +993,7 @@ export default function PostJob() {
             </div>
           </div>
 
-          {/* ── NEW: Skills ── */}
+          {/* ── Skills ── */}
           <div className={styles.field}>
             <label className={styles.label}>Required Skills</label>
             <p className={styles.fieldHint}>
@@ -766,8 +1029,7 @@ export default function PostJob() {
               />
             </div>
 
-            {/* Quick-add suggestions */}
-            {form.skills.length < 15 && (
+            {form.skills.length < 20 && (
               <div className={styles.skillSuggestions}>
                 {SKILL_SUGGESTIONS.filter((s) => !form.skills.includes(s))
                   .slice(0, 8)
@@ -796,6 +1058,326 @@ export default function PostJob() {
               onChange={(e) => set("notes", e.target.value)}
             />
           </div>
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ── NEW: Advanced / External-Style Fields (collapsible) ── */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+
+          <div className={styles.field} style={{ marginTop: 8 }}>
+            <button
+              type="button"
+              className={styles.addCatBtn}
+              style={{ padding: 12, fontSize: 13 }}
+              onClick={() => setShowAdvanced((v) => !v)}
+            >
+              {showAdvanced ? (
+                <>
+                  <FiX size={14} /> Hide advanced fields
+                </>
+              ) : (
+                <>
+                  <FiPlus size={14} /> Add advanced fields (company, salary
+                  range, experience, application link, etc.)
+                </>
+              )}
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <>
+              {/* ── Company + Salary Text ── */}
+              <div className={styles.field}>
+                <label className={styles.label}>Company Name</label>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. SkilledProz Farms Ltd"
+                  value={form.companyName}
+                  onChange={(e) => set("companyName", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Salary Text</label>
+                <p className={styles.fieldHint}>
+                  Short human-readable salary, shown on job cards.
+                </p>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. ₦250,000 a month"
+                  value={form.salaryText}
+                  onChange={(e) => set("salaryText", e.target.value)}
+                />
+              </div>
+
+              {/* ── Salary Range ── */}
+              <div className={styles.field}>
+                <label className={styles.label}>Salary Range</label>
+                <p className={styles.fieldHint}>
+                  If provided, budget becomes optional. Currency must match the
+                  platform-supported list.
+                </p>
+                <div className={styles.row2}>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Fixed amount (optional)"
+                    value={form.salaryAmount}
+                    onChange={(e) => set("salaryAmount", e.target.value)}
+                  />
+                  <select
+                    className={styles.select}
+                    value={form.salaryCurrency}
+                    onChange={(e) => set("salaryCurrency", e.target.value)}
+                  >
+                    <option value="">Salary Currency</option>
+                    {ALL_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.row2} style={{ marginTop: 8 }}>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Min (optional)"
+                    value={form.salaryMin}
+                    onChange={(e) => set("salaryMin", e.target.value)}
+                  />
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Max (optional)"
+                    value={form.salaryMax}
+                    onChange={(e) => set("salaryMax", e.target.value)}
+                  />
+                </div>
+                <div className={styles.unitPills} style={{ marginTop: 8 }}>
+                  {SALARY_PERIODS.map((p) => (
+                    <button
+                      type="button"
+                      key={p.value}
+                      className={`${styles.unitPill} ${
+                        form.salaryPeriod === p.value
+                          ? styles.unitPillActive
+                          : ""
+                      }`}
+                      onClick={() =>
+                        set(
+                          "salaryPeriod",
+                          form.salaryPeriod === p.value ? "" : p.value,
+                        )
+                      }
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Experience / Education ── */}
+              <div className={styles.field}>
+                <label className={styles.label}>Experience Level</label>
+                <div className={styles.unitPills}>
+                  {EXPERIENCE_LEVELS.map((t) => (
+                    <button
+                      type="button"
+                      key={t.value}
+                      className={`${styles.unitPill} ${
+                        form.experienceLevel === t.value
+                          ? styles.unitPillActive
+                          : ""
+                      }`}
+                      onClick={() =>
+                        set(
+                          "experienceLevel",
+                          form.experienceLevel === t.value ? "" : t.value,
+                        )
+                      }
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  className={styles.input}
+                  style={{ marginTop: 8 }}
+                  placeholder="e.g. 2 years"
+                  value={form.experienceLength}
+                  onChange={(e) => set("experienceLength", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Education Level</label>
+                <select
+                  className={styles.select}
+                  value={form.educationLevel}
+                  onChange={(e) => set("educationLevel", e.target.value)}
+                >
+                  <option value="">Select education level</option>
+                  {EDUCATION_LEVELS.map((e) => (
+                    <option key={e.value} value={e.value}>
+                      {e.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* ── Requirements ── */}
+              <div className={styles.field}>
+                <label className={styles.label}>Minimum Qualification</label>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. Diploma in Agriculture"
+                  value={form.minQualification}
+                  onChange={(e) => set("minQualification", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Language Requirement</label>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. English, Yoruba"
+                  value={form.languageRequirement}
+                  onChange={(e) => set("languageRequirement", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Working Hours</label>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. Full time — Mon–Sat, 8am–5pm"
+                  value={form.workingHours}
+                  onChange={(e) => set("workingHours", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Applicant Location</label>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. Lagos, Nigeria"
+                  value={form.applicantLocation}
+                  onChange={(e) => set("applicantLocation", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Responsibilities</label>
+                <textarea
+                  className={styles.textarea}
+                  rows={4}
+                  placeholder="Day-to-day responsibilities of the role..."
+                  value={form.responsibilities}
+                  onChange={(e) => set("responsibilities", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Requirements</label>
+                <textarea
+                  className={styles.textarea}
+                  rows={4}
+                  placeholder="Must-haves, tools, certifications..."
+                  value={form.requirements}
+                  onChange={(e) => set("requirements", e.target.value)}
+                />
+              </div>
+
+              {/* ── Application Channels ── */}
+              <div className={styles.field}>
+                <label className={styles.label}>Application Channels</label>
+                <p className={styles.fieldHint}>
+                  Optional for internal jobs. Required only if you're posting an
+                  external-style job (with company name / salary text).
+                </p>
+
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FiLink size={16} color="var(--orange)" />
+                    <input
+                      className={styles.input}
+                      type="url"
+                      placeholder="Application URL (https://…)"
+                      value={form.applicationUrl}
+                      onChange={(e) => set("applicationUrl", e.target.value)}
+                    />
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FiMail size={16} color="var(--orange)" />
+                    <input
+                      className={styles.input}
+                      type="email"
+                      placeholder="Application email"
+                      value={form.applicationEmail}
+                      onChange={(e) => set("applicationEmail", e.target.value)}
+                    />
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FiMessageCircle size={16} color="var(--orange)" />
+                    <input
+                      className={styles.input}
+                      placeholder="WhatsApp number (e.g. +2348012345678)"
+                      value={form.applicationWhatsApp}
+                      onChange={(e) =>
+                        set("applicationWhatsApp", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FiPhone size={16} color="var(--orange)" />
+                    <input
+                      className={styles.input}
+                      placeholder="Phone number (e.g. +2348012345678)"
+                      value={form.applicationPhone}
+                      onChange={(e) => set("applicationPhone", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Misc ── */}
+              <div className={styles.field}>
+                <label className={styles.label}>Source Platform</label>
+                <input
+                  className={styles.input}
+                  placeholder="e.g. Indeed, LinkedIn (for external jobs)"
+                  value={form.sourcePlatform}
+                  onChange={(e) => set("sourcePlatform", e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Expiry Date</label>
+                <input
+                  className={styles.input}
+                  type="datetime-local"
+                  value={form.expiryDate}
+                  onChange={(e) => set("expiryDate", e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           {error && <p className={styles.error}>{error}</p>}
 
