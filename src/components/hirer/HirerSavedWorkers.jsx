@@ -1,12 +1,20 @@
 // src/pages/hirer/HirerSavedWorkers.jsx
 // Unified component for Saved Workers (explicit bookmarks) and
 // Hired Workers (booking history). Handles save + unsave inline.
-//
-// Bug fixed from original: FeatureGate was blocking the list from rendering.
-// The component now renders without any subscription gate.
 
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import {
+  FiMapPin,
+  FiBookmark,
+  FiBriefcase,
+  FiStar,
+  FiCheck,
+  FiPlus,
+  FiArrowRight,
+  FiCheckCircle,
+  FiAlertCircle,
+} from "react-icons/fi";
 import HirerLayout from "../../components/layout/HirerLayout";
 import api from "../../lib/api";
 import styles from "./HirerSavedWorkers.module.css";
@@ -30,7 +38,11 @@ function Avatar({ user, size = 44 }) {
 
 function StarRating({ rating }) {
   if (!rating) return null;
-  return <span className={styles.rating}>★ {Number(rating).toFixed(1)}</span>;
+  return (
+    <span className={styles.rating}>
+      <FiStar size={12} /> {Number(rating).toFixed(1)}
+    </span>
+  );
 }
 
 // ── Single worker card ─────────────────────────────────────────────────────────
@@ -48,7 +60,8 @@ function WorkerCard({ worker, isSaved, onUnsave, unsaving }) {
           <div className={styles.cardMeta}>
             {(worker.city || worker.country) && (
               <span className={styles.location}>
-                📍 {[worker.city, worker.country].filter(Boolean).join(", ")}
+                <FiMapPin size={11} />{" "}
+                {[worker.city, worker.country].filter(Boolean).join(", ")}
               </span>
             )}
             {wp?.isAvailable && (
@@ -93,7 +106,9 @@ function WorkerCard({ worker, isSaved, onUnsave, unsaving }) {
           </div>
         )}
         {wp?.verificationStatus === "VERIFIED" && (
-          <span className={styles.verifiedBadge}>✓ Verified</span>
+          <span className={styles.verifiedBadge}>
+            <FiCheck size={10} /> Verified
+          </span>
         )}
       </div>
 
@@ -119,7 +134,7 @@ function WorkerCard({ worker, isSaved, onUnsave, unsaving }) {
       {/* Actions */}
       <div className={styles.cardActions}>
         <Link to={`/workers/${worker.id}`} className={styles.viewBtn}>
-          View Profile →
+          View Profile <FiArrowRight size={12} />
         </Link>
         <ReportButton
           targetType="USER"
@@ -140,7 +155,7 @@ function WorkerCard({ worker, isSaved, onUnsave, unsaving }) {
             disabled={unsaving === worker.id}
             title="Remove from saved"
           >
-            {unsaving === worker.id ? "…" : "🔖"}
+            {unsaving === worker.id ? "…" : <FiBookmark size={14} />}
           </button>
         )}
       </div>
@@ -165,9 +180,12 @@ function Skeletons() {
 
 // ── Empty state ────────────────────────────────────────────────────────────────
 function Empty({ tab }) {
+  const Icon = tab === "saved" ? FiBookmark : FiBriefcase;
   return (
     <div className={styles.empty}>
-      <span className={styles.emptyIcon}>{tab === "saved" ? "🔖" : "👔"}</span>
+      <span className={styles.emptyIcon}>
+        <Icon size={40} />
+      </span>
       <p className={styles.emptyTitle}>
         {tab === "saved" ? "No saved workers yet" : "No hired workers yet"}
       </p>
@@ -177,7 +195,7 @@ function Empty({ tab }) {
           : "Workers you've previously booked will appear here."}
       </p>
       <Link to="/workers" className={styles.emptyBtn}>
-        Browse Workers →
+        Browse Workers <FiArrowRight size={12} />
       </Link>
     </div>
   );
@@ -254,6 +272,11 @@ export default function HirerSavedWorkers() {
         {/* Toast */}
         {toast && (
           <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+            {toast.type === "success" ? (
+              <FiCheckCircle size={14} />
+            ) : (
+              <FiAlertCircle size={14} />
+            )}
             {toast.msg}
           </div>
         )}
@@ -267,7 +290,7 @@ export default function HirerSavedWorkers() {
             </p>
           </div>
           <Link to="/workers" className={styles.browseBtn}>
-            + Browse Workers
+            <FiPlus size={14} /> Browse Workers
           </Link>
         </div>
 
@@ -277,7 +300,7 @@ export default function HirerSavedWorkers() {
             className={`${styles.tab} ${tab === "saved" ? styles.tabActive : ""}`}
             onClick={() => setTab("saved")}
           >
-            🔖 Saved
+            <FiBookmark size={13} /> Saved
             {saved.length > 0 && (
               <span className={styles.tabBadge}>{saved.length}</span>
             )}
@@ -286,7 +309,7 @@ export default function HirerSavedWorkers() {
             className={`${styles.tab} ${tab === "hired" ? styles.tabActive : ""}`}
             onClick={() => setTab("hired")}
           >
-            👔 Previously Hired
+            <FiBriefcase size={13} /> Previously Hired
             {hired.length > 0 && (
               <span className={styles.tabBadge}>{hired.length}</span>
             )}

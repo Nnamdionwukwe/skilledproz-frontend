@@ -1,8 +1,19 @@
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
-  max-width: 1280px;
-  margin: 0 auto;
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 24px;
+  max-width: none;
   animation: fadeUp 0.4s ease both;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 16px;
+  }
 }
 
 /* ── Search bar ────────────────────────────────────────────── */
@@ -33,6 +44,9 @@
   font-size: 16px;
   flex-shrink: 0;
   color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .searchInput {
@@ -75,9 +89,11 @@
   justify-content: center;
   transition: border-color 0.15s;
   flex-shrink: 0;
+  color: var(--text-dim);
 }
 .nearbyBtn:hover {
   border-color: var(--orange);
+  color: var(--orange);
 }
 
 .searchSubmit {
@@ -156,6 +172,9 @@
   background: var(--bg-card);
   color: var(--text);
 }
+.sugItem svg {
+  flex-shrink: 0;
+}
 .sugSub {
   font-size: 11px;
   color: var(--text-muted);
@@ -196,7 +215,7 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
-  display: none; /* hidden mobile — toggle via .filterSidebarOpen */
+  display: none;
 }
 .filterSidebarOpen {
   display: block;
@@ -429,6 +448,9 @@
   border-color: var(--orange);
   color: var(--orange);
 }
+.mobileFilterBtn svg {
+  flex-shrink: 0;
+}
 
 /* Results meta */
 .resultsMeta {
@@ -523,6 +545,10 @@
   gap: 5px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+}
+.wcBadges svg {
+  color: var(--green);
 }
 .newBadge {
   font-size: 9px;
@@ -538,6 +564,12 @@
   font-size: 10px;
   font-weight: 600;
   color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.distBadge svg {
+  color: currentColor;
 }
 
 .wcInfo {
@@ -562,6 +594,12 @@
 .wcLocation {
   font-size: 11px;
   color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.wcLocation svg {
+  flex-shrink: 0;
 }
 
 .wcStats {
@@ -573,6 +611,12 @@
   font-size: 13px;
   font-weight: 700;
   color: #fbbf24;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.wcRating svg {
+  flex-shrink: 0;
 }
 .wcReviews {
   font-size: 11px;
@@ -688,7 +732,10 @@
 }
 .promptIcon,
 .emptyIcon {
-  font-size: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 .promptTitle,
@@ -738,6 +785,9 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .pageBtn:hover:not(:disabled) {
   border-color: var(--orange);
@@ -823,12 +873,24 @@
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.wcLang svg {
+  flex-shrink: 0;
 }
 .filterHint {
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 6px;
   line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.filterHint svg {
+  flex-shrink: 0;
 }
 
 /* ── Sidebar overlay on mobile ── */
@@ -856,7 +918,7 @@
     overflow-y: auto;
     border-right: 1px solid var(--border);
     border-radius: 0 !important;
-    display: block !important; /* always in DOM, translated off */
+    display: block !important;
   }
   .filterSidebarOpen {
     transform: translateX(0) !important;
@@ -890,4 +952,10 @@
   font-size: 13px;
   color: #60a5fa;
   margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.expansionNote svg {
+  flex-shrink: 0;
 }
