@@ -230,6 +230,62 @@ export default function PostJob() {
       .catch(() => {});
   }, []);
 
+  // ── Auto-sync base form → advanced panel ─────────────────────────────
+  useEffect(() => {
+    setForm((f) => {
+      const next = { ...f };
+      let changed = false;
+
+      if (!f.salaryCurrency && f.currency) {
+        next.salaryCurrency = f.currency;
+        changed = true;
+      }
+
+      const derivedPeriod = {
+        HOURLY: "HOURLY",
+        DAILY: "DAILY",
+        WEEKLY: "WEEKLY",
+        MONTHLY: "MONTHLY",
+      }[f.budgetType];
+      if (!f.salaryPeriod && derivedPeriod) {
+        next.salaryPeriod = derivedPeriod;
+        changed = true;
+      }
+
+      if (!f.durationValue && f.estimatedValue) {
+        next.durationValue = f.estimatedValue;
+        changed = true;
+      }
+
+      const upperUnit = (f.durationUnit || "").toUpperCase();
+      if (
+        upperUnit &&
+        upperUnit !== "CUSTOM" &&
+        f.durationType === "HOURS" &&
+        upperUnit !== "HOURS"
+      ) {
+        next.durationType = upperUnit;
+        changed = true;
+      }
+
+      const isPeriodBased = ["HOURLY", "DAILY", "WEEKLY", "MONTHLY"].includes(
+        f.budgetType,
+      );
+      if (isPeriodBased && !f.salaryAmount && f.budget) {
+        next.salaryAmount = f.budget;
+        changed = true;
+      }
+
+      return changed ? next : f;
+    });
+  }, [
+    form.currency,
+    form.budgetType,
+    form.budget,
+    form.durationUnit,
+    form.estimatedValue,
+  ]);
+
   const filteredCats = categories.filter(
     (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
   );
@@ -850,7 +906,10 @@ export default function PostJob() {
               Estimated Duration <span className={styles.req}>*</span>
             </label>
             <p className={styles.fieldHint}>
-              Choose how long you expect the job to take.
+              How long will the actual work take to complete? Choose a unit
+              (hours / days / weeks / months), then enter the number. This is
+              used to calculate a rough hourly breakdown and helps workers judge
+              whether they can fit the job in.
             </p>
             <div className={styles.durationRow}>
               <div className={styles.unitPills}>
@@ -888,8 +947,9 @@ export default function PostJob() {
               />
               {form.estimatedValue && form.durationUnit !== "custom" && (
                 <p className={styles.durationSummary}>
-                  Est. {form.estimatedValue} {form.durationUnit} = approx.{" "}
-                  {toEstimatedHours(form.durationUnit, form.estimatedValue)}h
+                  ✓ Est. {form.estimatedValue} {form.durationUnit} = approx.{" "}
+                  {toEstimatedHours(form.durationUnit, form.estimatedValue)}h of
+                  work
                 </p>
               )}
             </div>
@@ -899,7 +959,12 @@ export default function PostJob() {
           <div className={styles.field}>
             <label className={styles.label}>Project Duration</label>
             <p className={styles.fieldHint}>
-              How long is the overall engagement expected to run?
+              How long the whole engagement is expected to run — this often
+              differs from the actual work time. Example: a 4-hour painting job
+              spread over 2 days (2 hours/day) has an estimated duration of{" "}
+              <strong>4 hours</strong> but a project duration of{" "}
+              <strong>2 days</strong>. If the whole job runs in one sitting,
+              leave this blank or match it to the estimated duration.
             </p>
             <div className={styles.row2} style={{ marginTop: 4 }}>
               <select
@@ -920,12 +985,18 @@ export default function PostJob() {
                 placeholder={
                   form.durationType === "CUSTOM"
                     ? "Describe the duration"
-                    : "Enter duration"
+                    : "e.g. 2"
                 }
                 value={form.durationValue}
                 onChange={(e) => set("durationValue", e.target.value)}
               />
             </div>
+            {form.durationValue && form.durationType && (
+              <p className={styles.durationSummary}>
+                ✓ Project runs for {form.durationValue}{" "}
+                {form.durationType.toLowerCase()}
+              </p>
+            )}
           </div>
 
           {/* ── Budget + Currency + Budget Type ── */}
@@ -934,8 +1005,11 @@ export default function PostJob() {
               Budget <span className={styles.req}>*</span>
             </label>
             <p className={styles.fieldHint}>
-              Enter a fixed budget, or scroll down to provide a salary range
-              instead.
+              Pick a payment style: <strong>Fixed</strong> for one total amount,
+              or <strong>Hourly / Daily / Weekly / Monthly</strong> if you want
+              to pay per unit of time. For richer salary options (like a rate
+              range with min/max), open the advanced panel below — anything you
+              set here carries over automatically.
             </p>
             <div className={styles.row2}>
               <input
@@ -973,6 +1047,18 @@ export default function PostJob() {
                 </button>
               ))}
             </div>
+            {form.budget && form.budgetType && (
+              <p className={styles.durationSummary}>
+                ✓ You're offering{" "}
+                <strong>
+                  {form.currency}{" "}
+                  {parseFloat(form.budget || 0).toLocaleString()}
+                </strong>{" "}
+                {form.budgetType === "FIXED"
+                  ? "as the total project budget"
+                  : `per ${form.budgetType.toLowerCase().replace("ly", "")}`}
+              </p>
+            )}
           </div>
 
           {/* ── Skills ── */}
@@ -1078,7 +1164,9 @@ export default function PostJob() {
               <div className={styles.field}>
                 <label className={styles.label}>Salary Text</label>
                 <p className={styles.fieldHint}>
-                  Short human-readable salary, shown on job cards.
+                  Optional human-readable headline shown on job cards (e.g.
+                  "₦250,000 a month"). If you fill this, it takes priority over
+                  the numeric salary fields in the public listing.
                 </p>
                 <input
                   className={styles.input}
@@ -1092,8 +1180,11 @@ export default function PostJob() {
               <div className={styles.field}>
                 <label className={styles.label}>Salary Range</label>
                 <p className={styles.fieldHint}>
-                  If provided, budget becomes optional. Currency must match the
-                  platform-supported list.
+                  Optional. Use this when you want to publish a{" "}
+                  <strong>rate range</strong> (min–max) instead of a single
+                  figure. When filled, the platform treats this as the primary
+                  salary and makes the budget field optional. The currency and
+                  cadence carry over from the base form above.
                 </p>
                 <div className={styles.row2}>
                   <input
@@ -1159,6 +1250,14 @@ export default function PostJob() {
                     </button>
                   ))}
                 </div>
+                {(form.salaryAmount || form.salaryMin || form.salaryMax) && (
+                  <p className={styles.durationSummary}>
+                    ✓ Salary range set
+                    {form.salaryPeriod &&
+                      ` · per ${form.salaryPeriod.toLowerCase()}`}
+                    {form.salaryCurrency && ` · ${form.salaryCurrency}`}
+                  </p>
+                )}
               </div>
 
               {/* ── Experience / Education ── */}

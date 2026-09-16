@@ -27,10 +27,7 @@ import {
   FiArrowRight,
   FiSend,
   FiSun,
-  FiMoon,
-  FiLayers,
   FiShuffle,
-  // ── NEW icons for the external-style fields ──
   FiAward,
   FiBookOpen,
   FiLink,
@@ -38,9 +35,11 @@ import {
   FiPhone,
   FiMessageCircle,
   FiTrendingUp,
-  FiCheckSquare,
   FiAlignLeft,
   FiExternalLink,
+  FiLayers,
+  FiUserCheck,
+  FiGlobe as FiLanguage,
 } from "react-icons/fi";
 
 export default function JobDetail() {
@@ -195,45 +194,113 @@ export default function JobDetail() {
     OTHER: "Other",
   }[jobPost.educationLevel];
 
+  const budgetTypeLabel = {
+    FIXED: "Fixed Price",
+    HOURLY: "Per Hour",
+    DAILY: "Per Day",
+    WEEKLY: "Per Week",
+    MONTHLY: "Per Month",
+    CUSTOM: "Custom",
+  }[jobPost.budgetType];
+
   const JobTypeIcon = jobTypeMeta?.icon;
   const LocationTypeIcon = locationTypeMeta?.icon;
   const BudgetTypeIcon = budgetTypeMeta?.icon;
 
-  // ── Derived: whether to show a link-based application channel ─────────
-  const hasExternalApplyChannels =
-    jobPost.applicationUrl ||
-    jobPost.applicationEmail ||
-    jobPost.applicationWhatsApp ||
-    jobPost.applicationPhone;
-
-  const hasSalaryRange =
+  // ── Derived: payment display ──
+  // Priority: salaryText > salary range > budget
+  const hasSalaryText = !!jobPost.salaryText;
+  const hasSalaryRange = !!(
     jobPost.salaryAmount ||
     jobPost.salaryMin ||
-    jobPost.salaryMax ||
-    jobPost.salaryText;
+    jobPost.salaryMax
+  );
+  const hasBudget = jobPost.budget !== null && jobPost.budget !== undefined;
 
-  const hasRequirementsBlock =
-    jobPost.responsibilities ||
-    jobPost.requirements ||
-    jobPost.minQualification ||
-    jobPost.experienceLevel ||
-    jobPost.experienceLength ||
-    jobPost.educationLevel ||
-    jobPost.languageRequirement ||
-    jobPost.workingHours ||
-    jobPost.applicantLocation;
-
-  // Formatted salary range for display
   let salaryRangeText = null;
-  if (jobPost.salaryText) {
-    salaryRangeText = jobPost.salaryText;
-  } else if (jobPost.salaryMin && jobPost.salaryMax) {
+  if (jobPost.salaryMin && jobPost.salaryMax) {
     const cur = jobPost.salaryCurrency || jobPost.currency || "";
     salaryRangeText = `${cur} ${Number(jobPost.salaryMin).toLocaleString()} – ${Number(jobPost.salaryMax).toLocaleString()}${salaryPeriodLabel ? ` · ${salaryPeriodLabel}` : ""}`;
   } else if (jobPost.salaryAmount) {
     const cur = jobPost.salaryCurrency || jobPost.currency || "";
     salaryRangeText = `${cur} ${Number(jobPost.salaryAmount).toLocaleString()}${salaryPeriodLabel ? ` · ${salaryPeriodLabel}` : ""}`;
   }
+
+  const mainPaymentText = hasSalaryText
+    ? jobPost.salaryText
+    : hasSalaryRange
+      ? salaryRangeText
+      : hasBudget
+        ? `${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`
+        : "—";
+
+  const mainPaymentLabel = hasSalaryText
+    ? "Salary"
+    : hasSalaryRange
+      ? "Salary Range"
+      : "Budget";
+
+  // ── Derived: application channels ──
+  const hasExternalApplyChannels = !!(
+    jobPost.applicationUrl ||
+    jobPost.applicationEmail ||
+    jobPost.applicationWhatsApp ||
+    jobPost.applicationPhone
+  );
+
+  // ── Derived: employer / company info ──
+  const companyDisplay =
+    jobPost.companyName || jobPost.hirer?.hirerProfile?.companyName || null;
+
+  // ── Derived: requirements block items ──
+  const requirementItems = [
+    jobPost.minQualification && {
+      icon: <FiAward size={14} />,
+      label: "Minimum Qualification",
+      value: jobPost.minQualification,
+    },
+    jobPost.experienceLevel && {
+      icon: <FiTrendingUp size={14} />,
+      label: "Experience Level",
+      value: jobPost.experienceLength
+        ? `${jobPost.experienceLevel} · ${jobPost.experienceLength}`
+        : jobPost.experienceLevel,
+    },
+    jobPost.experienceLength &&
+      !jobPost.experienceLevel && {
+        icon: <FiTrendingUp size={14} />,
+        label: "Experience Length",
+        value: jobPost.experienceLength,
+      },
+    educationLevelLabel && {
+      icon: <FiBookOpen size={14} />,
+      label: "Education Level",
+      value: educationLevelLabel,
+    },
+    jobPost.languageRequirement && {
+      icon: <FiLanguage size={14} />,
+      label: "Language",
+      value: jobPost.languageRequirement,
+    },
+    jobPost.workingHours && {
+      icon: <FiClock size={14} />,
+      label: "Working Hours",
+      value: jobPost.workingHours,
+    },
+    jobPost.applicantLocation && {
+      icon: <FiMapPin size={14} />,
+      label: "Preferred Applicant Location",
+      value: jobPost.applicantLocation,
+    },
+  ].filter(Boolean);
+
+  const hasRequirementsBlock = requirementItems.length > 0;
+
+  // ── Derived: duration values ──
+  const hasEstimatedDuration = !!(
+    formatJobDurationParts(jobPost) || jobPost.estimatedHours
+  );
+  const hasProjectDuration = !!(jobPost.durationValue && jobPost.durationType);
 
   return (
     <div className={styles.page}>
@@ -250,12 +317,19 @@ export default function JobDetail() {
 
       <div className={styles.layout}>
         <div className={styles.main}>
+          {/* ═══════════════════════════════════════════════════════
+              HEADER CARD — status, category, title, key pills
+          ═══════════════════════════════════════════════════════ */}
           <div className={styles.headerCard}>
             <div className={styles.headerTop}>
-              <div className={styles.categoryChip}>
-                {jobPost.category?.icon && <span>{jobPost.category.icon}</span>}
-                {jobPost.category?.name}
-              </div>
+              {jobPost.category?.name && (
+                <div className={styles.categoryChip}>
+                  {jobPost.category?.icon && (
+                    <span>{jobPost.category.icon}</span>
+                  )}
+                  {jobPost.category?.name}
+                </div>
+              )}
               <span
                 className={`${styles.statusBadge} ${styles[`status_${sm.color}`]}`}
               >
@@ -273,16 +347,17 @@ export default function JobDetail() {
               )}
             </div>
 
-            {/* Company name (external-style only) — rendered above title if present */}
-            {jobPost.companyName && (
-              <p className={styles.jobCompany}>{jobPost.companyName}</p>
+            {companyDisplay && (
+              <p className={styles.jobCompany}>{companyDisplay}</p>
             )}
 
             <h1 className={styles.jobTitle}>{jobPost.title}</h1>
 
-            {(jobPost.jobType ||
-              jobPost.locationType ||
-              jobPost.budgetType) && (
+            {(jobTypeMeta ||
+              locationTypeMeta ||
+              jobPost.budgetType ||
+              jobPost.experienceLevel ||
+              jobPost.sourcePlatform) && (
               <div className={styles.typePillRow}>
                 {jobTypeMeta && (
                   <span className={styles.typePill}>
@@ -319,7 +394,12 @@ export default function JobDetail() {
                 icon={<FiCalendar size={12} />}
                 text={`${scheduled.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })} at ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
               />
-              <MetaItem icon={<FiMapPin size={12} />} text={jobPost.address} />
+              {jobPost.address && (
+                <MetaItem
+                  icon={<FiMapPin size={12} />}
+                  text={jobPost.address}
+                />
+              )}
               <DurationBadge job={jobPost} size="sm" />
               <MetaItem
                 icon={<FiCalendar size={12} />}
@@ -328,20 +408,8 @@ export default function JobDetail() {
             </div>
 
             <div className={styles.budgetBlock}>
-              {/* Prefer salaryText / salary range when provided, fallback to budget */}
-              <span className={styles.budgetAmount}>
-                {jobPost.salaryText ? (
-                  jobPost.salaryText
-                ) : (
-                  <>
-                    {jobPost.currency}{" "}
-                    {parseFloat(jobPost.budget).toLocaleString()}
-                  </>
-                )}
-              </span>
-              <span className={styles.budgetLabel}>
-                {jobPost.salaryText ? "Salary" : "Budget"}
-              </span>
+              <span className={styles.budgetAmount}>{mainPaymentText}</span>
+              <span className={styles.budgetLabel}>{mainPaymentLabel}</span>
               <span className={styles.applicantCount}>
                 <FiUsers size={12} /> {jobPost._count?.applications || 0}{" "}
                 applicant
@@ -350,6 +418,9 @@ export default function JobDetail() {
             </div>
           </div>
 
+          {/* ═══════════════════════════════════════════════════════
+              DESCRIPTION
+          ═══════════════════════════════════════════════════════ */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Job Description</h2>
             <p className={styles.description}>{jobPost.description}</p>
@@ -361,22 +432,41 @@ export default function JobDetail() {
             )}
           </section>
 
-          {/* ── NEW: Responsibilities (only if present) ── */}
+          {/* ═══════════════════════════════════════════════════════
+              RESPONSIBILITIES (only if present)
+          ═══════════════════════════════════════════════════════ */}
           {jobPost.responsibilities && (
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Responsibilities</h2>
+              <h2 className={styles.sectionTitle}>
+                <FiAlignLeft
+                  size={14}
+                  style={{ verticalAlign: "-2px", marginRight: 6 }}
+                />
+                Responsibilities
+              </h2>
               <p className={styles.description}>{jobPost.responsibilities}</p>
             </section>
           )}
 
-          {/* ── NEW: Requirements (only if present) ── */}
+          {/* ═══════════════════════════════════════════════════════
+              REQUIREMENTS (only if present)
+          ═══════════════════════════════════════════════════════ */}
           {jobPost.requirements && (
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Requirements</h2>
+              <h2 className={styles.sectionTitle}>
+                <FiCheckCircle
+                  size={14}
+                  style={{ verticalAlign: "-2px", marginRight: 6 }}
+                />
+                Requirements
+              </h2>
               <p className={styles.description}>{jobPost.requirements}</p>
             </section>
           )}
 
+          {/* ═══════════════════════════════════════════════════════
+              SKILLS (only if present)
+          ═══════════════════════════════════════════════════════ */}
           {jobPost.skills?.length > 0 && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Required Skills</h2>
@@ -390,24 +480,38 @@ export default function JobDetail() {
             </section>
           )}
 
+          {/* ═══════════════════════════════════════════════════════
+              DETAILS GRID — every present field
+          ═══════════════════════════════════════════════════════ */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Details</h2>
             <div className={styles.detailGrid}>
-              <DetailCard
-                icon={<FiFileText size={14} />}
-                label="Category"
-                value={jobPost.category?.name || "—"}
-              />
-              <DetailCard
-                icon={<FiDollarSign size={14} />}
-                label={jobPost.salaryText ? "Salary" : "Budget"}
-                value={
-                  jobPost.salaryText
-                    ? jobPost.salaryText
-                    : `${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`
-                }
-                accent
-              />
+              {jobPost.category?.name && (
+                <DetailCard
+                  icon={<FiFileText size={14} />}
+                  label="Category"
+                  value={jobPost.category.name}
+                />
+              )}
+
+              {mainPaymentText !== "—" && (
+                <DetailCard
+                  icon={<FiDollarSign size={14} />}
+                  label={mainPaymentLabel}
+                  value={mainPaymentText}
+                  accent
+                />
+              )}
+
+              {/* If salaryText was the main payment, still show numeric range if present */}
+              {hasSalaryText && hasSalaryRange && (
+                <DetailCard
+                  icon={<FiDollarSign size={14} />}
+                  label="Salary Range (numeric)"
+                  value={salaryRangeText}
+                />
+              )}
+
               <DetailCard
                 icon={<FiCalendar size={14} />}
                 label="Scheduled"
@@ -417,10 +521,11 @@ export default function JobDetail() {
                   year: "numeric",
                 })}
               />
-              {formatJobDurationParts(jobPost) && (
+
+              {hasEstimatedDuration && formatJobDurationParts(jobPost) && (
                 <DetailCard
                   icon={<FiClock size={14} />}
-                  label="Est. Duration"
+                  label="Estimated Duration"
                   value={
                     <span>
                       {formatJobDurationParts(jobPost).primary}
@@ -444,11 +549,23 @@ export default function JobDetail() {
                   }
                 />
               )}
-              <DetailCard
-                icon={<FiMapPin size={14} />}
-                label="Location"
-                value={jobPost.address}
-              />
+
+              {hasProjectDuration && (
+                <DetailCard
+                  icon={<FiClock size={14} />}
+                  label="Project Duration"
+                  value={`${jobPost.durationValue} ${jobPost.durationType.toLowerCase()}`}
+                />
+              )}
+
+              {jobPost.locationType && jobPost.address && (
+                <DetailCard
+                  icon={<FiMapPin size={14} />}
+                  label="Location"
+                  value={jobPost.address}
+                />
+              )}
+
               <DetailCard
                 icon={<FiTag size={14} />}
                 label="Status"
@@ -462,6 +579,7 @@ export default function JobDetail() {
                   value={jobTypeMeta.label}
                 />
               )}
+
               {locationTypeMeta && (
                 <DetailCard
                   icon={<LocationTypeIcon size={14} />}
@@ -469,98 +587,23 @@ export default function JobDetail() {
                   value={locationTypeMeta.label}
                 />
               )}
-              {jobPost.budgetType && budgetTypeMeta && (
+
+              {jobPost.budgetType && budgetTypeLabel && (
                 <DetailCard
                   icon={<FiCreditCard size={14} />}
                   label="Payment Type"
-                  value={
-                    {
-                      FIXED: "Fixed Price",
-                      HOURLY: "Per Hour",
-                      DAILY: "Per Day",
-                      WEEKLY: "Per Week",
-                      MONTHLY: "Per Month",
-                      CUSTOM: "Custom",
-                    }[jobPost.budgetType] ?? jobPost.budgetType
-                  }
-                />
-              )}
-              {jobPost.durationValue && jobPost.durationType && (
-                <DetailCard
-                  icon={<FiClock size={14} />}
-                  label="Job Duration"
-                  value={`${jobPost.durationValue} ${jobPost.durationType.toLowerCase()}`}
+                  value={budgetTypeLabel}
                 />
               )}
 
-              {/* ── NEW: Salary range detail card ── */}
-              {salaryRangeText && jobPost.salaryText && (
+              {jobPost.sourcePlatform && (
                 <DetailCard
-                  icon={<FiDollarSign size={14} />}
-                  label="Salary Range"
-                  value={salaryRangeText}
+                  icon={<FiExternalLink size={14} />}
+                  label="Source Platform"
+                  value={jobPost.sourcePlatform}
                 />
               )}
 
-              {/* ── NEW: Experience Level ── */}
-              {jobPost.experienceLevel && (
-                <DetailCard
-                  icon={<FiTrendingUp size={14} />}
-                  label="Experience"
-                  value={
-                    jobPost.experienceLength
-                      ? `${jobPost.experienceLevel} · ${jobPost.experienceLength}`
-                      : jobPost.experienceLevel
-                  }
-                />
-              )}
-
-              {/* ── NEW: Minimum Qualification ── */}
-              {jobPost.minQualification && (
-                <DetailCard
-                  icon={<FiAward size={14} />}
-                  label="Min. Qualification"
-                  value={jobPost.minQualification}
-                />
-              )}
-
-              {/* ── NEW: Education Level ── */}
-              {educationLevelLabel && (
-                <DetailCard
-                  icon={<FiBookOpen size={14} />}
-                  label="Education"
-                  value={educationLevelLabel}
-                />
-              )}
-
-              {/* ── NEW: Language Requirement ── */}
-              {jobPost.languageRequirement && (
-                <DetailCard
-                  icon={<FiGlobe size={14} />}
-                  label="Language"
-                  value={jobPost.languageRequirement}
-                />
-              )}
-
-              {/* ── NEW: Working Hours ── */}
-              {jobPost.workingHours && (
-                <DetailCard
-                  icon={<FiClock size={14} />}
-                  label="Working Hours"
-                  value={jobPost.workingHours}
-                />
-              )}
-
-              {/* ── NEW: Applicant Location ── */}
-              {jobPost.applicantLocation && (
-                <DetailCard
-                  icon={<FiMapPin size={14} />}
-                  label="Applicant Location"
-                  value={jobPost.applicantLocation}
-                />
-              )}
-
-              {/* ── NEW: Expiry Date ── */}
               {jobPost.expiryDate && (
                 <DetailCard
                   icon={<FiCalendar size={14} />}
@@ -572,18 +615,47 @@ export default function JobDetail() {
                 />
               )}
 
-              {/* ── NEW: Source Platform ── */}
-              {jobPost.sourcePlatform && (
+              {jobPost.createdAt && (
                 <DetailCard
-                  icon={<FiExternalLink size={14} />}
-                  label="Source"
-                  value={jobPost.sourcePlatform}
+                  icon={<FiCalendar size={14} />}
+                  label="Posted"
+                  value={new Date(jobPost.createdAt).toLocaleDateString(
+                    "en-GB",
+                    { day: "numeric", month: "long", year: "numeric" },
+                  )}
                 />
               )}
             </div>
           </section>
 
-          {/* ── NEW: How to Apply (external channels only) ── */}
+          {/* ═══════════════════════════════════════════════════════
+              REQUIREMENTS & QUALIFICATIONS (grouped card)
+          ═══════════════════════════════════════════════════════ */}
+          {hasRequirementsBlock && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <FiCheckCircle
+                  size={14}
+                  style={{ verticalAlign: "-2px", marginRight: 6 }}
+                />
+                Requirements & Qualifications
+              </h2>
+              <div className={styles.detailGrid}>
+                {requirementItems.map((item, i) => (
+                  <DetailCard
+                    key={i}
+                    icon={item.icon}
+                    label={item.label}
+                    value={item.value}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════
+              HOW TO APPLY — external channels only
+          ═══════════════════════════════════════════════════════ */}
           {hasExternalApplyChannels && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>How to Apply</h2>
@@ -632,6 +704,9 @@ export default function JobDetail() {
             </section>
           )}
 
+          {/* ═══════════════════════════════════════════════════════
+              APPLY (worker only, job open)
+          ═══════════════════════════════════════════════════════ */}
           {isWorker && isOpen && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Apply for this Job</h2>
@@ -695,6 +770,9 @@ export default function JobDetail() {
             </section>
           )}
 
+          {/* ═══════════════════════════════════════════════════════
+              MANAGE (owner only)
+          ═══════════════════════════════════════════════════════ */}
           {isOwner && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Manage Job</h2>
@@ -735,6 +813,9 @@ export default function JobDetail() {
           )}
         </div>
 
+        {/* ═══════════════════════════════════════════════════════
+            SIDEBAR
+        ═══════════════════════════════════════════════════════ */}
         <div className={styles.sidebar}>
           <div className={styles.hirerCard}>
             <p className={styles.hirerCardLabel}>Posted by</p>
@@ -751,9 +832,9 @@ export default function JobDetail() {
             <p className={styles.hirerName}>
               {jobPost.hirer?.firstName} {jobPost.hirer?.lastName}
             </p>
-            {jobPost.hirer?.hirerProfile?.companyName && (
+            {(companyDisplay || jobPost.hirer?.hirerProfile?.companyName) && (
               <p className={styles.hirerCompany}>
-                {jobPost.hirer.hirerProfile.companyName}
+                {companyDisplay || jobPost.hirer?.hirerProfile?.companyName}
               </p>
             )}
             {(jobPost.hirer?.city || jobPost.hirer?.country) && (
@@ -782,29 +863,35 @@ export default function JobDetail() {
 
           <div className={styles.quickFacts}>
             <p className={styles.quickFactsTitle}>Quick Facts</p>
-            <div className={styles.factRow}>
-              <span className={styles.factLabel}>
-                {jobPost.salaryText ? "Salary" : "Budget"}
-              </span>
-              <span
-                className={styles.factValue}
-                style={{ color: "var(--orange)" }}
-              >
-                {jobPost.salaryText
-                  ? jobPost.salaryText
-                  : `${jobPost.currency} ${parseFloat(jobPost.budget).toLocaleString()}`}
-              </span>
-            </div>
-            <div className={styles.factRow}>
-              <span className={styles.factLabel}>Category</span>
-              <span className={styles.factValue}>{jobPost.category?.name}</span>
-            </div>
+
+            {mainPaymentText !== "—" && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>{mainPaymentLabel}</span>
+                <span
+                  className={styles.factValue}
+                  style={{ color: "var(--orange)" }}
+                >
+                  {mainPaymentText}
+                </span>
+              </div>
+            )}
+
+            {jobPost.category?.name && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Category</span>
+                <span className={styles.factValue}>
+                  {jobPost.category.name}
+                </span>
+              </div>
+            )}
+
             <div className={styles.factRow}>
               <span className={styles.factLabel}>Applicants</span>
               <span className={styles.factValue}>
                 {jobPost._count?.applications || 0}
               </span>
             </div>
+
             <div className={styles.factRow}>
               <span className={styles.factLabel}>Status</span>
               <span
@@ -820,6 +907,7 @@ export default function JobDetail() {
                 <span className={styles.factValue}>{jobTypeMeta.label}</span>
               </div>
             )}
+
             {locationTypeMeta && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Work Style</span>
@@ -828,6 +916,7 @@ export default function JobDetail() {
                 </span>
               </div>
             )}
+
             {jobPost.skills?.length > 0 && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Skills</span>
@@ -836,17 +925,19 @@ export default function JobDetail() {
                 </span>
               </div>
             )}
-            {jobPost.durationValue && jobPost.durationType && (
+
+            {hasProjectDuration && (
               <div className={styles.factRow}>
-                <span className={styles.factLabel}>Duration</span>
+                <span className={styles.factLabel}>Project Duration</span>
                 <span className={styles.factValue}>
                   {jobPost.durationValue} {jobPost.durationType.toLowerCase()}
                 </span>
               </div>
             )}
-            {formatJobDurationParts(jobPost) && (
+
+            {hasEstimatedDuration && formatJobDurationParts(jobPost) && (
               <div className={styles.factRow}>
-                <span className={styles.factLabel}>Duration</span>
+                <span className={styles.factLabel}>Est. Duration</span>
                 <span className={styles.factValue}>
                   {formatJobDurationParts(jobPost).primary}
                   {formatJobDurationParts(jobPost).equivalents[0] && (
@@ -864,7 +955,6 @@ export default function JobDetail() {
               </div>
             )}
 
-            {/* ── NEW: Quick fact for experience level ── */}
             {jobPost.experienceLevel && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Experience</span>
@@ -874,7 +964,6 @@ export default function JobDetail() {
               </div>
             )}
 
-            {/* ── NEW: Quick fact for education level ── */}
             {educationLevelLabel && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Education</span>
@@ -882,12 +971,24 @@ export default function JobDetail() {
               </div>
             )}
 
-            {/* ── NEW: Quick fact for applicant location ── */}
             {jobPost.applicantLocation && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Preferred Location</span>
                 <span className={styles.factValue}>
                   {jobPost.applicantLocation}
+                </span>
+              </div>
+            )}
+
+            {jobPost.expiryDate && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Expires</span>
+                <span className={styles.factValue}>
+                  {new Date(jobPost.expiryDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </span>
               </div>
             )}
