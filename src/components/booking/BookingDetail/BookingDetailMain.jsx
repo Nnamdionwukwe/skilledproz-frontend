@@ -24,6 +24,7 @@ import {
   FaMap,
   FaSpinner,
   FaUndo,
+  FaTags, // ── NEW: for skills
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing } from "../../utils/pricing";
@@ -106,6 +107,15 @@ function GpsCard({ title, dotColor, timestamp, lat, lng, distKm, cardClass }) {
   );
 }
 
+// ── Rate-option label map ────────────────────────────────────────────────
+const RATE_OPTION_LABEL = {
+  budget: "Budget",
+  salaryAmount: "Salary amount",
+  salaryMin: "Salary minimum",
+  salaryMax: "Salary maximum",
+  salaryText: "Salary headline",
+};
+
 export default function BookingDetailMain({
   booking,
   step,
@@ -128,7 +138,7 @@ export default function BookingDetailMain({
   workerName,
   onRefundRequest,
   refundLoading,
-  hasActiveRefund, // ← NEW: whether there's an active refund
+  hasActiveRefund,
 }) {
   // ── Refund modal state ──
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -162,6 +172,9 @@ export default function BookingDetailMain({
   // ── Determine whether to show map link ──────────────────────────────
   const showMapLink =
     booking.latitude && booking.longitude && booking.locationType !== "REMOTE";
+
+  // ── NEW: Job-post booking flag ──────────────────────────────────────
+  const isJobPostBooking = booking.source === "JOB_POST";
 
   // ── Helper to render duration with unit ─────────────────────────────
   const renderDuration = () => {
@@ -229,6 +242,17 @@ export default function BookingDetailMain({
             <FaHandshake /> Negotiated rate
           </span>
         )}
+        {/* ── NEW: Job-post source pill ── */}
+        {isJobPostBooking && (
+          <Link
+            to={`/jobs/${booking.jobPostId}`}
+            className={styles.jobPostPill}
+            title="View the original job post"
+          >
+            <FaBriefcase size={10} /> From Job Post
+            <FaExternalLinkAlt size={9} />
+          </Link>
+        )}
       </div>
 
       {/* Timeline */}
@@ -291,6 +315,26 @@ export default function BookingDetailMain({
           </div>
         )}
       </section>
+
+      {/* ── NEW: Required Skills (from the job post) ── */}
+      {isJobPostBooking && booking.skills?.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            <FaTags
+              size={12}
+              style={{ marginRight: 6, verticalAlign: "-1px" }}
+            />
+            Required Skills
+          </h2>
+          <div className={styles.skillsWrap}>
+            {booking.skills.map((skill, i) => (
+              <span key={i} className={styles.skillChip}>
+                {skill}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Requirements & Responsibilities */}
       {(booking.requirements || booking.responsibilities) && (
@@ -374,10 +418,42 @@ export default function BookingDetailMain({
             value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
             accent
           />
+
+          {/* ── NEW: Job-post specifics ── */}
+          {isJobPostBooking && (
+            <>
+              <DetailItem
+                icon={<FaBriefcase />}
+                label="Created From"
+                value={
+                  <Link
+                    to={`/jobs/${booking.jobPostId}`}
+                    className={styles.jobPostLink}
+                  >
+                    Job Post
+                    <FaExternalLinkAlt size={10} style={{ marginLeft: 4 }} />
+                  </Link>
+                }
+              />
+              {booking.selectedRateOption && (
+                <DetailItem
+                  icon={<FaMoneyBillWave />}
+                  label="Rate Option Selected"
+                  value={
+                    RATE_OPTION_LABEL[booking.selectedRateOption] ||
+                    booking.selectedRateOption
+                  }
+                />
+              )}
+            </>
+          )}
+
           {booking.isNegotiated && booking.negotiatedRate && (
             <DetailItem
               icon={<FaHandshake />}
-              label="Negotiated Rate"
+              label={
+                isJobPostBooking ? "Negotiated Override" : "Negotiated Rate"
+              }
               value={`${booking.currency} ${booking.negotiatedRate?.toLocaleString()}`}
               accent
             />
@@ -645,7 +721,6 @@ export default function BookingDetailMain({
             )}{" "}
             Download Invoice
           </button>
-          {/* Only show refund button if no active refund exists */}
           {showRefundButton && (
             <button
               className={styles.refundBtn}

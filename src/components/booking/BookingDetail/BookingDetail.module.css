@@ -2431,3 +2431,112 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* ────────────────────────────────────────────────────────────
+   JOB POST SOURCE INDICATORS
+   Added for bookings created from a job post (source === "JOB_POST")
+   ──────────────────────────────────────────────────────────── */
+
+.jobPostPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.1);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-left: 6px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.jobPostPill:hover {
+  background: rgba(129, 140, 248, 0.2);
+  color: #a5b4fc;
+}
+.jobPostPill svg {
+  flex-shrink: 0;
+}
+
+.jobPostLink {
+  color: #818cf8;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.jobPostLink:hover {
+  text-decoration: underline;
+}
+/* ────────────────────────────────────────────────────────────
+   JOB POST SOURCE INDICATORS
+   ──────────────────────────────────────────────────────────── */
+
+.jobPostPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.1);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-left: 6px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.jobPostPill:hover {
+  background: rgba(129, 140, 248, 0.2);
+  color: #a5b4fc;
+}
+.jobPostPill svg {
+  flex-shrink: 0;
+}
+
+.jobPostLink {
+  color: #818cf8;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.jobPostLink:hover {
+  text-decoration: underline;
+}
+
+/* Required skills (job-post bookings) */
+.skillsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.skillChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+@media (max-width: 412px) {
+  .jobPostPill {
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-left: 4px;
+  }
+  .skillChip {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+}

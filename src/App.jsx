@@ -131,6 +131,7 @@ import RefundDetail from "./components/booking/Refund/RefundDetail.jsx";
 import GoogleCallback from "./pages/auth/GoogleCallback.jsx";
 import WorkerRefundDetailPage from "./pages/worker/refunds/WorkerRefundDetailPage.jsx";
 import WorkerRefundsPage from "./pages/worker/refunds/components/WorkerRefundsPage.jsx";
+import CreateBookingFromJob from "./components/hirer/CreateBookingFromJob.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -901,6 +902,16 @@ export default function App() {
             <RequireHirer>
               <RequireAuth>
                 <WalletCallback />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/bookings/new/from-job/:jobPostId"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <CreateBookingFromJob />
               </RequireAuth>
             </RequireHirer>
           }

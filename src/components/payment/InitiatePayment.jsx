@@ -25,6 +25,7 @@ import {
   FaCalendarAlt,
   FaMapMarkerAlt,
   FaClipboardList,
+  FaBriefcase,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
 
@@ -219,6 +220,9 @@ export default function InitiatePayment() {
   }, [bookingId, bookingStatus]);
 
   const p = calcPricing(booking, referralApplied ? referralAmount : 0);
+
+  // ── NEW: Job-post booking source indicator ──
+  const isJobPostBooking = booking?.source === "JOB_POST";
 
   const handlePercentChange = (pct) => {
     const subtotal = p.subtotal || 0;
@@ -909,6 +913,20 @@ export default function InitiatePayment() {
                 </p>
               </div>
             </div>
+            {/* ── NEW: Job-post booking info note ── */}
+            {isJobPostBooking && (
+              <div className={styles.jobPostNote}>
+                <FaBriefcase size={14} />
+                <div>
+                  <p className={styles.jobPostNoteTitle}>From Job Post</p>
+                  <p className={styles.jobPostNoteBody}>
+                    This booking was created from a job post. The final amount
+                    is the rate you selected (or negotiated) on the booking
+                    creation page.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className={styles.summaryMeta}>
               <div className={styles.metaItem}>
                 <span className={styles.metaIcon}>

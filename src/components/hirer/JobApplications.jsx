@@ -372,7 +372,7 @@ function ApplicationCard({
         <div className={styles.acceptedNote}>
           ✅ Accepted —{" "}
           <Link
-            to={`/bookings/create?workerId=${worker?.id}&fromJob=${app.jobPostId}`}
+            to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
             className={styles.bookLink}
           >
             Create Booking →

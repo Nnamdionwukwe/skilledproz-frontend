@@ -12,13 +12,38 @@ export function calcPricing(booking, referralDiscount = 0) {
   const isNegotiated = booking?.isNegotiated && booking?.negotiatedRate;
   const quantity = booking?.quantity || 1;
 
+  // ── NEW: Job-post bookings ────────────────────────────────────────────
+  // When a booking is created from a job post (source === "JOB_POST"),
+  // the agreedRate IS the final amount the hirer picked (either a
+  // selected price option or a negotiated override). We do NOT multiply
+  // by duration — the amount is already the total.
+  const isJobPostBooking = booking?.source === "JOB_POST";
+
   let qty = 1;
   let subtotal = 0;
   let hasQty = false;
 
-  // For negotiated bookings, the agreedRate IS the total amount
-  if (isNegotiated) {
-    // Use the negotiated rate as the total
+  if (isJobPostBooking) {
+    // Job-post booking: single, final amount — no multiplication.
+    subtotal = parseFloat(agreedRate.toFixed(2));
+
+    // Still show duration for informational display if present
+    if (unit === "custom" && quantity) {
+      qty = quantity;
+      hasQty = true;
+    } else if (value && unit !== "custom") {
+      qty = value;
+      hasQty = true;
+    } else if (hours) {
+      if (unit === "hours") qty = hours;
+      else if (unit === "days") qty = Math.round(hours / 8);
+      else if (unit === "weeks") qty = Math.round(hours / 40);
+      else if (unit === "months") qty = Math.round(hours / 160);
+      else if (unit === "years") qty = Math.round(hours / 1920);
+      hasQty = true;
+    }
+  } else if (isNegotiated) {
+    // For negotiated bookings, the agreedRate IS the total amount
     subtotal =
       parseFloat(booking.negotiatedRate) || parseFloat(agreedRate) || 0;
 
@@ -89,7 +114,11 @@ export function calcPricing(booking, referralDiscount = 0) {
   );
 
   return {
-    agreedRate: isNegotiated ? booking.negotiatedRate : agreedRate,
+    agreedRate: isJobPostBooking
+      ? agreedRate
+      : isNegotiated
+        ? booking.negotiatedRate
+        : agreedRate,
     qty,
     unit,
     unitSuffix,
@@ -105,5 +134,6 @@ export function calcPricing(booking, referralDiscount = 0) {
     hasQty: hasQty || unit === "custom" || !!(value || hours),
     isNegotiated,
     negotiatedRate: isNegotiated ? booking.negotiatedRate : null,
+    isJobPostBooking, // ← expose for UI
   };
 }
