@@ -238,6 +238,8 @@
   overflow: hidden;
   background: var(--bg);
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 /* Empty state when no chat is active */
@@ -267,7 +269,7 @@
   color: var(--text-dim);
 }
 
-/* Chat header */
+/* Chat header — pinned at the top of the pane */
 .chatHeader {
   display: flex;
   align-items: center;
@@ -276,6 +278,9 @@
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .backBtn {
@@ -329,14 +334,25 @@
   color: var(--orange-hover);
 }
 
-/* Messages area */
+/* Messages area — bounded scroll container */
+.messagesAreaRelative {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .messagesArea {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  overscroll-behavior: contain;
 }
 
 .loadingMessages {
@@ -466,14 +482,22 @@
 .readTick {
   display: inline-flex;
   align-items: center;
-  margin-left: 2px;
+  margin-left: 3px;
   vertical-align: middle;
+  opacity: 0.85;
 }
 .readTick svg {
   flex-shrink: 0;
 }
+.tickRead {
+  color: #3b82f6;
+}
+.tickUnread {
+  color: currentColor;
+  opacity: 0.75;
+}
 
-/* Sender name (only shows on first message of a run) */
+/* Sender name (first message of a run) */
 .senderName {
   font-size: 0.7rem;
   font-weight: 700;
@@ -516,6 +540,72 @@
 .fileAttachment svg {
   flex-shrink: 0;
   opacity: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   JUMP-TO-BOTTOM BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+.jumpToBottom {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.5rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 6;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.15s;
+  animation: jumpIn 0.2s ease both;
+}
+.jumpToBottom:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--bg);
+  transform: translateY(-2px);
+}
+.jumpToBottom svg {
+  flex-shrink: 0;
+}
+
+@keyframes jumpIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.jumpBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--orange);
+  color: var(--bg);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-panel);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -687,12 +777,9 @@
 .translateWrap {
   margin-top: 4px;
 }
-
-/* positioned wrapper for the picker popup */
 .translateRelative {
   position: relative;
 }
-
 .translateBtn {
   display: inline-flex;
   align-items: center;
@@ -716,7 +803,6 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-
 .translatedText {
   margin-top: 4px;
   padding: 6px 10px;
@@ -751,7 +837,6 @@
 .translateDismiss svg {
   flex-shrink: 0;
 }
-
 .langPicker {
   position: absolute;
   bottom: calc(100% + 4px);
@@ -808,7 +893,6 @@
 @media (max-width: 768px) {
   .shell {
     grid-template-columns: 1fr;
-    /* Use dvh where supported to survive iOS Safari's URL bar */
     height: calc(100vh - 64px);
   }
   @supports (height: 100dvh) {
@@ -829,13 +913,29 @@
     border-right: none;
   }
 
+  /* The chat pane owns its height and pins its children */
   .chatPane {
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .chatHeader {
     padding: 0.75rem 1rem;
     gap: 0.625rem;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .messagesAreaRelative {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .messagesArea {
+    min-height: 0;
+    padding: 1rem;
   }
 }
 
@@ -895,6 +995,12 @@
   .inputHint {
     display: none;
   }
+  .jumpToBottom {
+    bottom: 0.875rem;
+    right: 0.875rem;
+    width: 38px;
+    height: 38px;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -905,120 +1011,5 @@
     .inputArea {
       padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
     }
-  }
-}
-/* ═══════════════════════════════════════════════════════════════
-   READ RECEIPTS — double tick
-   ═══════════════════════════════════════════════════════════════ */
-.readTick {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 3px;
-  vertical-align: middle;
-  opacity: 0.85;
-}
-.readTick svg {
-  flex-shrink: 0;
-}
-
-/* When read, the double tick is a slightly brighter blue */
-.tickRead {
-  color: #3b82f6;
-}
-.tickUnread {
-  color: currentColor;
-  opacity: 0.75;
-}
-/* ═══════════════════════════════════════════════════════════════
-   JUMP-TO-BOTTOM BUTTON
-   ═══════════════════════════════════════════════════════════════ */
-.messagesAreaRelative {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* The chat header stays pinned to the top of the pane. On desktop and
-   mobile, it should always be visible so Back / View Profile are always
-   clickable regardless of scroll position. */
-.chatHeader {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.jumpToBottom {
-  position: absolute;
-  bottom: 1.25rem;
-  right: 1.5rem;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  color: var(--text);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  z-index: 6;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s,
-    transform 0.15s;
-  animation: jumpIn 0.2s ease both;
-}
-.jumpToBottom:hover {
-  background: var(--orange);
-  border-color: var(--orange);
-  color: var(--bg);
-  transform: translateY(-2px);
-}
-.jumpToBottom svg {
-  flex-shrink: 0;
-}
-
-@keyframes jumpIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* The unread badge — always present when the button is visible, because
-   the button only shows when unreadBelow > 0 */
-.jumpBadge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  background: var(--orange);
-  color: var(--bg);
-  border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--bg-panel);
-  box-shadow: 0 0 0 1px var(--border);
-}
-
-@media (max-width: 380px) {
-  .jumpToBottom {
-    bottom: 0.875rem;
-    right: 0.875rem;
-    width: 38px;
-    height: 38px;
   }
 }
