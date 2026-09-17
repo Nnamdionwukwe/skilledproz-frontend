@@ -10,8 +10,6 @@ import {
   FiBriefcase,
   FiVolume2,
   FiCamera,
-  FiVideo,
-  FiEdit3,
   FiX,
   FiAlertCircle,
 } from "react-icons/fi";
@@ -40,9 +38,18 @@ export default function CreatePost({ onPostCreated, compact = false }) {
 
   if (!user) return null;
 
-  const openEditor = () => {
+  // ── Shortcut: expand + open file picker ──
+  // setTimeout defers the click until after the editor (and the hidden
+  // <input ref={fileRef}>) has actually mounted, so it works on first tap.
+  const openPhotoShortcut = () => {
     setExpanded(true);
-    // focus the textarea once it mounts
+    setTimeout(() => fileRef.current?.click(), 0);
+  };
+
+  // ── Shortcut: expand + preselect HIRING + focus the textarea ──
+  const openJobShortcut = () => {
+    setType("HIRING");
+    setExpanded(true);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
@@ -100,63 +107,49 @@ export default function CreatePost({ onPostCreated, compact = false }) {
 
   return (
     <div className={styles.wrap}>
-      {/* ── LinkedIn-style compact trigger ── */}
+      {/* ── Compact trigger with two shortcut icons ── */}
       {compact && !expanded && (
-        <div className={styles.compactTrigger}>
-          {/* Row 1 — avatar + pill input */}
-          <div className={styles.triggerTop}>
-            <div className={styles.triggerAvatar}>
-              {user.avatar ? (
-                <img src={user.avatar} alt="" />
-              ) : (
-                <span>{user.firstName?.[0]}</span>
-              )}
-            </div>
-            <button
-              type="button"
-              className={styles.triggerInput}
-              onClick={openEditor}
-            >
-              <span className={styles.triggerInputText}>
-                Start a post, share an update...
-              </span>
-            </button>
+        <div
+          className={styles.compactTrigger}
+          onClick={() => setExpanded(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && setExpanded(true)}
+        >
+          <div className={styles.triggerAvatar}>
+            {user.avatar ? (
+              <img src={user.avatar} alt="" />
+            ) : (
+              <span>{user.firstName?.[0]}</span>
+            )}
           </div>
-
-          {/* Row 2 — labeled action buttons like LinkedIn */}
+          <div className={styles.triggerInput}>
+            <span className={styles.triggerInputText}>
+              Start a post, share an update...
+            </span>
+          </div>
           <div className={styles.triggerActions}>
             <button
-              type="button"
-              className={styles.triggerAction}
-              onClick={openEditor}
-            >
-              <FiVideo size={18} className={styles.actionVideo} />
-              <span>Video</span>
-            </button>
-
-            <button
-              type="button"
-              className={styles.triggerAction}
+              className={styles.triggerBtn}
               onClick={(e) => {
                 e.stopPropagation();
-                setExpanded(true);
-                setTimeout(() => fileRef.current?.click(), 0);
+                openPhotoShortcut();
               }}
-            >
-              <FiCamera size={18} className={styles.actionPhoto} />
-              <span>Photo</span>
-            </button>
-
-            <button
+              title="Add photo"
               type="button"
-              className={styles.triggerAction}
-              onClick={() => {
-                setType("HIRING");
-                openEditor();
-              }}
             >
-              <FiBriefcase size={18} className={styles.actionJob} />
-              <span>Job</span>
+              <FiCamera size={16} />
+            </button>
+            <button
+              className={styles.triggerBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                openJobShortcut();
+              }}
+              title="Post a job"
+              type="button"
+            >
+              <FiBriefcase size={16} />
             </button>
           </div>
         </div>
