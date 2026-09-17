@@ -28,9 +28,12 @@ import {
   FiLock,
   FiSearch,
   FiArrowLeft,
+  FiBookmark,
+  FiBookmark as FiBookmarkFilled,
 } from "react-icons/fi";
 import VideoIntroSection from "./VideoIntroSection";
 import ReportButton from "../../pages/reports/ReportButton";
+import useSavedWorker from "../../hooks/useSavedWorker";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -51,6 +54,14 @@ export default function WorkerPublicProfile() {
   const [tab, setTab] = useState("about");
 
   const isOwnProfile = viewerUser?.id === userId;
+
+  const isHirer = viewerUser?.role === "HIRER";
+  const {
+    isSaved,
+    checking: checkingSave,
+    toggling,
+    toggle,
+  } = useSavedWorker(userId, { enabled: isHirer && !isOwnProfile });
 
   useEffect(() => {
     if (!userId) return;
@@ -279,26 +290,48 @@ export default function WorkerPublicProfile() {
 
             {!isOwnProfile && (
               <div className={styles.actionBtns}>
-                <button
-                  className={styles.bookBtn}
-                  onClick={() =>
-                    navigate(`/bookings/create?workerId=${userId}`)
-                  }
-                >
-                  Book Now
-                </button>
-                <button
-                  className={styles.msgBtn}
-                  onClick={() => navigate(`/messages?with=${userId}`)}
-                  title="Message"
-                >
-                  <FiMessageCircle size={16} />
-                </button>
-                <ReportButton
-                  targetType="USER"
-                  targetId={worker.userId}
-                  targetName={`${worker.firstName} ${worker.lastName}`}
-                />
+                {!isOwnProfile && (
+                  <div className={styles.actionBtns}>
+                    <button
+                      className={styles.bookBtn}
+                      onClick={() =>
+                        navigate(`/bookings/create?workerId=${userId}`)
+                      }
+                    >
+                      Book Now
+                    </button>
+
+                    {isHirer && (
+                      <button
+                        className={`${styles.saveBtn} ${isSaved ? styles.saveBtnActive : ""}`}
+                        onClick={toggle}
+                        disabled={checkingSave || toggling}
+                        title={isSaved ? "Remove from saved" : "Save worker"}
+                        type="button"
+                        aria-pressed={isSaved}
+                      >
+                        <FiBookmark
+                          size={16}
+                          fill={isSaved ? "currentColor" : "none"}
+                        />
+                      </button>
+                    )}
+
+                    <button
+                      className={styles.msgBtn}
+                      onClick={() => navigate(`/messages?with=${userId}`)}
+                      title="Message"
+                    >
+                      <FiMessageCircle size={16} />
+                    </button>
+
+                    <ReportButton
+                      targetType="USER"
+                      targetId={worker.userId}
+                      targetName={`${worker.firstName} ${worker.lastName}`}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

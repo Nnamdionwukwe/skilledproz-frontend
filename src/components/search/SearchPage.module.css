@@ -959,3 +959,38 @@
 .expansionNote svg {
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SAVE BUTTON ON WORKER CARD
+   ═══════════════════════════════════════════════════════════════ */
+.wcSaveBtn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+  z-index: 2;
+}
+.wcSaveBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+  transform: scale(1.05);
+}
+.wcSaveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.wcSaveBtnActive {
+  background: var(--orange-dim);
+  border-color: var(--orange-glow);
+  color: var(--orange);
+}

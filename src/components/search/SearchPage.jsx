@@ -4,6 +4,7 @@ import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import VoiceSearch from "./VoiceSearch";
 import { ShieldCheck } from "lucide-react";
+import useSavedWorker from "../../hooks/useSavedWorker";
 import {
   FiSearch,
   FiMapPin,
@@ -15,7 +16,9 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiTool,
+  FiBookmark,
 } from "react-icons/fi";
+import { useAuthStore } from "../../store/authStore";
 
 const RATINGS = [
   { label: "4★ & above", value: 4 },
@@ -791,6 +794,16 @@ function WorkerCard({
   isNew = false,
   showDistance = false,
 }) {
+  const { user: viewer } = useAuthStore(); // ← ADD
+  const isHirer = viewer?.role === "HIRER"; // ← ADD
+
+  const {
+    isSaved,
+    checking: checkingSave,
+    toggling,
+    toggle,
+  } = useSavedWorker(worker.user?.id, { enabled: isHirer }); // ← ADD
+
   const {
     user,
     categories,
@@ -804,6 +817,7 @@ function WorkerCard({
     _distanceKm,
     verificationStatus,
   } = worker;
+
   const dist = _distanceKm ?? distanceKm;
   const primaryCat = categories?.find((c) => c.isPrimary) || categories?.[0];
 
@@ -816,9 +830,7 @@ function WorkerCard({
       <div className={styles.wcTop}>
         <div className={styles.wcAvatar}>
           {user?.avatar ? (
-            <>
-              <img src={user.avatar} alt="" />
-            </>
+            <img src={user.avatar} alt="" />
           ) : (
             <span>
               {user?.firstName?.[0]}
@@ -837,6 +849,27 @@ function WorkerCard({
           )}
         </div>
       </div>
+
+      {/* ── BOOKMARK BUTTON ── */}
+      {isHirer && (
+        <button
+          type="button"
+          className={`${styles.wcSaveBtn} ${
+            isSaved ? styles.wcSaveBtnActive : ""
+          }`}
+          onClick={(e) => {
+            e.preventDefault(); // don't follow the card's <a>
+            e.stopPropagation();
+            toggle();
+          }}
+          disabled={checkingSave || toggling}
+          title={isSaved ? "Remove from saved" : "Save worker"}
+          aria-label={isSaved ? "Remove from saved" : "Save worker"}
+        >
+          <FiBookmark size={14} fill={isSaved ? "currentColor" : "none"} />
+        </button>
+      )}
+
       <div className={styles.wcInfo}>
         <p className={styles.wcName}>
           {user?.firstName} {user?.lastName}
@@ -867,7 +900,9 @@ function WorkerCard({
           <span className={styles.wcRateUnit}>/hr</span>
         </span>
         <span
-          className={`${styles.wcAvail} ${isAvailable ? styles.wcAvailOn : styles.wcAvailOff}`}
+          className={`${styles.wcAvail} ${
+            isAvailable ? styles.wcAvailOn : styles.wcAvailOff
+          }`}
         >
           {isAvailable ? "Available" : "Busy"}
         </span>
