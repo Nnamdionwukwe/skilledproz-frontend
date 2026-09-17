@@ -929,7 +929,6 @@
   color: currentColor;
   opacity: 0.75;
 }
-
 /* ═══════════════════════════════════════════════════════════════
    JUMP-TO-BOTTOM BUTTON
    ═══════════════════════════════════════════════════════════════ */
@@ -941,12 +940,21 @@
   flex-direction: column;
 }
 
+/* The chat header stays pinned to the top of the pane. On desktop and
+   mobile, it should always be visible so Back / View Profile are always
+   clickable regardless of scroll position. */
+.chatHeader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .jumpToBottom {
   position: absolute;
   bottom: 1.25rem;
   right: 1.5rem;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -955,14 +963,14 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-  z-index: 5;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 6;
   transition:
     background 0.15s,
     border-color 0.15s,
     color 0.15s,
     transform 0.15s;
-  animation: jumpIn 0.18s ease both;
+  animation: jumpIn 0.2s ease both;
 }
 .jumpToBottom:hover {
   background: var(--orange);
@@ -977,38 +985,40 @@
 @keyframes jumpIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-/* Unread badge that rides on the jump button */
+/* The unread badge — always present when the button is visible, because
+   the button only shows when unreadBelow > 0 */
 .jumpBadge {
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
   background: var(--orange);
   color: var(--bg);
   border-radius: 999px;
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--bg);
+  border: 2px solid var(--bg-panel);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 @media (max-width: 380px) {
   .jumpToBottom {
     bottom: 0.875rem;
     right: 0.875rem;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
   }
 }

@@ -222,8 +222,10 @@ export default function Messages() {
     return window.innerWidth <= 768 && hasChatTarget ? "chat" : "list";
   });
 
-  // ── Jump-to-bottom button ──
-  const [showJumpButton, setShowJumpButton] = useState(false);
+  // ── Jump-to-bottom state ──
+  // unreadBelow = count of new messages that arrived while the user was
+  // scrolled away from the bottom. The jump button only shows when this
+  // is > 0 — not merely because the user scrolled up.
   const [unreadBelow, setUnreadBelow] = useState(0);
 
   // ── Refs ──
@@ -236,62 +238,96 @@ export default function Messages() {
   const isAtBottomRef = useRef(true);
   const justSentRef = useRef(false);
   const initialLoadRef = useRef(true);
+  // Track the id of the last message we've "seen" so we can tell when
+  // new ones arrive during a poll.
+  const lastSeenMessageIdRef = useRef(null);
 
   // ── Scroll tracking ──
+  // Updates isAtBottomRef so the effect below knows whether to auto-scroll
+  // on send. It does NOT touch unreadBelow — that's driven by message
+  // length changes in the effect, not by scroll position.
   const handleMessagesScroll = useCallback(() => {
     const el = messagesAreaRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     const nearBottom = distanceFromBottom < 150;
     isAtBottomRef.current = nearBottom;
-    setShowJumpButton(!nearBottom);
+    // If the user has scrolled back to the bottom, clear the badge
     if (nearBottom) setUnreadBelow(0);
   }, []);
 
-  // ── Auto-scroll logic ──
-  // Scrolls only when:
-  //   1. The user just sent a message (own messages always scroll down)
-  //   2. It's the very first render of the active conversation
-  //   3. The user is already near the bottom
-  // Otherwise the list updates silently and the jump button ticks up.
+  // ── Detect new incoming messages and increment unreadBelow ──
+  // Runs whenever `messages` changes. Compares the newest message id with
+  // the one we last "saw" — if a new one appeared and the user is NOT at
+  // the bottom, bump the badge. If they ARE at the bottom, scroll.
   useEffect(() => {
-    if (justSentRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      justSentRef.current = false;
+    if (messages.length === 0) {
+      lastSeenMessageIdRef.current = null;
       return;
     }
-    if (initialLoadRef.current && messages.length > 0) {
-      bottomRef.current?.scrollIntoView({ behavior: "auto" });
+
+    const newestId = messages[messages.length - 1]?.id;
+    const isNew = newestId && newestId !== lastSeenMessageIdRef.current;
+
+    if (!isNew) return;
+
+    // First message load for this conversation — jump to the bottom, no badge.
+    if (initialLoadRef.current) {
+      lastSeenMessageIdRef.current = newestId;
       initialLoadRef.current = false;
+      // Defer so the ref is attached to the DOM
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "auto" });
+      });
       return;
     }
+
+    // The user just sent this message — always scroll, no badge.
+    if (justSentRef.current) {
+      lastSeenMessageIdRef.current = newestId;
+      justSentRef.current = false;
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+      return;
+    }
+
+    // Incoming message
     if (isAtBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    } else if (messages.length > 0) {
+      // User is at the bottom — auto-scroll to keep them there
+      lastSeenMessageIdRef.current = newestId;
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+    } else {
+      // User is scrolled up — don't move the viewport, just count the
+      // unread-below messages so the jump button lights up.
       setUnreadBelow((n) => n + 1);
+      lastSeenMessageIdRef.current = newestId;
     }
   }, [messages]);
 
-  // Own outgoing bubble → always scroll down
+  // ── Optimistic bubble just appeared → scroll to show it ──
   useEffect(() => {
     if (sendingMessage) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
     }
   }, [sendingMessage]);
 
-  // Reset jump state whenever the conversation changes
+  // ── Reset per-conversation state ──
   useEffect(() => {
     initialLoadRef.current = true;
+    lastSeenMessageIdRef.current = null;
     setUnreadBelow(0);
-    setShowJumpButton(false);
     isAtBottomRef.current = true;
   }, [activeConvoId]);
 
-  // Jump-to-bottom handler
+  // ── Jump-to-bottom handler ──
   const handleJumpToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     setUnreadBelow(0);
-    setShowJumpButton(false);
     isAtBottomRef.current = true;
   }, []);
 
@@ -462,8 +498,8 @@ export default function Messages() {
     setMobileView("chat");
     isAtBottomRef.current = true;
     initialLoadRef.current = true;
+    lastSeenMessageIdRef.current = null;
     setUnreadBelow(0);
-    setShowJumpButton(false);
   };
 
   const handleMobileBack = () => {
@@ -641,6 +677,7 @@ export default function Messages() {
   );
 
   const hasActiveChat = !!(activeConvoId || withUserId || withUser);
+  const showJumpButton = unreadBelow > 0;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -766,6 +803,7 @@ export default function Messages() {
             </div>
           ) : (
             <>
+              {/* Sticky header — always visible above the scroll area */}
               <div className={styles.chatHeader}>
                 <button
                   className={styles.backBtn}
@@ -804,8 +842,8 @@ export default function Messages() {
                 )}
               </div>
 
-              {/* Messages area — wrapped in a relative container so the
-                  jump-to-bottom button can float in the bottom-right */}
+              {/* Messages area — wrapped in relative container so the jump
+                  button can float in the bottom-right */}
               <div className={styles.messagesAreaRelative}>
                 <div
                   ref={messagesAreaRef}
@@ -963,7 +1001,7 @@ export default function Messages() {
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Floating jump-to-bottom */}
+                {/* Jump-to-bottom — only when there are unseen messages below */}
                 {showJumpButton && (
                   <button
                     type="button"
@@ -973,11 +1011,9 @@ export default function Messages() {
                     title="Scroll to latest"
                   >
                     <FiChevronDown size={20} />
-                    {unreadBelow > 0 && (
-                      <span className={styles.jumpBadge}>
-                        {unreadBelow > 9 ? "9+" : unreadBelow}
-                      </span>
-                    )}
+                    <span className={styles.jumpBadge}>
+                      {unreadBelow > 9 ? "9+" : unreadBelow}
+                    </span>
                   </button>
                 )}
               </div>
