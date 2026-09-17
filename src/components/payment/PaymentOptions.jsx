@@ -35,10 +35,20 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
   const PLATFORM_FEE_RATE = 0.05;
   const quantity = booking.quantity || 1;
 
+  // ── NEW: Job-post bookings ────────────────────────────────────────────
+  // When a booking is created from a job post (source === "JOB_POST"),
+  // the agreedRate IS the final amount the hirer picked (either a
+  // selected price option or a negotiated override). We do NOT multiply
+  // by duration — the amount is already the total.
+  const isJobPostBooking = booking?.source === "JOB_POST";
+
   let qty = 1;
 
-  // For custom bookings, use the quantity field
-  if (unit === "custom") {
+  if (isJobPostBooking) {
+    // No multiplication — the amount is already final
+    qty = 1;
+  } else if (unit === "custom") {
+    // For custom bookings, use the quantity field
     qty = quantity || 1;
   } else if (value && unit !== "custom") {
     qty = value;
@@ -62,7 +72,8 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
       custom: "custom",
     }[unit] || unit;
 
-  const subtotal = rate * qty;
+  // For JOB_POST, subtotal is just the agreedRate — no duration math.
+  const subtotal = isJobPostBooking ? rate : rate * qty;
   const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
   const workerPayout = subtotal;
   const referralDeduct = applyReferral
@@ -85,6 +96,7 @@ function calcPricing(booking, referralAmount = 0, applyReferral = false) {
     totalCharged,
     hasQty: ((value || hours) && unit !== "custom") || unit === "custom",
     referralDeduct,
+    isJobPostBooking, // ← expose to the UI
   };
 }
 
@@ -238,6 +250,20 @@ export default function PaymentOptions({
       <div className={styles.summary}>
         <p className={styles.summaryTitle}>
           <FaMoneyBillWave style={{ marginRight: "6px" }} /> Payment Breakdown
+          {p.isJobPostBooking && (
+            <span
+              style={{
+                marginLeft: 8,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#818cf8",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              · From Job Post
+            </span>
+          )}
         </p>
 
         <div className={styles.summaryRow}>
@@ -258,7 +284,8 @@ export default function PaymentOptions({
           </div>
         )}
 
-        {p.hasQty && (
+        {/* ── Subtotal row — hidden for job-post bookings (amount is already final) ── */}
+        {p.hasQty && !p.isJobPostBooking && (
           <div className={styles.summaryRow}>
             <span>
               Subtotal ({p.qty} × {formatPrice(p.rate, p.currency)})

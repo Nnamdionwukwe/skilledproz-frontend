@@ -60,6 +60,9 @@ export default function BookingDetailPayment({
   isHirer,
   isWorker,
 }) {
+  // ── NEW: Job-post booking flag ──────────────────────────────────────
+  const isJobPostBooking = booking?.source === "JOB_POST";
+
   // ── Render fee breakdown ──────────────────────────────────────────────
   const renderFeeBreakdown = () => {
     if (!feeBreakdown) return null;
@@ -87,23 +90,31 @@ export default function BookingDetailPayment({
       return (
         <div className={styles.feeBreakdown}>
           <p className={styles.feeBreakdownLabel}>
-            {isNegotiated ? "Agreed Total (Negotiated)" : "Your Earnings"}
+            {isNegotiated
+              ? "Agreed Total (Negotiated)"
+              : isJobPostBooking
+                ? "Your Earnings (From Job Post)"
+                : "Your Earnings"}
           </p>
 
-          {isNegotiated ? (
-            // Negotiated view - fixed total
+          {isNegotiated || isJobPostBooking ? (
+            // Fixed-total view (negotiated OR job-post booking)
             <>
               <div className={styles.feeRow}>
                 <span>Agreed Total</span>
-                <span>{formatPrice(booking.negotiatedRate, cur)}</span>
-              </div>
-              <div className={styles.feeRow}>
-                <span>Duration</span>
                 <span>
-                  {qty} {unitLabel}
-                  {qty !== 1 ? "s" : ""}
+                  {formatPrice(agreedRate || booking.negotiatedRate, cur)}
                 </span>
               </div>
+              {hasQty && (
+                <div className={styles.feeRow}>
+                  <span>Duration</span>
+                  <span>
+                    {qty} {unitLabel}
+                    {qty !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
               <div className={styles.feeRow}>
                 <span>Platform Fee (5%)</span>
                 <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
@@ -191,18 +202,27 @@ export default function BookingDetailPayment({
     // Check if this is a custom booking
     const isCustom = feeBreakdown.estimatedUnit === "custom";
 
+    // For fixed-total views (negotiated OR job-post), we don't show the
+    // "(qty × rate)" multiplication line because the amount is already final.
+    const isFixedTotalView = isNegotiated || isJobPostBooking;
+
     return (
       <div className={styles.feeBreakdown}>
         <p className={styles.feeBreakdownLabel}>
-          {isNegotiated ? "Agreed Total (Negotiated)" : "Payment Breakdown"}
+          {isNegotiated
+            ? "Agreed Total (Negotiated)"
+            : isJobPostBooking
+              ? "Payment Breakdown (From Job Post)"
+              : "Payment Breakdown"}
         </p>
 
-        {isNegotiated ? (
-          // Negotiated view - fixed total
+        {isFixedTotalView ? (
+          // Fixed-total view — amount comes from the job post's selected
+          // rate option (or negotiated override). No duration multiplication.
           <>
             <div className={styles.feeRow}>
-              <span>Agreed Total</span>
-              <span>{formatPrice(booking.negotiatedRate, cur)}</span>
+              <span>{isNegotiated ? "Agreed Total" : "Selected Amount"}</span>
+              <span>{formatPrice(agreedRate, cur)}</span>
             </div>
 
             {(hasQty || isCustom) && (
@@ -434,7 +454,9 @@ export default function BookingDetailPayment({
             <p className={styles.paymentBannerDesc}>
               {isPaymentPending
                 ? "Your previous payment is still processing. Try a different method below."
-                : "Secure the worker's slot — pay now to confirm."}
+                : isJobPostBooking
+                  ? "Pay the rate you agreed on the job post — the amount below is final."
+                  : "Secure the worker's slot — pay now to confirm."}
             </p>
           </div>
         </div>
