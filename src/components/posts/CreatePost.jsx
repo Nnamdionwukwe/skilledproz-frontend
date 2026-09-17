@@ -10,8 +10,8 @@ import {
   FiBriefcase,
   FiVolume2,
   FiCamera,
-  FiGlobe,
-  FiLock,
+  FiVideo,
+  FiEdit3,
   FiX,
   FiAlertCircle,
 } from "react-icons/fi";
@@ -36,8 +36,15 @@ export default function CreatePost({ onPostCreated, compact = false }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef(null);
+  const textareaRef = useRef(null);
 
   if (!user) return null;
+
+  const openEditor = () => {
+    setExpanded(true);
+    // focus the textarea once it mounts
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
 
   const handleImages = (e) => {
     const files = Array.from(e.target.files);
@@ -93,56 +100,69 @@ export default function CreatePost({ onPostCreated, compact = false }) {
 
   return (
     <div className={styles.wrap}>
-      {/* Compact trigger */}
+      {/* ── LinkedIn-style compact trigger ── */}
       {compact && !expanded && (
-        <div
-          className={styles.compactTrigger}
-          onClick={() => setExpanded(true)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && setExpanded(true)}
-        >
-          <div className={styles.triggerAvatar}>
-            {user.avatar ? (
-              <img src={user.avatar} alt="" />
-            ) : (
-              <span>{user.firstName?.[0]}</span>
-            )}
+        <div className={styles.compactTrigger}>
+          {/* Row 1 — avatar + pill input */}
+          <div className={styles.triggerTop}>
+            <div className={styles.triggerAvatar}>
+              {user.avatar ? (
+                <img src={user.avatar} alt="" />
+              ) : (
+                <span>{user.firstName?.[0]}</span>
+              )}
+            </div>
+            <button
+              type="button"
+              className={styles.triggerInput}
+              onClick={openEditor}
+            >
+              <span className={styles.triggerInputText}>
+                Start a post, share an update...
+              </span>
+            </button>
           </div>
-          <div className={styles.triggerInput}>
-            <span className={styles.triggerInputText}>
-              Start a post, share an update...
-            </span>
-          </div>
+
+          {/* Row 2 — labeled action buttons like LinkedIn */}
           <div className={styles.triggerActions}>
             <button
-              className={styles.triggerBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpanded(true);
-                fileRef.current?.click();
-              }}
-              title="Add photo"
               type="button"
+              className={styles.triggerAction}
+              onClick={openEditor}
             >
-              <FiCamera size={16} />
+              <FiVideo size={18} className={styles.actionVideo} />
+              <span>Video</span>
             </button>
+
             <button
-              className={styles.triggerBtn}
+              type="button"
+              className={styles.triggerAction}
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(true);
+                setTimeout(() => fileRef.current?.click(), 0);
               }}
-              title="Announce"
-              type="button"
             >
-              <FiSpeaker size={16} />
+              <FiCamera size={18} className={styles.actionPhoto} />
+              <span>Photo</span>
+            </button>
+
+            <button
+              type="button"
+              className={styles.triggerAction}
+              onClick={() => {
+                setType("HIRING");
+                openEditor();
+              }}
+            >
+              <FiBriefcase size={18} className={styles.actionJob} />
+              <span>Job</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Full editor */}
+      {/* ── Full editor ── */}
       {expanded && (
         <div className={styles.editor}>
           {/* Author */}
@@ -173,6 +193,7 @@ export default function CreatePost({ onPostCreated, compact = false }) {
 
           {/* Textarea */}
           <textarea
+            ref={textareaRef}
             className={styles.textarea}
             placeholder="What's on your mind? Share a job update, achievement, or anything work-related..."
             value={content}

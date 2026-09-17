@@ -5,25 +5,34 @@
   overflow: hidden;
 }
 
-/* Compact trigger */
+/* ═══════════════════════════════════════════════════════════════
+   COMPACT TRIGGER — LinkedIn-style: pill row + 3 labeled actions
+   ═══════════════════════════════════════════════════════════════ */
 .compactTrigger {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Row 1 — avatar + input pill */
+.triggerTop {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  cursor: pointer;
+  padding: 1rem 1.25rem 0.75rem;
   min-width: 0;
 }
+
 .triggerAvatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--orange-dim);
   color: var(--orange);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   flex-shrink: 0;
   overflow: hidden;
@@ -33,23 +42,31 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* The pill button itself */
 .triggerInput {
   flex: 1;
   min-width: 0;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 100px;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.85rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   overflow: hidden;
   white-space: nowrap;
+  font-family: var(--font-body);
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 .triggerInput:hover {
   border-color: var(--border-hover);
+  background: var(--bg-card);
 }
 .triggerInputText {
   display: block;
@@ -59,28 +76,61 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Row 2 — divider + 3 labeled actions */
 .triggerActions {
   display: flex;
-  gap: 0.375rem;
-  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid var(--border);
+  padding: 0.4rem 0.5rem 0.5rem;
+  gap: 0.25rem;
+  min-width: 0;
 }
-.triggerBtn {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 6px;
-  flex-shrink: 0;
+
+.triggerAction {
+  flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.55rem 0.5rem;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
 }
-.triggerBtn:hover {
+.triggerAction:hover {
   background: var(--bg-card);
+  color: var(--text);
+}
+.triggerAction svg {
+  flex-shrink: 0;
 }
 
-/* Full editor */
+/* Icon colors — small colored accents like LinkedIn */
+.actionVideo {
+  color: #22c55e;
+}
+.actionPhoto {
+  color: #38bdf8;
+}
+.actionJob {
+  color: var(--orange);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FULL EDITOR
+   ═══════════════════════════════════════════════════════════════ */
 .editor {
   padding: 1.25rem;
   display: flex;
@@ -295,25 +345,16 @@
   animation: spin 0.7s linear infinite;
   display: inline-block;
 }
+
 /* ─────────────────────────────────────────────────────────────
-   Icon alignment for buttons that now carry SVG icons
-   (one property added — safe additive change)
+   Icon alignment for buttons that carry SVG icons
    ───────────────────────────────────────────────────────────── */
 .typeBtn,
-.attachBtn,
-.triggerBtn {
+.attachBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-}
-
-.triggerBtn svg {
-  color: var(--text-dim);
-  transition: color 0.15s;
-}
-.triggerBtn:hover svg {
-  color: var(--orange);
 }
 
 .typeBtn svg {
@@ -327,7 +368,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Error banner (replaces the plain <p>⚠️ error text)
+   Error banner
    ───────────────────────────────────────────────────────────── */
 .errorBanner {
   display: flex;
@@ -370,9 +411,7 @@
   opacity: 1;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Remove-image button — replacing the text "×" with a FiX icon
-   ───────────────────────────────────────────────────────────── */
+/* Remove-image button icon */
 .previewRemove svg {
   pointer-events: none;
 }
@@ -389,42 +428,51 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COMPACT TRIGGER — mobile-safe, single-line with ellipsis
+   MOBILE — same layout, tightened spacing only
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
-  .compactTrigger {
+  .triggerTop {
     gap: 0.625rem;
-    padding: 0.875rem 1rem;
+    padding: 0.875rem 1rem 0.625rem;
+  }
+  .triggerAvatar {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9rem;
   }
   .triggerInput {
-    padding: 0.6rem 1rem;
-    font-size: 0.82rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+  }
+  .triggerActions {
+    padding: 0.3rem 0.375rem 0.4rem;
+  }
+  .triggerAction {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.375rem;
+    gap: 0.4rem;
+  }
+}
+
+/* Extra-small phones — hide the labels so all 3 icon actions still fit */
+@media (max-width: 380px) {
+  .triggerTop {
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem 0.5rem;
   }
   .triggerAvatar {
     width: 36px;
     height: 36px;
     font-size: 0.85rem;
   }
-}
-
-@media (max-width: 380px) {
-  .compactTrigger {
-    gap: 0.5rem;
-    padding: 0.75rem 0.875rem;
-  }
   .triggerInput {
-    padding: 0.55rem 0.875rem;
-    font-size: 0.78rem;
-  }
-  .triggerAvatar {
-    width: 32px;
-    height: 32px;
+    padding: 0.6rem 0.875rem;
     font-size: 0.8rem;
   }
-  .triggerActions {
-    gap: 0.25rem;
+  .triggerAction {
+    padding: 0.5rem 0.25rem;
   }
-  .triggerBtn {
-    padding: 0.2rem;
+  .triggerAction span {
+    display: none;
   }
 }
