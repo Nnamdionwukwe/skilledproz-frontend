@@ -907,3 +907,108 @@
     }
   }
 }
+/* ═══════════════════════════════════════════════════════════════
+   READ RECEIPTS — double tick
+   ═══════════════════════════════════════════════════════════════ */
+.readTick {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 3px;
+  vertical-align: middle;
+  opacity: 0.85;
+}
+.readTick svg {
+  flex-shrink: 0;
+}
+
+/* When read, the double tick is a slightly brighter blue */
+.tickRead {
+  color: #3b82f6;
+}
+.tickUnread {
+  color: currentColor;
+  opacity: 0.75;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   JUMP-TO-BOTTOM BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+.messagesAreaRelative {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.jumpToBottom {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  z-index: 5;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.15s;
+  animation: jumpIn 0.18s ease both;
+}
+.jumpToBottom:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--bg);
+  transform: translateY(-2px);
+}
+.jumpToBottom svg {
+  flex-shrink: 0;
+}
+
+@keyframes jumpIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Unread badge that rides on the jump button */
+.jumpBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--orange);
+  color: var(--bg);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg);
+}
+
+@media (max-width: 380px) {
+  .jumpToBottom {
+    bottom: 0.875rem;
+    right: 0.875rem;
+    width: 36px;
+    height: 36px;
+  }
+}

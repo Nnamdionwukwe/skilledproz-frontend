@@ -15,9 +15,8 @@ import {
   FiSend,
   FiGlobe,
   FiX,
-  FiCheck,
-  FiCheckCircle,
   FiArrowLeft,
+  FiChevronDown,
 } from "react-icons/fi";
 
 const LANGUAGES = [
@@ -86,6 +85,39 @@ function formatDateDivider(dateStr) {
     day: "numeric",
     month: "long",
   });
+}
+
+// ─── WhatsApp-style double tick ─────────────────────────────────────────────
+
+function DoubleTick({ read }) {
+  return (
+    <svg
+      className={`${styles.readTick} ${
+        read ? styles.tickRead : styles.tickUnread
+      }`}
+      width="16"
+      height="11"
+      viewBox="0 0 16 11"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M1 5.5L4.5 9L10 2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 5.5L9.5 9L15 2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 // ─── Translate button ───────────────────────────────────────────────────────
@@ -184,13 +216,15 @@ export default function Messages() {
   const [uploadingFile, setUploadingFile] = useState(false);
 
   // ── Mobile view: "list" or "chat" ──
-  // Initialize from the URL so ?with=<id> or ?convo=<id> opens the chat
-  // pane directly on phones, without waiting for an effect to flip it.
   const [mobileView, setMobileView] = useState(() => {
     if (typeof window === "undefined") return "list";
     const hasChatTarget = initialConvoId || initialWithId;
     return window.innerWidth <= 768 && hasChatTarget ? "chat" : "list";
   });
+
+  // ── Jump-to-bottom button ──
+  const [showJumpButton, setShowJumpButton] = useState(false);
+  const [unreadBelow, setUnreadBelow] = useState(0);
 
   // ── Refs ──
   const bottomRef = useRef(null);
@@ -201,21 +235,65 @@ export default function Messages() {
   const fileInputRef = useRef(null);
   const isAtBottomRef = useRef(true);
   const justSentRef = useRef(false);
+  const initialLoadRef = useRef(true);
 
   // ── Scroll tracking ──
   const handleMessagesScroll = useCallback(() => {
     const el = messagesAreaRef.current;
     if (!el) return;
-    isAtBottomRef.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const nearBottom = distanceFromBottom < 150;
+    isAtBottomRef.current = nearBottom;
+    setShowJumpButton(!nearBottom);
+    if (nearBottom) setUnreadBelow(0);
   }, []);
 
+  // ── Auto-scroll logic ──
+  // Scrolls only when:
+  //   1. The user just sent a message (own messages always scroll down)
+  //   2. It's the very first render of the active conversation
+  //   3. The user is already near the bottom
+  // Otherwise the list updates silently and the jump button ticks up.
   useEffect(() => {
-    if (isAtBottomRef.current || justSentRef.current) {
+    if (justSentRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      justSentRef.current = false;
+      return;
+    }
+    if (initialLoadRef.current && messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: "auto" });
+      initialLoadRef.current = false;
+      return;
+    }
+    if (isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    } else if (messages.length > 0) {
+      setUnreadBelow((n) => n + 1);
+    }
+  }, [messages]);
+
+  // Own outgoing bubble → always scroll down
+  useEffect(() => {
+    if (sendingMessage) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    justSentRef.current = false;
-  }, [messages, sendingMessage]);
+  }, [sendingMessage]);
+
+  // Reset jump state whenever the conversation changes
+  useEffect(() => {
+    initialLoadRef.current = true;
+    setUnreadBelow(0);
+    setShowJumpButton(false);
+    isAtBottomRef.current = true;
+  }, [activeConvoId]);
+
+  // Jump-to-bottom handler
+  const handleJumpToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setUnreadBelow(0);
+    setShowJumpButton(false);
+    isAtBottomRef.current = true;
+  }, []);
 
   // ── Auto-switch to "chat" view on mobile whenever a chat is active ──
   useEffect(() => {
@@ -256,7 +334,6 @@ export default function Messages() {
       return;
     }
 
-    // If a conversation with this user exists, prefer it
     const existing = conversations.find((c) =>
       c.users?.some((u) => u.userId === withUserId),
     );
@@ -270,7 +347,6 @@ export default function Messages() {
     let cancelled = false;
 
     const fetchUser = async () => {
-      // Worker
       try {
         const res = await api.get(`/workers/${withUserId}`);
         if (cancelled) return;
@@ -284,7 +360,6 @@ export default function Messages() {
         /* try next */
       }
 
-      // Hirer
       try {
         const res = await api.get(`/hirers/${withUserId}`);
         if (cancelled) return;
@@ -298,7 +373,6 @@ export default function Messages() {
         /* try next */
       }
 
-      // Generic user
       try {
         const res = await api.get(`/users/${withUserId}`);
         if (cancelled) return;
@@ -387,6 +461,9 @@ export default function Messages() {
     setWithUser(null);
     setMobileView("chat");
     isAtBottomRef.current = true;
+    initialLoadRef.current = true;
+    setUnreadBelow(0);
+    setShowJumpButton(false);
   };
 
   const handleMobileBack = () => {
@@ -727,156 +804,182 @@ export default function Messages() {
                 )}
               </div>
 
-              <div
-                ref={messagesAreaRef}
-                className={styles.messagesArea}
-                onScroll={handleMessagesScroll}
-              >
-                {loadingMessages ? (
-                  <div className={styles.loadingMessages}>
-                    <div className={styles.spinner} />
-                  </div>
-                ) : messages.length === 0 && !sendingMessage ? (
-                  <div className={styles.noMessages}>
-                    <FiSmile size={40} className={styles.noMessagesIcon} />
-                    <p>Start the conversation</p>
-                    <span className={styles.noMessagesSub}>
-                      Say hello to get things started
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    {Object.entries(groupedMessages).map(([dateKey, msgs]) => (
-                      <div key={dateKey}>
-                        <div className={styles.dateDivider}>
-                          <span>{formatDateDivider(msgs[0].createdAt)}</span>
-                        </div>
-                        {msgs.map((msg, i) => {
-                          const isMine = msg.senderId === user?.id;
-                          const isMedia =
-                            msg.fileUrl &&
-                            (msg.fileUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ||
-                              msg.fileUrl.includes("image"));
-                          const isVideo =
-                            msg.fileUrl &&
-                            (msg.fileUrl.match(/\.(mp4|mov|webm)$/i) ||
-                              msg.fileUrl.includes("video"));
-                          const showAvatar =
-                            !isMine &&
-                            (i === 0 || msgs[i - 1]?.senderId !== msg.senderId);
+              {/* Messages area — wrapped in a relative container so the
+                  jump-to-bottom button can float in the bottom-right */}
+              <div className={styles.messagesAreaRelative}>
+                <div
+                  ref={messagesAreaRef}
+                  className={styles.messagesArea}
+                  onScroll={handleMessagesScroll}
+                >
+                  {loadingMessages ? (
+                    <div className={styles.loadingMessages}>
+                      <div className={styles.spinner} />
+                    </div>
+                  ) : messages.length === 0 && !sendingMessage ? (
+                    <div className={styles.noMessages}>
+                      <FiSmile size={40} className={styles.noMessagesIcon} />
+                      <p>Start the conversation</p>
+                      <span className={styles.noMessagesSub}>
+                        Say hello to get things started
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      {Object.entries(groupedMessages).map(
+                        ([dateKey, msgs]) => (
+                          <div key={dateKey}>
+                            <div className={styles.dateDivider}>
+                              <span>
+                                {formatDateDivider(msgs[0].createdAt)}
+                              </span>
+                            </div>
+                            {msgs.map((msg, i) => {
+                              const isMine = msg.senderId === user?.id;
+                              const isMedia =
+                                msg.fileUrl &&
+                                (msg.fileUrl.match(
+                                  /\.(jpg|jpeg|png|webp|gif)$/i,
+                                ) ||
+                                  msg.fileUrl.includes("image"));
+                              const isVideo =
+                                msg.fileUrl &&
+                                (msg.fileUrl.match(/\.(mp4|mov|webm)$/i) ||
+                                  msg.fileUrl.includes("video"));
+                              const showAvatar =
+                                !isMine &&
+                                (i === 0 ||
+                                  msgs[i - 1]?.senderId !== msg.senderId);
 
-                          return (
-                            <div
-                              key={msg.id}
-                              className={`${styles.messageRow} ${
-                                isMine ? styles.messageRowMine : ""
-                              }`}
-                            >
-                              {!isMine && (
+                              return (
                                 <div
-                                  className={`${styles.messageAvatar} ${
-                                    showAvatar ? "" : styles.avatarHidden
+                                  key={msg.id}
+                                  className={`${styles.messageRow} ${
+                                    isMine ? styles.messageRowMine : ""
                                   }`}
                                 >
-                                  {showAvatar && (
-                                    <Avatar user={msg.sender} size="xs" />
+                                  {!isMine && (
+                                    <div
+                                      className={`${styles.messageAvatar} ${
+                                        showAvatar ? "" : styles.avatarHidden
+                                      }`}
+                                    >
+                                      {showAvatar && (
+                                        <Avatar user={msg.sender} size="xs" />
+                                      )}
+                                    </div>
                                   )}
-                                </div>
-                              )}
 
-                              <div
-                                className={`${styles.bubble} ${
-                                  isMine
-                                    ? styles.bubbleMine
-                                    : styles.bubbleTheirs
-                                }`}
-                              >
-                                {!isMine && showAvatar && (
-                                  <span className={styles.senderName}>
-                                    {msg.sender?.firstName}{" "}
-                                    {msg.sender?.lastName}
-                                  </span>
-                                )}
-
-                                {isMedia && (
-                                  <a
-                                    href={msg.fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
+                                  <div
+                                    className={`${styles.bubble} ${
+                                      isMine
+                                        ? styles.bubbleMine
+                                        : styles.bubbleTheirs
+                                    }`}
                                   >
-                                    <img
-                                      src={msg.fileUrl}
-                                      alt="attachment"
-                                      className={styles.messageImage}
-                                    />
-                                  </a>
-                                )}
-                                {isVideo && (
-                                  <video
-                                    controls
-                                    className={styles.messageVideo}
-                                  >
-                                    <source src={msg.fileUrl} />
-                                  </video>
-                                )}
-                                {msg.fileUrl && !isMedia && !isVideo && (
-                                  <a
-                                    href={msg.fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className={styles.fileAttachment}
-                                  >
-                                    <FiPaperclip size={13} />
-                                    <span>{msg.content || "Attachment"}</span>
-                                  </a>
-                                )}
+                                    {!isMine && showAvatar && (
+                                      <span className={styles.senderName}>
+                                        {msg.sender?.firstName}{" "}
+                                        {msg.sender?.lastName}
+                                      </span>
+                                    )}
 
-                                {(!msg.fileUrl || (!isMedia && !isVideo)) && (
-                                  <p className={styles.bubbleText}>
-                                    {msg.content}
-                                  </p>
-                                )}
+                                    {isMedia && (
+                                      <a
+                                        href={msg.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        <img
+                                          src={msg.fileUrl}
+                                          alt="attachment"
+                                          className={styles.messageImage}
+                                        />
+                                      </a>
+                                    )}
+                                    {isVideo && (
+                                      <video
+                                        controls
+                                        className={styles.messageVideo}
+                                      >
+                                        <source src={msg.fileUrl} />
+                                      </video>
+                                    )}
+                                    {msg.fileUrl && !isMedia && !isVideo && (
+                                      <a
+                                        href={msg.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className={styles.fileAttachment}
+                                      >
+                                        <FiPaperclip size={13} />
+                                        <span>
+                                          {msg.content || "Attachment"}
+                                        </span>
+                                      </a>
+                                    )}
 
-                                {!isMine && msg.content && (
-                                  <TranslateButton text={msg.content} />
-                                )}
+                                    {(!msg.fileUrl ||
+                                      (!isMedia && !isVideo)) && (
+                                      <p className={styles.bubbleText}>
+                                        {msg.content}
+                                      </p>
+                                    )}
 
-                                <span className={styles.bubbleTime}>
-                                  {formatMessageTime(msg.createdAt)}
-                                  {isMine && (
-                                    <span className={styles.readTick}>
-                                      {msg.isRead ? (
-                                        <FiCheckCircle size={11} />
-                                      ) : (
-                                        <FiCheck size={11} />
+                                    {!isMine && msg.content && (
+                                      <TranslateButton text={msg.content} />
+                                    )}
+
+                                    <span className={styles.bubbleTime}>
+                                      {formatMessageTime(msg.createdAt)}
+                                      {isMine && (
+                                        <DoubleTick read={!!msg.isRead} />
                                       )}
                                     </span>
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ),
+                      )}
 
-                    {sendingMessage && (
-                      <div
-                        className={`${styles.messageRow} ${styles.messageRowMine}`}
-                      >
+                      {sendingMessage && (
                         <div
-                          className={`${styles.bubble} ${styles.bubbleMine} ${styles.bubblePending}`}
+                          className={`${styles.messageRow} ${styles.messageRowMine}`}
                         >
-                          <p className={styles.bubbleText}>
-                            {sendingMessage.content}
-                          </p>
-                          <span className={styles.bubbleTime}>sending…</span>
+                          <div
+                            className={`${styles.bubble} ${styles.bubbleMine} ${styles.bubblePending}`}
+                          >
+                            <p className={styles.bubbleText}>
+                              {sendingMessage.content}
+                            </p>
+                            <span className={styles.bubbleTime}>sending…</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                    </>
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+
+                {/* Floating jump-to-bottom */}
+                {showJumpButton && (
+                  <button
+                    type="button"
+                    className={styles.jumpToBottom}
+                    onClick={handleJumpToBottom}
+                    aria-label="Scroll to latest message"
+                    title="Scroll to latest"
+                  >
+                    <FiChevronDown size={20} />
+                    {unreadBelow > 0 && (
+                      <span className={styles.jumpBadge}>
+                        {unreadBelow > 9 ? "9+" : unreadBelow}
+                      </span>
                     )}
-                  </>
+                  </button>
                 )}
-                <div ref={bottomRef} />
               </div>
 
               <div className={styles.inputArea}>
