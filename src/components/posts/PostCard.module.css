@@ -686,3 +686,146 @@
   color: var(--text-muted);
   font-size: 0.875rem;
 }
+/* ─────────────────────────────────────────────────────────────
+   Icon alignment for buttons and badges that now carry SVG icons
+   (safe additive changes — no existing rules modified)
+   ───────────────────────────────────────────────────────────── */
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.typeBadge svg {
+  flex-shrink: 0;
+}
+
+.moreBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.moreBtn svg {
+  flex-shrink: 0;
+}
+
+.repostBanner {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.repostBanner svg {
+  flex-shrink: 0;
+  color: var(--orange);
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.actionBtn svg {
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.actionBtnActive svg {
+  color: var(--orange) !important;
+}
+
+.countBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.countBtn svg {
+  flex-shrink: 0;
+}
+
+/* Multiple reaction icons stacked inside the count button */
+.countIcons {
+  display: inline-flex;
+  align-items: center;
+  margin-right: -4px;
+}
+.countIcons svg {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  margin-right: -6px;
+  color: var(--orange);
+}
+.countIcons svg:last-child {
+  margin-right: 0;
+}
+
+/* Reaction picker buttons — Feather icons instead of emoji */
+.reactionPickerBtn {
+  font-size: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.15s,
+    background 0.15s,
+    color 0.15s;
+  color: var(--text-dim);
+}
+.reactionPickerBtn:hover {
+  transform: scale(1.25);
+  background: var(--bg-card);
+  color: var(--orange);
+}
+.reactionPickerBtnActive {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.reactionPickerBtn svg {
+  flex-shrink: 0;
+}
+
+/* Repost menu */
+.repostMenuBtn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.repostMenuBtn > svg {
+  flex-shrink: 0;
+  color: var(--orange);
+  margin-top: 3px;
+}
+
+/* Reactions modal */
+.reactionsTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.reactionsTab svg {
+  flex-shrink: 0;
+}
+.reactionEmoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--orange);
+  background: var(--bg-panel);
+}
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.modalClose svg {
+  flex-shrink: 0;
+}

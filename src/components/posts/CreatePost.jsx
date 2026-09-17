@@ -2,14 +2,27 @@ import { useState, useRef } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./CreatePost.module.css";
+import {
+  FiMessageSquare,
+  FiAward,
+  FiImage,
+  FiSpeaker,
+  FiBriefcase,
+  FiVolume2,
+  FiCamera,
+  FiGlobe,
+  FiLock,
+  FiX,
+  FiAlertCircle,
+} from "react-icons/fi";
 
 const POST_TYPES = [
-  { value: "GENERAL", label: "💬 General" },
-  { value: "ACHIEVEMENT", label: "🏆 Achievement" },
-  { value: "PORTFOLIO", label: "🎨 Portfolio" },
-  { value: "HIRING", label: "📢 Hiring" },
-  { value: "JOB_UPDATE", label: "💼 Job Update" },
-  { value: "ANNOUNCEMENT", label: "📣 Announcement" },
+  { value: "GENERAL", label: "General", icon: FiMessageSquare },
+  { value: "ACHIEVEMENT", label: "Achievement", icon: FiAward },
+  { value: "PORTFOLIO", label: "Portfolio", icon: FiImage },
+  { value: "HIRING", label: "Hiring", icon: FiSpeaker },
+  { value: "JOB_UPDATE", label: "Job Update", icon: FiBriefcase },
+  { value: "ANNOUNCEMENT", label: "Announcement", icon: FiVolume2 },
 ];
 
 export default function CreatePost({ onPostCreated, compact = false }) {
@@ -99,14 +112,25 @@ export default function CreatePost({ onPostCreated, compact = false }) {
           <div className={styles.triggerActions}>
             <button
               className={styles.triggerBtn}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setExpanded(true);
                 fileRef.current?.click();
               }}
+              title="Add photo"
             >
-              📷
+              <FiCamera size={16} />
             </button>
-            <button className={styles.triggerBtn}>📢</button>
+            <button
+              className={styles.triggerBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(true);
+              }}
+              title="Announce"
+            >
+              <FiSpeaker size={16} />
+            </button>
           </div>
         </div>
       )}
@@ -133,8 +157,8 @@ export default function CreatePost({ onPostCreated, compact = false }) {
                   value={isPublic ? "public" : "private"}
                   onChange={(e) => setIsPublic(e.target.value === "public")}
                 >
-                  <option value="public">🌍 Public</option>
-                  <option value="private">🔒 Only me</option>
+                  <option value="public">Public</option>
+                  <option value="private">Only me</option>
                 </select>
               </div>
             </div>
@@ -168,38 +192,61 @@ export default function CreatePost({ onPostCreated, compact = false }) {
                   <button
                     className={styles.previewRemove}
                     onClick={() => removeImage(i)}
+                    type="button"
+                    title="Remove image"
                   >
-                    ×
+                    <FiX size={11} />
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          {error && <p className={styles.error}>⚠️ {error}</p>}
+          {/* Error banner */}
+          {error && (
+            <div className={styles.errorBanner}>
+              <FiAlertCircle size={15} className={styles.errorIcon} />
+              <span className={styles.errorText}>{error}</span>
+              <button
+                type="button"
+                className={styles.errorClose}
+                onClick={() => setError("")}
+                title="Dismiss"
+              >
+                <FiX size={14} />
+              </button>
+            </div>
+          )}
 
           {/* Post type */}
           <div className={styles.typeRow}>
-            {POST_TYPES.map((t) => (
-              <button
-                key={t.value}
-                className={`${styles.typeBtn} ${type === t.value ? styles.typeBtnActive : ""}`}
-                onClick={() => setType(t.value)}
-              >
-                {t.label}
-              </button>
-            ))}
+            {POST_TYPES.map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  className={`${styles.typeBtn} ${type === t.value ? styles.typeBtnActive : ""}`}
+                  onClick={() => setType(t.value)}
+                >
+                  <Icon size={12} />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Footer */}
           <div className={styles.footer}>
             <div className={styles.footerLeft}>
               <button
+                type="button"
                 className={styles.attachBtn}
                 onClick={() => fileRef.current?.click()}
                 title="Add images"
               >
-                📷 Photo
+                <FiCamera size={14} />
+                <span>Photo</span>
               </button>
               <input
                 ref={fileRef}
@@ -213,6 +260,7 @@ export default function CreatePost({ onPostCreated, compact = false }) {
             <div className={styles.footerRight}>
               {compact && (
                 <button
+                  type="button"
                   className={styles.cancelBtn}
                   onClick={() => {
                     setExpanded(false);
@@ -223,6 +271,7 @@ export default function CreatePost({ onPostCreated, compact = false }) {
                 </button>
               )}
               <button
+                type="button"
                 className={styles.postBtn}
                 onClick={handleSubmit}
                 disabled={!content.trim() || submitting}

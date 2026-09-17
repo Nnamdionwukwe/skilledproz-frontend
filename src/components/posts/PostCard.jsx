@@ -5,21 +5,40 @@ import api from "../../lib/api";
 import styles from "./PostCard.module.css";
 import { ShieldCheck } from "lucide-react";
 import ReportButton from "../../pages/reports/ReportButton";
+import {
+  FiThumbsUp,
+  FiHeart,
+  FiZap,
+  FiStar,
+  FiUsers,
+  FiRepeat,
+  FiMessageCircle,
+  FiSend,
+  FiEdit3,
+  FiTrash2,
+  FiX,
+  FiAlertCircle,
+  FiAward,
+  FiBriefcase,
+  FiVolume2,
+  FiInfo,
+} from "react-icons/fi";
 
+// ── Reactions — Feather icons, matching the Prisma ReactionType enum ─────────
 const REACTIONS = [
-  { type: "LIKE", emoji: "👍", label: "Like" },
-  { type: "LOVE", emoji: "❤️", label: "Love" },
-  { type: "INSIGHTFUL", emoji: "💡", label: "Insightful" },
-  { type: "CELEBRATE", emoji: "🎉", label: "Celebrate" },
-  { type: "SUPPORT", emoji: "🤝", label: "Support" },
+  { type: "LIKE", Icon: FiThumbsUp, label: "Like" },
+  { type: "LOVE", Icon: FiHeart, label: "Love" },
+  { type: "INSIGHTFUL", Icon: FiZap, label: "Insightful" },
+  { type: "CELEBRATE", Icon: FiStar, label: "Celebrate" },
+  { type: "SUPPORT", Icon: FiUsers, label: "Support" },
 ];
 
 const TYPE_BADGES = {
-  HIRING: { label: "Hiring", color: "#22c55e" },
-  ACHIEVEMENT: { label: "Achievement 🏆", color: "#f97316" },
-  PORTFOLIO: { label: "Portfolio", color: "#818cf8" },
-  ANNOUNCEMENT: { label: "Announcement 📢", color: "#fbbf24" },
-  JOB_UPDATE: { label: "Job Update", color: "#38bdf8" },
+  HIRING: { label: "Hiring", color: "#22c55e", Icon: FiBriefcase },
+  ACHIEVEMENT: { label: "Achievement", color: "#f97316", Icon: FiAward },
+  PORTFOLIO: { label: "Portfolio", color: "#818cf8", Icon: FiInfo },
+  ANNOUNCEMENT: { label: "Announcement", color: "#fbbf24", Icon: FiVolume2 },
+  JOB_UPDATE: { label: "Job Update", color: "#38bdf8", Icon: FiBriefcase },
   GENERAL: null,
 };
 
@@ -161,9 +180,10 @@ export default function PostCard({ post: initialPost, onDelete }) {
     } catch {}
   };
 
-  const currentReactionEmoji = myReaction
-    ? REACTIONS.find((r) => r.type === myReaction)?.emoji
+  const currentReaction = myReaction
+    ? REACTIONS.find((r) => r.type === myReaction)
     : null;
+  const CurrentReactionIcon = currentReaction?.Icon;
 
   const displayComments = showAllComments ? allComments : post.comments;
 
@@ -181,9 +201,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
             </div>
           )}
           {author?.workerProfile?.verificationStatus === "VERIFIED" && (
-            // <span className={styles.verifiedDot} title="Verified">
-            //   ✓
-            // </span>
             <ShieldCheck className={styles.verifiedDot} size={18} />
           )}
         </Link>
@@ -201,6 +218,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
                   color: typeBadge.color,
                 }}
               >
+                <typeBadge.Icon size={11} />
                 {typeBadge.label}
               </span>
             )}
@@ -215,8 +233,13 @@ export default function PostCard({ post: initialPost, onDelete }) {
 
         {isOwn && (
           <div className={styles.moreMenu}>
-            <button className={styles.moreBtn} onClick={handleDelete}>
-              🗑️ Delete
+            <button
+              className={styles.moreBtn}
+              onClick={handleDelete}
+              type="button"
+            >
+              <FiTrash2 size={13} />
+              <span>Delete</span>
             </button>
           </div>
         )}
@@ -225,7 +248,8 @@ export default function PostCard({ post: initialPost, onDelete }) {
       {/* Repost origin */}
       {post.repostOf && (
         <div className={styles.repostBanner}>
-          <span>🔁 Reposted</span>
+          <FiRepeat size={12} />
+          <span>Reposted</span>
         </div>
       )}
 
@@ -259,7 +283,10 @@ export default function PostCard({ post: initialPost, onDelete }) {
                 {post.images.map((_, i) => (
                   <button
                     key={i}
-                    className={`${styles.imageDot} ${i === imageIdx ? styles.imageDotActive : ""}`}
+                    type="button"
+                    className={`${styles.imageDot} ${
+                      i === imageIdx ? styles.imageDotActive : ""
+                    }`}
                     onClick={() => setImageIdx(i)}
                   />
                 ))}
@@ -304,14 +331,18 @@ export default function PostCard({ post: initialPost, onDelete }) {
             <button
               className={styles.countBtn}
               onClick={() => setShowReactionsModal(true)}
+              type="button"
             >
-              {Object.entries(post.reactionSummary || {})
-                .slice(0, 3)
-                .map(([type]) => (
-                  <span key={type}>
-                    {REACTIONS.find((r) => r.type === type)?.emoji}
-                  </span>
-                ))}
+              <span className={styles.countIcons}>
+                {Object.entries(post.reactionSummary || {})
+                  .slice(0, 3)
+                  .map(([type]) => {
+                    const r = REACTIONS.find((x) => x.type === type);
+                    if (!r) return null;
+                    const Icon = r.Icon;
+                    return <Icon key={type} size={12} />;
+                  })}
+              </span>
               <span className={styles.countNum}>{totalReactions}</span>
             </button>
           )}
@@ -320,6 +351,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
               <button
                 className={styles.countBtn}
                 onClick={() => setShowComments(!showComments)}
+                type="button"
               >
                 {totalComments} comment{totalComments !== 1 ? "s" : ""}
               </button>
@@ -344,19 +376,22 @@ export default function PostCard({ post: initialPost, onDelete }) {
         {/* Like button with reaction picker */}
         <div className={styles.reactWrap}>
           <button
-            className={`${styles.actionBtn} ${myReaction ? styles.actionBtnActive : ""}`}
+            className={`${styles.actionBtn} ${
+              myReaction ? styles.actionBtnActive : ""
+            }`}
             onClick={() =>
               myReaction ? handleReact(myReaction) : handleReact("LIKE")
             }
             onMouseEnter={() => setShowReactions(true)}
             onMouseLeave={() => setTimeout(() => setShowReactions(false), 300)}
+            type="button"
           >
-            <span>{currentReactionEmoji || "👍"}</span>
-            <span>
-              {myReaction
-                ? REACTIONS.find((r) => r.type === myReaction)?.label
-                : "Like"}
-            </span>
+            {CurrentReactionIcon ? (
+              <CurrentReactionIcon size={16} />
+            ) : (
+              <FiThumbsUp size={16} />
+            )}
+            <span>{currentReaction ? currentReaction.label : "Like"}</span>
           </button>
           {showReactions && (
             <div
@@ -364,16 +399,24 @@ export default function PostCard({ post: initialPost, onDelete }) {
               onMouseEnter={() => setShowReactions(true)}
               onMouseLeave={() => setShowReactions(false)}
             >
-              {REACTIONS.map((r) => (
-                <button
-                  key={r.type}
-                  className={`${styles.reactionPickerBtn} ${myReaction === r.type ? styles.reactionPickerBtnActive : ""}`}
-                  onClick={() => handleReact(r.type)}
-                  title={r.label}
-                >
-                  {r.emoji}
-                </button>
-              ))}
+              {REACTIONS.map((r) => {
+                const Icon = r.Icon;
+                return (
+                  <button
+                    key={r.type}
+                    className={`${styles.reactionPickerBtn} ${
+                      myReaction === r.type
+                        ? styles.reactionPickerBtnActive
+                        : ""
+                    }`}
+                    onClick={() => handleReact(r.type)}
+                    title={r.label}
+                    type="button"
+                  >
+                    <Icon size={18} />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -381,8 +424,10 @@ export default function PostCard({ post: initialPost, onDelete }) {
         <button
           className={styles.actionBtn}
           onClick={() => setShowComments(!showComments)}
+          type="button"
         >
-          <span>💬</span> <span>Comment</span>
+          <FiMessageCircle size={16} />
+          <span>Comment</span>
         </button>
 
         {/* Repost */}
@@ -390,8 +435,10 @@ export default function PostCard({ post: initialPost, onDelete }) {
           <button
             className={styles.actionBtn}
             onClick={() => setShowRepostMenu(!showRepostMenu)}
+            type="button"
           >
-            <span>🔁</span> <span>Repost</span>
+            <FiRepeat size={16} />
+            <span>Repost</span>
           </button>
           {showRepostMenu && (
             <div className={styles.repostMenu}>
@@ -401,8 +448,9 @@ export default function PostCard({ post: initialPost, onDelete }) {
                   setShowRepostInput(true);
                   setShowRepostMenu(false);
                 }}
+                type="button"
               >
-                <span>✏️</span>
+                <FiEdit3 size={16} />
                 <div>
                   <p>Repost with your thoughts</p>
                   <p className={styles.repostMenuSub}>
@@ -416,8 +464,9 @@ export default function PostCard({ post: initialPost, onDelete }) {
                   handleRepost(false);
                   setShowRepostMenu(false);
                 }}
+                type="button"
               >
-                <span>🔁</span>
+                <FiRepeat size={16} />
                 <div>
                   <p>Repost</p>
                   <p className={styles.repostMenuSub}>
@@ -436,8 +485,10 @@ export default function PostCard({ post: initialPost, onDelete }) {
               window.location.origin + `/posts/${post.id}`,
             );
           }}
+          type="button"
         >
-          <span>✈️</span> <span>Send</span>
+          <FiSend size={16} />
+          <span>Send</span>
         </button>
       </div>
 
@@ -456,12 +507,14 @@ export default function PostCard({ post: initialPost, onDelete }) {
             <button
               className={styles.cancelBtn}
               onClick={() => setShowRepostInput(false)}
+              type="button"
             >
               Cancel
             </button>
             <button
               className={styles.postBtn}
               onClick={() => handleRepost(true)}
+              type="button"
             >
               Post
             </button>
@@ -497,6 +550,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
                     className={styles.commentSubmitBtn}
                     onClick={handleComment}
                     disabled={submitting}
+                    type="button"
                   >
                     {submitting ? "..." : "Comment"}
                   </button>
@@ -536,6 +590,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
                         onClick={() =>
                           setReplyTo(replyTo === comment.id ? null : comment.id)
                         }
+                        type="button"
                       >
                         Reply
                       </button>
@@ -595,6 +650,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
                         className={styles.commentSubmitBtn}
                         onClick={() => handleReply(comment.id)}
                         disabled={submitting}
+                        type="button"
                       >
                         Reply
                       </button>
@@ -611,6 +667,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
               className={styles.loadMoreBtn}
               onClick={handleLoadMoreComments}
               disabled={loadingComments}
+              type="button"
             >
               {loadingComments
                 ? "Loading..."
@@ -631,19 +688,12 @@ export default function PostCard({ post: initialPost, onDelete }) {
   );
 }
 
+// ── Reactions modal ───────────────────────────────────────────────────────────
 function ReactionsModal({ postId, onClose }) {
   const [reactions, setReactions] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
-
-  const REACTIONS = [
-    { type: "LIKE", emoji: "👍" },
-    { type: "LOVE", emoji: "❤️" },
-    { type: "INSIGHTFUL", emoji: "💡" },
-    { type: "CELEBRATE", emoji: "🎉" },
-    { type: "SUPPORT", emoji: "🤝" },
-  ];
 
   useState(() => {
     api
@@ -668,50 +718,70 @@ function ReactionsModal({ postId, onClose }) {
       >
         <div className={styles.reactionsHeader}>
           <h3>Reactions</h3>
-          <button className={styles.modalClose} onClick={onClose}>
-            ×
+          <button
+            className={styles.modalClose}
+            onClick={onClose}
+            type="button"
+            title="Close"
+          >
+            <FiX size={18} />
           </button>
         </div>
         <div className={styles.reactionsTabs}>
           <button
-            className={`${styles.reactionsTab} ${filter === "ALL" ? styles.reactionsTabActive : ""}`}
+            className={`${styles.reactionsTab} ${
+              filter === "ALL" ? styles.reactionsTabActive : ""
+            }`}
             onClick={() => setFilter("ALL")}
+            type="button"
           >
             All {total}
           </button>
-          {REACTIONS.filter((r) => summary[r.type]).map((r) => (
-            <button
-              key={r.type}
-              className={`${styles.reactionsTab} ${filter === r.type ? styles.reactionsTabActive : ""}`}
-              onClick={() => setFilter(r.type)}
-            >
-              {r.emoji} {summary[r.type]}
-            </button>
-          ))}
+          {REACTIONS.filter((r) => summary[r.type]).map((r) => {
+            const Icon = r.Icon;
+            return (
+              <button
+                key={r.type}
+                className={`${styles.reactionsTab} ${
+                  filter === r.type ? styles.reactionsTabActive : ""
+                }`}
+                onClick={() => setFilter(r.type)}
+                type="button"
+              >
+                <Icon size={12} /> {summary[r.type]}
+              </button>
+            );
+          })}
         </div>
         <div className={styles.reactionsList}>
           {loading ? (
             <div className={styles.loadingMsg}>Loading...</div>
           ) : (
-            filtered.map((r) => (
-              <div key={r.id} className={styles.reactionsItem}>
-                <div className={styles.reactionsAvatar}>
-                  {r.user?.avatar ? (
-                    <img src={r.user.avatar} alt="" />
-                  ) : (
-                    <span>{r.user?.firstName?.[0]}</span>
-                  )}
-                  <span className={styles.reactionEmoji}>
-                    {REACTIONS.find((rx) => rx.type === r.type)?.emoji}
-                  </span>
+            filtered.map((r) => {
+              const reaction = REACTIONS.find((rx) => rx.type === r.type);
+              const ReactionIcon = reaction?.Icon;
+              return (
+                <div key={r.id} className={styles.reactionsItem}>
+                  <div className={styles.reactionsAvatar}>
+                    {r.user?.avatar ? (
+                      <img src={r.user.avatar} alt="" />
+                    ) : (
+                      <span>{r.user?.firstName?.[0]}</span>
+                    )}
+                    {ReactionIcon && (
+                      <span className={styles.reactionEmoji}>
+                        <ReactionIcon size={9} />
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className={styles.reactionsName}>
+                      {r.user?.firstName} {r.user?.lastName}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className={styles.reactionsName}>
-                    {r.user?.firstName} {r.user?.lastName}
-                  </p>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
