@@ -17,7 +17,7 @@ export default function useSavedWorker(workerId, { enabled = true } = {}) {
   const [toggling, setToggling] = useState(false);
   const cancelledRef = useRef(false);
 
-  // ── Check current saved status ──
+  // ── Lightweight existence check ──
   useEffect(() => {
     if (!enabled || !workerId) {
       setChecking(false);
@@ -27,14 +27,13 @@ export default function useSavedWorker(workerId, { enabled = true } = {}) {
     setChecking(true);
 
     api
-      .get("/hirers/me/saved-workers", { params: { limit: 200 } })
+      .get(`/hirers/me/saved-workers/${workerId}/exists`)
       .then((res) => {
         if (cancelledRef.current) return;
-        const workers = res.data?.data?.workers || [];
-        setIsSaved(workers.some((w) => w.id === workerId));
+        setIsSaved(!!res.data?.data?.saved);
       })
       .catch(() => {
-        // silent — button just stays in default state
+        // silent — button stays default (unsaved)
       })
       .finally(() => {
         if (!cancelledRef.current) setChecking(false);
@@ -59,7 +58,7 @@ export default function useSavedWorker(workerId, { enabled = true } = {}) {
         await api.delete(`/hirers/me/saved-workers/${workerId}`);
       }
     } catch {
-      setIsSaved(!next); // revert
+      setIsSaved(!next); // revert on failure
     } finally {
       setToggling(false);
     }

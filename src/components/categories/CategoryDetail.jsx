@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import styles from "./CategoryDetail.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
+import { useAuthStore } from "../../store/authStore";
+import useSavedWorker from "../../hooks/useSavedWorker";
 
 import {
   FiArrowLeft,
@@ -13,6 +15,7 @@ import {
   FiClock,
   FiUser,
   FiCamera,
+  FiBookmark,
 } from "react-icons/fi";
 
 import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
