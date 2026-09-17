@@ -17,11 +17,18 @@ import {
   FiEdit3,
   FiTrash2,
   FiX,
-  FiAlertCircle,
   FiAward,
   FiBriefcase,
   FiVolume2,
   FiInfo,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCopy,
+  FiCheck,
+  FiShare2,
+  FiExternalLink,
+  FiMail,
+  FiMessageSquare,
 } from "react-icons/fi";
 
 // ── Reactions — Feather icons, matching the Prisma ReactionType enum ─────────
@@ -41,6 +48,21 @@ const TYPE_BADGES = {
   JOB_UPDATE: { label: "Job Update", color: "#38bdf8", Icon: FiBriefcase },
   GENERAL: null,
 };
+
+// ── Resolve the public profile URL for a user based on viewer's role ─────────
+function profileUrlFor(viewer, target) {
+  if (!target) return "#";
+  // Own profile — go to the role-appropriate public page
+  if (viewer && viewer.id === target.id) {
+    return target.role === "WORKER"
+      ? `/workers/${target.id}`
+      : `/hirers/${target.id}`;
+  }
+  // Other user — go to their role-appropriate public page
+  return target.role === "WORKER"
+    ? `/workers/${target.id}`
+    : `/hirers/${target.id}`;
+}
 
 export default function PostCard({ post: initialPost, onDelete }) {
   const { user } = useAuthStore();
@@ -62,6 +84,13 @@ export default function PostCard({ post: initialPost, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [imageIdx, setImageIdx] = useState(0);
 
+  // ── NEW: fullscreen image viewer ──
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
+  // ── NEW: share menu ──
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   if (deleted) return null;
 
   const author = post.author;
@@ -77,6 +106,13 @@ export default function PostCard({ post: initialPost, onDelete }) {
     author?.role === "WORKER"
       ? author.workerProfile?.title
       : author?.hirerProfile?.companyName;
+
+  // ── NEW: profile links (viewer-aware) ──
+  const authorProfileUrl = profileUrlFor(user, author);
+  const commentProfileUrl = (commentAuthor) =>
+    profileUrlFor(user, commentAuthor);
+
+  const postUrl = `${window.location.origin}/posts/${post.id}`;
 
   const handleReact = async (type) => {
     if (!user) return;
@@ -180,6 +216,72 @@ export default function PostCard({ post: initialPost, onDelete }) {
     } catch {}
   };
 
+  // ── NEW: Copy link to clipboard ──
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback for older browsers
+      const el = document.createElement("textarea");
+      el.value = postUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // ── NEW: Open share targets ──
+  const openExternalShare = (platform) => {
+    const encodedUrl = encodeURIComponent(postUrl);
+    const encodedText = encodeURIComponent(
+      (post.content?.slice(0, 200) || "Check this post on SkilledProz") + " — ",
+    );
+
+    const shareMap = {
+      whatsapp: `https://wa.me/?text=${encodedText}${encodedUrl}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+      email: `mailto:?subject=Check out this post on SkilledProz&body=${encodedText}${encodedUrl}`,
+    };
+
+    const url = shareMap[platform];
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      setShowShareMenu(false);
+    }
+  };
+
+  // ── NEW: Send inside SkilledProz (navigate to messages with the post) ──
+  const handleSendInApp = () => {
+    const params = new URLSearchParams({
+      share: "post",
+      postId: post.id,
+      postUrl,
+      postAuthor: `${author?.firstName || ""} ${author?.lastName || ""}`.trim(),
+    });
+    window.location.href = `/messages?${params.toString()}`;
+    setShowShareMenu(false);
+  };
+
+  // ── NEW: Lightbox navigation ──
+  const openLightbox = (idx) => setLightboxIdx(idx);
+  const closeLightbox = () => setLightboxIdx(null);
+  const nextImage = () => {
+    if (lightboxIdx === null) return;
+    setLightboxIdx((i) => (i + 1) % post.images.length);
+  };
+  const prevImage = () => {
+    if (lightboxIdx === null) return;
+    setLightboxIdx((i) => (i - 1 + post.images.length) % post.images.length);
+  };
+
   const currentReaction = myReaction
     ? REACTIONS.find((r) => r.type === myReaction)
     : null;
@@ -191,7 +293,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
     <div className={styles.card}>
       {/* Author header */}
       <div className={styles.header}>
-        <Link to={`/workers/${author?.id}`} className={styles.avatarWrap}>
+        <Link to={authorProfileUrl} className={styles.avatarWrap}>
           {author?.avatar ? (
             <img src={author.avatar} alt="" className={styles.avatar} />
           ) : (
@@ -207,7 +309,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
 
         <div className={styles.authorInfo}>
           <div className={styles.authorRow}>
-            <Link to={`/workers/${author?.id}`} className={styles.authorName}>
+            <Link to={authorProfileUrl} className={styles.authorName}>
               {author?.firstName} {author?.lastName}
             </Link>
             {typeBadge && (
@@ -270,13 +372,17 @@ export default function PostCard({ post: initialPost, onDelete }) {
           )}
         </p>
 
-        {/* Images */}
+        {/* Images — clickable to open lightbox */}
         {post.images?.length > 0 && (
           <div className={styles.imageGrid}>
             <img
               src={post.images[imageIdx]}
               alt=""
               className={styles.mainImage}
+              onClick={() => openLightbox(imageIdx)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && openLightbox(imageIdx)}
             />
             {post.images.length > 1 && (
               <div className={styles.imageDots}>
@@ -299,18 +405,24 @@ export default function PostCard({ post: initialPost, onDelete }) {
         {post.repostOf && (
           <div className={styles.repostCard}>
             <div className={styles.repostCardHeader}>
-              <div className={styles.repostAvatar}>
+              <Link
+                to={profileUrlFor(user, post.repostOf.author)}
+                className={styles.repostAvatar}
+              >
                 {post.repostOf.author?.avatar ? (
                   <img src={post.repostOf.author.avatar} alt="" />
                 ) : (
                   <span>{post.repostOf.author?.firstName?.[0]}</span>
                 )}
-              </div>
+              </Link>
               <div>
-                <p className={styles.repostAuthorName}>
+                <Link
+                  to={profileUrlFor(user, post.repostOf.author)}
+                  className={styles.repostAuthorName}
+                >
                   {post.repostOf.author?.firstName}{" "}
                   {post.repostOf.author?.lastName}
-                </p>
+                </Link>
                 <p className={styles.repostTime}>
                   {timeAgo(post.repostOf.createdAt)}
                 </p>
@@ -478,18 +590,120 @@ export default function PostCard({ post: initialPost, onDelete }) {
           )}
         </div>
 
-        <button
-          className={styles.actionBtn}
-          onClick={() => {
-            navigator.clipboard?.writeText(
-              window.location.origin + `/posts/${post.id}`,
-            );
-          }}
-          type="button"
-        >
-          <FiSend size={16} />
-          <span>Send</span>
-        </button>
+        {/* ── NEW: Send / Share button ── */}
+        <div className={styles.reactWrap}>
+          <button
+            className={styles.actionBtn}
+            onClick={() => setShowShareMenu((v) => !v)}
+            type="button"
+          >
+            <FiSend size={16} />
+            <span>Send</span>
+          </button>
+
+          {showShareMenu && (
+            <div className={styles.shareMenu}>
+              <p className={styles.shareMenuTitle}>Share this post</p>
+
+              {/* In-app send */}
+              <button
+                className={styles.shareMenuBtn}
+                onClick={handleSendInApp}
+                type="button"
+              >
+                <FiMessageSquare size={16} />
+                <div>
+                  <p>Send on SkilledProz</p>
+                  <p className={styles.shareMenuSub}>
+                    Send to a friend or colleague
+                  </p>
+                </div>
+              </button>
+
+              <div className={styles.shareMenuDivider} />
+
+              {/* External platforms */}
+              <button
+                className={styles.shareMenuBtn}
+                onClick={() => openExternalShare("whatsapp")}
+                type="button"
+              >
+                <FiMessageCircle size={16} />
+                <div>
+                  <p>WhatsApp</p>
+                </div>
+              </button>
+
+              <button
+                className={styles.shareMenuBtn}
+                onClick={() => openExternalShare("twitter")}
+                type="button"
+              >
+                <FiExternalLink size={16} />
+                <div>
+                  <p>X (Twitter)</p>
+                </div>
+              </button>
+
+              <button
+                className={styles.shareMenuBtn}
+                onClick={() => openExternalShare("facebook")}
+                type="button"
+              >
+                <FiExternalLink size={16} />
+                <div>
+                  <p>Facebook</p>
+                </div>
+              </button>
+
+              <button
+                className={styles.shareMenuBtn}
+                onClick={() => openExternalShare("linkedin")}
+                type="button"
+              >
+                <FiExternalLink size={16} />
+                <div>
+                  <p>LinkedIn</p>
+                </div>
+              </button>
+
+              <button
+                className={styles.shareMenuBtn}
+                onClick={() => openExternalShare("telegram")}
+                type="button"
+              >
+                <FiSend size={16} />
+                <div>
+                  <p>Telegram</p>
+                </div>
+              </button>
+
+              <button
+                className={styles.shareMenuBtn}
+                onClick={() => openExternalShare("email")}
+                type="button"
+              >
+                <FiMail size={16} />
+                <div>
+                  <p>Email</p>
+                </div>
+              </button>
+
+              <div className={styles.shareMenuDivider} />
+
+              <button
+                className={styles.shareMenuBtn}
+                onClick={handleCopyLink}
+                type="button"
+              >
+                {copied ? <FiCheck size={16} /> : <FiCopy size={16} />}
+                <div>
+                  <p>{copied ? "Copied!" : "Copy link"}</p>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Repost with thoughts input */}
@@ -525,7 +739,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
       {/* Comments section */}
       {showComments && (
         <div className={styles.commentsSection}>
-          {/* Comment input */}
           {user && (
             <div className={styles.commentInputWrap}>
               <div className={styles.commentAvatar}>
@@ -559,21 +772,28 @@ export default function PostCard({ post: initialPost, onDelete }) {
             </div>
           )}
 
-          {/* Comments list */}
           <div className={styles.commentsList}>
             {displayComments.map((comment) => (
               <div key={comment.id} className={styles.commentItem}>
-                <div className={styles.commentAvatar}>
+                <Link
+                  to={commentProfileUrl(comment.author)}
+                  className={styles.commentAvatar}
+                >
                   {comment.author?.avatar ? (
                     <img src={comment.author.avatar} alt="" />
                   ) : (
                     <span>{comment.author?.firstName?.[0]}</span>
                   )}
-                </div>
+                </Link>
                 <div className={styles.commentBody}>
                   <div className={styles.commentBubble}>
                     <p className={styles.commentAuthor}>
-                      {comment.author?.firstName} {comment.author?.lastName}
+                      <Link
+                        to={commentProfileUrl(comment.author)}
+                        className={styles.commentAuthorLink}
+                      >
+                        {comment.author?.firstName} {comment.author?.lastName}
+                      </Link>
                       <span className={styles.commentRole}>
                         {" "}
                         ·{" "}
@@ -597,12 +817,12 @@ export default function PostCard({ post: initialPost, onDelete }) {
                     )}
                   </div>
 
-                  {/* Replies */}
                   {comment.replies?.length > 0 && (
                     <div className={styles.replies}>
                       {comment.replies.map((reply) => (
                         <div key={reply.id} className={styles.replyItem}>
-                          <div
+                          <Link
+                            to={commentProfileUrl(reply.author)}
                             className={styles.commentAvatar}
                             style={{ width: 28, height: 28 }}
                           >
@@ -613,12 +833,17 @@ export default function PostCard({ post: initialPost, onDelete }) {
                                 {reply.author?.firstName?.[0]}
                               </span>
                             )}
-                          </div>
+                          </Link>
                           <div className={styles.commentBody}>
                             <div className={styles.commentBubble}>
                               <p className={styles.commentAuthor}>
-                                {reply.author?.firstName}{" "}
-                                {reply.author?.lastName}
+                                <Link
+                                  to={commentProfileUrl(reply.author)}
+                                  className={styles.commentAuthorLink}
+                                >
+                                  {reply.author?.firstName}{" "}
+                                  {reply.author?.lastName}
+                                </Link>
                               </p>
                               <p className={styles.commentText}>
                                 {reply.content}
@@ -633,7 +858,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
                     </div>
                   )}
 
-                  {/* Reply input */}
                   {replyTo === comment.id && user && (
                     <div className={styles.replyInputWrap}>
                       <input
@@ -661,7 +885,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
             ))}
           </div>
 
-          {/* Load more comments */}
           {totalComments > displayComments.length && !showAllComments && (
             <button
               className={styles.loadMoreBtn}
@@ -682,14 +905,69 @@ export default function PostCard({ post: initialPost, onDelete }) {
         <ReactionsModal
           postId={post.id}
           onClose={() => setShowReactionsModal(false)}
+          user={user}
         />
+      )}
+
+      {/* ── NEW: Fullscreen image lightbox ── */}
+      {lightboxIdx !== null && post.images?.length > 0 && (
+        <div className={styles.lightboxOverlay} onClick={closeLightbox}>
+          <button
+            className={styles.lightboxClose}
+            onClick={closeLightbox}
+            type="button"
+            title="Close"
+          >
+            <FiX size={22} />
+          </button>
+
+          {post.images.length > 1 && (
+            <>
+              <button
+                className={`${styles.lightboxNav} ${styles.lightboxPrev}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevImage();
+                }}
+                type="button"
+                title="Previous"
+              >
+                <FiChevronLeft size={28} />
+              </button>
+              <button
+                className={`${styles.lightboxNav} ${styles.lightboxNext}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextImage();
+                }}
+                type="button"
+                title="Next"
+              >
+                <FiChevronRight size={28} />
+              </button>
+            </>
+          )}
+
+          <img
+            src={post.images[lightboxIdx]}
+            alt=""
+            className={styles.lightboxImage}
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {post.images.length > 1 && (
+            <div className={styles.lightboxCounter}>
+              {lightboxIdx + 1} / {post.images.length}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
 // ── Reactions modal ───────────────────────────────────────────────────────────
-function ReactionsModal({ postId, onClose }) {
+function ReactionsModal({ postId, onClose, user }) {
   const [reactions, setReactions] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [summary, setSummary] = useState({});
@@ -760,8 +1038,14 @@ function ReactionsModal({ postId, onClose }) {
             filtered.map((r) => {
               const reaction = REACTIONS.find((rx) => rx.type === r.type);
               const ReactionIcon = reaction?.Icon;
+              const profileUrl = profileUrlFor(user, r.user);
               return (
-                <div key={r.id} className={styles.reactionsItem}>
+                <Link
+                  key={r.id}
+                  to={profileUrl}
+                  className={styles.reactionsItem}
+                  onClick={onClose}
+                >
                   <div className={styles.reactionsAvatar}>
                     {r.user?.avatar ? (
                       <img src={r.user.avatar} alt="" />
@@ -779,7 +1063,7 @@ function ReactionsModal({ postId, onClose }) {
                       {r.user?.firstName} {r.user?.lastName}
                     </p>
                   </div>
-                </div>
+                </Link>
               );
             })
           )}
