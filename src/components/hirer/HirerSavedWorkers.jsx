@@ -194,7 +194,7 @@ function Empty({ tab }) {
           ? "Browse workers and tap the bookmark icon to save them here."
           : "Workers you've previously booked will appear here."}
       </p>
-      <Link to="/workers" className={styles.emptyBtn}>
+      <Link to="/search" className={styles.emptyBtn}>
         Browse Workers <FiArrowRight size={12} />
       </Link>
     </div>
@@ -289,7 +289,7 @@ export default function HirerSavedWorkers() {
               Manage your saved shortlist and view your hiring history.
             </p>
           </div>
-          <Link to="/workers" className={styles.browseBtn}>
+          <Link to="/search" className={styles.browseBtn}>
             <FiPlus size={14} /> Browse Workers
           </Link>
         </div>
