@@ -1,6 +1,13 @@
 import { useState } from "react";
 import styles from "./Reports.module.css";
 import api from "../../lib/api";
+import {
+  FiFlag,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiX,
+  FiExternalLink,
+} from "react-icons/fi";
 
 // ── Constants (mirror backend) ────────────────────────────────────────────────
 const REASONS = [
@@ -26,6 +33,11 @@ const TYPE_LABEL = {
   MESSAGE: "message",
 };
 
+// Silently drop anything that isn't a URL — the backend validator requires
+// every evidence entry to be a valid URL. Users often type free text here
+// by mistake; those get filtered out instead of failing the whole report.
+const URL_RE = /^https?:\/\/\S+$/i;
+
 // ── ReportModal ───────────────────────────────────────────────────────────────
 function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
   const [reason, setReason] = useState("");
@@ -48,6 +60,7 @@ function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
         .split("\n")
         .map((l) => l.trim())
         .filter(Boolean)
+        .filter((l) => URL_RE.test(l))
         .slice(0, 5);
 
       const res = await api.post("/reports", {
@@ -68,30 +81,44 @@ function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
+      >
         {/* Header */}
         <div className={styles.modalHeader}>
-          <div>
-            <p className={styles.modalEyebrow}>Report</p>
-            <h3 className={styles.modalTitle}>
-              {targetName
-                ? `Report "${targetName}"`
-                : `Report this ${TYPE_LABEL[targetType] || "content"}`}
-            </h3>
+          <div className={styles.modalHeaderLeft}>
+            <span className={styles.modalHeaderIcon}>
+              <FiFlag size={16} />
+            </span>
+            <div>
+              <p className={styles.modalEyebrow}>Report</p>
+              <h3 id="report-modal-title" className={styles.modalTitle}>
+                {targetName
+                  ? `Report "${targetName}"`
+                  : `Report this ${TYPE_LABEL[targetType] || "content"}`}
+              </h3>
+            </div>
           </div>
           <button
             className={styles.closeBtn}
             onClick={onClose}
             aria-label="Close"
+            type="button"
           >
-            ×
+            <FiX size={16} />
           </button>
         </div>
 
         {/* Success state */}
         {done ? (
           <div className={styles.doneState}>
-            <span className={styles.doneIcon}>✅</span>
+            <span className={styles.doneIcon}>
+              <FiCheckCircle size={44} />
+            </span>
             <p className={styles.doneTitle}>Report submitted</p>
             <p className={styles.doneSub}>
               Reference: <strong>{done.ref}</strong>
@@ -99,13 +126,22 @@ function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
               Our team will review it within 24–48 hours. We'll notify you of
               the outcome.
             </p>
-            <button className={styles.btnPrimary} onClick={onClose}>
+            <button
+              className={styles.btnPrimary}
+              onClick={onClose}
+              type="button"
+            >
               Done
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className={styles.form}>
-            {error && <p className={styles.formError}>⚠️ {error}</p>}
+            {error && (
+              <div className={styles.formError} role="alert">
+                <FiAlertTriangle size={15} className={styles.errorIcon} />
+                <span>{error}</span>
+              </div>
+            )}
 
             {/* Reason */}
             <div className={styles.field}>
@@ -117,16 +153,18 @@ function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
                   <button
                     type="button"
                     key={r.value}
-                    className={`${styles.reasonChip} ${reason === r.value ? styles.reasonChipActive : ""}`}
+                    className={`${styles.reasonChip} ${
+                      reason === r.value ? styles.reasonChipActive : ""
+                    }`}
                     onClick={() => {
                       setReason(r.value);
                       setError("");
                     }}
                   >
                     {reason === r.value && (
-                      <span className={styles.chipTick}>✓</span>
+                      <FiCheckCircle size={12} className={styles.chipTick} />
                     )}
-                    {r.label}
+                    <span>{r.label}</span>
                   </button>
                 ))}
               </div>
@@ -170,7 +208,7 @@ function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
 
             {/* Disclaimer */}
             <p className={styles.disclaimer}>
-              🔒 False or malicious reports may result in action against your
+              False or malicious reports may result in action against your
               account. Reports are reviewed by our moderation team and are
               confidential.
             </p>
@@ -209,7 +247,7 @@ function ReportModal({ targetType, targetId, targetName, onClose, onSuccess }) {
  * <ReportButton targetType="USER"     targetId={worker.userId} targetName={worker.name} />
  * <ReportButton targetType="JOB_POST" targetId={job.id}        targetName={job.title} />
  * <ReportButton targetType="REVIEW"   targetId={review.id}     variant="icon" />
- * <ReportButton targetType="POST"     targetId={post.id}        variant="menu-item" />
+ * <ReportButton targetType="POST"     targetId={post.id}       variant="menu-item" />
  *
  * variant: "button" (default) | "icon" | "menu-item" | "link"
  */
@@ -227,16 +265,18 @@ export default function ReportButton({
   const trigger = () => setOpen(true);
 
   const renderTrigger = () => {
+    const tooltip = `Report this ${TYPE_LABEL[targetType] || "content"}`;
     switch (variant) {
       case "icon":
         return (
           <button
             className={styles.triggerIcon}
             onClick={trigger}
-            title={`Report this ${TYPE_LABEL[targetType] || "content"}`}
+            title={tooltip}
+            aria-label={tooltip}
             type="button"
           >
-            🚩
+            <FiFlag size={14} />
           </button>
         );
       case "menu-item":
@@ -246,7 +286,8 @@ export default function ReportButton({
             onClick={trigger}
             type="button"
           >
-            🚩 Report
+            <FiFlag size={14} />
+            <span>Report</span>
           </button>
         );
       case "link":
@@ -263,7 +304,8 @@ export default function ReportButton({
       default:
         return (
           <button className={styles.triggerBtn} onClick={trigger} type="button">
-            🚩 Report
+            <FiFlag size={13} />
+            <span>Report</span>
           </button>
         );
     }

@@ -21,6 +21,9 @@
   transition: all 0.15s;
   white-space: nowrap;
 }
+.triggerBtn svg {
+  flex-shrink: 0;
+}
 .triggerBtn:hover {
   border-color: var(--red);
   color: var(--red);
@@ -33,16 +36,20 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg-card);
-  font-size: 14px;
+  color: var(--text-dim);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
   padding: 0;
 }
+.triggerIcon svg {
+  flex-shrink: 0;
+}
 .triggerIcon:hover {
   border-color: var(--red);
+  color: var(--red);
   background: var(--red-dim);
 }
 
@@ -62,6 +69,9 @@
   text-align: left;
   transition: all 0.12s;
   border-radius: 8px;
+}
+.triggerMenuItem svg {
+  flex-shrink: 0;
 }
 .triggerMenuItem:hover {
   background: var(--red-dim);
@@ -126,6 +136,30 @@
   background: var(--bg-panel);
   z-index: 1;
 }
+
+.modalHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.modalHeaderIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modalHeaderIcon svg {
+  flex-shrink: 0;
+}
+
 .modalEyebrow {
   font-size: 10px;
   font-weight: 700;
@@ -142,6 +176,7 @@
   font-family: var(--font-display);
   letter-spacing: -0.01em;
   line-height: 1.3;
+  word-break: break-word;
 }
 .closeBtn {
   width: 32px;
@@ -150,14 +185,15 @@
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-muted);
-  font-size: 18px;
-  line-height: 1;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.15s;
+}
+.closeBtn svg {
+  flex-shrink: 0;
 }
 .closeBtn:hover {
   border-color: var(--red);
@@ -174,6 +210,9 @@
 }
 
 .formError {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--red);
@@ -183,6 +222,11 @@
   padding: 10px 14px;
   margin: 0;
   animation: shake 0.3s ease;
+  line-height: 1.5;
+}
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* ── Fields ──────────────────────────────────────────────────────────────── */
@@ -233,6 +277,11 @@
   transition: all 0.14s;
   line-height: 1.3;
 }
+.reasonChip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .reasonChip:hover {
   border-color: rgba(239, 68, 68, 0.4);
   color: var(--text);
@@ -244,8 +293,6 @@
   color: var(--red);
 }
 .chipTick {
-  font-size: 11px;
-  font-weight: 800;
   flex-shrink: 0;
   color: var(--red);
 }
@@ -372,9 +419,14 @@
   animation: fadeUp 0.25s ease;
 }
 .doneIcon {
-  font-size: 44px;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #22c55e;
   margin-bottom: 4px;
+}
+.doneIcon svg {
+  flex-shrink: 0;
 }
 .doneTitle {
   font-size: 18px;
@@ -388,7 +440,7 @@
   color: var(--text-dim);
   line-height: 1.7;
   margin: 0;
-  max-width: 300px;
+  max-width: 320px;
 }
 .doneSub strong {
   color: var(--text);
