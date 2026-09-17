@@ -132,6 +132,7 @@ import GoogleCallback from "./pages/auth/GoogleCallback.jsx";
 import WorkerRefundDetailPage from "./pages/worker/refunds/WorkerRefundDetailPage.jsx";
 import WorkerRefundsPage from "./pages/worker/refunds/components/WorkerRefundsPage.jsx";
 import CreateBookingFromJob from "./components/hirer/CreateBookingFromJob.jsx";
+import PostDetail from "./pages/feed/PostDetail.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -967,6 +968,7 @@ export default function App() {
           }
         />
         <Route path="/feed" element={<FeedPage />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
         <Route
           path="/my-posts"
           element={

@@ -1,0 +1,59 @@
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4rem 0;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-body);
+  transition: color 0.15s;
+}
+.backBtn:hover {
+  color: var(--orange);
+}
+
+.state {
+  text-align: center;
+  padding: 3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stateTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.stateSub {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+.stateLink {
+  margin-top: 0.5rem;
+  color: var(--orange);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.stateLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 0.75rem;
+  }
+}

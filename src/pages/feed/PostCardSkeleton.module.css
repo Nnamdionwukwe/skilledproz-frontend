@@ -1,0 +1,228 @@
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON BASE — shimmer animation
+   ═══════════════════════════════════════════════════════════════ */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-card, rgba(255, 255, 255, 0.04));
+  border-radius: 6px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD
+   ═══════════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════════ */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.875rem 0.875rem 0;
+}
+@media (min-width: 480px) {
+  .header {
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem 0;
+  }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@media (min-width: 480px) {
+  .avatar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.authorInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.nameLine {
+  height: 12px;
+  width: 40%;
+  max-width: 160px;
+}
+.titleLine {
+  height: 10px;
+  width: 30%;
+  max-width: 120px;
+}
+.timeLine {
+  height: 9px;
+  width: 22%;
+  max-width: 90px;
+}
+
+.deleteBtn {
+  width: 60px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTENT
+   ═══════════════════════════════════════════════════════════════ */
+.content {
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+@media (min-width: 480px) {
+  .content {
+    padding: 0.875rem 1.25rem;
+  }
+}
+
+.textLine {
+  height: 12px;
+  width: 100%;
+}
+.textLineShort {
+  height: 12px;
+  width: 65%;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IMAGE
+   ═══════════════════════════════════════════════════════════════ */
+.imageWrap {
+  padding: 0 0.875rem 0.75rem;
+}
+@media (min-width: 480px) {
+  .imageWrap {
+    padding: 0 1.25rem 0.875rem;
+  }
+}
+
+.image {
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+}
+@media (min-width: 480px) {
+  .image {
+    height: 240px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COUNT ROW
+   ═══════════════════════════════════════════════════════════════ */
+.countRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.875rem;
+  border-top: 1px solid var(--border);
+  gap: 0.5rem;
+}
+@media (min-width: 480px) {
+  .countRow {
+    padding: 0.5rem 1.25rem;
+  }
+}
+
+.countChip {
+  height: 12px;
+  width: 60px;
+  border-radius: 100px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ACTION BAR
+   ═══════════════════════════════════════════════════════════════ */
+.actionBar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border);
+  padding: 0 0.25rem;
+}
+@media (min-width: 480px) {
+  .actionBar {
+    padding: 0 0.5rem;
+  }
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.75rem 0.25rem;
+}
+
+.actionIcon {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@media (min-width: 480px) {
+  .actionIcon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.actionLabel {
+  height: 10px;
+  width: 32px;
+  border-radius: 4px;
+}
+@media (max-width: 359px) {
+  .actionLabel {
+    display: none;
+  }
+}
