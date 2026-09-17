@@ -293,3 +293,190 @@
     height: 20px;
   }
 }
+/* ═══════════════════════════════════════════════════════════════
+   CARD FOOTER — availability pill + bookmark button
+   ═══════════════════════════════════════════════════════════════ */
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+
+.availableOff {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.saveBtn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.saveBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+  transform: scale(1.05);
+}
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.saveBtnActive {
+  background: var(--orange-dim);
+  border-color: var(--orange-glow);
+  color: var(--orange);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON LOADERS
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes cdShimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.workerSkeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.skAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cdShimmer 1.4s infinite;
+  margin-bottom: 0.5rem;
+}
+
+.skLine {
+  height: 12px;
+  width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cdShimmer 1.4s infinite;
+}
+
+.skFooter {
+  height: 28px;
+  width: 60%;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cdShimmer 1.4s infinite;
+  margin-top: 0.5rem;
+}
+
+/* Header skeleton shapes */
+.skIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cdShimmer 1.4s infinite;
+}
+
+.skTitle {
+  width: 220px;
+  height: 32px;
+  border-radius: 8px;
+  margin: 0 auto 0.75rem;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cdShimmer 1.4s infinite;
+}
+
+.skSubtitle {
+  width: 140px;
+  height: 16px;
+  border-radius: 6px;
+  margin: 0 auto;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cdShimmer 1.4s infinite;
+}
+
+/* Small-screen skeleton adjustments */
+@media (max-width: 768px) {
+  .skAvatar {
+    width: 60px;
+    height: 60px;
+  }
+  .workerSkeleton {
+    padding: 1rem;
+  }
+}
+@media (max-width: 480px) {
+  .skAvatar {
+    width: 50px;
+    height: 50px;
+  }
+  .workerSkeleton {
+    padding: 0.75rem;
+  }
+}

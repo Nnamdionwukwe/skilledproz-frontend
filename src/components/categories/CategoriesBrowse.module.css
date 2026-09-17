@@ -24,6 +24,20 @@
   color: var(--text-dim);
 }
 
+.title {
+  /* Specific class used by the JSX — mirrors .header h1 */
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.sub {
+  font-size: 1.125rem;
+  color: var(--text-dim);
+}
+
 .backBtn {
   display: inline-flex;
   align-items: center;
@@ -143,7 +157,8 @@
     padding: 1.5rem;
   }
 
-  .header h1 {
+  .header h1,
+  .title {
     font-size: 1.875rem;
   }
 
@@ -317,7 +332,7 @@
   color: var(--text);
 }
 
-/* ── Suggest Message ── */
+/* ── Suggest Message Banner ── */
 .suggestMsg {
   display: flex;
   align-items: center;
@@ -335,10 +350,35 @@
   border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
+.suggestMsgWarn {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
 .suggestMsgErr {
   background: var(--red-dim);
   color: var(--red);
   border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Retry button — used next to load errors */
+.retryBtn {
+  margin-left: auto;
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: opacity 0.15s;
+}
+
+.retryBtn:hover {
+  opacity: 0.75;
 }
 
 /* ── User Tag ── */
@@ -360,6 +400,39 @@
   flex-shrink: 0;
 }
 
+/* ── Show-more ── */
+.showMoreWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.showMoreBtn {
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.showMoreBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.endOfList {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  padding: 1rem 0 2rem;
+}
+
 /* ── Skeleton ── */
 .skeleton {
   height: 120px;
@@ -375,6 +448,89 @@
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON CARD — matches the real .card layout
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes cbShimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-height: 140px;
+}
+
+.skIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cbShimmer 1.4s infinite;
+}
+
+.skLine {
+  height: 14px;
+  width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cbShimmer 1.4s infinite;
+}
+
+.skLineSm {
+  height: 10px;
+  width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-input) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-input) 75%
+  );
+  background-size: 400px 100%;
+  animation: cbShimmer 1.4s infinite;
+}
+
+@media (max-width: 768px) {
+  .skeletonCard {
+    padding: 1rem;
+    min-height: 120px;
+  }
+}
+@media (max-width: 480px) {
+  .skeletonCard {
+    padding: 0.875rem;
+    min-height: 110px;
+  }
+  .skIcon {
+    width: 32px;
+    height: 32px;
   }
 }
 
