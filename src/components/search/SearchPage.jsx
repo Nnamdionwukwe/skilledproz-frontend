@@ -794,15 +794,15 @@ function WorkerCard({
   isNew = false,
   showDistance = false,
 }) {
-  const { user: viewer } = useAuthStore(); // ← ADD
-  const isHirer = viewer?.role === "HIRER"; // ← ADD
+  const { user: viewer } = useAuthStore();
+  const isHirer = viewer?.role === "HIRER";
 
   const {
     isSaved,
     checking: checkingSave,
     toggling,
     toggle,
-  } = useSavedWorker(worker.user?.id, { enabled: isHirer }); // ← ADD
+  } = useSavedWorker(worker.user?.id, { enabled: isHirer });
 
   const {
     user,
@@ -850,26 +850,6 @@ function WorkerCard({
         </div>
       </div>
 
-      {/* ── BOOKMARK BUTTON ── */}
-      {isHirer && (
-        <button
-          type="button"
-          className={`${styles.wcSaveBtn} ${
-            isSaved ? styles.wcSaveBtnActive : ""
-          }`}
-          onClick={(e) => {
-            e.preventDefault(); // don't follow the card's <a>
-            e.stopPropagation();
-            toggle();
-          }}
-          disabled={checkingSave || toggling}
-          title={isSaved ? "Remove from saved" : "Save worker"}
-          aria-label={isSaved ? "Remove from saved" : "Save worker"}
-        >
-          <FiBookmark size={14} fill={isSaved ? "currentColor" : "none"} />
-        </button>
-      )}
-
       <div className={styles.wcInfo}>
         <p className={styles.wcName}>
           {user?.firstName} {user?.lastName}
@@ -899,13 +879,35 @@ function WorkerCard({
           {currency} {hourlyRate?.toLocaleString()}
           <span className={styles.wcRateUnit}>/hr</span>
         </span>
-        <span
-          className={`${styles.wcAvail} ${
-            isAvailable ? styles.wcAvailOn : styles.wcAvailOff
-          }`}
-        >
-          {isAvailable ? "Available" : "Busy"}
-        </span>
+
+        <div className={styles.wcFooterRight}>
+          <span
+            className={`${styles.wcAvail} ${
+              isAvailable ? styles.wcAvailOn : styles.wcAvailOff
+            }`}
+          >
+            {isAvailable ? "Available" : "Busy"}
+          </span>
+
+          {isHirer && (
+            <button
+              type="button"
+              className={`${styles.wcSaveBtn} ${
+                isSaved ? styles.wcSaveBtnActive : ""
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggle();
+              }}
+              disabled={checkingSave || toggling}
+              title={isSaved ? "Remove from saved" : "Save worker"}
+              aria-label={isSaved ? "Remove from saved" : "Save worker"}
+            >
+              <FiBookmark size={14} fill={isSaved ? "currentColor" : "none"} />
+            </button>
+          )}
+        </div>
       </div>
     </a>
   );

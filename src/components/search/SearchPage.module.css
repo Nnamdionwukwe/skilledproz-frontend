@@ -635,6 +635,12 @@
   padding-top: 8px;
   border-top: 1px solid var(--border);
   margin-top: 2px;
+  gap: 8px;
+}
+.wcFooterRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .wcRate {
   font-family: var(--font-display);
@@ -961,24 +967,21 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SAVE BUTTON ON WORKER CARD
+   SAVE BUTTON — inline in the card footer
    ═══════════════════════════════════════════════════════════════ */
 .wcSaveBtn {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
   width: 30px;
   height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-panel);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-dim);
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.15s;
-  z-index: 2;
+  flex-shrink: 0;
 }
 .wcSaveBtn:hover:not(:disabled) {
   border-color: var(--orange);
