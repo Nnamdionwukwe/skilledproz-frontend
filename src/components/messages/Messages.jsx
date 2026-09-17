@@ -224,6 +224,9 @@ export default function Messages() {
   const [showJumpButton, setShowJumpButton] = useState(false);
   const [unreadBelow, setUnreadBelow] = useState(0);
 
+  // ── Fullscreen image viewer ──
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+
   // ── Refs ──
   const bottomRef = useRef(null);
   const messagesAreaRef = useRef(null);
@@ -322,6 +325,16 @@ export default function Messages() {
       setMobileView("chat");
     }
   }, [activeConvoId, withUserId, withUser]);
+
+  // ── Escape closes the fullscreen image viewer ──
+  useEffect(() => {
+    if (!lightboxSrc) return;
+    function onKey(e) {
+      if (e.key === "Escape") setLightboxSrc(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxSrc]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Conversations
@@ -907,17 +920,25 @@ export default function Messages() {
                                     )}
 
                                     {isMedia && (
-                                      <a
-                                        href={msg.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                      >
-                                        <img
-                                          src={msg.fileUrl}
-                                          alt="attachment"
-                                          className={styles.messageImage}
-                                        />
-                                      </a>
+                                      <img
+                                        src={msg.fileUrl}
+                                        alt="attachment"
+                                        className={styles.messageImage}
+                                        onClick={() =>
+                                          setLightboxSrc(msg.fileUrl)
+                                        }
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                          if (
+                                            e.key === "Enter" ||
+                                            e.key === " "
+                                          ) {
+                                            e.preventDefault();
+                                            setLightboxSrc(msg.fileUrl);
+                                          }
+                                        }}
+                                      />
                                     )}
                                     {isVideo && (
                                       <video
@@ -1071,6 +1092,32 @@ export default function Messages() {
           )}
         </div>
       </div>
+
+      {/* Fullscreen image viewer */}
+      {lightboxSrc && (
+        <div
+          className={styles.lightboxOverlay}
+          onClick={() => setLightboxSrc(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
+        >
+          <button
+            type="button"
+            className={styles.lightboxClose}
+            onClick={() => setLightboxSrc(null)}
+            aria-label="Close image"
+          >
+            <FiX size={24} />
+          </button>
+          <img
+            src={lightboxSrc}
+            alt=""
+            className={styles.lightboxImage}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </Layout>
   );
 }
