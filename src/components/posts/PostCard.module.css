@@ -1,7 +1,6 @@
-/* ============================================
-   BASE FIXES FOR ALL SCREEN SIZES
-   ============================================ */
-
+/* ═══════════════════════════════════════════════════════════════
+   CARD
+   ═══════════════════════════════════════════════════════════════ */
 .card {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -10,25 +9,28 @@
   position: relative;
   animation: fadeUp 0.3s ease;
   transition: border-color 0.2s;
-  /* Prevent horizontal overflow on small screens */
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
 }
 .card:hover {
   border-color: var(--border-hover);
 }
 
-/* Header - allow wrapping on very small screens */
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════════ */
 .header {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: 0.625rem;
+  padding: 0.875rem 0.875rem 0;
   flex-wrap: wrap;
 }
 @media (min-width: 480px) {
   .header {
+    gap: 0.75rem;
     padding: 1.25rem 1.25rem 0;
     flex-wrap: nowrap;
   }
@@ -91,40 +93,61 @@
 .authorRow {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 .authorName {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text);
   text-decoration: none;
   word-break: break-word;
 }
+@media (min-width: 480px) {
+  .authorName {
+    font-size: 0.9rem;
+  }
+}
 .authorName:hover {
   color: var(--orange);
 }
 .authorTitle {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   margin-top: 0.1rem;
   word-break: break-word;
 }
+@media (min-width: 480px) {
+  .authorTitle {
+    font-size: 0.75rem;
+  }
+}
 .postTime {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: var(--text-muted);
   margin-top: 0.1rem;
+}
+@media (min-width: 480px) {
+  .postTime {
+    font-size: 0.7rem;
+  }
 }
 
 .typeBadge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 700;
   padding: 0.15rem 0.45rem;
   border-radius: 100px;
   white-space: nowrap;
+}
+@media (min-width: 480px) {
+  .typeBadge {
+    font-size: 0.62rem;
+    padding: 0.15rem 0.5rem;
+  }
 }
 .typeBadge svg {
   flex-shrink: 0;
@@ -143,10 +166,17 @@
   color: var(--red);
   border-radius: 6px;
   padding: 0.25rem 0.5rem;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   cursor: pointer;
   transition: background 0.15s;
   font-family: var(--font-body);
+}
+@media (min-width: 480px) {
+  .moreBtn {
+    gap: 5px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+  }
 }
 .moreBtn svg {
   flex-shrink: 0;
@@ -157,13 +187,15 @@
   background: var(--red-dim);
 }
 
-/* Delete confirmation */
+/* ═══════════════════════════════════════════════════════════════
+   INLINE DELETE CONFIRMATION
+   ═══════════════════════════════════════════════════════════════ */
 .deleteConfirm {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  margin: 0.5rem 1rem 0;
-  padding: 0.625rem 0.875rem;
+  margin: 0.5rem 0.875rem 0;
+  padding: 0.625rem 0.75rem;
   background: var(--red-dim);
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: 10px;
@@ -172,9 +204,9 @@
 }
 @media (min-width: 480px) {
   .deleteConfirm {
+    gap: 0.75rem;
     margin: 0.5rem 1.25rem 0;
     padding: 0.75rem 1rem;
-    gap: 0.75rem;
     flex-wrap: nowrap;
   }
 }
@@ -205,10 +237,20 @@
   color: var(--text);
   margin: 0;
 }
+@media (min-width: 480px) {
+  .deleteConfirmTitle {
+    font-size: 0.85rem;
+  }
+}
 .deleteConfirmText {
   font-size: 0.68rem;
   color: var(--text-dim);
   margin: 0.15rem 0 0;
+}
+@media (min-width: 480px) {
+  .deleteConfirmText {
+    font-size: 0.72rem;
+  }
 }
 .deleteConfirmActions {
   display: flex;
@@ -254,18 +296,21 @@
   filter: brightness(1.1);
 }
 
-/* Repost banner */
+/* ═══════════════════════════════════════════════════════════════
+   REPOST BANNER
+   ═══════════════════════════════════════════════════════════════ */
 .repostBanner {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 0.375rem 1rem;
-  font-size: 0.7rem;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
 }
 @media (min-width: 480px) {
   .repostBanner {
     padding: 0.375rem 1.25rem;
+    font-size: 0.72rem;
   }
 }
 .repostBanner svg {
@@ -273,9 +318,11 @@
   color: var(--orange);
 }
 
-/* Content */
+/* ═══════════════════════════════════════════════════════════════
+   CONTENT
+   ═══════════════════════════════════════════════════════════════ */
 .content {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.875rem;
 }
 @media (min-width: 480px) {
   .content {
@@ -283,32 +330,45 @@
   }
 }
 .text {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text-dim);
-  line-height: 1.65;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+@media (min-width: 480px) {
+  .text {
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
 }
 .moreText {
   background: none;
   border: none;
   color: var(--orange);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: inherit;
   font-family: var(--font-body);
   padding: 0;
 }
 
-/* Images */
+/* ═══════════════════════════════════════════════════════════════
+   IMAGES
+   ═══════════════════════════════════════════════════════════════ */
 .imageGrid {
   margin-top: 0.75rem;
   border-radius: 10px;
   overflow: hidden;
 }
+@media (min-width: 480px) {
+  .imageGrid {
+    margin-top: 0.875rem;
+  }
+}
 .mainImage {
   width: 100%;
-  max-height: 300px;
+  max-height: 280px;
   object-fit: cover;
   display: block;
   cursor: zoom-in;
@@ -325,6 +385,12 @@
   padding: 0.4rem;
   background: var(--bg-card);
 }
+@media (min-width: 480px) {
+  .imageDots {
+    gap: 0.375rem;
+    padding: 0.5rem;
+  }
+}
 .imageDot {
   width: 7px;
   height: 7px;
@@ -335,17 +401,31 @@
   padding: 0;
   transition: background 0.15s;
 }
+@media (min-width: 480px) {
+  .imageDot {
+    width: 8px;
+    height: 8px;
+  }
+}
 .imageDotActive {
   background: var(--orange);
 }
 
-/* Repost card */
+/* ═══════════════════════════════════════════════════════════════
+   REPOST CARD (embedded)
+   ═══════════════════════════════════════════════════════════════ */
 .repostCard {
   margin-top: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.75rem;
   background: var(--bg-card);
+}
+@media (min-width: 480px) {
+  .repostCard {
+    margin-top: 0.875rem;
+    padding: 0.875rem;
+  }
 }
 .repostCardHeader {
   display: flex;
@@ -368,6 +448,13 @@
   flex-shrink: 0;
   cursor: pointer;
 }
+@media (min-width: 480px) {
+  .repostAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+}
 .repostAvatar img {
   width: 100%;
   height: 100%;
@@ -380,12 +467,22 @@
   text-decoration: none;
   transition: color 0.15s;
 }
+@media (min-width: 480px) {
+  .repostAuthorName {
+    font-size: 0.8rem;
+  }
+}
 .repostAuthorName:hover {
   color: var(--orange);
 }
 .repostTime {
   font-size: 0.65rem;
   color: var(--text-muted);
+}
+@media (min-width: 480px) {
+  .repostTime {
+    font-size: 0.68rem;
+  }
 }
 .repostText {
   font-size: 0.8rem;
@@ -394,13 +491,20 @@
   word-break: break-word;
   overflow-wrap: anywhere;
 }
+@media (min-width: 480px) {
+  .repostText {
+    font-size: 0.82rem;
+  }
+}
 
-/* Count row */
+/* ═══════════════════════════════════════════════════════════════
+   COUNT ROW
+   ═══════════════════════════════════════════════════════════════ */
 .countRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.4rem 1rem;
+  padding: 0.4rem 0.875rem;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
   gap: 0.375rem;
@@ -430,6 +534,12 @@
   transition: color 0.15s;
   padding: 0;
 }
+@media (min-width: 480px) {
+  .countBtn {
+    gap: 5px;
+    font-size: 0.78rem;
+  }
+}
 .countBtn svg {
   flex-shrink: 0;
 }
@@ -438,6 +548,11 @@
 }
 .countNum {
   font-size: 0.72rem;
+}
+@media (min-width: 480px) {
+  .countNum {
+    font-size: 0.78rem;
+  }
 }
 
 .countIcons {
@@ -455,19 +570,27 @@
   margin-right: -6px;
   color: var(--orange);
 }
+@media (min-width: 480px) {
+  .countIcons svg {
+    width: 16px;
+    height: 16px;
+  }
+}
 .countIcons svg:last-child {
   margin-right: 0;
 }
 
-/* ============================================
-   ACTION BAR - KEY FIX FOR MOBILE
-   ============================================ */
+/* ═══════════════════════════════════════════════════════════════
+   ACTION BAR
+   ═══════════════════════════════════════════════════════════════ */
 .actionBar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--border);
   padding: 0 0.25rem;
   position: relative;
+  overflow: visible;
+  min-width: 0;
 }
 @media (min-width: 480px) {
   .actionBar {
@@ -530,8 +653,8 @@
   color: var(--orange) !important;
 }
 
-/* Hide text labels on very small screens for action buttons */
-@media (max-width: 360px) {
+/* Icon-only action buttons on very small screens */
+@media (max-width: 359px) {
   .actionBtn span {
     display: none;
   }
@@ -540,27 +663,29 @@
   }
 }
 
-/* Reaction wrap - anchors all dropdowns */
+/* ═══════════════════════════════════════════════════════════════
+   REACTION WRAP (positioning context for dropdowns)
+   ═══════════════════════════════════════════════════════════════ */
 .reactWrap {
   position: relative;
   min-width: 0;
 }
 
-/* When a dropdown is open inside a reactWrap, elevate it above siblings */
+/* Elevate the wrapper that currently has an open dropdown */
 .reactWrap:has(.shareMenu),
 .reactWrap:has(.reactionPicker),
 .reactWrap:has(.repostMenu) {
   z-index: 40;
 }
 
-/* ============================================
-   REACTION PICKER - FIXED FOR MOBILE
-   ============================================ */
+/* ═══════════════════════════════════════════════════════════════
+   REACTION PICKER — column 1, anchored LEFT, hard-clamped
+   ═══════════════════════════════════════════════════════════════ */
 .reactionPicker {
   position: absolute;
   bottom: calc(100% + 8px);
-  /* Default: anchor left, but prevent overflow */
   left: 0;
+  right: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 100px;
@@ -571,29 +696,17 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   white-space: nowrap;
   animation: fadeUp 0.15s ease;
-  /* KEY: prevent overflow on left side */
-  max-width: calc(100vw - 20px);
+  /* Hard clamp: never exceed the viewport minus a small gutter */
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 @media (min-width: 480px) {
   .reactionPicker {
     padding: 0.4rem 0.6rem;
     gap: 0.15rem;
-  }
-}
-
-/* On mobile, center the picker relative to the button and prevent
-   it from overflowing either side */
-@media (max-width: 640px) {
-  .reactionPicker {
-    left: 0;
-    right: auto;
-    /* Shift it so it doesn't overflow left */
-    transform: translateX(0);
-  }
-  /* If the picker would overflow right, anchor it right instead */
-  .reactWrap:first-child .reactionPicker {
-    left: 0;
-    right: auto;
+    max-width: none;
+    overflow: visible;
   }
 }
 
@@ -613,18 +726,20 @@
     background 0.15s,
     color 0.15s;
   color: var(--text-dim);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
 }
 @media (min-width: 480px) {
   .reactionPickerBtn {
     width: 38px;
     height: 38px;
+    flex-shrink: 0;
   }
 }
 .reactionPickerBtn svg {
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 @media (min-width: 480px) {
   .reactionPickerBtn svg {
@@ -642,13 +757,31 @@
   color: var(--orange);
 }
 
-/* ============================================
-   REPOST MENU - FIXED FOR MOBILE
-   ============================================ */
+/* Extra-tight phones: shrink so all 5 buttons fit inside the card */
+@media (max-width: 380px) {
+  .reactionPicker {
+    padding: 0.25rem 0.3rem;
+    gap: 0;
+  }
+  .reactionPickerBtn {
+    width: 30px;
+    height: 30px;
+  }
+  .reactionPickerBtn svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REPOST MENU — column 2, anchored RIGHT so it grows leftward
+   and never overflows the right edge of the card
+   ═══════════════════════════════════════════════════════════════ */
 .repostMenu {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: 0;
+  right: 0;
+  left: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -656,7 +789,8 @@
   z-index: 50;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   width: 260px;
-  max-width: calc(100vw - 20px);
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
   animation: fadeUp 0.15s ease;
 }
 @media (min-width: 480px) {
@@ -678,6 +812,7 @@
   border-radius: 8px;
   font-family: var(--font-body);
   transition: background 0.15s;
+  box-sizing: border-box;
 }
 @media (min-width: 480px) {
   .repostMenuBtn {
@@ -692,14 +827,25 @@
   width: 15px;
   height: 15px;
 }
+@media (min-width: 480px) {
+  .repostMenuBtn > svg {
+    width: 16px;
+    height: 16px;
+  }
+}
 .repostMenuBtn:hover {
   background: var(--bg-card);
+}
+.repostMenuBtn > div {
+  min-width: 0;
+  flex: 1;
 }
 .repostMenuBtn p {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text);
   margin: 0 0 0.15rem 0;
+  word-break: break-word;
 }
 @media (min-width: 480px) {
   .repostMenuBtn p {
@@ -710,6 +856,7 @@
   font-size: 0.7rem;
   color: var(--text-dim);
   font-weight: 400;
+  word-break: break-word;
 }
 @media (min-width: 480px) {
   .repostMenuSub {
@@ -717,13 +864,14 @@
   }
 }
 
-/* ============================================
-   SHARE / SEND MENU - FIXED FOR MOBILE
-   ============================================ */
+/* ═══════════════════════════════════════════════════════════════
+   SHARE / SEND MENU — column 4, anchored RIGHT, hard-clamped
+   ═══════════════════════════════════════════════════════════════ */
 .shareMenu {
   position: absolute;
   bottom: calc(100% + 8px);
   right: 0;
+  left: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -731,9 +879,10 @@
   z-index: 50;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   width: 240px;
-  max-width: calc(100vw - 20px);
+  max-width: calc(100vw - 16px);
   max-height: 65vh;
   overflow-y: auto;
+  box-sizing: border-box;
   animation: fadeUp 0.15s ease;
   -webkit-overflow-scrolling: touch;
 }
@@ -780,6 +929,7 @@
   transition:
     background 0.15s,
     color 0.15s;
+  box-sizing: border-box;
 }
 @media (min-width: 480px) {
   .shareMenuBtn {
@@ -796,6 +946,12 @@
   color: var(--orange);
   width: 15px;
   height: 15px;
+}
+@media (min-width: 480px) {
+  .shareMenuBtn > svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 .shareMenuBtn > div {
   flex: 1;
@@ -819,47 +975,11 @@
   margin-top: 0.1rem !important;
 }
 
-/* ============================================
-   MOBILE DROPDOWN POSITIONING
-   ============================================ */
-/* On narrow screens, make sure dropdowns don't overflow the left edge.
-   The reaction picker and repost menu are anchored left, so we clamp them.
-   The share menu is anchored right, which naturally stays in bounds. */
-@media (max-width: 640px) {
-  .reactionPicker {
-    left: 0;
-    right: auto;
-    /* Ensure it never goes past the left viewport edge */
-    margin-left: 0;
-  }
-  .repostMenu {
-    left: 0;
-    right: auto;
-  }
-}
-
-/* For the first column (Like button), ensure the reaction picker
-   stays within the card bounds. Since the like button is in the
-   first column, left:0 relative to .reactWrap means it starts at
-   the card's left padding edge, which is safe. */
-@media (max-width: 360px) {
-  .reactionPicker {
-    left: -4px;
-    padding: 0.25rem;
-  }
-  .reactionPickerBtn {
-    width: 30px;
-    height: 30px;
-  }
-  .reactionPickerBtn svg {
-    width: 14px;
-    height: 14px;
-  }
-}
-
-/* Repost input */
+/* ═══════════════════════════════════════════════════════════════
+   REPOST INPUT
+   ═══════════════════════════════════════════════════════════════ */
 .repostInputWrap {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.875rem;
   border-top: 1px solid var(--border);
 }
 @media (min-width: 480px) {
@@ -929,9 +1049,11 @@
   }
 }
 
-/* Comments */
+/* ═══════════════════════════════════════════════════════════════
+   COMMENTS
+   ═══════════════════════════════════════════════════════════════ */
 .commentsSection {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.875rem;
   border-top: 1px solid var(--border);
 }
 @media (min-width: 480px) {
@@ -1179,7 +1301,9 @@
   color: var(--orange);
 }
 
-/* Reactions modal */
+/* ═══════════════════════════════════════════════════════════════
+   REACTIONS MODAL
+   ═══════════════════════════════════════════════════════════════ */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -1363,6 +1487,12 @@
   justify-content: center;
   color: var(--orange);
 }
+@media (min-width: 480px) {
+  .reactionEmoji {
+    width: 16px;
+    height: 16px;
+  }
+}
 .reactionsName {
   font-size: 0.82rem;
   font-weight: 600;
@@ -1380,9 +1510,9 @@
   font-size: 0.85rem;
 }
 
-/* ============================================
+/* ═══════════════════════════════════════════════════════════════
    FULLSCREEN IMAGE LIGHTBOX
-   ============================================ */
+   ═══════════════════════════════════════════════════════════════ */
 .lightboxOverlay {
   position: fixed;
   inset: 0;
@@ -1506,9 +1636,9 @@
   }
 }
 
-/* ============================================
+/* ═══════════════════════════════════════════════════════════════
    ANIMATIONS
-   ============================================ */
+   ═══════════════════════════════════════════════════════════════ */
 @keyframes fadeUp {
   from {
     opacity: 0;
