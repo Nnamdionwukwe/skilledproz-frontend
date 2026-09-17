@@ -10,8 +10,6 @@ import {
   FiMessageSquare,
   FiSmile,
   FiPaperclip,
-  FiCamera,
-  FiVideo,
   FiSend,
   FiGlobe,
   FiX,
@@ -223,8 +221,6 @@ export default function Messages() {
   });
 
   // ── Jump-to-bottom state ──
-  // showJumpButton: true whenever the user has scrolled away from the bottom
-  // unreadBelow:    count of new messages that arrived while scrolled up
   const [showJumpButton, setShowJumpButton] = useState(false);
   const [unreadBelow, setUnreadBelow] = useState(0);
 
@@ -240,7 +236,7 @@ export default function Messages() {
   const initialLoadRef = useRef(true);
   const lastSeenMessageIdRef = useRef(null);
 
-  // ── Scroll handler — clamps negatives, updates ref and both states ──
+  // ── Scroll handler ──
   const handleMessagesScroll = useCallback(() => {
     const el = messagesAreaRef.current;
     if (!el) return;
@@ -265,7 +261,6 @@ export default function Messages() {
     const isNew = newestId && newestId !== lastSeenMessageIdRef.current;
     if (!isNew) return;
 
-    // First load — jump to bottom, no badge
     if (initialLoadRef.current) {
       lastSeenMessageIdRef.current = newestId;
       initialLoadRef.current = false;
@@ -275,7 +270,6 @@ export default function Messages() {
       return;
     }
 
-    // User just sent — always scroll, no badge
     if (justSentRef.current) {
       lastSeenMessageIdRef.current = newestId;
       justSentRef.current = false;
@@ -285,7 +279,6 @@ export default function Messages() {
       return;
     }
 
-    // Incoming message
     lastSeenMessageIdRef.current = newestId;
     if (isAtBottomRef.current) {
       requestAnimationFrame(() => {
@@ -296,7 +289,7 @@ export default function Messages() {
     }
   }, [messages]);
 
-  // ── Optimistic bubble just appeared → scroll to show it ──
+  // ── Optimistic bubble → scroll to show it ──
   useEffect(() => {
     if (sendingMessage) {
       requestAnimationFrame(() => {
@@ -471,7 +464,7 @@ export default function Messages() {
     };
   }, [activeConvoId, loadMessages, loadConversations]);
 
-  // ── URL sync — only writes, never wipes ──
+  // ── URL sync ──
   useEffect(() => {
     if (activeConvoId) {
       setSearchParams({ convo: activeConvoId }, { replace: true });
@@ -646,6 +639,14 @@ export default function Messages() {
     ? getOtherUser(activeConvo)
     : withUser || null;
 
+  // Resolve the other party's public profile URL.
+  // Workers see hirers at /hirers/:id and vice versa.
+  const otherProfileUrl = activeOther
+    ? activeOther.role === "WORKER"
+      ? `/workers/${activeOther.id}`
+      : `/hirers/${activeOther.id}`
+    : null;
+
   const filteredConvos = conversations.filter((c) => {
     if (!searchQuery) return true;
     const other = getOtherUser(c);
@@ -819,15 +820,8 @@ export default function Messages() {
                     </div>
                   </>
                 )}
-                {activeOther && (
-                  <Link
-                    to={
-                      activeOther.role === "WORKER"
-                        ? `/workers/${activeOther.id}`
-                        : `/profile/${activeOther.id}`
-                    }
-                    className={styles.viewProfileBtn}
-                  >
+                {otherProfileUrl && (
+                  <Link to={otherProfileUrl} className={styles.viewProfileBtn}>
                     View Profile →
                   </Link>
                 )}
@@ -1012,6 +1006,7 @@ export default function Messages() {
               </div>
 
               <div className={styles.inputArea}>
+                {/* Single attach input — accepts images and videos */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1034,34 +1029,6 @@ export default function Messages() {
                     ) : (
                       <FiPaperclip size={16} />
                     )}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.attachBtn}
-                    onClick={() => {
-                      if (fileInputRef.current)
-                        fileInputRef.current.accept = "image/*";
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={uploadingFile}
-                    title="Send photo"
-                    aria-label="Send photo"
-                  >
-                    <FiCamera size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.attachBtn}
-                    onClick={() => {
-                      if (fileInputRef.current)
-                        fileInputRef.current.accept = "video/*";
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={uploadingFile}
-                    title="Send video"
-                    aria-label="Send video"
-                  >
-                    <FiVideo size={16} />
                   </button>
                 </div>
 
