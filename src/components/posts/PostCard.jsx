@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -25,10 +25,8 @@ import {
   FiChevronRight,
   FiCopy,
   FiCheck,
-  FiShare2,
-  FiExternalLink,
   FiMail,
-  FiMessageSquare,
+  FiExternalLink, // ← NEW — used in the share menu for X / Facebook / LinkedIn
 } from "react-icons/fi";
 
 // ── Reactions — Feather icons, matching the Prisma ReactionType enum ─────────
@@ -52,13 +50,11 @@ const TYPE_BADGES = {
 // ── Resolve the public profile URL for a user based on viewer's role ─────────
 function profileUrlFor(viewer, target) {
   if (!target) return "#";
-  // Own profile — go to the role-appropriate public page
   if (viewer && viewer.id === target.id) {
     return target.role === "WORKER"
       ? `/workers/${target.id}`
       : `/hirers/${target.id}`;
   }
-  // Other user — go to their role-appropriate public page
   return target.role === "WORKER"
     ? `/workers/${target.id}`
     : `/hirers/${target.id}`;
@@ -84,12 +80,50 @@ export default function PostCard({ post: initialPost, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [imageIdx, setImageIdx] = useState(0);
 
-  // ── NEW: fullscreen image viewer ──
+  // ── Fullscreen image viewer ──
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
-  // ── NEW: share menu ──
+  // ── Share menu ──
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // ── Refs for outside-click detection ──
+  const reactWrapRef = useRef(null);
+  const shareWrapRef = useRef(null);
+
+  // ── Outside-click handler for reaction picker and share menu ──
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (reactWrapRef.current && !reactWrapRef.current.contains(e.target)) {
+        setShowReactions(false);
+      }
+      if (shareWrapRef.current && !shareWrapRef.current.contains(e.target)) {
+        setShowShareMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
+  // ── Lightbox keyboard controls ──
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    function handleKey(e) {
+      if (e.key === "Escape") setLightboxIdx(null);
+      else if (e.key === "ArrowRight")
+        setLightboxIdx((i) => (i + 1) % post.images.length);
+      else if (e.key === "ArrowLeft")
+        setLightboxIdx(
+          (i) => (i - 1 + post.images.length) % post.images.length,
+        );
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [lightboxIdx, post.images?.length]);
 
   if (deleted) return null;
 
@@ -107,7 +141,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
       ? author.workerProfile?.title
       : author?.hirerProfile?.companyName;
 
-  // ── NEW: profile links (viewer-aware) ──
   const authorProfileUrl = profileUrlFor(user, author);
   const commentProfileUrl = (commentAuthor) =>
     profileUrlFor(user, commentAuthor);
@@ -138,6 +171,15 @@ export default function PostCard({ post: initialPost, onDelete }) {
         },
       }));
     } catch {}
+  };
+
+  // ── NEW: Like button click — opens picker if no reaction yet,
+  //         opens picker if user already has reaction (change it),
+  //         removes reaction if they click the picker's current one ──
+  const handleLikeButtonClick = () => {
+    if (!user) return;
+    // Toggle picker instead of immediately liking
+    setShowReactions((v) => !v);
   };
 
   const handleComment = async (e) => {
@@ -216,14 +258,12 @@ export default function PostCard({ post: initialPost, onDelete }) {
     } catch {}
   };
 
-  // ── NEW: Copy link to clipboard ──
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(postUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback for older browsers
       const el = document.createElement("textarea");
       el.value = postUrl;
       document.body.appendChild(el);
@@ -235,7 +275,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
     }
   };
 
-  // ── NEW: Open share targets ──
   const openExternalShare = (platform) => {
     const encodedUrl = encodeURIComponent(postUrl);
     const encodedText = encodeURIComponent(
@@ -258,7 +297,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
     }
   };
 
-  // ── NEW: Send inside SkilledProz (navigate to messages with the post) ──
   const handleSendInApp = () => {
     const params = new URLSearchParams({
       share: "post",
@@ -270,7 +308,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
     setShowShareMenu(false);
   };
 
-  // ── NEW: Lightbox navigation ──
   const openLightbox = (idx) => setLightboxIdx(idx);
   const closeLightbox = () => setLightboxIdx(null);
   const nextImage = () => {
@@ -372,7 +409,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
           )}
         </p>
 
-        {/* Images — clickable to open lightbox */}
+        {/* Images */}
         {post.images?.length > 0 && (
           <div className={styles.imageGrid}>
             <img
@@ -485,17 +522,13 @@ export default function PostCard({ post: initialPost, onDelete }) {
 
       {/* Action bar */}
       <div className={styles.actionBar}>
-        {/* Like button with reaction picker */}
-        <div className={styles.reactWrap}>
+        {/* ── Like button — click to open picker ── */}
+        <div className={styles.reactWrap} ref={reactWrapRef}>
           <button
             className={`${styles.actionBtn} ${
               myReaction ? styles.actionBtnActive : ""
             }`}
-            onClick={() =>
-              myReaction ? handleReact(myReaction) : handleReact("LIKE")
-            }
-            onMouseEnter={() => setShowReactions(true)}
-            onMouseLeave={() => setTimeout(() => setShowReactions(false), 300)}
+            onClick={handleLikeButtonClick}
             type="button"
           >
             {CurrentReactionIcon ? (
@@ -506,11 +539,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
             <span>{currentReaction ? currentReaction.label : "Like"}</span>
           </button>
           {showReactions && (
-            <div
-              className={styles.reactionPicker}
-              onMouseEnter={() => setShowReactions(true)}
-              onMouseLeave={() => setShowReactions(false)}
-            >
+            <div className={styles.reactionPicker}>
               {REACTIONS.map((r) => {
                 const Icon = r.Icon;
                 return (
@@ -590,8 +619,8 @@ export default function PostCard({ post: initialPost, onDelete }) {
           )}
         </div>
 
-        {/* ── NEW: Send / Share button ── */}
-        <div className={styles.reactWrap}>
+        {/* ── Send button ── */}
+        <div className={styles.reactWrap} ref={shareWrapRef}>
           <button
             className={styles.actionBtn}
             onClick={() => setShowShareMenu((v) => !v)}
@@ -605,13 +634,12 @@ export default function PostCard({ post: initialPost, onDelete }) {
             <div className={styles.shareMenu}>
               <p className={styles.shareMenuTitle}>Share this post</p>
 
-              {/* In-app send */}
               <button
                 className={styles.shareMenuBtn}
                 onClick={handleSendInApp}
                 type="button"
               >
-                <FiMessageSquare size={16} />
+                <FiMessageCircle size={16} />
                 <div>
                   <p>Send on SkilledProz</p>
                   <p className={styles.shareMenuSub}>
@@ -622,7 +650,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
 
               <div className={styles.shareMenuDivider} />
 
-              {/* External platforms */}
               <button
                 className={styles.shareMenuBtn}
                 onClick={() => openExternalShare("whatsapp")}
@@ -909,7 +936,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
         />
       )}
 
-      {/* ── NEW: Fullscreen image lightbox ── */}
+      {/* Fullscreen image lightbox */}
       {lightboxIdx !== null && post.images?.length > 0 && (
         <div className={styles.lightboxOverlay} onClick={closeLightbox}>
           <button
@@ -973,7 +1000,7 @@ function ReactionsModal({ postId, onClose, user }) {
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useState(() => {
+  useEffect(() => {
     api
       .get(`/posts/${postId}/reactions`)
       .then((res) => {
@@ -982,7 +1009,7 @@ function ReactionsModal({ postId, onClose, user }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  });
+  }, [postId]);
 
   const filtered =
     filter === "ALL" ? reactions : reactions.filter((r) => r.type === filter);

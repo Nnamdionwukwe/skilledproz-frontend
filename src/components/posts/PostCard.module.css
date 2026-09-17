@@ -829,6 +829,7 @@
 .modalClose svg {
   flex-shrink: 0;
 }
+
 /* ═══════════════════════════════════════════════════════════════
    FULLSCREEN IMAGE LIGHTBOX
    ═══════════════════════════════════════════════════════════════ */
@@ -946,22 +947,83 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SHARE / SEND MENU
+   CARD OVERFLOW FIX — lets dropdowns/menus escape the card bounds
+   ═══════════════════════════════════════════════════════════════ */
+.card {
+  overflow: visible;
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ELEVATE the wrapping `.reactWrap` when a dropdown is open
+   so it stacks above sibling wrappers in the action bar.
+   (`:has()` is supported in Chrome 105+, Safari 15.4+, Firefox 121+)
+   ═══════════════════════════════════════════════════════════════ */
+.reactWrap:has(.shareMenu),
+.reactWrap:has(.reactionPicker),
+.reactWrap:has(.repostMenu) {
+  z-index: 40;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REACTION PICKER — click-triggered, anchored left, overlays card
+   ═══════════════════════════════════════════════════════════════ */
+.reactionPicker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  gap: 0.25rem;
+  z-index: 50;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  animation: fadeUp 0.15s ease;
+  max-width: calc(100vw - 24px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REPOST MENU — same anchor-left treatment as the picker
+   ═══════════════════════════════════════════════════════════════ */
+.repostMenu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  z-index: 50;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  width: 280px;
+  max-width: calc(100vw - 24px);
+  animation: fadeUp 0.15s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARE / SEND MENU — overlays the card, never clipped
    ═══════════════════════════════════════════════════════════════ */
 .shareMenu {
   position: absolute;
-  bottom: calc(100% + 4px);
+  bottom: calc(100% + 8px);
   right: 0;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.5rem;
-  z-index: 25;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   width: 260px;
+  max-width: calc(100vw - 24px);
   max-height: 70vh;
   overflow-y: auto;
   animation: fadeUp 0.15s ease;
+  pointer-events: auto;
 }
 
 .shareMenuTitle {
@@ -1023,13 +1085,13 @@
 
 @media (max-width: 640px) {
   .shareMenu {
-    right: -40px;
+    right: -8px;
     width: 240px;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COMMENT AUTHOR LINK
+   COMMENT + REPOST AUTHOR LINKS
    ═══════════════════════════════════════════════════════════════ */
 .commentAuthorLink {
   color: var(--text);
@@ -1040,7 +1102,6 @@
   color: var(--orange);
 }
 
-/* Repost author link hover */
 .repostAuthorName {
   text-decoration: none;
   transition: color 0.15s;
@@ -1049,18 +1110,21 @@
   color: var(--orange);
 }
 
-/* Repost avatar link cursor */
 .repostAvatar {
   cursor: pointer;
 }
 
-/* Reaction item in modal is now a link */
+/* ═══════════════════════════════════════════════════════════════
+   REACTIONS MODAL — items are now links to profile
+   ═══════════════════════════════════════════════════════════════ */
 .reactionsItem {
   text-decoration: none;
   color: inherit;
 }
 
-/* Small fadeIn used by lightbox */
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
 @keyframes fadeIn {
   from {
     opacity: 0;
