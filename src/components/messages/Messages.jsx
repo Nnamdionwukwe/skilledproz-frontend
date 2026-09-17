@@ -1,10 +1,24 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import api from "../../lib/api";
 import styles from "./Messages.module.css";
+import {
+  FiSearch,
+  FiMessageSquare,
+  FiSmile,
+  FiPaperclip,
+  FiCamera,
+  FiVideo,
+  FiSend,
+  FiGlobe,
+  FiX,
+  FiCheck,
+  FiCheckCircle,
+  FiArrowLeft,
+} from "react-icons/fi";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -29,13 +43,15 @@ const LANGUAGES = [
   { code: "vi", label: "Vietnamese" },
 ];
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 function Avatar({ user, size = "md" }) {
   const initials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
   return (
     <div className={`${styles.avatar} ${styles[`avatar_${size}`]}`}>
       {user?.avatar ? (
-        <img src={user.avatar} alt={user.firstName} />
+        <img src={user.avatar} alt={user.firstName || ""} />
       ) : (
         <span>{initials || "?"}</span>
       )}
@@ -72,6 +88,8 @@ function formatDateDivider(dateStr) {
   });
 }
 
+// ─── Translate button ───────────────────────────────────────────────────────
+
 function TranslateButton({ text }) {
   const [translated, setTranslated] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +101,7 @@ function TranslateButton({ text }) {
     try {
       const res = await api.post("/translate", {
         text,
-        targetLang: langCode, // ← was: targetLanguage
+        targetLang: langCode,
       });
       setTranslated(res.data.data.translated);
     } catch {
@@ -102,19 +120,23 @@ function TranslateButton({ text }) {
           <button
             className={styles.translateDismiss}
             onClick={() => setTranslated(null)}
+            type="button"
+            aria-label="Dismiss translation"
           >
-            ✕
+            <FiX size={12} />
           </button>
         </div>
       ) : (
-        <div style={{ position: "relative" }}>
+        <div className={styles.translateRelative}>
           <button
             className={styles.translateBtn}
             onClick={() => setShowPicker((v) => !v)}
             disabled={loading}
             title="Translate message"
+            type="button"
+            aria-label="Translate message"
           >
-            {loading ? "…" : "🌐"}
+            {loading ? "…" : <FiGlobe size={14} />}
           </button>
           {showPicker && (
             <div className={styles.langPicker}>
@@ -123,6 +145,7 @@ function TranslateButton({ text }) {
                   key={l.code}
                   className={styles.langOption}
                   onClick={() => translate(l.code)}
+                  type="button"
                 >
                   {l.label}
                 </button>
@@ -135,155 +158,205 @@ function TranslateButton({ text }) {
   );
 }
 
+// ─── Main component ─────────────────────────────────────────────────────────
+
 export default function Messages() {
   const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
+  // ── Initial URL state ──
+  const initialConvoId = searchParams.get("convo");
+  const initialWithId = searchParams.get("with");
+
   const [conversations, setConversations] = useState([]);
-  const [activeConvoId, setActiveConvoId] = useState(
-    searchParams.get("convo") || null,
-  );
+  const [activeConvoId, setActiveConvoId] = useState(initialConvoId || null);
+  const [withUserId, setWithUserId] = useState(initialWithId || null);
+  const [withUser, setWithUser] = useState(null);
+
   const [messages, setMessages] = useState([]);
+  const [sendingMessage, setSendingMessage] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [mobileView, setMobileView] = useState(() =>
-    window.innerWidth <= 768 ? "list" : "list",
-  );
   const [uploadingFile, setUploadingFile] = useState(false);
 
+  // ── Mobile view: "list" or "chat" ──
+  // Initialize from the URL so ?with=<id> or ?convo=<id> opens the chat
+  // pane directly on phones, without waiting for an effect to flip it.
+  const [mobileView, setMobileView] = useState(() => {
+    if (typeof window === "undefined") return "list";
+    const hasChatTarget = initialConvoId || initialWithId;
+    return window.innerWidth <= 768 && hasChatTarget ? "chat" : "list";
+  });
+
+  // ── Refs ──
   const bottomRef = useRef(null);
-  const messagesAreaRef = useRef(null); // ref on the scrollable messages div
+  const messagesAreaRef = useRef(null);
   const textareaRef = useRef(null);
   const msgPollRef = useRef(null);
   const convoPollRef = useRef(null);
   const fileInputRef = useRef(null);
-  const isAtBottomRef = useRef(true); // tracks whether user is near bottom
-  const justSentRef = useRef(false); // true immediately after the user sends
+  const isAtBottomRef = useRef(true);
+  const justSentRef = useRef(false);
 
-  // ── Track whether the user is near the bottom of the message list ──────────
+  // ── Scroll tracking ──
   const handleMessagesScroll = useCallback(() => {
     const el = messagesAreaRef.current;
     if (!el) return;
-    // Consider "at bottom" if within 150px of the end
     isAtBottomRef.current =
       el.scrollHeight - el.scrollTop - el.clientHeight < 150;
   }, []);
 
-  // ── Scroll to bottom only when appropriate ─────────────────────────────────
-  // Fires when messages change.
-  // Scrolls if: user was already at the bottom, OR the user just sent a message.
   useEffect(() => {
     if (isAtBottomRef.current || justSentRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
     justSentRef.current = false;
-  }, [messages]);
+  }, [messages, sendingMessage]);
 
-  // ── Conversations ─────────────────────────────────────────────────────────
-  const loadConversations = useCallback(async (justReadConvoId = null) => {
+  // ── Auto-switch to "chat" view on mobile whenever a chat is active ──
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth <= 768 && (activeConvoId || withUserId || withUser)) {
+      setMobileView("chat");
+    }
+  }, [activeConvoId, withUserId, withUser]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Conversations
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const loadConversations = useCallback(async () => {
     try {
-      const res = await api.get(`/messages/conversations?_t=${Date.now()}`);
-      const fresh = res.data.data.conversations || [];
-      setConversations((prev) => {
-        const prevUnread = {};
-        prev.forEach((c) => {
-          prevUnread[c.id] = c.unreadCount || 0;
-        });
-        return fresh.map((f) => {
-          if (f.id === justReadConvoId)
-            return { ...f, unreadCount: f.unreadCount ?? 0 };
-          return {
-            ...f,
-            unreadCount: Math.max(f.unreadCount ?? 0, prevUnread[f.id] ?? 0),
-          };
-        });
+      const res = await api.get("/messages/conversations", {
+        params: { page: 1, limit: 50, _t: Date.now() },
       });
-    } catch {}
+      const fresh = res.data.data.conversations || [];
+      setConversations(fresh);
+      return fresh;
+    } catch {
+      return [];
+    }
   }, []);
 
   useEffect(() => {
     loadConversations().finally(() => setLoadingConvos(false));
-  }, []);
+  }, [loadConversations]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Handle ?with=<userId>
+  // ─────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!withUserId) {
+      setWithUser(null);
+      return;
+    }
+
+    // If a conversation with this user exists, prefer it
+    const existing = conversations.find((c) =>
+      c.users?.some((u) => u.userId === withUserId),
+    );
+    if (existing) {
+      setActiveConvoId(existing.id);
+      setWithUserId(null);
+      setSearchParams({ convo: existing.id }, { replace: true });
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchUser = async () => {
+      // Worker
+      try {
+        const res = await api.get(`/workers/${withUserId}`);
+        if (cancelled) return;
+        const worker = res.data.data?.worker;
+        const u = worker?.user || worker;
+        if (u?.id) {
+          setWithUser(u);
+          return;
+        }
+      } catch {
+        /* try next */
+      }
+
+      // Hirer
+      try {
+        const res = await api.get(`/hirers/${withUserId}`);
+        if (cancelled) return;
+        const hirer = res.data.data?.profile || res.data.data?.hirer;
+        const u = hirer?.user || hirer;
+        if (u?.id) {
+          setWithUser(u);
+          return;
+        }
+      } catch {
+        /* try next */
+      }
+
+      // Generic user
+      try {
+        const res = await api.get(`/users/${withUserId}`);
+        if (cancelled) return;
+        const u =
+          res.data.data?.user ||
+          res.data.data?.profile?.user ||
+          res.data.data?.profile ||
+          res.data.data;
+        if (u?.id) {
+          setWithUser(u);
+          return;
+        }
+      } catch {
+        /* give up */
+      }
+
+      if (!cancelled) setWithUser(null);
+    };
+
+    fetchUser();
+    return () => {
+      cancelled = true;
+    };
+  }, [withUserId, conversations, setSearchParams]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Load messages for the active conversation
+  // ─────────────────────────────────────────────────────────────────────────
 
   const loadMessages = useCallback(async (convoId, silent = false) => {
     if (!convoId) return;
     if (!silent) setLoadingMessages(true);
     try {
-      const res = await api.get(
-        `/messages/${convoId}?limit=100&_t=${Date.now()}`,
-      );
-      const fetched = res.data.data.messages || [];
-
-      if (silent) {
-        setMessages((prev) => {
-          const serverIds = new Set(fetched.map((m) => m.id));
-          const notYetOnServer = prev.filter((m) => !serverIds.has(m.id));
-          if (notYetOnServer.length === 0) return fetched;
-          return [...fetched, ...notYetOnServer].sort(
-            (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-          );
-        });
-      } else {
-        setMessages(fetched);
-      }
-    } catch {}
+      const res = await api.get(`/messages/${convoId}`, {
+        params: { page: 1, limit: 100, _t: Date.now() },
+      });
+      setMessages(res.data.data.messages || []);
+    } catch {
+      if (!silent) setMessages([]);
+    }
     if (!silent) setLoadingMessages(false);
   }, []);
 
   useEffect(() => {
-    const convoParam = searchParams.get("convo");
-    if (convoParam) {
-      setActiveConvoId(convoParam);
-      if (window.innerWidth > 768) setMobileView("chat");
-      // Load messages immediately on mount — don't wait for activeConvoId state to settle
-      loadMessages(convoParam);
+    if (!activeConvoId) {
+      setMessages([]);
+      return;
     }
-  }, [loadMessages]); // eslint-disable-line
-
-  // ── Messages — MERGE on silent polls, never wipe ──────────────────────────
-  // BUG FIX: silent polls used to call setMessages(fetched) which replaced the
-  // whole array. If the poll request started before the POST completed (or the
-  // browser returned a 304 stale response), the just-sent message disappeared.
-  //
-  // Fix: for silent polls, keep any local message whose ID isn't in the server
-  // response — those are messages newer than what the poll captured.
-
-  useEffect(() => {
-    if (!activeConvoId) return;
 
     loadMessages(activeConvoId);
     api.patch(`/messages/${activeConvoId}/read`).catch(() => {});
-
-    const syncTimer = setTimeout(async () => {
-      const res = await api
-        .get(`/messages/conversations?_t=${Date.now()}`)
-        .catch(() => null);
-      if (!res) return;
-      const fresh = res.data.data.conversations || [];
-      setConversations((prev) =>
-        prev.map((c) => {
-          const fromServer = fresh.find((f) => f.id === c.id);
-          if (!fromServer) return c;
-          if (c.id === activeConvoId)
-            return { ...fromServer, unreadCount: fromServer.unreadCount ?? 0 };
-          return {
-            ...fromServer,
-            unreadCount: Math.max(
-              fromServer.unreadCount ?? 0,
-              c.unreadCount ?? 0,
-            ),
-          };
-        }),
-      );
-    }, 600);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === activeConvoId ? { ...c, unreadCount: 0 } : c)),
+    );
 
     clearInterval(msgPollRef.current);
     msgPollRef.current = setInterval(() => {
-      loadMessages(activeConvoId, true); // silent = merge, never wipe
+      loadMessages(activeConvoId, true);
     }, 3000);
 
     clearInterval(convoPollRef.current);
@@ -292,51 +365,81 @@ export default function Messages() {
     }, 12000);
 
     return () => {
-      clearTimeout(syncTimer);
       clearInterval(msgPollRef.current);
       clearInterval(convoPollRef.current);
     };
   }, [activeConvoId, loadMessages, loadConversations]);
 
+  // ── URL sync — only writes, never wipes ──
   useEffect(() => {
-    if (activeConvoId && window.innerWidth > 768) {
+    if (activeConvoId) {
       setSearchParams({ convo: activeConvoId }, { replace: true });
     }
-  }, [activeConvoId]);
+  }, [activeConvoId, setSearchParams]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Selection / navigation
+  // ─────────────────────────────────────────────────────────────────────────
 
   const selectConversation = (convoId) => {
-    if (convoId === activeConvoId) {
-      setMobileView("chat");
-      return;
-    }
     setActiveConvoId(convoId);
+    setWithUserId(null);
+    setWithUser(null);
     setMobileView("chat");
-    // Reset to bottom when opening a new conversation
     isAtBottomRef.current = true;
-    setConversations((prev) =>
-      prev.map((c) => (c.id === convoId ? { ...c, unreadCount: 0 } : c)),
-    );
+  };
+
+  const handleMobileBack = () => {
+    setMobileView("list");
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setSearchParams({}, { replace: true });
+      setActiveConvoId(null);
+      setWithUserId(null);
+      setWithUser(null);
+    }
   };
 
   const getOtherUser = (convo) =>
     convo.users?.find((u) => u.userId !== user?.id)?.user;
 
-  // ── Send message ──────────────────────────────────────────────────────────
-  const handleSend = async (e) => {
-    e?.preventDefault();
-    if (!newMessage.trim() || sending) return;
-    const content = newMessage.trim();
-    setNewMessage("");
-    setSending(true);
-    try {
-      const withParam = searchParams.get("with");
+  // ─────────────────────────────────────────────────────────────────────────
+  // Send
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const resolveReceiver = () => {
+    if (activeConvoId) {
       const activeConvo = conversations.find((c) => c.id === activeConvoId);
-      const otherUser = activeConvo?.users?.find(
+      const other = activeConvo?.users?.find(
         (u) => u.userId !== user?.id,
       )?.user;
-      const receiverId = otherUser?.id || withParam;
-      if (!receiverId) return;
+      if (other?.id) return other.id;
+    }
+    if (withUserId) return withUserId;
+    if (withUser?.id) return withUser.id;
+    return null;
+  };
 
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    const content = newMessage.trim();
+    if (!content || sending) return;
+
+    const receiverId = resolveReceiver();
+    if (!receiverId) return;
+
+    const tempId = `temp-${Date.now()}`;
+    setSendingMessage({
+      id: tempId,
+      senderId: user?.id,
+      receiverId,
+      content,
+      createdAt: new Date().toISOString(),
+      pending: true,
+    });
+    setNewMessage("");
+    setSending(true);
+
+    try {
       const res = await api.post("/messages", {
         receiverId,
         content,
@@ -344,14 +447,22 @@ export default function Messages() {
       });
       const { message, conversationId } = res.data.data;
 
+      setSendingMessage(null);
+
       if (!activeConvoId || conversationId !== activeConvoId) {
         setActiveConvoId(conversationId);
+        setWithUserId(null);
+        setWithUser(null);
         isAtBottomRef.current = true;
-        await loadConversations();
+        const fresh = await loadConversations();
+        const newConvo = fresh.find((c) => c.id === conversationId);
+        if (newConvo) loadMessages(conversationId);
       } else {
-        // Mark that the user just sent — scroll will follow even if they scrolled up
         justSentRef.current = true;
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConvoId
@@ -363,22 +474,19 @@ export default function Messages() {
               : c,
           ),
         );
-        // NOTE: no setTimeout reload here — the merge poll handles confirmation
       }
-    } catch {}
-    setSending(false);
+    } catch {
+      setSendingMessage(null);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const withParam = searchParams.get("with");
-    const activeConvo = conversations.find((c) => c.id === activeConvoId);
-    const otherUser = activeConvo?.users?.find(
-      (u) => u.userId !== user?.id,
-    )?.user;
-    const receiverId = otherUser?.id || withParam;
+    const receiverId = resolveReceiver();
     if (!receiverId) return;
 
     setUploadingFile(true);
@@ -396,15 +504,25 @@ export default function Messages() {
 
       if (!activeConvoId || conversationId !== activeConvoId) {
         setActiveConvoId(conversationId);
+        setWithUserId(null);
+        setWithUser(null);
         isAtBottomRef.current = true;
-        await loadConversations();
+        const fresh = await loadConversations();
+        const newConvo = fresh.find((c) => c.id === conversationId);
+        if (newConvo) loadMessages(conversationId);
       } else {
         justSentRef.current = true;
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
       }
-    } catch {}
-    setUploadingFile(false);
-    e.target.value = "";
+    } catch {
+      /* silent */
+    } finally {
+      setUploadingFile(false);
+      e.target.value = "";
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -414,8 +532,15 @@ export default function Messages() {
     }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Derived data
+  // ─────────────────────────────────────────────────────────────────────────
+
   const activeConvo = conversations.find((c) => c.id === activeConvoId);
-  const activeOther = activeConvo ? getOtherUser(activeConvo) : null;
+  const activeOther = activeConvo
+    ? getOtherUser(activeConvo)
+    : withUser || null;
+
   const filteredConvos = conversations.filter((c) => {
     if (!searchQuery) return true;
     const other = getOtherUser(c);
@@ -424,24 +549,34 @@ export default function Messages() {
       .includes(searchQuery.toLowerCase());
   });
 
-  const groupedMessages = messages.reduce((groups, msg) => {
-    const dateKey = new Date(msg.createdAt).toDateString();
-    if (!groups[dateKey]) groups[dateKey] = [];
-    groups[dateKey].push(msg);
-    return groups;
-  }, {});
+  const groupedMessages = useMemo(() => {
+    return messages.reduce((groups, msg) => {
+      const dateKey = new Date(msg.createdAt).toDateString();
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(msg);
+      return groups;
+    }, {});
+  }, [messages]);
 
   const totalUnread = conversations.reduce(
     (sum, c) => sum + (c.unreadCount || 0),
     0,
   );
 
+  const hasActiveChat = !!(activeConvoId || withUserId || withUser);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <Layout>
       <div className={styles.shell}>
-        {/* ── Conversation sidebar ── */}
+        {/* ── Sidebar ── */}
         <div
-          className={`${styles.sidebar} ${mobileView === "chat" ? styles.hideMobile : ""}`}
+          className={`${styles.sidebar} ${
+            mobileView === "chat" ? styles.hideMobile : ""
+          }`}
         >
           <div className={styles.sidebarHeader}>
             <h2 className={styles.sidebarTitle}>
@@ -455,7 +590,7 @@ export default function Messages() {
           </div>
 
           <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>🔍</span>
+            <FiSearch size={15} className={styles.searchIcon} />
             <input
               className={styles.searchInput}
               placeholder="Search conversations..."
@@ -471,7 +606,7 @@ export default function Messages() {
               ))
             ) : filteredConvos.length === 0 ? (
               <div className={styles.noConvos}>
-                <span>💬</span>
+                <FiMessageSquare size={28} className={styles.emptyIcon} />
                 <p>No conversations yet</p>
                 <span className={styles.noConvosSub}>
                   Start a booking to begin messaging
@@ -488,8 +623,11 @@ export default function Messages() {
                 return (
                   <button
                     key={convo.id}
-                    className={`${styles.convoItem} ${isActive ? styles.convoItemActive : ""} ${isUnread ? styles.convoItemUnread : ""}`}
+                    className={`${styles.convoItem} ${
+                      isActive ? styles.convoItemActive : ""
+                    } ${isUnread ? styles.convoItemUnread : ""}`}
                     onClick={() => selectConversation(convo.id)}
+                    type="button"
                   >
                     <div className={styles.convoAvatarWrap}>
                       <Avatar user={other} size="md" />
@@ -497,7 +635,9 @@ export default function Messages() {
                     <div className={styles.convoInfo}>
                       <div className={styles.convoTop}>
                         <span
-                          className={`${styles.convoName} ${isUnread ? styles.convoNameBold : ""}`}
+                          className={`${styles.convoName} ${
+                            isUnread ? styles.convoNameBold : ""
+                          }`}
                         >
                           {other?.firstName} {other?.lastName}
                         </span>
@@ -515,7 +655,9 @@ export default function Messages() {
                         </div>
                       </div>
                       <p
-                        className={`${styles.convoPreview} ${isUnread ? styles.convoPreviewBold : ""}`}
+                        className={`${styles.convoPreview} ${
+                          isUnread ? styles.convoPreviewBold : ""
+                        }`}
                       >
                         {lastMsg
                           ? lastMsg.senderId === user?.id
@@ -533,11 +675,13 @@ export default function Messages() {
 
         {/* ── Chat pane ── */}
         <div
-          className={`${styles.chatPane} ${mobileView === "list" ? styles.hideMobile : ""}`}
+          className={`${styles.chatPane} ${
+            mobileView === "list" ? styles.hideMobile : ""
+          }`}
         >
-          {!activeConvoId && !searchParams.get("with") ? (
+          {!hasActiveChat ? (
             <div className={styles.emptyChat}>
-              <div className={styles.emptyChatIcon}>💬</div>
+              <FiMessageSquare size={48} className={styles.emptyChatIcon} />
               <h3 className={styles.emptyChatTitle}>Select a conversation</h3>
               <p className={styles.emptyChatSub}>
                 Choose a conversation from the list to start messaging
@@ -545,13 +689,14 @@ export default function Messages() {
             </div>
           ) : (
             <>
-              {/* Chat header */}
               <div className={styles.chatHeader}>
                 <button
                   className={styles.backBtn}
-                  onClick={() => setMobileView("list")}
+                  onClick={handleMobileBack}
+                  type="button"
+                  aria-label="Back to conversations"
                 >
-                  ←
+                  <FiArrowLeft size={18} />
                 </button>
                 {activeOther && (
                   <>
@@ -582,7 +727,6 @@ export default function Messages() {
                 )}
               </div>
 
-              {/* Messages area — attach scroll listener here */}
               <div
                 ref={messagesAreaRef}
                 className={styles.messagesArea}
@@ -592,116 +736,149 @@ export default function Messages() {
                   <div className={styles.loadingMessages}>
                     <div className={styles.spinner} />
                   </div>
-                ) : messages.length === 0 ? (
+                ) : messages.length === 0 && !sendingMessage ? (
                   <div className={styles.noMessages}>
-                    <span>👋</span>
+                    <FiSmile size={40} className={styles.noMessagesIcon} />
                     <p>Start the conversation</p>
                     <span className={styles.noMessagesSub}>
                       Say hello to get things started
                     </span>
                   </div>
                 ) : (
-                  Object.entries(groupedMessages).map(([dateKey, msgs]) => (
-                    <div key={dateKey}>
-                      <div className={styles.dateDivider}>
-                        <span>{formatDateDivider(msgs[0].createdAt)}</span>
-                      </div>
-                      {msgs.map((msg, i) => {
-                        const isMine = msg.senderId === user?.id;
-                        const isMedia =
-                          msg.fileUrl &&
-                          (msg.fileUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ||
-                            msg.fileUrl.includes("image"));
-                        const isVideo =
-                          msg.fileUrl &&
-                          (msg.fileUrl.match(/\.(mp4|mov|webm)$/i) ||
-                            msg.fileUrl.includes("video"));
-                        const showAvatar =
-                          !isMine &&
-                          (i === 0 || msgs[i - 1]?.senderId !== msg.senderId);
+                  <>
+                    {Object.entries(groupedMessages).map(([dateKey, msgs]) => (
+                      <div key={dateKey}>
+                        <div className={styles.dateDivider}>
+                          <span>{formatDateDivider(msgs[0].createdAt)}</span>
+                        </div>
+                        {msgs.map((msg, i) => {
+                          const isMine = msg.senderId === user?.id;
+                          const isMedia =
+                            msg.fileUrl &&
+                            (msg.fileUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ||
+                              msg.fileUrl.includes("image"));
+                          const isVideo =
+                            msg.fileUrl &&
+                            (msg.fileUrl.match(/\.(mp4|mov|webm)$/i) ||
+                              msg.fileUrl.includes("video"));
+                          const showAvatar =
+                            !isMine &&
+                            (i === 0 || msgs[i - 1]?.senderId !== msg.senderId);
 
-                        return (
-                          <div
-                            key={msg.id}
-                            className={`${styles.messageRow} ${isMine ? styles.messageRowMine : ""}`}
-                          >
-                            {!isMine && (
-                              <div
-                                className={`${styles.messageAvatar} ${showAvatar ? "" : styles.avatarHidden}`}
-                              >
-                                {showAvatar && (
-                                  <Avatar user={msg.sender} size="xs" />
-                                )}
-                              </div>
-                            )}
-
+                          return (
                             <div
-                              className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
+                              key={msg.id}
+                              className={`${styles.messageRow} ${
+                                isMine ? styles.messageRowMine : ""
+                              }`}
                             >
-                              {!isMine && showAvatar && (
-                                <span className={styles.senderName}>
-                                  {msg.sender?.firstName} {msg.sender?.lastName}
-                                </span>
-                              )}
-
-                              {isMedia && (
-                                <a
-                                  href={msg.fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
+                              {!isMine && (
+                                <div
+                                  className={`${styles.messageAvatar} ${
+                                    showAvatar ? "" : styles.avatarHidden
+                                  }`}
                                 >
-                                  <img
-                                    src={msg.fileUrl}
-                                    alt="attachment"
-                                    className={styles.messageImage}
-                                  />
-                                </a>
-                              )}
-                              {isVideo && (
-                                <video controls className={styles.messageVideo}>
-                                  <source src={msg.fileUrl} />
-                                </video>
-                              )}
-                              {msg.fileUrl && !isMedia && !isVideo && (
-                                <a
-                                  href={msg.fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className={styles.fileAttachment}
-                                >
-                                  📎 {msg.content || "Attachment"}
-                                </a>
+                                  {showAvatar && (
+                                    <Avatar user={msg.sender} size="xs" />
+                                  )}
+                                </div>
                               )}
 
-                              {(!msg.fileUrl || (!isMedia && !isVideo)) && (
-                                <p className={styles.bubbleText}>
-                                  {msg.content}
-                                </p>
-                              )}
-
-                              {!isMine && msg.content && (
-                                <TranslateButton text={msg.content} />
-                              )}
-
-                              <span className={styles.bubbleTime}>
-                                {formatMessageTime(msg.createdAt)}
-                                {isMine && (
-                                  <span className={styles.readTick}>
-                                    {msg.isRead ? " ✓✓" : " ✓"}
+                              <div
+                                className={`${styles.bubble} ${
+                                  isMine
+                                    ? styles.bubbleMine
+                                    : styles.bubbleTheirs
+                                }`}
+                              >
+                                {!isMine && showAvatar && (
+                                  <span className={styles.senderName}>
+                                    {msg.sender?.firstName}{" "}
+                                    {msg.sender?.lastName}
                                   </span>
                                 )}
-                              </span>
+
+                                {isMedia && (
+                                  <a
+                                    href={msg.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <img
+                                      src={msg.fileUrl}
+                                      alt="attachment"
+                                      className={styles.messageImage}
+                                    />
+                                  </a>
+                                )}
+                                {isVideo && (
+                                  <video
+                                    controls
+                                    className={styles.messageVideo}
+                                  >
+                                    <source src={msg.fileUrl} />
+                                  </video>
+                                )}
+                                {msg.fileUrl && !isMedia && !isVideo && (
+                                  <a
+                                    href={msg.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={styles.fileAttachment}
+                                  >
+                                    <FiPaperclip size={13} />
+                                    <span>{msg.content || "Attachment"}</span>
+                                  </a>
+                                )}
+
+                                {(!msg.fileUrl || (!isMedia && !isVideo)) && (
+                                  <p className={styles.bubbleText}>
+                                    {msg.content}
+                                  </p>
+                                )}
+
+                                {!isMine && msg.content && (
+                                  <TranslateButton text={msg.content} />
+                                )}
+
+                                <span className={styles.bubbleTime}>
+                                  {formatMessageTime(msg.createdAt)}
+                                  {isMine && (
+                                    <span className={styles.readTick}>
+                                      {msg.isRead ? (
+                                        <FiCheckCircle size={11} />
+                                      ) : (
+                                        <FiCheck size={11} />
+                                      )}
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))
+                          );
+                        })}
+                      </div>
+                    ))}
+
+                    {sendingMessage && (
+                      <div
+                        className={`${styles.messageRow} ${styles.messageRowMine}`}
+                      >
+                        <div
+                          className={`${styles.bubble} ${styles.bubbleMine} ${styles.bubblePending}`}
+                        >
+                          <p className={styles.bubbleText}>
+                            {sendingMessage.content}
+                          </p>
+                          <span className={styles.bubbleTime}>sending…</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div ref={bottomRef} />
               </div>
 
-              {/* Input area */}
               <div className={styles.inputArea}>
                 <input
                   ref={fileInputRef}
@@ -718,32 +895,41 @@ export default function Messages() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingFile}
                     title="Send image or video"
+                    aria-label="Send image or video"
                   >
-                    {uploadingFile ? <span className={styles.spinner} /> : "📎"}
+                    {uploadingFile ? (
+                      <span className={styles.spinner} />
+                    ) : (
+                      <FiPaperclip size={16} />
+                    )}
                   </button>
                   <button
                     type="button"
                     className={styles.attachBtn}
                     onClick={() => {
-                      fileInputRef.current.accept = "image/*";
+                      if (fileInputRef.current)
+                        fileInputRef.current.accept = "image/*";
                       fileInputRef.current?.click();
                     }}
                     disabled={uploadingFile}
                     title="Send photo"
+                    aria-label="Send photo"
                   >
-                    📷
+                    <FiCamera size={16} />
                   </button>
                   <button
                     type="button"
                     className={styles.attachBtn}
                     onClick={() => {
-                      fileInputRef.current.accept = "video/*";
+                      if (fileInputRef.current)
+                        fileInputRef.current.accept = "video/*";
                       fileInputRef.current?.click();
                     }}
                     disabled={uploadingFile}
                     title="Send video"
+                    aria-label="Send video"
                   >
-                    🎥
+                    <FiVideo size={16} />
                   </button>
                 </div>
 
@@ -763,14 +949,18 @@ export default function Messages() {
                     rows={1}
                   />
                   <button
-                    className={`${styles.sendBtn} ${newMessage.trim() ? styles.sendBtnActive : ""}`}
+                    className={`${styles.sendBtn} ${
+                      newMessage.trim() ? styles.sendBtnActive : ""
+                    }`}
                     onClick={handleSend}
                     disabled={!newMessage.trim() || sending}
+                    type="button"
+                    aria-label="Send message"
                   >
                     {sending ? (
                       <span className={styles.spinner} />
                     ) : (
-                      <span className={styles.sendIcon}>➤</span>
+                      <FiSend size={16} />
                     )}
                   </button>
                 </div>
