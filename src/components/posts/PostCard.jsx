@@ -26,7 +26,8 @@ import {
   FiCopy,
   FiCheck,
   FiMail,
-  FiExternalLink, // ← NEW — used in the share menu for X / Facebook / LinkedIn
+  FiExternalLink,
+  FiAlertTriangle,
 } from "react-icons/fi";
 
 // ── Reactions — Feather icons, matching the Prisma ReactionType enum ─────────
@@ -63,9 +64,7 @@ function profileUrlFor(viewer, target) {
 export default function PostCard({ post: initialPost, onDelete }) {
   const { user } = useAuthStore();
   const [post, setPost] = useState(initialPost);
-  const [showReactions, setShowReactions] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showRepostMenu, setShowRepostMenu] = useState(false);
   const [repostContent, setRepostContent] = useState("");
   const [showRepostInput, setShowRepostInput] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -83,22 +82,24 @@ export default function PostCard({ post: initialPost, onDelete }) {
   // ── Fullscreen image viewer ──
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
+  // ── Mutually exclusive dropdown state ──
+  // One of: null | "reactions" | "repost" | "share"
+  const [openMenu, setOpenMenu] = useState(null);
+
   // ── Share menu ──
-  const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // ── Refs for outside-click detection ──
-  const reactWrapRef = useRef(null);
-  const shareWrapRef = useRef(null);
+  // ── Delete confirmation ──
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // ── Outside-click handler for reaction picker and share menu ──
+  // ── Refs for outside-click detection ──
+  const actionBarRef = useRef(null);
+
+  // ── Outside-click handler for all dropdowns ──
   useEffect(() => {
     function handleClickOutside(e) {
-      if (reactWrapRef.current && !reactWrapRef.current.contains(e.target)) {
-        setShowReactions(false);
-      }
-      if (shareWrapRef.current && !shareWrapRef.current.contains(e.target)) {
-        setShowShareMenu(false);
+      if (actionBarRef.current && !actionBarRef.current.contains(e.target)) {
+        setOpenMenu(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -147,9 +148,14 @@ export default function PostCard({ post: initialPost, onDelete }) {
 
   const postUrl = `${window.location.origin}/posts/${post.id}`;
 
+  // ── Toggle helper — only one dropdown at a time ──
+  const toggleMenu = (name) => {
+    setOpenMenu((current) => (current === name ? null : name));
+  };
+
   const handleReact = async (type) => {
     if (!user) return;
-    setShowReactions(false);
+    setOpenMenu(null);
     try {
       const res = await api.post(`/posts/${post.id}/react`, { type });
       const newReaction = res.data.data.reaction;
@@ -171,15 +177,6 @@ export default function PostCard({ post: initialPost, onDelete }) {
         },
       }));
     } catch {}
-  };
-
-  // ── NEW: Like button click — opens picker if no reaction yet,
-  //         opens picker if user already has reaction (change it),
-  //         removes reaction if they click the picker's current one ──
-  const handleLikeButtonClick = () => {
-    if (!user) return;
-    // Toggle picker instead of immediately liking
-    setShowReactions((v) => !v);
   };
 
   const handleComment = async (e) => {
@@ -243,19 +240,29 @@ export default function PostCard({ post: initialPost, onDelete }) {
         ...prev,
         _count: { ...prev._count, reposts: prev._count.reposts + 1 },
       }));
-      setShowRepostMenu(false);
+      setOpenMenu(null);
       setShowRepostInput(false);
       setRepostContent("");
     } catch {}
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Delete this post?")) return;
+  // ── NEW: show inline confirmation instead of window.confirm ──
+  const requestDelete = () => {
+    setConfirmDelete(true);
+  };
+
+  const cancelDelete = () => {
+    setConfirmDelete(false);
+  };
+
+  const confirmDeletePost = async () => {
     try {
       await api.delete(`/posts/${post.id}`);
       setDeleted(true);
       onDelete?.(post.id);
-    } catch {}
+    } catch {
+      setConfirmDelete(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -293,7 +300,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
     const url = shareMap[platform];
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
-      setShowShareMenu(false);
+      setOpenMenu(null);
     }
   };
 
@@ -305,7 +312,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
       postAuthor: `${author?.firstName || ""} ${author?.lastName || ""}`.trim(),
     });
     window.location.href = `/messages?${params.toString()}`;
-    setShowShareMenu(false);
+    setOpenMenu(null);
   };
 
   const openLightbox = (idx) => setLightboxIdx(idx);
@@ -370,11 +377,11 @@ export default function PostCard({ post: initialPost, onDelete }) {
           </p>
         </div>
 
-        {isOwn && (
+        {isOwn && !confirmDelete && (
           <div className={styles.moreMenu}>
             <button
               className={styles.moreBtn}
-              onClick={handleDelete}
+              onClick={requestDelete}
               type="button"
             >
               <FiTrash2 size={13} />
@@ -383,6 +390,37 @@ export default function PostCard({ post: initialPost, onDelete }) {
           </div>
         )}
       </div>
+
+      {/* ── NEW: Inline delete confirmation (replaces window.confirm) ── */}
+      {isOwn && confirmDelete && (
+        <div className={styles.deleteConfirm}>
+          <div className={styles.deleteConfirmIcon}>
+            <FiAlertTriangle size={16} />
+          </div>
+          <div className={styles.deleteConfirmBody}>
+            <p className={styles.deleteConfirmTitle}>Delete this post?</p>
+            <p className={styles.deleteConfirmText}>
+              This action cannot be undone.
+            </p>
+          </div>
+          <div className={styles.deleteConfirmActions}>
+            <button
+              className={styles.deleteConfirmCancel}
+              onClick={cancelDelete}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className={styles.deleteConfirmYes}
+              onClick={confirmDeletePost}
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Repost origin */}
       {post.repostOf && (
@@ -521,14 +559,14 @@ export default function PostCard({ post: initialPost, onDelete }) {
       )}
 
       {/* Action bar */}
-      <div className={styles.actionBar}>
+      <div className={styles.actionBar} ref={actionBarRef}>
         {/* ── Like button — click to open picker ── */}
-        <div className={styles.reactWrap} ref={reactWrapRef}>
+        <div className={styles.reactWrap}>
           <button
             className={`${styles.actionBtn} ${
               myReaction ? styles.actionBtnActive : ""
             }`}
-            onClick={handleLikeButtonClick}
+            onClick={() => toggleMenu("reactions")}
             type="button"
           >
             {CurrentReactionIcon ? (
@@ -538,7 +576,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
             )}
             <span>{currentReaction ? currentReaction.label : "Like"}</span>
           </button>
-          {showReactions && (
+          {openMenu === "reactions" && (
             <div className={styles.reactionPicker}>
               {REACTIONS.map((r) => {
                 const Icon = r.Icon;
@@ -575,19 +613,19 @@ export default function PostCard({ post: initialPost, onDelete }) {
         <div className={styles.reactWrap}>
           <button
             className={styles.actionBtn}
-            onClick={() => setShowRepostMenu(!showRepostMenu)}
+            onClick={() => toggleMenu("repost")}
             type="button"
           >
             <FiRepeat size={16} />
             <span>Repost</span>
           </button>
-          {showRepostMenu && (
+          {openMenu === "repost" && (
             <div className={styles.repostMenu}>
               <button
                 className={styles.repostMenuBtn}
                 onClick={() => {
                   setShowRepostInput(true);
-                  setShowRepostMenu(false);
+                  setOpenMenu(null);
                 }}
                 type="button"
               >
@@ -603,7 +641,7 @@ export default function PostCard({ post: initialPost, onDelete }) {
                 className={styles.repostMenuBtn}
                 onClick={() => {
                   handleRepost(false);
-                  setShowRepostMenu(false);
+                  setOpenMenu(null);
                 }}
                 type="button"
               >
@@ -620,17 +658,17 @@ export default function PostCard({ post: initialPost, onDelete }) {
         </div>
 
         {/* ── Send button ── */}
-        <div className={styles.reactWrap} ref={shareWrapRef}>
+        <div className={styles.reactWrap}>
           <button
             className={styles.actionBtn}
-            onClick={() => setShowShareMenu((v) => !v)}
+            onClick={() => toggleMenu("share")}
             type="button"
           >
             <FiSend size={16} />
             <span>Send</span>
           </button>
 
-          {showShareMenu && (
+          {openMenu === "share" && (
             <div className={styles.shareMenu}>
               <p className={styles.shareMenuTitle}>Share this post</p>
 
