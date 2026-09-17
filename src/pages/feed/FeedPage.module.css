@@ -334,3 +334,76 @@
   text-align: center;
   padding: 2rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   NEW POSTS BANNER — sticky "N new posts — tap to load"
+   ═══════════════════════════════════════════════════════════════ */
+.newPostsBanner {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 30;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 100px;
+  padding: 0.5rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: fadeUp 0.25s ease;
+  transition:
+    filter 0.15s,
+    transform 0.15s;
+  white-space: nowrap;
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.newPostsBanner:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.newPostsBanner:active {
+  transform: translateY(0);
+}
+.newPostsBanner svg {
+  flex-shrink: 0;
+}
+
+/* Live indicator dot next to the total count */
+.liveDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+@media (max-width: 640px) {
+  .newPostsBanner {
+    top: 0.4rem;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.85rem;
+  }
+}

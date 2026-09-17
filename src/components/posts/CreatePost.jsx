@@ -98,6 +98,9 @@ export default function CreatePost({ onPostCreated, compact = false }) {
         <div
           className={styles.compactTrigger}
           onClick={() => setExpanded(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && setExpanded(true)}
         >
           <div className={styles.triggerAvatar}>
             {user.avatar ? (
@@ -107,7 +110,9 @@ export default function CreatePost({ onPostCreated, compact = false }) {
             )}
           </div>
           <div className={styles.triggerInput}>
-            Start a post, share an update...
+            <span className={styles.triggerInputText}>
+              Start a post, share an update...
+            </span>
           </div>
           <div className={styles.triggerActions}>
             <button
@@ -118,6 +123,7 @@ export default function CreatePost({ onPostCreated, compact = false }) {
                 fileRef.current?.click();
               }}
               title="Add photo"
+              type="button"
             >
               <FiCamera size={16} />
             </button>
@@ -128,6 +134,7 @@ export default function CreatePost({ onPostCreated, compact = false }) {
                 setExpanded(true);
               }}
               title="Announce"
+              type="button"
             >
               <FiSpeaker size={16} />
             </button>

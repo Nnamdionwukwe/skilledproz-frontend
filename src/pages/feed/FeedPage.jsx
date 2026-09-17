@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import HirerLayout from "../../components/layout/HirerLayout";
 import WorkerLayout from "../../components/layout/WorkerLayout";
 import CreatePost from "../../components/posts/CreatePost";
 import PostCard from "../../components/posts/PostCard";
+import useFeedPolling from "../../hooks/useFeedPolling";
 import styles from "./FeedPage.module.css";
 import { Link } from "react-router-dom";
 import {
@@ -15,6 +16,8 @@ import {
   FiZap,
   FiUsers,
   FiBookmark,
+  FiRefreshCw,
+  FiArrowUp,
 } from "react-icons/fi";
 
 const FILTERS = [
@@ -59,6 +62,9 @@ export default function FeedPage() {
   const [filter, setFilter] = useState("ALL");
   const [total, setTotal] = useState(0);
 
+  // Track whether any dropdown/modal is open so polling can pause
+  const [interacting, setInteracting] = useState(false);
+
   const fetchPosts = useCallback(
     async (p = 1, f = filter, reset = false) => {
       if (p === 1) setLoading(true);
@@ -88,9 +94,29 @@ export default function FeedPage() {
     fetchPosts(1, filter, true);
   }, [filter]);
 
+  // ── Background polling ──
+  const { pendingPosts, dismissPending } = useFeedPolling({
+    filter,
+    currentPosts: posts,
+    intervalMs: 25000, // 25s
+    // Pause polling while the user is interacting with a dropdown/modal
+    enabled: !interacting,
+  });
+
+  // ── Merge queued posts into the visible list ──
+  const showPending = () => {
+    if (!pendingPosts.length) return;
+    setPosts((prev) => [...pendingPosts, ...prev]);
+    setTotal((prev) => prev + pendingPosts.length);
+    dismissPending();
+    // Scroll to top so the user actually sees them
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleFilterChange = (f) => {
     setFilter(f);
     setPage(1);
+    dismissPending();
   };
 
   const handleLoadMore = () => {
@@ -111,17 +137,38 @@ export default function FeedPage() {
 
   return (
     <Layout>
-      <div className={styles.page}>
+      <div
+        className={styles.page}
+        // Nudge polling to pause while the user hovers the feed on desktop
+        // (mobile users won't fire this, which is fine)
+        onMouseEnter={() => setInteracting(true)}
+        onMouseLeave={() => setInteracting(false)}
+      >
         <div className={styles.main}>
-          {/* Create post */}
+          {/* New posts banner — sticky at the top of the feed */}
+          {pendingPosts.length > 0 && (
+            <button
+              className={styles.newPostsBanner}
+              onClick={showPending}
+              type="button"
+            >
+              <FiArrowUp size={14} />
+              <span>
+                {pendingPosts.length} new post
+                {pendingPosts.length !== 1 ? "s" : ""} — tap to load
+              </span>
+            </button>
+          )}
+
           <CreatePost onPostCreated={handlePostCreated} compact />
 
-          {/* Filter tabs */}
           <div className={styles.filterBar}>
             {FILTERS.map((f) => (
               <button
                 key={f.value}
-                className={`${styles.filterBtn} ${filter === f.value ? styles.filterBtnActive : ""}`}
+                className={`${styles.filterBtn} ${
+                  filter === f.value ? styles.filterBtnActive : ""
+                }`}
                 onClick={() => handleFilterChange(f.value)}
               >
                 {f.label}
@@ -129,14 +176,15 @@ export default function FeedPage() {
             ))}
           </div>
 
-          {/* Total indicator */}
           {!loading && (
             <p className={styles.totalCount}>
               {total} post{total !== 1 ? "s" : ""}
+              {pendingPosts.length > 0 && (
+                <span className={styles.liveDot} title="Live updates on" />
+              )}
             </p>
           )}
 
-          {/* Posts */}
           {loading ? (
             <div className={styles.feedList}>
               {[1, 2, 3].map((i) => (
@@ -174,7 +222,6 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* Right sidebar */}
         <aside className={styles.sidebar}>
           <FeedSidebar />
         </aside>
@@ -187,7 +234,6 @@ function FeedSidebar() {
   const { user } = useAuthStore();
   return (
     <div className={styles.sidebarContent}>
-      {/* Your profile quick card */}
       <div className={styles.profileCard}>
         <div className={styles.profileCardBg} />
         <div className={styles.profileCardAvatar}>
@@ -209,7 +255,6 @@ function FeedSidebar() {
         </Link>
       </div>
 
-      {/* Tips card */}
       <div className={styles.tipsCard}>
         <p className={styles.tipsTitle}>
           <FiBookmark size={12} /> What to post
