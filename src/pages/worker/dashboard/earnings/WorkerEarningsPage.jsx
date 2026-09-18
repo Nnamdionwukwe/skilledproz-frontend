@@ -5,6 +5,15 @@
 //   Zero withdrawal fees in Phase 1
 
 import { useEffect, useState } from "react";
+import {
+  FiCheckCircle,
+  FiInfo,
+  FiAlertTriangle,
+  FiDollarSign,
+  FiTrendingUp,
+  FiUsers,
+  FiClipboard,
+} from "react-icons/fi";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import styles from "./Earnings.module.css";
 import api from "../../../../lib/api";
@@ -111,7 +120,9 @@ export default function WorkerEarningsPage() {
 
         {/* ── Phase 1 fee banner ── */}
         <div className={styles.feeBanner}>
-          <span className={styles.feeBannerIcon}>🎉</span>
+          <span className={styles.feeBannerIcon}>
+            <FiCheckCircle size={22} />
+          </span>
           <div className={styles.feeBannerBody}>
             <span className={styles.feeBannerTitle}>
               You keep 100% of every job
@@ -254,10 +265,15 @@ export default function WorkerEarningsPage() {
               ))}
             </div>
           ) : error ? (
-            <div className={styles.errorState}>⚠️ {error}</div>
+            <div className={styles.errorState}>
+              <FiAlertTriangle size={20} />
+              <span>{error}</span>
+            </div>
           ) : payments.length === 0 ? (
             <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>₦</div>
+              <div className={styles.emptyIcon}>
+                <FiDollarSign size={40} />
+              </div>
               <p className={styles.emptyTitle}>No payments found</p>
               <p className={styles.emptyText}>
                 {activeCurrency !== "ALL"

@@ -1,13 +1,13 @@
 /* Earnings.module.css — updated for Phase 1 zero worker fees */
 
 .page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  /* Edge alignment inherited from WorkerLayout.content — matches dashboard */
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   animation: fadeUp 0.3s ease;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* ── Page header ── */
@@ -51,6 +51,9 @@
 .feeBannerIcon {
   font-size: 22px;
   flex-shrink: 0;
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
 }
 .feeBannerBody {
   display: flex;
@@ -457,8 +460,11 @@
   gap: 0.75rem;
 }
 .emptyIcon {
-  font-size: 2.5rem;
+  color: var(--text-muted);
   opacity: 0.4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .emptyTitle {
   font-family: var(--font-display);
