@@ -381,48 +381,22 @@ export default function Messages() {
 
     const fetchUser = async () => {
       try {
-        const res = await api.get(`/workers/${withUserId}`);
-        if (cancelled) return;
-        const worker = res.data.data?.worker;
-        const u = worker?.user || worker;
-        if (u?.id) {
-          setWithUser(u);
-          return;
-        }
-      } catch {
-        /* try next */
-      }
-
-      try {
-        const res = await api.get(`/hirers/${withUserId}`);
-        if (cancelled) return;
-        const hirer = res.data.data?.profile || res.data.data?.hirer;
-        const u = hirer?.user || hirer;
-        if (u?.id) {
-          setWithUser(u);
-          return;
-        }
-      } catch {
-        /* try next */
-      }
-
-      try {
+        // Single universal endpoint — works for hirers, workers, and admins.
+        // No 404 for the wrong role; always returns the user if they exist.
         const res = await api.get(`/users/${withUserId}`);
         if (cancelled) return;
+
         const u =
           res.data.data?.user ||
           res.data.data?.profile?.user ||
           res.data.data?.profile ||
           res.data.data;
-        if (u?.id) {
-          setWithUser(u);
-          return;
-        }
-      } catch {
-        /* give up */
-      }
 
-      if (!cancelled) setWithUser(null);
+        if (u?.id) setWithUser(u);
+        else setWithUser(null);
+      } catch {
+        if (!cancelled) setWithUser(null);
+      }
     };
 
     fetchUser();
