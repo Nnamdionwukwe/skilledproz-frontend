@@ -69,7 +69,7 @@ export default function RaiseDisputeModal({
     });
 
     try {
-      await api.post("/disputes", formData, {
+      await api.post("/disputes/raise", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       onSuccess?.();
