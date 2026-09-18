@@ -767,3 +767,171 @@
     background-position: 400px 0;
   }
 }
+/* ══════════════════════════════════════════════════
+   MOBILE FIX — Recent Bookings & Recent Reviews
+   These two cards have a tight horizontal budget on
+   phones (avatar + title/meta + badge + amount), and
+   the ui.card parent doesn't shrink children by
+   default. This block keeps everything inside the
+   card edge without touching the layout elsewhere.
+══════════════════════════════════════════════════ */
+
+/* Ensure ui.card children can shrink — applies to
+   every card inside the worker dashboard, but the
+   only ones that ever overflowed are the two rows
+   below, so the effect is invisible elsewhere. */
+.page :global([class*="card"]) {
+  min-width: 0;
+}
+
+/* ── Booking row: allow the badge/amount column to wrap ── */
+@media (max-width: 640px) {
+  .bookingItem {
+    gap: 0.5rem;
+    padding: 0.625rem 0;
+    min-height: 0;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .bookingAvatar {
+    width: 34px;
+    height: 34px;
+    font-size: 0.6875rem;
+    margin-top: 2px;
+  }
+
+  .bookingInfo {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* Force the info column to claim as much as it can,
+       pushing the badge column to wrap if needed */
+  }
+
+  .bookingTitle {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bookingMeta {
+    font-size: 0.6875rem;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The right-hand column: badge + optional payment figure.
+     On phones we let it drop to a new line under the title
+     when there isn't room, and left-align it so it reads
+     as a tag rather than a floating price. */
+  .bookingItem > div:last-child {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: calc(34px + 0.5rem); /* align with title */
+    margin-top: 2px;
+  }
+}
+
+/* ── Reviews: prevent the header from squeezing ── */
+@media (max-width: 640px) {
+  .reviewItem {
+    padding: 0.625rem 0;
+  }
+
+  .reviewHeader {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.375rem;
+  }
+
+  .reviewerInfo {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.5rem;
+  }
+
+  .reviewAvatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.6875rem;
+  }
+
+  .reviewerName {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  /* Stars: don't allow them to overlap the name.
+     They wrap to a new line on phones if the name
+     takes too much space. */
+  .reviewHeader > :global([class*="stars"]) {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  .reviewText {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+/* ── Very small phones (≤400px) ── */
+@media (max-width: 400px) {
+  .bookingItem {
+    gap: 0.375rem;
+  }
+
+  .bookingAvatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.625rem;
+  }
+
+  .bookingTitle {
+    font-size: 0.75rem;
+  }
+
+  .bookingMeta {
+    font-size: 0.625rem;
+  }
+
+  /* Right-hand column lines up with the smaller avatar */
+  .bookingItem > div:last-child {
+    padding-left: calc(30px + 0.375rem);
+    gap: 6px !important;
+  }
+
+  .reviewAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.625rem;
+  }
+
+  .reviewerName {
+    font-size: 0.75rem;
+  }
+
+  .reviewText {
+    font-size: 0.6875rem;
+  }
+
+  .reviewHeader > :global([class*="stars"]) {
+    font-size: 0.75rem;
+  }
+}
