@@ -280,7 +280,9 @@ export default function SubscriptionPlans({ onClose }) {
         ) : (
           <div className={styles.plansGrid}>
             {plans.map((plan) => {
-              const isCurrent = current?.subscription?.tier === plan.tier;
+              const isCurrent =
+                current?.planId === plan.id ||
+                (!current?.planId && current?.subscription?.tier === plan.tier);
               const isPopular = plan.popular;
               const discounted = getDiscountedPrice(plan.price);
               const isYearly =
