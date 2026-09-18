@@ -23,16 +23,22 @@ export default function SubscriptionPlans({ onClose }) {
 
   // ── Promo code state ────────────────────────────────────────────────────────
   const [promoInput, setPromoInput] = useState("");
-  const [promoApplied, setPromoApplied] = useState(null); // { code, discountType, discountValue, description }
+  const [promoApplied, setPromoApplied] = useState(null);
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
   const [promoSuccess, setPromoSuccess] = useState("");
 
+  // ── Cancel confirmation modal ───────────────────────────────────────────────
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   useEffect(() => {
+    if (!user?.role) return;
+    setLoading(true);
     Promise.all([
-      api.get(`/subscriptions/plans?role=${user?.role}`),
+      api.get(`/subscriptions/plans?role=${user.role}`),
       api.get("/subscriptions/my"),
     ])
       .then(([plansRes, myRes]) => {
@@ -41,7 +47,7 @@ export default function SubscriptionPlans({ onClose }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.role]);
 
   // ── Compute discounted price for a given plan price ──────────────────────────
   function getDiscountedPrice(originalPrice) {
@@ -109,22 +115,38 @@ export default function SubscriptionPlans({ onClose }) {
         planId,
         ...(promoApplied ? { promoCode: promoApplied.code } : {}),
       });
-      window.location.href = res.data.data.url;
+
+      const url = res.data?.data?.url;
+      if (!url) {
+        setError("Could not open checkout. Please try again.");
+        setSubscribing(null);
+        return;
+      }
+
+      window.location.href = url;
     } catch (err) {
       setError(err.response?.data?.message || "Failed to start checkout.");
       setSubscribing(null);
     }
   };
 
-  const handleCancel = async () => {
-    if (!confirm("Cancel your subscription?")) return;
+  // ── Cancel confirmation ──────────────────────────────────────────────────────
+  const requestCancel = () => setShowCancelConfirm(true);
+  const dismissCancel = () => setShowCancelConfirm(false);
+
+  const confirmCancel = async () => {
+    setCancelling(true);
+    setError("");
     try {
       await api.post("/subscriptions/cancel");
       setSuccess("Subscription cancelled.");
       const myRes = await api.get("/subscriptions/my");
       setCurrent(myRes.data.data);
-    } catch {
-      setError("Failed to cancel.");
+      setShowCancelConfirm(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to cancel.");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -141,7 +163,12 @@ export default function SubscriptionPlans({ onClose }) {
             </p>
           </div>
           {onClose && (
-            <button className={styles.closeBtn} onClick={onClose}>
+            <button
+              className={styles.closeBtn}
+              onClick={onClose}
+              type="button"
+              aria-label="Close"
+            >
               <FiX size={20} />
             </button>
           )}
@@ -166,19 +193,23 @@ export default function SubscriptionPlans({ onClose }) {
                 </p>
               )}
             </div>
-            <button className={styles.cancelLink} onClick={handleCancel}>
+            <button
+              className={styles.cancelLink}
+              onClick={requestCancel}
+              type="button"
+            >
               Cancel
             </button>
           </div>
         )}
 
         {error && (
-          <div className={styles.errorBox}>
+          <div className={styles.errorBox} role="alert">
             <FiAlertTriangle size={14} /> {error}
           </div>
         )}
         {success && (
-          <div className={styles.successBox}>
+          <div className={styles.successBox} role="status">
             <FiCheckCircle size={14} /> {success}
           </div>
         )}
@@ -197,6 +228,7 @@ export default function SubscriptionPlans({ onClose }) {
               <button
                 className={styles.promoRemoveBtn}
                 onClick={handleRemovePromo}
+                type="button"
               >
                 <FiX size={12} /> Remove
               </button>
@@ -208,7 +240,9 @@ export default function SubscriptionPlans({ onClose }) {
                 type="text"
                 placeholder="Have a promo code?"
                 value={promoInput}
-                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  setPromoInput(e.target.value.toUpperCase().replace(/\s/g, ""))
+                }
                 onKeyDown={(e) =>
                   e.key === "Enter" && !promoLoading && handleApplyPromo()
                 }
@@ -218,6 +252,7 @@ export default function SubscriptionPlans({ onClose }) {
                 className={styles.promoApplyBtn}
                 onClick={handleApplyPromo}
                 disabled={!promoInput.trim() || promoLoading}
+                type="button"
               >
                 {promoLoading ? <span className={styles.spinner} /> : "Apply"}
               </button>
@@ -248,6 +283,9 @@ export default function SubscriptionPlans({ onClose }) {
               const isCurrent = current?.subscription?.tier === plan.tier;
               const isPopular = plan.popular;
               const discounted = getDiscountedPrice(plan.price);
+              const isYearly =
+                plan.billingCycle === "yearly" ||
+                (typeof plan.id === "string" && plan.id.endsWith("_yearly"));
 
               return (
                 <div
@@ -284,7 +322,7 @@ export default function SubscriptionPlans({ onClose }) {
                             {discounted.finalPrice.toLocaleString()}
                           </span>
                           <span className={styles.pricePer}>
-                            /{plan.billingCycle === "yearly" ? "yr" : "mo"}
+                            /{isYearly ? "yr" : "mo"}
                           </span>
                         </div>
                         <span className={styles.savingsBadge}>
@@ -300,14 +338,14 @@ export default function SubscriptionPlans({ onClose }) {
                           {plan.price.toLocaleString()}
                         </span>
                         <span className={styles.pricePer}>
-                          /{plan.billingCycle === "yearly" ? "yr" : "mo"}
+                          /{isYearly ? "yr" : "mo"}
                         </span>
                       </>
                     )}
                   </div>
 
                   <ul className={styles.featureList}>
-                    {plan.features.map((f, i) => (
+                    {(plan.features || []).map((f, i) => (
                       <li key={i}>
                         <span className={styles.featureCheck}>
                           <FiCheck size={14} />
@@ -332,6 +370,7 @@ export default function SubscriptionPlans({ onClose }) {
                     disabled={
                       isCurrent || plan.price === 0 || subscribing === plan.id
                     }
+                    type="button"
                   >
                     {subscribing === plan.id ? (
                       <>
@@ -356,6 +395,54 @@ export default function SubscriptionPlans({ onClose }) {
           NGN.
         </p>
       </div>
+
+      {/* ── Cancel confirmation modal ─────────────────────────────────────── */}
+      {showCancelConfirm && (
+        <div
+          className={styles.modalOverlay}
+          onClick={dismissCancel}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-sub-title"
+        >
+          <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalIcon}>
+              <FiAlertTriangle size={20} />
+            </div>
+            <h3 id="cancel-sub-title" className={styles.modalTitle}>
+              Cancel subscription?
+            </h3>
+            <p className={styles.modalText}>
+              Your plan stays active until the end of the current billing
+              period. After that, you'll drop back to the Free plan.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.modalCancelBtn}
+                onClick={dismissCancel}
+                disabled={cancelling}
+                type="button"
+              >
+                Keep Plan
+              </button>
+              <button
+                className={styles.modalConfirmBtn}
+                onClick={confirmCancel}
+                disabled={cancelling}
+                type="button"
+              >
+                {cancelling ? (
+                  <>
+                    <span className={styles.spinner} /> Cancelling...
+                  </>
+                ) : (
+                  "Yes, Cancel"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

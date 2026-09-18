@@ -7,7 +7,7 @@ import { useSubscription } from "../context/SubscriptionContext";
 
 export default function SubscriptionSuccess() {
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("session_id");
+  const reference = searchParams.get("reference") || searchParams.get("trxref");
   const planId = searchParams.get("plan");
   const { user } = useAuthStore();
   const { refresh } = useSubscription();
@@ -18,26 +18,25 @@ export default function SubscriptionSuccess() {
   const [invoice, setInvoice] = useState(null);
 
   useEffect(() => {
-    if (!sessionId) {
+    if (!reference) {
       navigate("/dashboard");
       return;
     }
 
     api
-      .post("/subscriptions/verify", { sessionId })
+      .post("/subscriptions/verify", { reference })
       .then(async (res) => {
         setData(res.data.data);
         setStatus("success");
         refresh();
 
-        // Fetch invoice
         try {
-          const inv = await api.get(`/subscriptions/invoice/${sessionId}`);
+          const inv = await api.get(`/subscriptions/invoice/${reference}`);
           setInvoice(inv.data.data);
         } catch {}
       })
       .catch(() => setStatus("error"));
-  }, [sessionId]);
+  }, [reference, navigate, refresh]);
 
   const role = user?.role?.toLowerCase();
 
@@ -58,7 +57,7 @@ export default function SubscriptionSuccess() {
         <div className={styles.errorState}>
           <span className={styles.errorIcon}>⚠️</span>
           <h2>Payment verification failed</h2>
-          <p>Please contact support with your session ID: {sessionId}</p>
+          <p>Please contact support with your reference: {reference}</p>
           <Link
             to={`/dashboard/${role}/subscription`}
             className={styles.backBtn}
@@ -73,7 +72,6 @@ export default function SubscriptionSuccess() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        {/* Success header */}
         <div className={styles.successHeader}>
           <div className={styles.checkCircle}>✓</div>
           <h1 className={styles.successTitle}>You're all set!</h1>
@@ -82,7 +80,6 @@ export default function SubscriptionSuccess() {
           </p>
         </div>
 
-        {/* Plan highlights */}
         {data?.plan && (
           <div className={styles.planHighlights}>
             <div className={styles.highlightRow}>
@@ -92,7 +89,8 @@ export default function SubscriptionSuccess() {
             <div className={styles.highlightRow}>
               <span className={styles.highlightLabel}>Billing</span>
               <span className={styles.highlightValue}>
-                USD ${data.plan.price}/month
+                {data.plan.currency} {Number(data.plan.price).toLocaleString()}
+                {data.plan.billingCycle === "yearly" ? "/year" : "/month"}
               </span>
             </div>
             {data.subscription?.expiresAt && (
@@ -101,11 +99,7 @@ export default function SubscriptionSuccess() {
                 <span className={styles.highlightValue}>
                   {new Date(data.subscription.expiresAt).toLocaleDateString(
                     "en-GB",
-                    {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    },
+                    { day: "numeric", month: "long", year: "numeric" },
                   )}
                 </span>
               </div>
@@ -113,7 +107,6 @@ export default function SubscriptionSuccess() {
           </div>
         )}
 
-        {/* Features unlocked */}
         {data?.plan?.features && (
           <div className={styles.featuresUnlocked}>
             <p className={styles.featuresTitle}>Features now unlocked:</p>
@@ -128,7 +121,6 @@ export default function SubscriptionSuccess() {
           </div>
         )}
 
-        {/* Invoice */}
         <div className={styles.invoiceSection}>
           {invoice?.invoiceUrl ? (
             <>
@@ -155,13 +147,13 @@ export default function SubscriptionSuccess() {
             <button
               className={styles.invoicePrint}
               onClick={() => window.print()}
+              type="button"
             >
               🖨️ Print Receipt
             </button>
           )}
         </div>
 
-        {/* Actions */}
         <div className={styles.actions}>
           <Link to={`/dashboard/${role}`} className={styles.dashboardBtn}>
             Go to Dashboard →

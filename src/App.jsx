@@ -1113,22 +1113,16 @@ export default function App() {
         />
 
         {/* ── Subscriptions / Featured (shared success pages) ── */}
-        <Route
-          path="/subscription/success"
-          element={
-            <RequireAuth>
-              <SubscriptionSuccess />
-            </RequireAuth>
-          }
-        />
-        <Route
+        <Route path="/subscription/verify" element={<SubscriptionSuccess />} />
+        <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+        {/* <Route
           path="/featured/success"
           element={
             <RequireAuth>
               <FeaturedSuccess />
             </RequireAuth>
           }
-        />
+        /> */}
 
         <Route
           path="/insurance/success"
