@@ -1,10 +1,12 @@
 .page {
-  padding: 2rem;
-  max-width: 720px;
+  /* No padding or max-width — inherits edge spacing from WorkerLayout.content,
+     matching the dashboard's edge alignment. */
   animation: fadeUp 0.4s ease;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .header {
