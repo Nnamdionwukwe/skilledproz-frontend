@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import {
+  FiClipboard,
+  FiMapPin,
+  FiCalendar,
+  FiDollarSign,
+  FiMessageCircle,
+  FiArrowRight,
+  FiCheckCircle,
+} from "react-icons/fi";
 import styles from "./MyJobApplications.module.css";
 import api from "../../../lib/api";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
@@ -42,7 +51,9 @@ function SkeletonCard() {
 function EmptyState({ filtered }) {
   return (
     <div className={styles.empty}>
-      <div className={styles.emptyIcon}>📋</div>
+      <div className={styles.emptyIcon}>
+        <FiClipboard size={48} />
+      </div>
       <h3 className={styles.emptyTitle}>
         {filtered ? "No applications match this filter" : "No applications yet"}
       </h3>
@@ -53,7 +64,8 @@ function EmptyState({ filtered }) {
       </p>
       {!filtered && (
         <Link to="/jobs" className={styles.browseBtn}>
-          Browse Jobs →
+          <span>Browse Jobs</span>
+          <FiArrowRight size={14} />
         </Link>
       )}
     </div>
@@ -90,7 +102,6 @@ export default function MyJobApplications() {
       .finally(() => setLoading(false));
   }, [page, statusFilter]);
 
-  // Derived counts for tab badges — shown from loaded data
   const counts = applications.reduce((acc, a) => {
     acc[a.status] = (acc[a.status] || 0) + 1;
     return acc;
@@ -108,7 +119,8 @@ export default function MyJobApplications() {
             </p>
           </div>
           <Link to="/jobs" className={styles.browseLink}>
-            Browse Jobs →
+            <span>Browse Jobs</span>
+            <FiArrowRight size={13} />
           </Link>
         </div>
 
@@ -122,6 +134,7 @@ export default function MyJobApplications() {
                 setStatusFilter(s);
                 setPage(1);
               }}
+              type="button"
             >
               {s === "ALL" ? "All" : STATUS_META[s].label}
               {s !== "ALL" && counts[s] > 0 && (
@@ -164,7 +177,6 @@ export default function MyJobApplications() {
                   className={`${styles.card} ${app.status === "ACCEPTED" ? styles.cardAccepted : ""}`}
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
-                  {/* Accepted glow strip */}
                   {app.status === "ACCEPTED" && (
                     <div className={styles.acceptedStrip} />
                   )}
@@ -172,7 +184,6 @@ export default function MyJobApplications() {
                   <div className={styles.cardBody}>
                     {/* Left — job info */}
                     <div className={styles.jobInfo}>
-                      {/* Category + job status */}
                       <div className={styles.cardTopRow}>
                         <div className={styles.catChip}>
                           {job?.category?.icon && (
@@ -187,32 +198,31 @@ export default function MyJobApplications() {
                         </span>
                       </div>
 
-                      {/* Job title */}
                       <h3 className={styles.jobTitle}>
                         {job?.title ?? "Job removed"}
                       </h3>
 
-                      {/* Meta row */}
                       <div className={styles.metaRow}>
                         {job?.address && (
                           <span className={styles.metaItem}>
-                            📍 {job.address.split(",")[0]}
+                            <FiMapPin size={12} />
+                            {job.address.split(",")[0]}
                           </span>
                         )}
                         {job?.scheduledAt && (
                           <span className={styles.metaItem}>
-                            🗓️ {fmtDate(job.scheduledAt)}
+                            <FiCalendar size={12} />
+                            {fmtDate(job.scheduledAt)}
                           </span>
                         )}
                         {job?.budget && (
                           <span className={styles.metaItem}>
-                            💰 {job.currency}{" "}
-                            {Number(job.budget).toLocaleString()}
+                            <FiDollarSign size={12} />
+                            {job.currency} {Number(job.budget).toLocaleString()}
                           </span>
                         )}
                       </div>
 
-                      {/* Hirer */}
                       {hirer && (
                         <div className={styles.hirerRow}>
                           <div className={styles.hirerAvatar}>
@@ -232,7 +242,6 @@ export default function MyJobApplications() {
                         </div>
                       )}
 
-                      {/* Your message */}
                       {app.message && (
                         <div className={styles.yourMessage}>
                           <span className={styles.yourMessageLabel}>
@@ -245,13 +254,15 @@ export default function MyJobApplications() {
                       )}
                     </div>
 
-                    {/* Right — application status + actions */}
+                    {/* Right — status + actions */}
                     <div className={styles.cardRight}>
                       <div
                         className={`${styles.appStatusBadge} ${styles[appMeta.cls]}`}
                       >
-                        {app.status === "ACCEPTED" && "🎉 "}
-                        {appMeta.label}
+                        {app.status === "ACCEPTED" && (
+                          <FiCheckCircle size={13} />
+                        )}
+                        <span>{appMeta.label}</span>
                       </div>
 
                       <div className={styles.appliedDate}>
@@ -264,7 +275,8 @@ export default function MyJobApplications() {
                             to={`/jobs/${job.id}`}
                             className={styles.viewJobBtn}
                           >
-                            View Job →
+                            <span>View Job</span>
+                            <FiArrowRight size={12} />
                           </Link>
                         )}
                         {app.status === "ACCEPTED" && hirer?.id && (
@@ -272,12 +284,13 @@ export default function MyJobApplications() {
                             to={`/messages?with=${hirer.id}`}
                             className={styles.messageBtn}
                           >
-                            💬 Message Hirer
+                            <FiMessageCircle size={12} />
+                            <span>Message Hirer</span>
                           </Link>
                         )}
-                        {app.status === "ACCEPTED" && (
+                        {app.status === "ACCEPTED" && hirer?.id && (
                           <Link
-                            to={`/hirers/${hirer?.id}`}
+                            to={`/hirers/${hirer.id}`}
                             className={styles.hirerProfileBtn}
                           >
                             Hirer Profile
@@ -299,6 +312,7 @@ export default function MyJobApplications() {
               className={styles.pageBtn}
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
+              type="button"
             >
               ← Prev
             </button>
@@ -309,6 +323,7 @@ export default function MyJobApplications() {
               className={styles.pageBtn}
               disabled={page === pages}
               onClick={() => setPage((p) => p + 1)}
+              type="button"
             >
               Next →
             </button>

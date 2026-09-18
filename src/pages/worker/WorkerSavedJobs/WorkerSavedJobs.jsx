@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import {
+  FiMapPin,
+  FiBriefcase,
+  FiCalendar,
+  FiFolder,
+  FiX,
+} from "react-icons/fi";
 import styles from "./WorkerSavedJobs.module.css";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
 import api from "../../../lib/api";
@@ -95,19 +102,19 @@ function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
 
         <div className={styles.details}>
           <div className={styles.detail}>
-            <span className={styles.detailIcon}>📍</span>
+            <FiMapPin size={12} className={styles.detailIcon} />
             <span className={`${styles.detailText} ${styles.detailTruncate}`}>
               {job.address || job.location || "Remote"}
             </span>
           </div>
           {job.jobType && (
             <div className={styles.detail}>
-              <span className={styles.detailIcon}>💼</span>
+              <FiBriefcase size={12} className={styles.detailIcon} />
               <span className={styles.detailText}>{job.jobType}</span>
             </div>
           )}
           <div className={styles.detail}>
-            <span className={styles.detailIcon}>📅</span>
+            <FiCalendar size={12} className={styles.detailIcon} />
             <span className={styles.detailText}>
               Saved {timeAgo(job.savedAt)}
             </span>
@@ -140,7 +147,8 @@ function SavedJobCard({ job, savedId, onUnsave, hasApplied }) {
               onClick={handleUnsaveClick}
               type="button"
             >
-              ✕ Unsave
+              <FiX size={12} />
+              <span>Unsave</span>
             </button>
           </div>
         </div>
@@ -212,7 +220,9 @@ export default function WorkerSavedJobs() {
           </div>
         ) : jobs.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyEmoji}>📂</span>
+            <span className={styles.emptyEmoji}>
+              <FiFolder size={52} />
+            </span>
             <p className={styles.emptyTitle}>No saved jobs</p>
             <p className={styles.emptyText}>
               Browse the job board and save jobs you're interested in – they'll
