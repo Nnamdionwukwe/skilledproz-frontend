@@ -1,11 +1,23 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   SubscriptionSuccess.module.css — mobile-first, responsive for all phones
+   ────────────────────────────────────────────────────────────────────────── */
+
 .page {
   min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport — handles mobile URL bar */
   background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  box-sizing: border-box;
 }
+
+/* ── Verifying state ──────────────────────────────────────────────────────── */
 
 .verifying {
   display: flex;
@@ -13,7 +25,11 @@
   align-items: center;
   gap: 1rem;
   color: var(--text-dim);
+  text-align: center;
+  padding: 2rem 1rem;
 }
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
 
 .card {
   background: var(--bg-panel);
@@ -22,8 +38,11 @@
   padding: 2.5rem;
   max-width: 520px;
   width: 100%;
+  box-sizing: border-box;
   animation: fadeUp 0.5s ease;
 }
+
+/* ── Success header ───────────────────────────────────────────────────────── */
 
 .successHeader {
   display: flex;
@@ -45,6 +64,7 @@
   color: var(--bg);
   font-weight: 800;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .successTitle {
@@ -53,11 +73,17 @@
   font-weight: 800;
   color: var(--text);
   margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 .successSub {
   font-size: 0.9rem;
   color: var(--text-dim);
+  line-height: 1.5;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
+
+/* ── Plan highlights ──────────────────────────────────────────────────────── */
 
 .planHighlights {
   background: var(--bg-card);
@@ -73,15 +99,23 @@
 .highlightRow {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
   font-size: 0.85rem;
+  flex-wrap: wrap;
 }
 .highlightLabel {
   color: var(--text-dim);
+  flex-shrink: 0;
 }
 .highlightValue {
   font-weight: 600;
   color: var(--text);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
+
+/* ── Features ─────────────────────────────────────────────────────────────── */
 
 .featuresUnlocked {
   margin-bottom: 1.5rem;
@@ -101,15 +135,20 @@
 }
 .featureItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.83rem;
   color: var(--text-dim);
+  line-height: 1.45;
 }
 .featureCheck {
   color: var(--green);
   font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
 }
+
+/* ── Invoice actions ──────────────────────────────────────────────────────── */
 
 .invoiceSection {
   display: flex;
@@ -117,12 +156,13 @@
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
 }
+
 .invoiceBtn,
 .invoicePrint {
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-dim);
-  padding: 0.55rem 1.1rem;
+  padding: 0.65rem 1.1rem;
   border-radius: 8px;
   font-size: 0.83rem;
   cursor: pointer;
@@ -132,76 +172,126 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
   font-family: var(--font-body);
+  /* mobile-friendly tap target */
+  min-height: 44px;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  box-sizing: border-box;
 }
+
 .invoiceBtn:hover,
 .invoicePrint:hover {
   border-color: var(--orange);
   color: var(--orange);
 }
 
+/* ── Primary actions (dashboard / manage) ─────────────────────────────────── */
+
 .actions {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
+
 .dashboardBtn {
-  flex: 1;
+  flex: 1 1 200px; /* grow, shrink, and wrap when < 200px available */
   background: var(--orange);
   color: var(--bg);
   text-align: center;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
   transition: background 0.2s;
+  /* mobile-friendly tap target */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .dashboardBtn:hover {
   background: var(--orange-hover);
 }
+
 .manageBtn {
+  flex: 1 1 200px;
   background: none;
   border: 1px solid var(--border);
   color: var(--text-dim);
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1rem;
   border-radius: 10px;
   font-size: 0.875rem;
   transition: border-color 0.2s;
+  /* mobile-friendly tap target */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .manageBtn:hover {
   border-color: var(--orange);
   color: var(--orange);
 }
 
-/* Error / misc */
+/* ── Error / misc ─────────────────────────────────────────────────────────── */
+
 .errorState {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
   text-align: center;
+  padding: 2rem 1rem;
 }
 .errorIcon {
   font-size: 3rem;
+  line-height: 1;
 }
 .errorState h2 {
   font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
+  margin: 0;
 }
 .errorState p {
   font-size: 0.85rem;
   color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 .backBtn {
   background: var(--orange);
   color: var(--bg);
-  padding: 0.6rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 700;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
 }
+
+/* ── Spinner ──────────────────────────────────────────────────────────────── */
 
 .spinner {
   width: 24px;
@@ -211,4 +301,179 @@
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tablets and small laptops: tighten spacing ──────────────────────────── */
+@media (max-width: 640px) {
+  .card {
+    padding: 1.75rem 1.25rem;
+    border-radius: 16px;
+  }
+
+  .successHeader {
+    margin-bottom: 1.5rem;
+  }
+
+  .checkCircle {
+    width: 56px;
+    height: 56px;
+    font-size: 1.5rem;
+  }
+
+  .successTitle {
+    font-size: 1.5rem;
+  }
+
+  .successSub {
+    font-size: 0.85rem;
+  }
+
+  .planHighlights {
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .highlightRow {
+    font-size: 0.8rem;
+  }
+
+  .featuresUnlocked {
+    margin-bottom: 1.25rem;
+  }
+
+  .featureItem {
+    font-size: 0.78rem;
+  }
+
+  /* Invoice buttons: full-width stacking on small screens */
+  .invoiceSection {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .invoiceBtn,
+  .invoicePrint {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+
+  /* Primary actions: stack full-width so labels never truncate */
+  .actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .dashboardBtn,
+  .manageBtn {
+    flex: 1 1 auto;
+    width: 100%;
+    white-space: normal;
+    padding: 0.85rem 1rem;
+  }
+}
+
+/* ── Small phones (iPhone SE, Pixel 4a, etc.) ───────────────────────────── */
+@media (max-width: 400px) {
+  .page {
+    padding: 0.75rem;
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .card {
+    padding: 1.5rem 1rem;
+    border-radius: 14px;
+  }
+
+  .successTitle {
+    font-size: 1.35rem;
+  }
+
+  .successSub {
+    font-size: 0.82rem;
+  }
+
+  .checkCircle {
+    width: 52px;
+    height: 52px;
+    font-size: 1.35rem;
+  }
+
+  .highlightRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+
+  .highlightValue {
+    text-align: left;
+  }
+
+  .dashboardBtn,
+  .manageBtn,
+  .invoiceBtn,
+  .invoicePrint,
+  .backBtn {
+    font-size: 0.82rem;
+  }
+}
+
+/* ── Landscape phones: prevent vertical squish ───────────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .page {
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .checkCircle {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .successHeader {
+    margin-bottom: 1rem;
+  }
+
+  .successTitle {
+    font-size: 1.2rem;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .spinner {
+    animation: none;
+  }
 }
