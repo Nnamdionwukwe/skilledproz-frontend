@@ -1,16 +1,24 @@
 /* ══════════════════════════════════════════════════
    UserProfile.module.css
    Dark industrial — sharp orange accents
+   Mobile-first, safe-area aware, all phone sizes
 ══════════════════════════════════════════════════ */
 
 /* ── Page shell ──────────────────────────────────── */
 .page {
   min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport — handles mobile URL bar */
   background: var(--bg);
   padding: 32px 24px 64px;
+  padding-top: max(32px, env(safe-area-inset-top));
+  padding-bottom: max(64px, env(safe-area-inset-bottom));
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
   max-width: 1100px;
   margin: 0 auto;
+  box-sizing: border-box;
   animation: fadeUp 0.4s ease both;
+  overflow-x: hidden;
 }
 
 @keyframes fadeUp {
@@ -35,6 +43,8 @@
   min-height: 60vh;
   color: var(--text-dim);
   font-size: 15px;
+  text-align: center;
+  padding: 0 1rem;
 }
 
 .btnBack {
@@ -50,6 +60,8 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.15s;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .btnBack:hover {
@@ -70,6 +82,7 @@
   padding: 0 0 24px;
   transition: color 0.15s;
   font-family: var(--font-body);
+  min-height: 44px;
 }
 
 .backBtn:hover {
@@ -84,12 +97,6 @@
   align-items: start;
 }
 
-@media (max-width: 860px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ══════════════════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════════════════ */
@@ -99,12 +106,6 @@
   gap: 14px;
   position: sticky;
   top: 24px;
-}
-
-@media (max-width: 860px) {
-  .sidebar {
-    position: static;
-  }
 }
 
 /* ── Hero card ────────────────────────────────────── */
@@ -205,12 +206,15 @@
   align-items: center;
   gap: 6px;
   text-align: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .heroNameRow {
   display: flex;
   align-items: center;
   gap: 7px;
+  max-width: 100%;
 }
 
 .heroName {
@@ -219,6 +223,8 @@
   font-weight: 900;
   color: var(--text);
   letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
 }
 
 .verifiedIcon {
@@ -245,12 +251,15 @@
   font-size: 13.5px;
   color: var(--text-dim);
   font-style: italic;
+  overflow-wrap: anywhere;
 }
 
 .ratingRow {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .stars {
@@ -291,6 +300,8 @@
   transition: all 0.15s;
   width: 100%;
   justify-content: center;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .editBtn:hover {
@@ -315,6 +326,7 @@
   gap: 12px;
   padding: 10px 18px;
   border-bottom: 1px solid var(--border);
+  min-width: 0;
 }
 
 .statItem:last-child {
@@ -331,6 +343,7 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .statLabel {
@@ -356,6 +369,8 @@
   gap: 10px;
   font-size: 13.5px;
   color: var(--text-dim);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .infoIcon {
@@ -415,6 +430,8 @@
   gap: 6px;
   transition: all 0.18s;
   letter-spacing: -0.2px;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .bookBtn:hover {
@@ -430,6 +447,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
 }
 
 /* ── Tab bar ──────────────────────────────────────── */
@@ -440,6 +458,11 @@
   margin-bottom: 24px;
   overflow-x: auto;
   padding-bottom: 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tabBar::-webkit-scrollbar {
+  display: none;
 }
 
 .tabBtn {
@@ -455,6 +478,8 @@
   margin-bottom: -1px;
   transition: all 0.15s;
   white-space: nowrap;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .tabBtn:hover {
@@ -473,6 +498,7 @@
   flex-direction: column;
   gap: 16px;
   animation: fadeUp 0.3s ease both;
+  min-width: 0;
 }
 
 /* Bio card */
@@ -491,6 +517,7 @@
   color: var(--text-dim);
   line-height: 1.7;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Empty card */
@@ -522,6 +549,8 @@
   cursor: pointer;
   transition: all 0.15s;
   font-family: var(--font-body);
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .emptyBtn:hover {
@@ -557,6 +586,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
+  box-sizing: border-box;
 }
 
 .dayActive {
@@ -651,12 +681,14 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .portfolioDesc {
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 /* Certifications */
@@ -675,6 +707,7 @@
   align-items: flex-start;
   gap: 14px;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 
 .certCard:hover {
@@ -695,6 +728,7 @@
 
 .certInfo {
   flex: 1;
+  min-width: 0;
 }
 .certName {
   font-family: var(--font-display);
@@ -702,11 +736,13 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 3px;
+  overflow-wrap: anywhere;
 }
 .certIssuer {
   font-size: 13px;
   color: var(--text-dim);
   margin-bottom: 3px;
+  overflow-wrap: anywhere;
 }
 .certDate {
   font-size: 12px;
@@ -737,6 +773,7 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
 .editTitle {
@@ -802,6 +839,8 @@
   transition: border-color 0.2s;
   width: 100%;
   font-family: var(--font-body);
+  box-sizing: border-box;
+  min-height: 44px;
 }
 
 .editInput:focus {
@@ -824,6 +863,7 @@
   width: 100%;
   font-family: var(--font-body);
   line-height: 1.6;
+  box-sizing: border-box;
 }
 
 .editTextarea:focus {
@@ -861,6 +901,7 @@
   justify-content: flex-end;
   gap: 0.875rem;
   padding-top: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .editCancelBtn {
@@ -875,6 +916,8 @@
     border-color 0.2s,
     color 0.2s;
   font-family: var(--font-body);
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .editCancelBtn:hover {
@@ -896,6 +939,8 @@
   align-items: center;
   gap: 0.4rem;
   font-family: var(--font-body);
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .editSaveBtn:hover:not(:disabled) {
@@ -904,243 +949,6 @@
 .editSaveBtn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-@media (max-width: 600px) {
-  .editGrid2 {
-    grid-template-columns: 1fr;
-  }
-  .editPage {
-    padding: 1.25rem;
-  }
-}
-
-/* ══════════════════════════════════════════════════
-   RESPONSIVE — mobile-first fixes
-══════════════════════════════════════════════════ */
-
-@media (max-width: 860px) {
-  .page {
-    padding: 16px 12px 80px;
-  }
-
-  /* Stack sidebar above main on mobile */
-  .layout {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  /* Sidebar becomes a horizontal card row on mobile */
-  .sidebar {
-    position: static;
-    gap: 10px;
-  }
-
-  /* Hero card — tighter on mobile */
-  .heroCard {
-    padding: 20px 16px 16px;
-    border-radius: 14px;
-  }
-
-  .heroBg {
-    height: 60px;
-  }
-
-  .avatarWrap {
-    width: 72px;
-    height: 72px;
-  }
-
-  .avatarFallback {
-    font-size: 20px;
-  }
-
-  .heroName {
-    font-size: 18px;
-  }
-
-  /* Stats — horizontal scroll strip on mobile */
-  .statsCard {
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0;
-    gap: 0;
-    scrollbar-width: none;
-    border-radius: 12px;
-  }
-  .statsCard::-webkit-scrollbar {
-    display: none;
-  }
-
-  .statItem {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 12px 14px;
-    border-bottom: none;
-    border-right: 1px solid var(--border);
-    flex-shrink: 0;
-    min-width: 80px;
-    gap: 4px;
-  }
-  .statItem:last-child {
-    border-right: none;
-  }
-
-  .statVal {
-    font-size: 13px;
-  }
-  .statLabel {
-    margin-left: 0;
-    font-size: 10px;
-  }
-
-  /* Info + cat cards — horizontal on mobile */
-  .infoCard {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 12px;
-  }
-
-  .infoRow {
-    font-size: 12px;
-    flex-shrink: 0;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 10px;
-  }
-  .infoIcon {
-    display: none;
-  }
-
-  .catCard {
-    padding: 12px;
-    border-radius: 12px;
-  }
-
-  /* Main content — no top padding needed */
-  .main {
-    gap: 0;
-  }
-
-  /* Tab bar */
-  .tabBar {
-    margin-bottom: 14px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tabBtn {
-    padding: 8px 14px;
-    font-size: 13px;
-  }
-
-  /* Content cards */
-  .bioCard,
-  .availCard,
-  .certCard {
-    padding: 14px;
-    border-radius: 12px;
-  }
-
-  .bioText {
-    font-size: 13.5px;
-  }
-
-  /* Portfolio — 2 cols on mobile */
-  .portfolioGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .portfolioImg {
-    height: 120px;
-  }
-
-  /* Badge row — wraps */
-  .badgeRow {
-    gap: 6px;
-  }
-  .badge {
-    font-size: 11px;
-    padding: 4px 9px;
-  }
-
-  /* Book btn */
-  .bookBtn {
-    border-radius: 10px;
-    font-size: 14px;
-  }
-
-  /* Edit btn */
-  .editBtn {
-    font-size: 12px;
-    padding: 8px 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .page {
-    padding: 12px 10px 80px;
-  }
-
-  .heroCard {
-    padding: 16px 12px;
-  }
-
-  .avatarWrap {
-    width: 64px;
-    height: 64px;
-  }
-  .avatarFallback {
-    font-size: 18px;
-  }
-  .heroName {
-    font-size: 16px;
-  }
-
-  .portfolioGrid {
-    grid-template-columns: 1fr;
-  }
-  .portfolioImg {
-    height: 160px;
-  }
-
-  /* Stats strip tighter */
-  .statItem {
-    min-width: 68px;
-    padding: 10px 10px;
-  }
-  .statVal {
-    font-size: 12px;
-  }
-
-  /* Availability days — smaller */
-  .dayPill {
-    width: 36px;
-    height: 32px;
-    font-size: 10px;
-  }
-
-  /* Cert cards */
-  .certCard {
-    padding: 12px;
-  }
-  .certIcon {
-    width: 32px;
-    height: 32px;
-  }
-  .certName {
-    font-size: 13px;
-  }
-
-  /* Tab bar */
-  .tabBtn {
-    padding: 7px 10px;
-    font-size: 12px;
-  }
 }
 
 /* ── Portfolio clickable ── */
@@ -1203,6 +1011,8 @@
   border-radius: 12px;
   padding: 14px 18px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .reviewSummaryLeft {
   display: flex;
@@ -1232,6 +1042,7 @@
   border-radius: 12px;
   padding: 16px 18px;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .reviewCard:hover {
   border-color: var(--border-hover);
@@ -1241,6 +1052,7 @@
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .reviewAvatar {
   width: 38px;
@@ -1271,6 +1083,7 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 .reviewerRole {
   font-size: 11px;
@@ -1281,6 +1094,7 @@
   font-size: 11px;
   color: var(--text-dim);
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 .reviewDate {
   font-size: 11px;
@@ -1305,6 +1119,7 @@
   border-left: 2px solid var(--orange-glow);
   padding-left: 12px;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ── Lightbox ── */
@@ -1317,7 +1132,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
   animation: fadeUp 0.15s ease;
 }
 .lightboxBox {
@@ -1328,8 +1145,10 @@
   max-width: 720px;
   width: 100%;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   animation: fadeUp 0.2s ease;
+  box-sizing: border-box;
 }
 .lightboxClose {
   position: absolute;
@@ -1370,11 +1189,13 @@
   font-weight: 800;
   color: var(--text);
   margin-bottom: 8px;
+  overflow-wrap: anywhere;
 }
 .lightboxDesc {
   font-size: 14px;
   color: var(--text-dim);
   line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 /* Cert lightbox */
@@ -1396,10 +1217,12 @@
   align-items: center;
   justify-content: center;
   color: var(--orange);
+  flex-shrink: 0;
 }
 .lightboxCertMeta {
   font-size: 14px;
   color: var(--text-dim);
+  overflow-wrap: anywhere;
 }
 .lightboxCertDates {
   display: flex;
@@ -1441,12 +1264,188 @@
   text-decoration: none;
   transition: all 0.15s;
   margin-top: 0.5rem;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 .lightboxDocLink:hover {
   background: rgba(249, 115, 22, 0.2);
 }
 
-@media (max-width: 640px) {
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — tablet and below (≤ 860px)
+══════════════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .page {
+    padding: 16px 12px 80px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .sidebar {
+    position: static;
+    gap: 10px;
+  }
+
+  .heroCard {
+    padding: 20px 16px 16px;
+    border-radius: 14px;
+  }
+
+  .heroBg {
+    height: 60px;
+  }
+
+  .avatarWrap {
+    width: 72px;
+    height: 72px;
+  }
+
+  .avatarFallback {
+    font-size: 20px;
+  }
+
+  .heroName {
+    font-size: 18px;
+  }
+
+  /* Stats — horizontal scroll strip */
+  .statsCard {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0;
+    gap: 0;
+    scrollbar-width: none;
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .statsCard::-webkit-scrollbar {
+    display: none;
+  }
+
+  .statItem {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 12px 14px;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    min-width: 80px;
+    gap: 4px;
+  }
+  .statItem:last-child {
+    border-right: none;
+  }
+
+  .statVal {
+    font-size: 13px;
+  }
+  .statLabel {
+    margin-left: 0;
+    font-size: 10px;
+  }
+
+  /* Info card — horizontal pills */
+  .infoCard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .infoRow {
+    font-size: 12px;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    max-width: 100%;
+  }
+  .infoRow > a {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .infoIcon {
+    display: none;
+  }
+
+  .catCard {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .main {
+    gap: 0;
+  }
+
+  .tabBar {
+    margin-bottom: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabBtn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .bioCard,
+  .availCard,
+  .certCard {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .bioText {
+    font-size: 13.5px;
+  }
+
+  .portfolioGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .portfolioImg {
+    height: 120px;
+  }
+
+  .badgeRow {
+    gap: 6px;
+  }
+  .badge {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  .bookBtn {
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  .editBtn {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .editGrid2 {
+    grid-template-columns: 1fr;
+  }
+  .editPage {
+    padding: 1.25rem;
+  }
+
+  .reviewCard {
+    padding: 12px;
+  }
+
   .lightboxBox {
     border-radius: 16px;
   }
@@ -1456,10 +1455,198 @@
   .lightboxCert {
     padding: 1.75rem 1.25rem;
   }
-  .reviewCard {
-    padding: 12px;
+}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — small phones (≤ 480px)
+══════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .page {
+    padding: 12px 10px 80px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
   }
+
+  .heroCard {
+    padding: 16px 12px;
+  }
+
+  .avatarWrap {
+    width: 64px;
+    height: 64px;
+  }
+  .avatarFallback {
+    font-size: 18px;
+  }
+  .heroName {
+    font-size: 16px;
+  }
+  .heroTitle {
+    font-size: 12.5px;
+  }
+
+  .portfolioGrid {
+    grid-template-columns: 1fr;
+  }
+  .portfolioImg {
+    height: 160px;
+  }
+
+  .statItem {
+    min-width: 68px;
+    padding: 10px 10px;
+  }
+  .statVal {
+    font-size: 12px;
+  }
+
+  .dayPill {
+    width: 36px;
+    height: 32px;
+    font-size: 10px;
+  }
+
+  .certCard {
+    padding: 12px;
+    gap: 10px;
+  }
+  .certIcon {
+    width: 32px;
+    height: 32px;
+  }
+  .certName {
+    font-size: 13px;
+  }
+
+  .tabBtn {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  /* Review layout — stack stars below name to avoid overflow */
   .reviewTop {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .reviewStars {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .lightboxOverlay {
+    padding: max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
+  }
+  .lightboxBox {
+    border-radius: 14px;
+    max-height: 95dvh;
+  }
+  .lightboxCert {
+    padding: 1.25rem 1rem;
+  }
+  .lightboxCertDates {
+    gap: 1rem;
+  }
+  .lightboxCertDate {
+    padding: 8px 14px;
+    min-width: 100px;
+  }
+
+  .editSection {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  .editHeader {
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+  .editTitle {
+    font-size: 1.15rem;
+  }
+  .editActions {
+    flex-direction: column-reverse;
+  }
+  .editCancelBtn,
+  .editSaveBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — very small phones (≤ 360px)
+══════════════════════════════════════════════════ */
+@media (max-width: 360px) {
+  .page {
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+
+  .heroName {
+    font-size: 15px;
+  }
+  .heroCard {
+    padding: 14px 10px;
+  }
+
+  .statItem {
+    min-width: 60px;
+    padding: 8px 8px;
+  }
+  .statVal {
+    font-size: 11px;
+  }
+  .statLabel {
+    font-size: 9px;
+  }
+
+  .tabBtn {
+    padding: 6px 8px;
+    font-size: 11.5px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .catPill {
+    font-size: 11px;
+    padding: 3px 9px;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — landscape phones
+══════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .page {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .lightboxBox {
+    max-height: 95dvh;
+  }
+  .lightboxImg {
+    max-height: 60dvh;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   REDUCED MOTION
+══════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .tabContent,
+  .lightboxOverlay,
+  .lightboxBox,
+  .spin {
+    animation: none;
   }
 }
