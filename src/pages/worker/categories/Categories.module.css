@@ -203,3 +203,174 @@
   animation: pulse 1.4s ease infinite;
   margin-bottom: 0.5rem;
 }
+/* ══════════════════════════════════════════════════
+   Confirm-remove modal — matches SubscriptionPlans
+   and other platform dialogs (dark panel, orange CTA)
+══════════════════════════════════════════════════ */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  animation: overlayFade 0.18s ease both;
+}
+
+@keyframes overlayFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalBox {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box;
+  text-align: center;
+  animation: modalIn 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalIconWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.modalIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.modalTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.modalText {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-bottom: 1.5rem;
+  overflow-wrap: anywhere;
+}
+
+.modalText strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.modalCancelBtn,
+.modalConfirmBtn {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.modalCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  color: var(--text-dim);
+}
+
+.modalCancelBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.modalConfirmBtn {
+  background: var(--red);
+  border: 1px solid var(--red);
+  color: #ffffff;
+}
+
+.modalConfirmBtn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+/* ── Small phones: stack buttons ──────────────────────────────────── */
+@media (max-width: 400px) {
+  .modalBox {
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 14px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+
+  .modalIconWrap {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 0.75rem;
+  }
+
+  .modalIcon {
+    font-size: 1.25rem;
+  }
+
+  .modalTitle {
+    font-size: 1.0625rem;
+  }
+
+  .modalText {
+    font-size: 0.8125rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* ── Reduced motion: no animation for users who disabled it ──────── */
+@media (prefers-reduced-motion: reduce) {
+  .modalOverlay,
+  .modalBox {
+    animation: none;
+  }
+}

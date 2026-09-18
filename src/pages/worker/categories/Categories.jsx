@@ -15,6 +15,10 @@ export default function CategoriesPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  // ── Confirm modal state ───────────────────────────────────────────────
+  const [confirmState, setConfirmState] = useState(null);
+  // { categoryId, name } | null
+
   const load = async () => {
     if (!user?.id) return;
     try {
@@ -59,11 +63,22 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleRemove = async (categoryId, name) => {
-    if (!confirm(`Remove "${name}" from your categories?`)) return;
+  // ── Remove flow: open modal instead of native confirm ────────────────
+  const requestRemove = (categoryId, name) => {
+    setConfirmState({ categoryId, name });
+  };
+
+  const cancelRemove = () => setConfirmState(null);
+
+  const confirmRemove = async () => {
+    if (!confirmState) return;
+    const { categoryId, name } = confirmState;
+
     setRemoving(categoryId);
     setError("");
     setSuccess("");
+    setConfirmState(null);
+
     try {
       await api.delete(`/workers/categories/${categoryId}`);
       await load();
@@ -161,7 +176,7 @@ export default function CategoriesPage() {
                       <button
                         className={styles.removeBtn}
                         disabled={removing === catId}
-                        onClick={() => handleRemove(catId, cat?.name)}
+                        onClick={() => requestRemove(catId, cat?.name)}
                       >
                         {removing === catId ? "..." : "✕"}
                       </button>
@@ -173,6 +188,46 @@ export default function CategoriesPage() {
           )}
         </div>
       </div>
+
+      {/* ── Confirm-remove modal ─────────────────────────────────────── */}
+      {confirmState && (
+        <div
+          className={styles.modalOverlay}
+          onClick={cancelRemove}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-cat-title"
+        >
+          <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalIconWrap}>
+              <span className={styles.modalIcon}>⚠️</span>
+            </div>
+            <h3 id="remove-cat-title" className={styles.modalTitle}>
+              Remove category?
+            </h3>
+            <p className={styles.modalText}>
+              <strong>{confirmState.name}</strong> will be removed from your
+              trade list. You can always add it back later.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.modalCancelBtn}
+                onClick={cancelRemove}
+                type="button"
+              >
+                Keep it
+              </button>
+              <button
+                className={styles.modalConfirmBtn}
+                onClick={confirmRemove}
+                type="button"
+              >
+                Yes, remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </WorkerLayout>
   );
 }
