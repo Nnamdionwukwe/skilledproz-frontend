@@ -1650,3 +1650,142 @@
     animation: none;
   }
 }
+/* ══════════════════════════════════════════════════
+   SKELETON LOADER
+══════════════════════════════════════════════════ */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-panel);
+  border-radius: 6px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Base skeleton shapes */
+.skelAvatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skelAvatarSm {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skelLine {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skelIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.skelBtn {
+  width: 100%;
+  height: 44px;
+  border-radius: 9px;
+  margin-top: 8px;
+}
+
+.skelTab {
+  width: 90px;
+  height: 38px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.skelBadge {
+  width: 110px;
+  height: 26px;
+  border-radius: 20px;
+}
+
+.skelPill {
+  width: 80px;
+  height: 26px;
+  border-radius: 20px;
+}
+
+/* Width modifiers */
+.skelW25 {
+  width: 25%;
+}
+.skelW30 {
+  width: 30%;
+}
+.skelW35 {
+  width: 35%;
+}
+.skelW40 {
+  width: 40%;
+}
+.skelW45 {
+  width: 45%;
+}
+.skelW60 {
+  width: 60%;
+}
+.skelW65 {
+  width: 65%;
+}
+.skelW70 {
+  width: 70%;
+}
+.skelW75 {
+  width: 75%;
+}
+.skelW90 {
+  width: 90%;
+}
+.skelW100 {
+  width: 100%;
+}
+
+/* Stat text column */
+.skelStatText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Reviews skeleton adjustments */
+.reviewCard .skelLine + .skelLine {
+  margin-top: 8px;
+}
+
+/* Reduced motion — no shimmer for users who disabled animation */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    background: none;
+  }
+}
