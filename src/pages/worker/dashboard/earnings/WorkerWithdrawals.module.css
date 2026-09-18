@@ -2214,3 +2214,50 @@
     gap: 10px;
   }
 }
+
+/* ─── "All Wallets" chip and filter affordance ────────────────────────────── */
+
+/* The All-wallets card uses the credit-card icon in place of a symbol chip */
+.allWalletsCard .walletFlag {
+  background: var(--bg-input);
+  color: var(--text-dim);
+}
+.allWalletsCard.currencyWalletCardActive .walletFlag {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.allWalletsCard .walletAmount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.allWalletsCard.currencyWalletCardActive .walletAmount {
+  color: var(--orange);
+}
+
+/* "Show all" escape hatch inside the wallet section label when filtered */
+.walletSectionLabel > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.showAllBtn {
+  background: none;
+  border: none;
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  padding: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.showAllBtn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}

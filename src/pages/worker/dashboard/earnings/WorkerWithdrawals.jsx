@@ -1,12 +1,8 @@
 // src/pages/worker/dashboard/withdrawals/WorkerWithdrawals.jsx
-// Updated for Flutterwave + Paystack multi-currency wallet system.
-// Features:
-//   - Per-currency balance cards (only currencies with a balance are shown)
-//   - Nigerian + African + International bank list from API
-//   - Live bank account name resolution before submit
-//   - Method options filtered by selected currency
-//   - Mobile money, bank transfer, crypto all unified
-//   - 4-digit withdrawal PIN verification before every payout
+// Multi-currency wallet with full per-currency filtering.
+// - Wallet cards show available + escrow for each currency
+// - Clicking a card filters summary cards + history + escrow to that currency
+// - "All Wallets" chip returns to the combined view
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -34,7 +30,7 @@ import api from "../../../../lib/api";
 import s from "./WorkerWithdrawals.module.css";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NIGERIAN BANKS — complete static list (50+ institutions)
+// NIGERIAN BANKS — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 export const NIGERIAN_BANKS = [
   { name: "Access Bank", code: "044", type: "commercial" },
@@ -132,7 +128,7 @@ export const NIGERIAN_BANKS = [
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONSTANTS
+// CONSTANTS — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENCY_METHODS = {
   NGN: [
@@ -403,7 +399,7 @@ function getMethodsForCurrency(currency) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PIN INPUT — 4 individual digit boxes, backed by a hidden input
+// PIN INPUT — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 function PinInput({ value, onChange, disabled, label, error }) {
   const hiddenRef = useRef();
@@ -452,7 +448,7 @@ function PinInput({ value, onChange, disabled, label, error }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PIN SETUP SCREEN
+// PIN SETUP SCREEN — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 function PinSetupScreen({ onDone }) {
   const [newPin, setNewPin] = useState("");
@@ -526,7 +522,7 @@ function PinSetupScreen({ onDone }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BANK DROPDOWN
+// BANK DROPDOWN — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 const BANK_TYPE_LABELS = {
   commercial: { label: "Commercial", color: "#818cf8" },
@@ -708,7 +704,7 @@ function BankOption({ bank, selected, onSelect }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RECEIPT MODAL
+// RECEIPT MODAL — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 function ReceiptModal({ withdrawal, feeConfig, onClose }) {
   const ref = useRef();
@@ -828,7 +824,7 @@ function MetaItem({ label, value }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WITHDRAWAL FORM MODAL — with PIN gate
+// WITHDRAWAL FORM MODAL — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
 function WithdrawalModal({
   onClose,
@@ -853,7 +849,6 @@ function WithdrawalModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ── PIN state ─────────────────────────────────────────────────────────────
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [pinStatus, setPinStatus] = useState(null);
@@ -1145,7 +1140,6 @@ function WithdrawalModal({
             </div>
           ) : (
             <form className={s.payoutForm} onSubmit={handleSubmit}>
-              {/* Currency selector */}
               <div className={s.formSection}>
                 <p className={s.formSectionLabel}>Withdraw from Wallet</p>
                 <div className={s.currencyTabs}>
@@ -1163,7 +1157,7 @@ function WithdrawalModal({
                         className={`${s.currencyTab} ${currency === cur ? s.currencyTabActive : ""}`}
                         onClick={() => setCurrency(cur)}
                       >
-                        <span className={s.currencyTabFlag}>{cm.flag}</span>
+                        <span className={s.currencyTabFlag}>{cm.symbol}</span>
                         <div className={s.currencyTabInfo}>
                           <span className={s.currencyTabCode}>{cur}</span>
                           <span className={s.currencyTabBal}>
@@ -1177,7 +1171,7 @@ function WithdrawalModal({
                 <div className={s.selectedCurrencyBar}>
                   <div className={s.selectedCurrencyLeft}>
                     <span className={s.selectedCurrencyFlag}>
-                      {currMeta.flag}
+                      {currMeta.symbol}
                     </span>
                     <div>
                       <span className={s.selectedCurrencyName}>
@@ -1197,7 +1191,6 @@ function WithdrawalModal({
                 </div>
               </div>
 
-              {/* Method selector */}
               <div className={s.formSection}>
                 <p className={s.formSectionLabel}>Payout Method</p>
                 <div className={s.methodGrid}>
@@ -1225,7 +1218,6 @@ function WithdrawalModal({
                 </div>
               </div>
 
-              {/* Dynamic fields */}
               {selMethod && (
                 <div className={s.formSection}>
                   <p className={s.formSectionLabel}>Payout Details</p>
@@ -1439,7 +1431,6 @@ function WithdrawalModal({
                 </div>
               )}
 
-              {/* Amount */}
               <div className={s.formSection}>
                 <p className={s.formSectionLabel}>Amount ({currency})</p>
                 <div className={s.amountWrap}>
@@ -1498,7 +1489,6 @@ function WithdrawalModal({
                   })()}
               </div>
 
-              {/* 4-DIGIT PIN SECTION */}
               <div className={s.formSection}>
                 <p className={s.formSectionLabel}>
                   Withdrawal PIN
@@ -1577,15 +1567,24 @@ function WithdrawalModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
+// Full per-currency filtering:
+//   - Wallet cards show available + escrow for each currency
+//   - Clicking a card filters the summary cards AND the withdrawal history
+//     to that currency, including its escrow figure
+//   - The "All Wallets" chip restores the combined view
 // ─────────────────────────────────────────────────────────────────────────────
 export default function WorkerWithdrawals() {
   const [balance, setBalance] = useState(null);
-  const [currencyBalances, setCurrencyBalances] = useState({});
+  // Per-currency breakdown from the backend:
+  //   { NGN: { available, inEscrow, totalEarned, pendingPayout, currency }, ... }
+  const [balancesByCurrency, setBalancesByCurrency] = useState({});
   const [history, setHistory] = useState([]);
+  const [allHistory, setAllHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [receipt, setReceipt] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState(null);
+
+  const [activeCurrency, setActiveCurrency] = useState("ALL");
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [toast, setToast] = useState(null);
@@ -1594,41 +1593,27 @@ export default function WorkerWithdrawals() {
     setLoading(true);
     try {
       const wdRes = await api.get(`/payments/withdrawals?page=${p}&limit=15`);
-      setHistory(wdRes.data.data.withdrawals);
-      setBalance(wdRes.data.data.balance);
-      setPages(wdRes.data.data.pages);
+      const data = wdRes.data.data ?? {};
+
+      setHistory(data.withdrawals ?? []);
+      setBalance(data.balance ?? null);
+      setPages(data.pages ?? 1);
       setPage(p);
 
-      const earnRes = await api.get("/payments/earnings?limit=1");
-      const currencies = earnRes.data.data.availableCurrencies ?? ["NGN"];
+      // The backend includes balancesByCurrency — one entry per currency
+      // that has RELEASED earnings or HELD escrow. Everything else
+      // (PENDING, FAILED, REFUNDED) is filtered out on the server.
+      setBalancesByCurrency(data.balancesByCurrency ?? {});
 
-      const balMap = {};
-      await Promise.all(
-        currencies.map(async (cur) => {
-          try {
-            const r = await api.get(
-              `/payments/earnings?currency=${cur}&limit=1`,
-            );
-            const earned = r.data.data.summary?.totalEarned ?? 0;
-            const pending = wdRes.data.data.withdrawals
-              .filter(
-                (w) =>
-                  w.currency === cur &&
-                  ["PENDING", "PROCESSING"].includes(w.status),
-              )
-              .reduce((sum, w) => sum + (w.amount || 0), 0);
-            balMap[cur] = Math.max(0, earned - pending);
-          } catch {
-            balMap[cur] = 0;
-          }
-        }),
-      );
-
-      setCurrencyBalances(balMap);
-      const topCur = Object.entries(balMap).sort(
-        ([, a], [, b]) => b - a,
-      )[0]?.[0];
-      if (topCur) setSelectedCurrency(topCur);
+      // Wide slice for accurate pending counts across currencies.
+      let wideHistory = data.withdrawals ?? [];
+      try {
+        const wide = await api.get("/payments/withdrawals?page=1&limit=100");
+        wideHistory = wide.data.data?.withdrawals ?? wideHistory;
+      } catch {
+        /* keep the narrower slice */
+      }
+      setAllHistory(wideHistory);
     } catch {
       setToast({ type: "error", msg: "Failed to load wallet data." });
     } finally {
@@ -1638,16 +1623,75 @@ export default function WorkerWithdrawals() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   function showToast(type, msg) {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 4000);
   }
 
-  const currenciesWithBalance = Object.entries(currencyBalances)
-    .filter(([, v]) => v > 0)
-    .sort(([, a], [, b]) => b - a);
+  function handleSelectCurrency(cur) {
+    setActiveCurrency(cur);
+    setPage(1);
+  }
+
+  // Every currency the backend returned, sorted by total value
+  // (available + in escrow) so the most meaningful wallets come first.
+  const currenciesWithBalance = Object.entries(balancesByCurrency).sort(
+    ([, a], [, b]) =>
+      (b.available || 0) +
+      (b.inEscrow || 0) -
+      ((a.available || 0) + (a.inEscrow || 0)),
+  );
+
+  const isFiltered = activeCurrency !== "ALL";
+  const activeMeta = isFiltered
+    ? (CURRENCY_META[activeCurrency] ?? { symbol: activeCurrency })
+    : null;
+  const activeBalance = isFiltered
+    ? (balancesByCurrency[activeCurrency] ?? null)
+    : null;
+
+  // Withdrawals filtered by active currency
+  const visibleHistory = isFiltered
+    ? history.filter((w) => w.currency === activeCurrency)
+    : history;
+
+  // ── Summary cards — reflect the active filter ────────────────────────────
+  // Available: from the per-currency breakdown when filtered, from the
+  // combined balance object otherwise.
+  const totalAvailable = isFiltered
+    ? (activeBalance?.available ?? 0)
+    : (balance?.available ?? 0);
+
+  // In escrow: from the per-currency breakdown when filtered, from the
+  // combined balance object otherwise. The per-currency value comes
+  // directly from the backend's balancesByCurrency.inEscrow which sums
+  // only HELD payments for that currency.
+  const totalInEscrow = isFiltered
+    ? (activeBalance?.inEscrow ?? 0)
+    : (balance?.inEscrow ?? 0);
+
+  // Pending payouts: filtered by currency when a filter is active,
+  // otherwise the combined figure from balance.pendingPayout.
+  const totalPendingPayout = isFiltered
+    ? allHistory
+        .filter(
+          (w) =>
+            w.currency === activeCurrency &&
+            ["PENDING", "PROCESSING"].includes(w.status),
+        )
+        .reduce((sum, w) => sum + (w.amount || 0), 0)
+    : (balance?.pendingPayout ?? 0);
+
+  const pendingCount = isFiltered
+    ? allHistory.filter(
+        (w) =>
+          w.currency === activeCurrency &&
+          ["PENDING", "PROCESSING"].includes(w.status),
+      ).length
+    : allHistory.filter((w) => ["PENDING", "PROCESSING"].includes(w.status))
+        .length;
 
   return (
     <WorkerLayout>
@@ -1674,10 +1718,18 @@ export default function WorkerWithdrawals() {
 
         <div className={s.header}>
           <div>
-            <div className={s.eyebrow}>Earnings & Payouts</div>
-            <h1 className={s.title}>Your Wallet</h1>
+            <div className={s.eyebrow}>
+              {isFiltered ? `${activeCurrency} Wallet` : "Earnings & Payouts"}
+            </div>
+            <h1 className={s.title}>
+              {isFiltered
+                ? (activeMeta?.name ?? activeCurrency)
+                : "Your Wallet"}
+            </h1>
             <p className={s.sub}>
-              Multi-currency earnings, withdrawals, and payout history
+              {isFiltered
+                ? `Showing only ${activeCurrency} — click "All" to see combined`
+                : "Multi-currency earnings, withdrawals, and payout history"}
             </p>
           </div>
           <button
@@ -1697,34 +1749,73 @@ export default function WorkerWithdrawals() {
               <span>Your Currency Wallets</span>
             </p>
             <div className={s.currencyWalletGrid}>
-              {currenciesWithBalance.map(([cur, bal]) => {
+              <div
+                className={`${s.currencyWalletCard} ${
+                  activeCurrency === "ALL" ? s.currencyWalletCardActive : ""
+                }`}
+                onClick={() => handleSelectCurrency("ALL")}
+              >
+                <div className={s.walletCardTop}>
+                  <span className={s.walletFlag}>
+                    <FiCreditCard size={13} />
+                  </span>
+                  <span className={s.walletCode}>ALL</span>
+                </div>
+                <div className={s.walletAmount}>
+                  {currenciesWithBalance.length}{" "}
+                  {currenciesWithBalance.length === 1 ? "wallet" : "wallets"}
+                </div>
+                <div className={s.walletName}>Combined view</div>
+              </div>
+
+              {currenciesWithBalance.map(([cur, info]) => {
                 const cm = CURRENCY_META[cur] ?? {
                   flag: "💱",
                   symbol: cur,
                   name: cur,
                 };
+                const hasAvailable = (info.available ?? 0) > 0;
+                const hasEscrow = (info.inEscrow ?? 0) > 0;
                 return (
                   <div
                     key={cur}
-                    className={`${s.currencyWalletCard} ${selectedCurrency === cur ? s.currencyWalletCardActive : ""}`}
-                    onClick={() => setSelectedCurrency(cur)}
+                    className={`${s.currencyWalletCard} ${
+                      activeCurrency === cur ? s.currencyWalletCardActive : ""
+                    }`}
+                    onClick={() => handleSelectCurrency(cur)}
                   >
                     <div className={s.walletCardTop}>
-                      <span className={s.walletFlag}>{cm.flag}</span>
+                      <span className={s.walletFlag}>{cm.symbol}</span>
                       <span className={s.walletCode}>{cur}</span>
                     </div>
-                    <div className={s.walletAmount}>{fmt(bal, cur)}</div>
-                    <div className={s.walletName}>{cm.name}</div>
+
+                    {/* Available balance — always shown, even at 0, so
+                        the escrow row is not the only figure. */}
+                    <div className={s.walletAmount}>
+                      {fmt(info.available ?? 0, cur)}
+                    </div>
+
+                    {/* Escrow line — displayed whenever this currency has
+                        money held in escrow. */}
+                    <div className={s.walletName}>
+                      {hasEscrow ? (
+                        <>{fmt(info.inEscrow, cur)} awaiting release</>
+                      ) : (
+                        <>Available in {cur}</>
+                      )}
+                    </div>
+
                     <button
                       className={s.walletWithdrawBtn}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedCurrency(cur);
+                        handleSelectCurrency(cur);
                         setShowForm(true);
                       }}
                       type="button"
+                      disabled={!hasAvailable}
                     >
-                      Withdraw
+                      {hasAvailable ? "Withdraw" : "No funds yet"}
                     </button>
                   </div>
                 );
@@ -1735,46 +1826,80 @@ export default function WorkerWithdrawals() {
 
         <div className={s.summaryGrid}>
           <div className={`${s.summaryCard} ${s.summaryAccent}`}>
-            <span className={s.summaryLabel}>Total Available</span>
-            <span className={s.summaryValue}>
-              {loading ? "—" : fmt(balance?.available ?? 0)}
+            <span className={s.summaryLabel}>
+              Total Available{isFiltered ? ` · ${activeCurrency}` : ""}
             </span>
-            <span className={s.summarySub}>Across all currencies</span>
-          </div>
-          <div className={s.summaryCard}>
-            <span className={s.summaryLabel}>In Escrow</span>
             <span className={s.summaryValue}>
-              {loading ? "—" : fmt(balance?.inEscrow ?? 0)}
-            </span>
-            <span className={s.summarySub}>Awaiting completion</span>
-          </div>
-          <div className={s.summaryCard}>
-            <span className={s.summaryLabel}>Pending Payouts</span>
-            <span className={s.summaryValue}>
-              {loading ? "—" : fmt(balance?.pendingPayout ?? 0)}
+              {loading
+                ? "—"
+                : isFiltered
+                  ? fmt(totalAvailable, activeCurrency)
+                  : fmt(totalAvailable)}
             </span>
             <span className={s.summarySub}>
-              {
-                history.filter((w) =>
-                  ["PENDING", "PROCESSING"].includes(w.status),
-                ).length
-              }{" "}
-              request(s)
+              {isFiltered
+                ? `Withdrawable in ${activeCurrency}`
+                : "Across all currencies"}
             </span>
           </div>
           <div className={s.summaryCard}>
-            <span className={s.summaryLabel}>Wallets</span>
-            <span className={s.summaryValue}>
-              {loading ? "—" : currenciesWithBalance.length}
+            <span className={s.summaryLabel}>
+              In Escrow{isFiltered ? ` · ${activeCurrency}` : ""}
             </span>
-            <span className={s.summarySub}>Active currencies</span>
+            <span className={s.summaryValue}>
+              {loading
+                ? "—"
+                : isFiltered
+                  ? fmt(totalInEscrow, activeCurrency)
+                  : fmt(totalInEscrow)}
+            </span>
+            <span className={s.summarySub}>
+              {isFiltered
+                ? `Held in ${activeCurrency} — awaiting hirer release`
+                : "Awaiting hirer release"}
+            </span>
+          </div>
+          <div className={s.summaryCard}>
+            <span className={s.summaryLabel}>
+              Pending Payouts{isFiltered ? ` · ${activeCurrency}` : ""}
+            </span>
+            <span className={s.summaryValue}>
+              {loading
+                ? "—"
+                : isFiltered
+                  ? fmt(totalPendingPayout, activeCurrency)
+                  : fmt(totalPendingPayout)}
+            </span>
+            <span className={s.summarySub}>
+              {pendingCount} request{pendingCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className={s.summaryCard}>
+            <span className={s.summaryLabel}>
+              {isFiltered ? "Wallet" : "Wallets"}
+            </span>
+            <span className={s.summaryValue}>
+              {loading
+                ? "—"
+                : isFiltered
+                  ? activeCurrency
+                  : currenciesWithBalance.length}
+            </span>
+            <span className={s.summarySub}>
+              {isFiltered ? "Active filter" : "Active currencies"}
+            </span>
           </div>
         </div>
 
         <div className={s.tableWrap}>
           <div className={s.tableHeader}>
-            <h2 className={s.tableTitle}>Withdrawal History</h2>
-            <span className={s.tableCount}>{history.length} records</span>
+            <h2 className={s.tableTitle}>
+              Withdrawal History
+              {isFiltered ? ` · ${activeCurrency}` : ""}
+            </h2>
+            <span className={s.tableCount}>
+              {visibleHistory.length} records
+            </span>
           </div>
           <div className={s.tableHead}>
             <span>Reference</span>
@@ -1788,23 +1913,30 @@ export default function WorkerWithdrawals() {
           <div className={s.tableBody}>
             {loading ? (
               [...Array(3)].map((_, i) => <div key={i} className={s.skRow} />)
-            ) : history.length === 0 ? (
+            ) : visibleHistory.length === 0 ? (
               <div className={s.empty}>
                 <span className={s.emptyIcon}>
                   <FiDollarSign size={36} />
                 </span>
-                <p className={s.emptyTitle}>No withdrawals yet</p>
+                <p className={s.emptyTitle}>
+                  No {isFiltered ? `${activeCurrency} ` : ""}withdrawals yet
+                </p>
                 <p className={s.emptySub}>
-                  Request your first payout when you have available balance.
+                  {isFiltered
+                    ? `You haven't made any withdrawals in ${activeCurrency}.`
+                    : "Request your first payout when you have available balance."}
                 </p>
               </div>
             ) : (
-              history.map((w, i) => {
+              visibleHistory.map((w, i) => {
                 const sm = STATUS_META[w.status] ?? {
                   label: w.status,
                   cls: "pending",
                 };
-                const cm = CURRENCY_META[w.currency] ?? { flag: "💱" };
+                const cm = CURRENCY_META[w.currency] ?? {
+                  flag: "💱",
+                  symbol: w.currency,
+                };
                 return (
                   <div
                     key={w.id}
@@ -1826,7 +1958,7 @@ export default function WorkerWithdrawals() {
                     </div>
                     <div className={s.methodCell}>
                       <span className={s.methodName}>
-                        {cm.flag} {w.method?.replace(/_/g, " ")}
+                        {cm.symbol} {w.method?.replace(/_/g, " ")}
                       </span>
                     </div>
                     <div className={s.destCell}>{w.destination}</div>
@@ -1873,7 +2005,7 @@ export default function WorkerWithdrawals() {
               })
             )}
           </div>
-          {pages > 1 && (
+          {pages > 1 && !isFiltered && (
             <div className={s.pager}>
               <button
                 className={s.pageBtn}
@@ -1905,8 +2037,17 @@ export default function WorkerWithdrawals() {
         <WithdrawalModal
           onClose={() => setShowForm(false)}
           balance={balance}
-          currencyBalances={currencyBalances}
-          defaultCurrency={selectedCurrency}
+          currencyBalances={Object.fromEntries(
+            Object.entries(balancesByCurrency).map(([cur, info]) => [
+              cur,
+              info.available ?? 0,
+            ]),
+          )}
+          defaultCurrency={
+            isFiltered
+              ? activeCurrency
+              : (currenciesWithBalance[0]?.[0] ?? null)
+          }
           feeConfig={balance}
           onSuccess={() => {
             setShowForm(false);
