@@ -52,34 +52,168 @@
   margin: 0;
   padding: 0;
 }
+
+/* ══════════════════════════════════════════════════
+   GLOBAL FONT SIZING
+   Root font-size is 16px on desktop. Every rem-based
+   size in the app derives from this. Dropping it to
+   15px on tablets and 14px on phones shrinks the
+   entire UI proportionally — headings, buttons,
+   cards, everything — without touching any component.
+══════════════════════════════════════════════════ */
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
+
+@media (max-width: 860px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  html {
+    font-size: 13.5px;
+  }
+}
+
 body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
   transition:
     background 0.2s ease,
     color 0.2s ease;
 }
+
 a {
   color: inherit;
   text-decoration: none;
 }
+
 input,
 button,
 select,
 textarea {
   font-family: var(--font-body);
+  /* Prevent iOS Safari from zooming on focus (requires >=16px on the input) */
+  font-size: inherit;
 }
+
+/* ══════════════════════════════════════════════════
+   WEIGHT SOFTENING
+   Display font (Syne) ships very heavy. Weights 800/900
+   look aggressive on small phone screens where the
+   glyphs occupy few pixels. Capping at 700 for display
+   keeps the industrial identity but reads cleaner on
+   mobile. Body font (DM Sans) rarely needs more than
+   600 in practice.
+══════════════════════════════════════════════════ */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  /* Clamp weights globally — everything that would
+     have been 800/900 drops to 700 on mobile */
+}
+
+h1 {
+  font-weight: 800;
+  font-size: 1.75rem;
+}
+h2 {
+  font-weight: 750;
+  font-size: 1.5rem;
+}
+h3 {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+h4 {
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+h5 {
+  font-weight: 700;
+  font-size: 1rem;
+}
+h6 {
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 860px) {
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+  h3 {
+    font-size: 1.15rem;
+  }
+  h4 {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+  h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  h3 {
+    font-size: 1.05rem;
+  }
+  h4 {
+    font-size: 0.975rem;
+  }
+  h5,
+  h6 {
+    font-size: 0.9rem;
+  }
+}
+
+/* Fallback for browsers that don't support 750 */
+@supports not (font-weight: 750) {
+  h2 {
+    font-weight: 700;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   SELECTION / SCROLLBARS
+══════════════════════════════════════════════════ */
 ::selection {
   background: var(--orange);
   color: #fff;
 }
+
 ::-webkit-scrollbar {
   width: 5px;
 }
@@ -94,6 +228,9 @@ textarea {
   background: var(--border-hover);
 }
 
+/* ══════════════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════════════ */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -119,6 +256,28 @@ textarea {
   }
 }
 
+/* ══════════════════════════════════════════════════
+   TRANSLATE / ACCESSIBILITY
+══════════════════════════════════════════════════ */
 [translate="no"] {
   /* intentionally empty */
+}
+
+#root,
+.notranslate {
+  translate: no;
+}
+
+/* ══════════════════════════════════════════════════
+   REDUCED MOTION
+══════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
