@@ -156,6 +156,89 @@ const TABS = {
   HIRER: ["About", "Reviews"],
 };
 
+/* ── Skeleton loader ─────────────────────────────────────── */
+function ProfileSkeleton() {
+  return (
+    <div className={s.page}>
+      <div className={s.layout}>
+        {/* Sidebar skeleton */}
+        <aside className={s.sidebar}>
+          {/* Hero card skeleton */}
+          <div className={s.heroCard}>
+            <div className={s.heroBg} />
+            <div className={`${s.skelAvatar} ${s.skeleton}`} />
+            <div className={s.heroInfo}>
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW60}`} />
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW30}`} />
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW45}`} />
+            </div>
+            <div className={`${s.skelBtn} ${s.skeleton}`} />
+          </div>
+
+          {/* Stats card skeleton */}
+          <div className={s.statsCard}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={s.statItem}>
+                <div className={`${s.skelIcon} ${s.skeleton}`} />
+                <div className={s.skelStatText}>
+                  <div className={`${s.skelLine} ${s.skeleton} ${s.skelW70}`} />
+                  <div className={`${s.skelLine} ${s.skeleton} ${s.skelW40}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Info card skeleton */}
+          <div className={s.infoCard}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={s.infoRow}>
+                <div className={`${s.skelIcon} ${s.skeleton}`} />
+                <div className={`${s.skelLine} ${s.skeleton} ${s.skelW65}`} />
+              </div>
+            ))}
+          </div>
+
+          {/* Categories skeleton */}
+          <div className={s.catCard}>
+            <div className={`${s.skelLine} ${s.skeleton} ${s.skelW35}`} />
+            <div className={s.catWrap}>
+              <div className={`${s.skelPill} ${s.skeleton}`} />
+              <div className={`${s.skelPill} ${s.skeleton}`} />
+              <div className={`${s.skelPill} ${s.skeleton}`} />
+            </div>
+          </div>
+        </aside>
+
+        {/* Main skeleton */}
+        <section className={s.main}>
+          {/* Tab bar skeleton */}
+          <div className={s.tabBar}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={`${s.skelTab} ${s.skeleton}`} />
+            ))}
+          </div>
+
+          {/* Content skeleton */}
+          <div className={s.tabContent}>
+            <div className={s.bioCard}>
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW25}`} />
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW100}`} />
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW90}`} />
+              <div className={`${s.skelLine} ${s.skeleton} ${s.skelW75}`} />
+            </div>
+
+            <div className={s.badgeRow}>
+              <div className={`${s.skelBadge} ${s.skeleton}`} />
+              <div className={`${s.skelBadge} ${s.skeleton}`} />
+              <div className={`${s.skelBadge} ${s.skeleton}`} />
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main component ──────────────────────────────────────── */
 export default function UserProfile() {
   const { id } = useParams();
@@ -215,20 +298,8 @@ export default function UserProfile() {
     setEditing(false);
   };
 
-  /* ── Loading ── */
-  if (loading)
-    return (
-      <div className={s.page}>
-        <div className={s.loadingWrap}>
-          <Loader2
-            size={32}
-            className={s.spin}
-            style={{ color: "var(--orange)" }}
-          />
-          <p>Loading profile…</p>
-        </div>
-      </div>
-    );
+  /* ── Loading — skeleton instead of spinner ── */
+  if (loading) return <ProfileSkeleton />;
 
   /* ── Error ── */
   if (error || !user)
@@ -777,13 +848,25 @@ export default function UserProfile() {
             {tab === "Reviews" && (
               <div className={s.tabContent}>
                 {reviewsLoading ? (
-                  <div className={s.reviewsLoading}>
-                    <Loader2
-                      size={22}
-                      className={s.spin}
-                      style={{ color: "var(--orange)" }}
-                    />
-                    <span>Loading reviews…</span>
+                  <div className={s.reviewsList}>
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className={s.reviewCard}>
+                        <div className={s.reviewTop}>
+                          <div className={`${s.skelAvatarSm} ${s.skeleton}`} />
+                          <div className={s.reviewMeta}>
+                            <div
+                              className={`${s.skelLine} ${s.skeleton} ${s.skelW45}`}
+                            />
+                            <div
+                              className={`${s.skelLine} ${s.skeleton} ${s.skelW30}`}
+                            />
+                          </div>
+                        </div>
+                        <div
+                          className={`${s.skelLine} ${s.skeleton} ${s.skelW100}`}
+                        />
+                      </div>
+                    ))}
                   </div>
                 ) : reviews.length === 0 ? (
                   <div className={s.emptyCard}>
