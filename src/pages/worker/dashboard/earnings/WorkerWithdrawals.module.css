@@ -2,13 +2,13 @@
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 .page {
-  max-width: 1000px;
-  padding: 24px 16px 48px;
+  /* Edge alignment inherited from WorkerLayout.content — matches dashboard */
   display: flex;
   flex-direction: column;
   gap: 20px;
   animation: fadeUp 0.4s ease both;
-  margin: 0 auto;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* ─── Toast ───────────────────────────────────────────────────────────────── */
@@ -26,6 +26,11 @@
   top: 12px;
   z-index: 50;
 }
+.toastMsg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .toast_success {
   background: var(--green-dim);
   border: 1px solid rgba(34, 197, 94, 0.25);
@@ -40,9 +45,11 @@
   background: none;
   border: none;
   color: inherit;
-  font-size: 16px;
   cursor: pointer;
   opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .toastClose:hover {
   opacity: 1;
@@ -78,6 +85,9 @@
   margin: 0;
 }
 .withdrawBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 20px;
   background: var(--orange);
   color: #000;
@@ -109,6 +119,9 @@
   gap: 10px;
 }
 .walletSectionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -410,6 +423,9 @@
   border-top: 1px solid var(--border);
 }
 .pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 16px;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -443,8 +459,11 @@
   text-align: center;
 }
 .emptyIcon {
-  font-size: 36px;
+  color: var(--text-muted);
   opacity: 0.5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .emptyTitle {
   font-family: var(--font-display);
@@ -529,7 +548,6 @@
   color: var(--text-dim);
   width: 30px;
   height: 30px;
-  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -692,7 +710,13 @@
   background: var(--orange-dim);
 }
 .methodCardIcon {
-  font-size: 22px;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.methodCardActive .methodCardIcon {
+  color: var(--orange);
 }
 .methodCardLabel {
   font-size: 11px;
@@ -812,9 +836,10 @@
   font-style: italic;
 }
 .bankDropdownChevron {
-  font-size: 10px;
   color: var(--text-muted);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 .bankTypeChip {
   font-size: 9px;
@@ -847,9 +872,10 @@
   border-bottom: 1px solid var(--border);
 }
 .bankSearchIcon {
-  font-size: 13px;
   color: var(--text-muted);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 .bankSearchInput {
   flex: 1;
@@ -867,9 +893,10 @@
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 12px;
   cursor: pointer;
   padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
 }
 .bankSearchClear:hover {
   color: var(--text);
@@ -986,8 +1013,10 @@
   color: var(--text-muted);
 }
 .bankNoResults span {
-  font-size: 24px;
   opacity: 0.5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .bankNoResults p {
   margin: 0;
@@ -1008,6 +1037,9 @@
   min-width: 0;
 }
 .verifiedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 700;
   color: var(--green);
@@ -1017,6 +1049,9 @@
   padding: 8px 12px;
 }
 .verifyErrTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--red);
   background: var(--red-dim);
@@ -1040,7 +1075,7 @@
   font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.15s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
@@ -1137,6 +1172,10 @@
 .cryptoWarning p {
   margin: 0;
 }
+.cryptoWarning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 
 /* ─── Amount ──────────────────────────────────────────────────────────────── */
 .amountWrap {
@@ -1228,11 +1267,20 @@
   font-size: 12px;
   color: var(--text-dim);
   line-height: 1.6;
+  align-items: flex-start;
+}
+.formInfo svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-muted);
 }
 .formInfo p {
   margin: 0;
 }
 .errorBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 14px;
   background: var(--red-dim);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -1275,7 +1323,9 @@
   text-align: center;
 }
 .successIcon {
-  font-size: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .successTitle {
   font-family: var(--font-display);
@@ -1441,6 +1491,9 @@
   color: var(--text-muted);
 }
 .printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: var(--orange-dim);
   border: 1px solid rgba(249, 115, 22, 0.2);
   border-radius: 6px;
@@ -1474,6 +1527,17 @@
   border-radius: 50%;
   display: inline-block;
   animation: spin 0.7s linear infinite;
+}
+
+/* ─── Icon colors ─────────────────────────────────────────────────────────── */
+.iconGreen {
+  color: var(--green);
+}
+.iconOrange {
+  color: var(--orange);
+}
+.iconRed {
+  color: var(--red);
 }
 
 /* ─── Animations ──────────────────────────────────────────────────────────── */
@@ -1549,9 +1613,6 @@
 
 /* ─── Tablet (≥ 640px) ────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
-  .page {
-    padding: 28px 24px 48px;
-  }
   .summaryGrid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -1579,9 +1640,6 @@
 
 /* ─── Desktop (≥ 900px) ───────────────────────────────────────────────────── */
 @media (min-width: 900px) {
-  .page {
-    padding: 32px 0 48px;
-  }
   .tableHead {
     display: grid;
     grid-template-columns: 1.4fr 1.5fr 1.5fr 1fr 1.2fr 1fr 0.8fr;
@@ -1642,7 +1700,6 @@
 
 /* ─── PIN additions ───────────────────────────────────────────────────────── */
 
-/* Hidden real input */
 .pinHiddenInput {
   position: absolute;
   opacity: 0;
@@ -1651,7 +1708,6 @@
   pointer-events: none;
 }
 
-/* PIN field wrapper */
 .pinField {
   display: flex;
   flex-direction: column;
@@ -1664,7 +1720,6 @@
   font-weight: 500;
 }
 
-/* 4 boxes row */
 .pinBoxes {
   display: flex;
   gap: 10px;
@@ -1722,7 +1777,6 @@
   animation: shake 0.3s ease;
 }
 
-/* Attempts hint next to section label */
 .pinAttemptsHint {
   font-size: 10px;
   font-weight: 600;
@@ -1733,7 +1787,6 @@
   letter-spacing: 0;
 }
 
-/* Forgot PIN link */
 .pinForgotBtn {
   background: none;
   border: none;
@@ -1754,7 +1807,6 @@
   opacity: 1;
 }
 
-/* PIN status loading bar */
 .pinStatusLoading {
   display: flex;
   align-items: center;
@@ -1764,7 +1816,6 @@
   color: var(--text-muted);
 }
 
-/* PIN setup screen */
 .pinSetupBox {
   display: flex;
   flex-direction: column;
@@ -1775,7 +1826,9 @@
 }
 
 .pinSetupIcon {
-  font-size: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pinSetupTitle {
@@ -1794,7 +1847,6 @@
   margin: 0;
 }
 
-/* Pin boxes centered in setup screen */
 .pinSetupBox .pinBoxes {
   justify-content: center;
 }
@@ -1828,7 +1880,6 @@
   cursor: not-allowed;
 }
 
-/* PIN locked screen */
 .pinLockedBox {
   display: flex;
   flex-direction: column;
@@ -1839,7 +1890,9 @@
 }
 
 .pinLockedIcon {
-  font-size: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pinLockedTitle {
@@ -1858,7 +1911,6 @@
   margin: 0;
 }
 
-/* Shake animation for wrong pin */
 @keyframes shake {
   0%,
   100% {
@@ -1878,7 +1930,6 @@
   }
 }
 
-/* Responsive — larger PIN boxes on tablet+ */
 @media (min-width: 640px) {
   .pinBox {
     width: 60px;

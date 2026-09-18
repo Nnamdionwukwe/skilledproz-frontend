@@ -9,6 +9,26 @@
 //   - 4-digit withdrawal PIN verification before every payout
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  FiCreditCard,
+  FiSmartphone,
+  FiGlobe,
+  FiSearch,
+  FiX,
+  FiChevronDown,
+  FiChevronUp,
+  FiLock,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiInfo,
+  FiArrowUp,
+  FiDollarSign,
+  FiRefreshCw,
+  FiChevronLeft,
+  FiChevronRight,
+  FiPrinter,
+} from "react-icons/fi";
+import { SiBitcoin } from "react-icons/si";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import api from "../../../../lib/api";
 import s from "./WorkerWithdrawals.module.css";
@@ -120,7 +140,7 @@ const CURRENCY_METHODS = {
       key: "ng_bank",
       method: "bank_transfer",
       label: "Nigerian Bank / Fintech",
-      icon: "🏦",
+      Icon: FiCreditCard,
       desc: "GTBank, Kuda, OPay, Access, Zenith, UBA, PalmPay +70 more",
       country: "NG",
       hasBankList: true,
@@ -129,7 +149,7 @@ const CURRENCY_METHODS = {
       key: "ng_mtn",
       method: "mobile_money",
       label: "MTN MoMo Nigeria",
-      icon: "📡",
+      Icon: FiSmartphone,
       desc: "MTN mobile money",
       country: "NG",
       provider: "MTN",
@@ -138,7 +158,7 @@ const CURRENCY_METHODS = {
       key: "ng_airtel",
       method: "mobile_money",
       label: "Airtel Money Nigeria",
-      icon: "📲",
+      Icon: FiSmartphone,
       desc: "Airtel mobile money",
       country: "NG",
       provider: "Airtel",
@@ -147,7 +167,7 @@ const CURRENCY_METHODS = {
       key: "crypto",
       method: "crypto",
       label: "USDC / USDT",
-      icon: "₿",
+      Icon: SiBitcoin,
       desc: "Stablecoin — any country",
     },
   ],
@@ -156,7 +176,7 @@ const CURRENCY_METHODS = {
       key: "gh_bank",
       method: "bank_transfer",
       label: "Ghana Bank",
-      icon: "🏦",
+      Icon: FiCreditCard,
       desc: "GCB, Ecobank, Fidelity, ADB +more",
       country: "GH",
       hasBankList: true,
@@ -165,7 +185,7 @@ const CURRENCY_METHODS = {
       key: "gh_mtn",
       method: "mobile_money",
       label: "MTN MoMo Ghana",
-      icon: "📱",
+      Icon: FiSmartphone,
       desc: "MTN Mobile Money",
       country: "GH",
       provider: "MTN",
@@ -174,7 +194,7 @@ const CURRENCY_METHODS = {
       key: "gh_voda",
       method: "mobile_money",
       label: "Vodafone Cash",
-      icon: "📱",
+      Icon: FiSmartphone,
       desc: "Vodafone Cash Ghana",
       country: "GH",
       provider: "Vodafone",
@@ -183,7 +203,7 @@ const CURRENCY_METHODS = {
       key: "gh_airtel",
       method: "mobile_money",
       label: "AirtelTigo",
-      icon: "📱",
+      Icon: FiSmartphone,
       desc: "AirtelTigo Money Ghana",
       country: "GH",
       provider: "AirtelTigo",
@@ -192,7 +212,7 @@ const CURRENCY_METHODS = {
       key: "crypto",
       method: "crypto",
       label: "USDC / USDT",
-      icon: "₿",
+      Icon: SiBitcoin,
       desc: "Stablecoin — any country",
     },
   ],
@@ -201,7 +221,7 @@ const CURRENCY_METHODS = {
       key: "ke_mpesa",
       method: "mobile_money",
       label: "M-Pesa Kenya",
-      icon: "📱",
+      Icon: FiSmartphone,
       desc: "Safaricom M-Pesa",
       country: "KE",
       provider: "mpesa",
@@ -210,7 +230,7 @@ const CURRENCY_METHODS = {
       key: "ke_bank",
       method: "bank_transfer",
       label: "Kenya Bank",
-      icon: "🏦",
+      Icon: FiCreditCard,
       desc: "Equity, KCB, Co-op +more",
       country: "KE",
       hasBankList: true,
@@ -219,7 +239,7 @@ const CURRENCY_METHODS = {
       key: "crypto",
       method: "crypto",
       label: "USDC / USDT",
-      icon: "₿",
+      Icon: SiBitcoin,
       desc: "Stablecoin — any country",
     },
   ],
@@ -228,7 +248,7 @@ const CURRENCY_METHODS = {
       key: "za_bank",
       method: "bank_transfer",
       label: "South Africa Bank",
-      icon: "🏦",
+      Icon: FiCreditCard,
       desc: "FNB, Absa, Standard Bank +more",
       country: "ZA",
       hasBankList: true,
@@ -237,7 +257,7 @@ const CURRENCY_METHODS = {
       key: "crypto",
       method: "crypto",
       label: "USDC / USDT",
-      icon: "₿",
+      Icon: SiBitcoin,
       desc: "Stablecoin — any country",
     },
   ],
@@ -246,7 +266,7 @@ const CURRENCY_METHODS = {
       key: "tz_vodacom",
       method: "mobile_money",
       label: "Vodacom M-Pesa TZ",
-      icon: "📱",
+      Icon: FiSmartphone,
       desc: "M-Pesa Tanzania",
       country: "TZ",
       provider: "Vodacom",
@@ -255,7 +275,7 @@ const CURRENCY_METHODS = {
       key: "tz_airtel",
       method: "mobile_money",
       label: "Airtel Money TZ",
-      icon: "📡",
+      Icon: FiSmartphone,
       desc: "Airtel Tanzania",
       country: "TZ",
       provider: "Airtel",
@@ -264,7 +284,7 @@ const CURRENCY_METHODS = {
       key: "crypto",
       method: "crypto",
       label: "USDC / USDT",
-      icon: "₿",
+      Icon: SiBitcoin,
       desc: "Stablecoin — any country",
     },
   ],
@@ -273,7 +293,7 @@ const CURRENCY_METHODS = {
       key: "ug_mtn",
       method: "mobile_money",
       label: "MTN MoMo Uganda",
-      icon: "📡",
+      Icon: FiSmartphone,
       desc: "MTN Uganda",
       country: "UG",
       provider: "MTN",
@@ -282,7 +302,7 @@ const CURRENCY_METHODS = {
       key: "ug_airtel",
       method: "mobile_money",
       label: "Airtel Money Uganda",
-      icon: "📲",
+      Icon: FiSmartphone,
       desc: "Airtel Uganda",
       country: "UG",
       provider: "Airtel",
@@ -291,7 +311,7 @@ const CURRENCY_METHODS = {
       key: "crypto",
       method: "crypto",
       label: "USDC / USDT",
-      icon: "₿",
+      Icon: SiBitcoin,
       desc: "Stablecoin — any country",
     },
   ],
@@ -302,7 +322,7 @@ const INTL_METHODS = [
     key: "intl_bank",
     method: "bank_transfer",
     label: "International Wire",
-    icon: "🌐",
+    Icon: FiGlobe,
     desc: "SWIFT / IBAN — 150+ countries",
     isInternational: true,
   },
@@ -310,7 +330,7 @@ const INTL_METHODS = [
     key: "crypto",
     method: "crypto",
     label: "USDC / USDT",
-    icon: "₿",
+    Icon: SiBitcoin,
     desc: "Stablecoin — any country",
   },
 ];
@@ -410,7 +430,6 @@ function PinInput({ value, onChange, disabled, label, error }) {
             {value.length > i ? "●" : ""}
           </div>
         ))}
-        {/* Hidden actual input */}
         <input
           ref={hiddenRef}
           type="password"
@@ -433,7 +452,7 @@ function PinInput({ value, onChange, disabled, label, error }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PIN SETUP SCREEN — shown inside the modal when worker hasn't set a PIN yet
+// PIN SETUP SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 function PinSetupScreen({ onDone }) {
   const [newPin, setNewPin] = useState("");
@@ -450,7 +469,7 @@ function PinSetupScreen({ onDone }) {
     try {
       await api.post("/payments/pin/set", { pin: newPin });
       setSuccess(true);
-      setTimeout(onDone, 1200); // brief success flash then back to form
+      setTimeout(onDone, 1200);
     } catch (err) {
       setError(err.response?.data?.message ?? "Failed to set PIN.");
     } finally {
@@ -461,7 +480,9 @@ function PinSetupScreen({ onDone }) {
   if (success) {
     return (
       <div className={s.pinSetupBox}>
-        <span className={s.pinSetupIcon}>✅</span>
+        <span className={s.pinSetupIcon}>
+          <FiCheckCircle size={48} className={s.iconGreen} />
+        </span>
         <h3 className={s.pinSetupTitle}>PIN Set!</h3>
         <p className={s.pinSetupSub}>Returning to withdrawal form…</p>
       </div>
@@ -470,7 +491,9 @@ function PinSetupScreen({ onDone }) {
 
   return (
     <div className={s.pinSetupBox}>
-      <span className={s.pinSetupIcon}>🔐</span>
+      <span className={s.pinSetupIcon}>
+        <FiLock size={48} className={s.iconOrange} />
+      </span>
       <h3 className={s.pinSetupTitle}>Set a Withdrawal PIN</h3>
       <p className={s.pinSetupSub}>
         You need a 4-digit PIN to authorise withdrawals. Set it once — you'll
@@ -574,13 +597,17 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
             </span>
           )}
         </div>
-        <span className={s.bankDropdownChevron}>{open ? "▲" : "▼"}</span>
+        <span className={s.bankDropdownChevron}>
+          {open ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+        </span>
       </button>
 
       {open && (
         <div className={s.bankDropdownMenu}>
           <div className={s.bankSearchWrap}>
-            <span className={s.bankSearchIcon}>🔍</span>
+            <span className={s.bankSearchIcon}>
+              <FiSearch size={14} />
+            </span>
             <input
               className={s.bankSearchInput}
               placeholder={`Search ${banks.length} banks…`}
@@ -594,7 +621,7 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
                 onClick={() => setSearch("")}
                 type="button"
               >
-                ✕
+                <FiX size={13} />
               </button>
             )}
           </div>
@@ -607,7 +634,9 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
           <div className={s.bankList}>
             {filtered.length === 0 ? (
               <div className={s.bankNoResults}>
-                <span>🔍</span>
+                <span>
+                  <FiSearch size={24} />
+                </span>
                 <p>No bank found for "{search}"</p>
                 <p className={s.bankNoResultsSub}>
                   Try a shorter name or bank code
@@ -712,8 +741,8 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
             <span className={s.receiptLogoMark}>SP</span>
             <span className={s.receiptLogoText}>SkilledProz</span>
           </div>
-          <button className={s.modalClose} onClick={onClose}>
-            ✕
+          <button className={s.modalClose} onClick={onClose} type="button">
+            <FiX size={14} />
           </button>
         </div>
         <div className={s.receiptTitle}>
@@ -758,7 +787,7 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
           <div className={s.breakRow}>
             <span>Withdrawal fee</span>
             {isFree ? (
-              <span className={s.feeZero}>Free 🎉</span>
+              <span className={s.feeZero}>Free</span>
             ) : (
               <span className={s.feeText}>
                 − {fmt(feeAmt, withdrawal.currency)} (
@@ -775,8 +804,13 @@ function ReceiptModal({ withdrawal, feeConfig, onClose }) {
         </div>
         <div className={s.receiptFooter}>
           <span>SkilledProz · Global Skills Marketplace</span>
-          <button className={s.printBtn} onClick={() => window.print()}>
-            Print / PDF
+          <button
+            className={s.printBtn}
+            onClick={() => window.print()}
+            type="button"
+          >
+            <FiPrinter size={12} />
+            <span>Print / PDF</span>
           </button>
         </div>
       </div>
@@ -822,11 +856,10 @@ function WithdrawalModal({
   // ── PIN state ─────────────────────────────────────────────────────────────
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
-  const [pinStatus, setPinStatus] = useState(null); // { pinSet, isLocked, attemptsRemaining }
+  const [pinStatus, setPinStatus] = useState(null);
   const [pinStatusLoading, setPinStatusLoading] = useState(true);
   const [showPinSetup, setShowPinSetup] = useState(false);
 
-  // Load pin status once on mount
   useEffect(() => {
     api
       .get("/payments/pin/status")
@@ -937,7 +970,6 @@ function WithdrawalModal({
       );
     if (!selMethod) return setError("Select a payout method.");
 
-    // ── PIN validation ─────────────────────────────────────────────────────
     if (!pin || pin.length < 4)
       return setPinError("Enter your 4-digit withdrawal PIN.");
     if (pinStatus?.isLocked)
@@ -967,7 +999,7 @@ function WithdrawalModal({
     }
 
     const payload = {
-      pin, // ← PIN included
+      pin,
       amount: amt,
       currency: currency.toUpperCase(),
       method: m,
@@ -1014,11 +1046,9 @@ function WithdrawalModal({
     } catch (err) {
       const msg =
         err.response?.data?.message ?? "Withdrawal failed. Please try again.";
-      // If wrong PIN, show in pin error slot and update attempts remaining
       if (err.response?.status === 401 || msg.toLowerCase().includes("pin")) {
         setPinError(msg);
         setPin("");
-        // Refresh lock status
         api
           .get("/payments/pin/status")
           .then((r) => setPinStatus(r.data.data))
@@ -1053,19 +1083,17 @@ function WithdrawalModal({
       <div className={s.formModal}>
         <div className={s.formModalHeader}>
           <h2 className={s.formModalTitle}>Request Payout</h2>
-          <button className={s.modalClose} onClick={onClose}>
-            ✕
+          <button className={s.modalClose} onClick={onClose} type="button">
+            <FiX size={14} />
           </button>
         </div>
 
-        {/* PIN status loading */}
         {pinStatusLoading && (
           <div className={s.pinStatusLoading}>
             <span className={s.spinnerSm} /> Checking PIN status…
           </div>
         )}
 
-        {/* PIN setup screen */}
         {!pinStatusLoading && showPinSetup && (
           <PinSetupScreen
             onDone={() => {
@@ -1075,10 +1103,11 @@ function WithdrawalModal({
           />
         )}
 
-        {/* Locked screen */}
         {!pinStatusLoading && !showPinSetup && pinStatus?.isLocked && (
           <div className={s.pinLockedBox}>
-            <span className={s.pinLockedIcon}>🔒</span>
+            <span className={s.pinLockedIcon}>
+              <FiLock size={48} className={s.iconRed} />
+            </span>
             <h3 className={s.pinLockedTitle}>PIN Locked</h3>
             <p className={s.pinLockedSub}>
               Too many wrong PIN attempts. Your withdrawal PIN is temporarily
@@ -1090,24 +1119,27 @@ function WithdrawalModal({
                 alignSelf: "center",
                 padding: "8px 24px",
                 width: "auto",
+                height: "auto",
               }}
               onClick={onClose}
+              type="button"
             >
               Close
             </button>
           </div>
         )}
 
-        {/* Normal form */}
         {!pinStatusLoading &&
           !showPinSetup &&
           !pinStatus?.isLocked &&
           (success ? (
             <div className={s.successBox}>
-              <span className={s.successIcon}>🎉</span>
+              <span className={s.successIcon}>
+                <FiCheckCircle size={52} className={s.iconGreen} />
+              </span>
               <h3 className={s.successTitle}>Withdrawal Submitted!</h3>
               <p className={s.successMsg}>{success}</p>
-              <button className={s.doneBtn} onClick={onClose}>
+              <button className={s.doneBtn} onClick={onClose} type="button">
                 Done
               </button>
             </div>
@@ -1169,22 +1201,27 @@ function WithdrawalModal({
               <div className={s.formSection}>
                 <p className={s.formSectionLabel}>Payout Method</p>
                 <div className={s.methodGrid}>
-                  {methods.map((m) => (
-                    <button
-                      key={m.key}
-                      type="button"
-                      className={`${s.methodCard} ${selMethod?.key === m.key ? s.methodCardActive : ""}`}
-                      onClick={() => {
-                        setSelMethod(m);
-                        setForm({});
-                        setVerifiedName(null);
-                      }}
-                    >
-                      <span className={s.methodCardIcon}>{m.icon}</span>
-                      <span className={s.methodCardLabel}>{m.label}</span>
-                      <span className={s.methodCardDesc}>{m.desc}</span>
-                    </button>
-                  ))}
+                  {methods.map((m) => {
+                    const IconComp = m.Icon;
+                    return (
+                      <button
+                        key={m.key}
+                        type="button"
+                        className={`${s.methodCard} ${selMethod?.key === m.key ? s.methodCardActive : ""}`}
+                        onClick={() => {
+                          setSelMethod(m);
+                          setForm({});
+                          setVerifiedName(null);
+                        }}
+                      >
+                        <span className={s.methodCardIcon}>
+                          <IconComp size={22} />
+                        </span>
+                        <span className={s.methodCardLabel}>{m.label}</span>
+                        <span className={s.methodCardDesc}>{m.desc}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1230,11 +1267,13 @@ function WithdrawalModal({
                           <div className={s.verifyStatus}>
                             {verifiedName ? (
                               <div className={s.verifiedTag}>
-                                ✅ {verifiedName}
+                                <FiCheckCircle size={13} />
+                                <span>{verifiedName}</span>
                               </div>
                             ) : verifyErr ? (
                               <div className={s.verifyErrTag}>
-                                ❌ {verifyErr}
+                                <FiAlertTriangle size={13} />
+                                <span>{verifyErr}</span>
                               </div>
                             ) : (
                               <span className={s.verifyHint}>
@@ -1334,7 +1373,7 @@ function WithdrawalModal({
                       </div>
                       {selMethod.provider && (
                         <div className={s.providerChip}>
-                          <span>{selMethod.icon}</span>
+                          <FiSmartphone size={13} />
                           <span>
                             Provider: <strong>{selMethod.provider}</strong>
                           </span>
@@ -1388,7 +1427,7 @@ function WithdrawalModal({
                         />
                       </div>
                       <div className={s.cryptoWarning}>
-                        <span>⚠️</span>
+                        <FiAlertTriangle size={14} />
                         <p>
                           Double-check the network matches your wallet. Sending
                           to the wrong network will result in permanent loss of
@@ -1444,7 +1483,7 @@ function WithdrawalModal({
                           <>
                             You receive{" "}
                             <strong className={s.amountPreviewFull}>
-                              {fmt(netAmt, currency)} — no fee 🎉
+                              {fmt(netAmt, currency)} — no fee
                             </strong>
                           </>
                         ) : (
@@ -1459,7 +1498,7 @@ function WithdrawalModal({
                   })()}
               </div>
 
-              {/* ── 4-DIGIT PIN SECTION ──────────────────────────────────── */}
+              {/* 4-DIGIT PIN SECTION */}
               <div className={s.formSection}>
                 <p className={s.formSectionLabel}>
                   Withdrawal PIN
@@ -1487,17 +1526,21 @@ function WithdrawalModal({
                   Forgot PIN? Reset it
                 </button>
               </div>
-              {/* ── END PIN SECTION ───────────────────────────────────────── */}
 
-              {error && <div className={s.errorBox}>⚠️ {error}</div>}
+              {error && (
+                <div className={s.errorBox}>
+                  <FiAlertTriangle size={14} />
+                  <span>{error}</span>
+                </div>
+              )}
 
               <div className={s.formInfo}>
-                <span>ℹ️</span>
+                <FiInfo size={14} />
                 <p>
                   Payouts processed within 1–3 business days ·{" "}
                   {(feeConfig?.withdrawalFeeRate ?? 0) === 0 ? (
                     <strong>
-                      No withdrawal fee — you keep 100% of your earnings 🎉
+                      No withdrawal fee — you keep 100% of your earnings
                     </strong>
                   ) : (
                     `${((feeConfig?.withdrawalFeeRate ?? 0) * 100).toFixed(0)}% withdrawal fee applies`
@@ -1516,7 +1559,13 @@ function WithdrawalModal({
                     <span className={s.spinner} /> Processing…
                   </>
                 ) : (
-                  `↑ Withdraw ${amount ? fmt(parseFloat(amount) || 0, currency) : ""}`
+                  <>
+                    <FiArrowUp size={15} />
+                    <span>
+                      Withdraw{" "}
+                      {amount ? fmt(parseFloat(amount) || 0, currency) : ""}
+                    </span>
+                  </>
                 )}
               </button>
             </form>
@@ -1527,7 +1576,7 @@ function WithdrawalModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT — unchanged except passing pinStatus awareness down
+// MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function WorkerWithdrawals() {
   const [balance, setBalance] = useState(null);
@@ -1605,11 +1654,20 @@ export default function WorkerWithdrawals() {
       <div className={s.page}>
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
-            <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+            <span className={s.toastMsg}>
+              {toast.type === "success" ? (
+                <FiCheckCircle size={14} />
+              ) : (
+                <FiAlertTriangle size={14} />
+              )}
+              <span>{toast.msg}</span>
             </span>
-            <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
+            <button
+              className={s.toastClose}
+              onClick={() => setToast(null)}
+              type="button"
+            >
+              <FiX size={14} />
             </button>
           </div>
         )}
@@ -1627,13 +1685,17 @@ export default function WorkerWithdrawals() {
             onClick={() => setShowForm(true)}
             disabled={currenciesWithBalance.length === 0 || loading}
           >
-            ↑ Withdraw Funds
+            <FiArrowUp size={14} />
+            <span>Withdraw Funds</span>
           </button>
         </div>
 
         {!loading && currenciesWithBalance.length > 0 && (
           <div className={s.currencyWallets}>
-            <p className={s.walletSectionLabel}>💳 Your Currency Wallets</p>
+            <p className={s.walletSectionLabel}>
+              <FiCreditCard size={12} />
+              <span>Your Currency Wallets</span>
+            </p>
             <div className={s.currencyWalletGrid}>
               {currenciesWithBalance.map(([cur, bal]) => {
                 const cm = CURRENCY_META[cur] ?? {
@@ -1660,6 +1722,7 @@ export default function WorkerWithdrawals() {
                         setSelectedCurrency(cur);
                         setShowForm(true);
                       }}
+                      type="button"
                     >
                       Withdraw
                     </button>
@@ -1727,7 +1790,9 @@ export default function WorkerWithdrawals() {
               [...Array(3)].map((_, i) => <div key={i} className={s.skRow} />)
             ) : history.length === 0 ? (
               <div className={s.empty}>
-                <span className={s.emptyIcon}>💸</span>
+                <span className={s.emptyIcon}>
+                  <FiDollarSign size={36} />
+                </span>
                 <p className={s.emptyTitle}>No withdrawals yet</p>
                 <p className={s.emptySub}>
                   Request your first payout when you have available balance.
@@ -1784,7 +1849,7 @@ export default function WorkerWithdrawals() {
                             </span>
                           ) : (
                             <span className={s.amountNetFree}>
-                              Full amount sent ✓
+                              Full amount sent
                             </span>
                           );
                         })()}
@@ -1798,6 +1863,7 @@ export default function WorkerWithdrawals() {
                       <button
                         className={s.receiptBtn}
                         onClick={() => setReceipt(w)}
+                        type="button"
                       >
                         Receipt
                       </button>
@@ -1813,8 +1879,10 @@ export default function WorkerWithdrawals() {
                 className={s.pageBtn}
                 disabled={page === 1}
                 onClick={() => loadData(page - 1)}
+                type="button"
               >
-                ← Prev
+                <FiChevronLeft size={13} />
+                <span>Prev</span>
               </button>
               <span className={s.pageInfo}>
                 {page} / {pages}
@@ -1823,8 +1891,10 @@ export default function WorkerWithdrawals() {
                 className={s.pageBtn}
                 disabled={page === pages}
                 onClick={() => loadData(page + 1)}
+                type="button"
               >
-                Next →
+                <span>Next</span>
+                <FiChevronRight size={13} />
               </button>
             </div>
           )}
