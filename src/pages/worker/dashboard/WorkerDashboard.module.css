@@ -14,7 +14,7 @@
 }
 
 /* ══════════════════════════════════════════════════
-   EARNINGS CARD — figure stays prominent
+   EARNINGS CARD — figure now smaller
 ══════════════════════════════════════════════════ */
 .earningsCard {
   background: var(--bg-card);
@@ -51,7 +51,7 @@
 }
 
 .earningsLabel {
-  font-size: 0.6875rem; /* 11px @ 16px root — matches hirer eyebrow */
+  font-size: 0.6875rem; /* 11px @ 16px root */
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -59,20 +59,21 @@
   margin-bottom: 0.375rem;
 }
 
+/* Was clamp(1.5rem, 3vw, 2.25rem) → now ~25% smaller */
 .earningsValue {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 800;
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.05em;
-  line-height: 1;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
   margin-bottom: 0.5rem;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .earningsMeta {
-  font-size: 0.75rem; /* 12px @ 16px root — matches hirer bookingMeta */
+  font-size: 0.75rem; /* 12px @ 16px root */
   color: var(--text-muted);
   display: flex;
   align-items: center;
@@ -89,8 +90,8 @@
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
   border-radius: 10px;
-  padding: 0.875rem 1.125rem;
-  min-width: 140px;
+  padding: 0.75rem 1rem;
+  min-width: 130px;
   flex-shrink: 0;
   position: relative;
   z-index: 1;
@@ -106,13 +107,14 @@
   margin-bottom: 0.25rem;
 }
 
+/* Was clamp(1rem, 2vw, 1.25rem) → now smaller */
 .pendingValue {
   font-family: var(--font-display);
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  font-weight: 800;
+  font-size: clamp(0.9375rem, 1.6vw, 1.125rem);
+  font-weight: 700;
   color: var(--orange);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -124,24 +126,14 @@
 }
 
 /* ══════════════════════════════════════════════════
-   STAT CARDS — match the Hirer dashboard sizing
-   These override the ui.card children so the small
-   stat tiles read at the same scale as the Hirer
-   dashboard's stats.
+   STAT CARDS — smaller values
 ══════════════════════════════════════════════════ */
-.statsRow :global(.statCardLabel),
-.statsRow :global(.statCardValue),
-.statsRow :global(.statCardSub) {
-  /* placeholder — replaced by the block below using attribute selectors */
-}
-
 .statsRow > div {
   min-width: 0;
 }
 
-/* Apply to the ui.card children within the worker dashboard only */
 .statsRow :global([class*="statCardLabel"]) {
-  font-size: 0.6875rem !important; /* 11px @ 16px root — matches hirer eyebrow */
+  font-size: 0.6875rem !important; /* 11px */
   font-weight: 600 !important;
   letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
@@ -150,19 +142,20 @@
   line-height: 1.2 !important;
 }
 
+/* Was clamp(1.5rem, 3.5vw, 2rem) → now ~25% smaller */
 .statsRow :global([class*="statCardValue"]) {
   font-family: var(--font-display) !important;
-  font-size: clamp(1.5rem, 3.5vw, 2rem) !important;
-  font-weight: 800 !important;
+  font-size: clamp(1.125rem, 2.4vw, 1.5rem) !important;
+  font-weight: 700 !important;
   color: var(--text) !important;
-  letter-spacing: -0.04em !important;
-  line-height: 1.1 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.15 !important;
   margin-bottom: 4px !important;
   word-break: break-word !important;
 }
 
 .statsRow :global([class*="statCardSub"]) {
-  font-size: 0.75rem !important; /* 12px @ 16px root */
+  font-size: 0.75rem !important; /* 12px */
   color: var(--text-muted) !important;
   line-height: 1.3 !important;
 }
@@ -174,7 +167,7 @@
 }
 
 /* ══════════════════════════════════════════════════
-   BOOKING ROW — matches Hirer dashboard sizes
+   BOOKING ROW
 ══════════════════════════════════════════════════ */
 .bookingItem {
   display: flex;
@@ -213,7 +206,7 @@
 }
 
 .bookingTitle {
-  font-size: 0.875rem; /* 14px @ 16px root */
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -224,7 +217,7 @@
 }
 
 .bookingMeta {
-  font-size: 0.75rem; /* 12px @ 16px root */
+  font-size: 0.75rem;
   color: var(--text-muted);
   line-height: 1.3;
   white-space: nowrap;
@@ -241,14 +234,14 @@
 }
 
 .bookingPay {
-  font-size: 0.8125rem; /* 13px @ 16px root */
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--green);
   white-space: nowrap;
 }
 
 /* ══════════════════════════════════════════════════
-   REVIEW ROW — matches Hirer card content sizes
+   REVIEW ROW
 ══════════════════════════════════════════════════ */
 .reviewItem {
   padding: 0.75rem 0;
@@ -270,7 +263,7 @@
 }
 
 .reviewerName {
-  font-size: 0.875rem; /* 14px @ 16px root */
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
   line-height: 1.3;
@@ -278,15 +271,14 @@
 }
 
 .reviewText {
-  font-size: 0.8125rem; /* 13px @ 16px root */
+  font-size: 0.8125rem;
   color: var(--text-dim);
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
 
 /* ══════════════════════════════════════════════════
-   COMPLETION CARD
-   Figure (% number) stays prominent; label smaller
+   COMPLETION CARD — % figure now smaller
 ══════════════════════════════════════════════════ */
 .completionCard {
   background: var(--bg-card);
@@ -305,17 +297,18 @@
 }
 
 .completionLabel {
-  font-size: 0.8125rem; /* 13px @ 16px root */
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-dim);
 }
 
+/* Was 1.25rem/800 → now 1rem/700 */
 .completionPct {
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--orange);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   flex-shrink: 0;
 }
 
@@ -345,7 +338,7 @@
 }
 
 /* ══════════════════════════════════════════════════
-   UPCOMING ROW
+   UPCOMING ROW — day figure now smaller
 ══════════════════════════════════════════════════ */
 .upcomingItem {
   display: flex;
@@ -367,16 +360,17 @@
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
   border-radius: 8px;
-  padding: 0.375rem 0.625rem;
+  padding: 0.3125rem 0.5rem;
   text-align: center;
-  min-width: 48px;
+  min-width: 42px;
   flex-shrink: 0;
 }
 
+/* Was 1.125rem/800 → now 0.9375rem/700 */
 .upcomingDay {
   font-family: var(--font-display);
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-size: 0.9375rem;
+  font-weight: 700;
   color: var(--orange);
   display: block;
   line-height: 1;
@@ -397,7 +391,7 @@
 }
 
 .upcomingTitle {
-  font-size: 0.875rem; /* 14px @ 16px root */
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 2px;
@@ -408,7 +402,7 @@
 }
 
 .upcomingMeta {
-  font-size: 0.75rem; /* 12px @ 16px root */
+  font-size: 0.75rem;
   color: var(--text-muted);
   line-height: 1.3;
   white-space: nowrap;
@@ -451,7 +445,7 @@
 }
 
 .barLabel {
-  font-size: 0.625rem; /* 10px @ 16px root */
+  font-size: 0.625rem;
   font-weight: 700;
   color: var(--text-muted);
   text-align: center;
@@ -460,7 +454,7 @@
 }
 
 /* ══════════════════════════════════════════════════
-   RESPONSIVE — grid collapses
+   RESPONSIVE
 ══════════════════════════════════════════════════ */
 @media (max-width: 1100px) {
   .statsRow {
@@ -482,9 +476,6 @@
   }
 }
 
-/* ══════════════════════════════════════════════════
-   RESPONSIVE — small phones (500px)
-══════════════════════════════════════════════════ */
 @media (max-width: 500px) {
   .statsRow {
     grid-template-columns: 1fr 1fr;
@@ -500,30 +491,32 @@
   .earningsPending {
     width: 100%;
     min-width: unset;
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 0.875rem;
   }
   .earningsValue {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
   }
   .pendingValue {
-    font-size: 1.125rem;
+    font-size: 0.9375rem;
+  }
+  .completionPct {
+    font-size: 0.9375rem;
+  }
+  .upcomingDay {
+    font-size: 0.875rem;
   }
 
-  /* Stat cards inside worker dashboard */
   .statsRow :global([class*="statCardValue"]) {
-    font-size: 1.5rem !important;
+    font-size: 1.125rem !important;
   }
   .statsRow :global([class*="statCardLabel"]) {
-    font-size: 0.625rem !important; /* 10px */
+    font-size: 0.625rem !important;
   }
   .statsRow :global([class*="statCardSub"]) {
-    font-size: 0.6875rem !important; /* 11px */
+    font-size: 0.6875rem !important;
   }
 }
 
-/* ══════════════════════════════════════════════════
-   RESPONSIVE — very small phones (400px)
-══════════════════════════════════════════════════ */
 @media (max-width: 400px) {
   .statsRow {
     grid-template-columns: 1fr 1fr;
@@ -537,13 +530,19 @@
   }
   .earningsPending {
     min-width: unset;
-    padding: 0.625rem 0.875rem;
+    padding: 0.5rem 0.75rem;
   }
   .earningsValue {
-    font-size: 1.5rem;
+    font-size: 1.125rem;
   }
   .pendingValue {
-    font-size: 1rem;
+    font-size: 0.875rem;
+  }
+  .completionPct {
+    font-size: 0.875rem;
+  }
+  .upcomingDay {
+    font-size: 0.8125rem;
   }
 
   .barChart {
@@ -557,7 +556,6 @@
     padding: 0.875rem 1rem;
   }
 
-  /* Booking & upcoming rows tighten padding */
   .bookingItem,
   .upcomingItem,
   .reviewItem {
@@ -565,20 +563,17 @@
   }
 
   .statsRow :global([class*="statCardValue"]) {
-    font-size: 1.375rem !important;
+    font-size: 1rem !important;
   }
   .statsRow :global([class*="statCardLabel"]) {
-    font-size: 0.5625rem !important; /* 9px */
+    font-size: 0.5625rem !important;
     letter-spacing: 0.1em !important;
   }
   .statsRow :global([class*="statCardSub"]) {
-    font-size: 0.625rem !important; /* 10px */
+    font-size: 0.625rem !important;
   }
 }
 
-/* ══════════════════════════════════════════════════
-   RESPONSIVE — tiny phones (360px)
-══════════════════════════════════════════════════ */
 @media (max-width: 360px) {
   .statsRow {
     grid-template-columns: 1fr;
@@ -593,7 +588,7 @@
   }
 
   .statsRow :global([class*="statCardValue"]) {
-    font-size: 1.5rem !important;
+    font-size: 1.125rem !important;
   }
   .statsRow :global([class*="statCardLabel"]) {
     font-size: 0.625rem !important;
@@ -603,12 +598,9 @@
   }
 }
 
-/* ══════════════════════════════════════════════════
-   LANDSCAPE PHONE
-══════════════════════════════════════════════════ */
 @media (max-height: 500px) and (orientation: landscape) {
   .earningsValue {
-    font-size: 1.5rem;
+    font-size: 1.125rem;
   }
   .barChart {
     height: 60px;
@@ -647,19 +639,4 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-}
-
-/* ══════════════════════════════════════════════════
-   SKELETON FALLBACK (loading state)
-   The worker dashboard loads SkeletonCard which uses
-   ui.card + ui.skeleton. These keep the loading state
-   visually consistent with the new tighter layout.
-══════════════════════════════════════════════════ */
-@keyframes shimmer {
-  0% {
-    background-position: -400px 0;
-  }
-  100% {
-    background-position: 400px 0;
-  }
 }
