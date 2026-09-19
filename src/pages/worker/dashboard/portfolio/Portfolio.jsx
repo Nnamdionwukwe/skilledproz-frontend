@@ -10,6 +10,7 @@ import {
   FiPlus,
   FiRefreshCw,
   FiX,
+  FiMaximize2,
 } from "react-icons/fi";
 import styles from "./Portfolio.module.css";
 import api from "../../../../lib/api";
@@ -56,9 +57,7 @@ function VideoIntro({ currentUrl, onUpdate }) {
     form.append("file", file);
 
     try {
-      const res = await api.post("/workers/video-intro", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.post("/workers/video-intro", form);
       setSuccess("Video intro uploaded!");
       onUpdate?.(res.data.data.videoUrl);
     } catch {
@@ -178,7 +177,6 @@ function VideoIntro({ currentUrl, onUpdate }) {
         </p>
       )}
 
-      {/* Confirm delete video modal */}
       <ConfirmationModal
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
@@ -205,6 +203,7 @@ export default function PortfolioPage() {
   const [msg, setMsg] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [lightboxItem, setLightboxItem] = useState(null);
 
   function fetchWorker() {
     if (!user?.id) {
@@ -223,6 +222,22 @@ export default function PortfolioPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // Escape key closes the lightbox
+  useEffect(() => {
+    if (!lightboxItem) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setLightboxItem(null);
+    };
+    window.addEventListener("keydown", onKey);
+    // Prevent background scroll while lightbox is open
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightboxItem]);
+
   const portfolio = worker?.portfolio ?? [];
   const videoUrl = worker?.videoIntroUrl ?? null;
 
@@ -234,19 +249,22 @@ export default function PortfolioPage() {
     }
     setSaving(true);
     setMsg(null);
+
     try {
       const fd = new FormData();
       fd.append("image", form.file);
       fd.append("title", form.title);
       if (form.description) fd.append("description", form.description);
+
       await api.post("/workers/portfolio", fd);
+
       setForm({ title: "", description: "", file: null });
       setMsg({ type: "success", text: "Portfolio item added!" });
       fetchWorker();
     } catch (err) {
       setMsg({
         type: "error",
-        text: err.response?.data?.message || "Upload failed",
+        text: err.response?.data?.message || err.message || "Upload failed",
       });
     } finally {
       setSaving(false);
@@ -400,14 +418,22 @@ export default function PortfolioPage() {
             <div className={styles.grid}>
               {portfolio.map((item) => (
                 <div key={item.id} className={styles.portfolioCard}>
-                  <div className={styles.imgWrap}>
+                  <button
+                    type="button"
+                    className={styles.imgWrap}
+                    onClick={() => setLightboxItem(item)}
+                    aria-label={`View ${item.title} full screen`}
+                  >
                     <img
                       src={item.imageUrl}
                       alt={item.title}
                       className={styles.img}
                       loading="lazy"
                     />
-                  </div>
+                    <span className={styles.imgOverlay}>
+                      <FiMaximize2 size={18} />
+                    </span>
+                  </button>
                   <div className={styles.cardBody}>
                     <p className={styles.itemTitle}>{item.title}</p>
                     {item.description && (
@@ -434,6 +460,50 @@ export default function PortfolioPage() {
           )}
         </div>
       </div>
+
+      {/* ── Fullscreen image lightbox ── */}
+      {lightboxItem && (
+        <div
+          className={styles.lightbox}
+          onClick={() => setLightboxItem(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightboxItem.title}
+        >
+          <button
+            type="button"
+            className={styles.lightboxClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxItem(null);
+            }}
+            aria-label="Close"
+          >
+            <FiX size={22} />
+          </button>
+
+          <div
+            className={styles.lightboxContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={lightboxItem.imageUrl}
+              alt={lightboxItem.title}
+              className={styles.lightboxImg}
+            />
+            {(lightboxItem.title || lightboxItem.description) && (
+              <div className={styles.lightboxCaption}>
+                <p className={styles.lightboxTitle}>{lightboxItem.title}</p>
+                {lightboxItem.description && (
+                  <p className={styles.lightboxDesc}>
+                    {lightboxItem.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Confirm delete portfolio item modal ── */}
       <ConfirmationModal

@@ -3,7 +3,10 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
-  headers: { "Content-Type": "application/json" },
+  // ✅ NO global Content-Type — Axios auto-detects per request:
+  //    - Plain objects   → application/json
+  //    - FormData        → multipart/form-data; boundary=...
+  //    - URLSearchParams → application/x-www-form-urlencoded
 });
 
 api.interceptors.request.use((config) => {
@@ -98,7 +101,7 @@ export const googleAuth = {
   getAuthUrl: () => api.get("/auth/google/url"),
 
   /**
-   * Sign in with a Google ID token (from @react-oauth/google popup flow).
+   * Sign in with a Google ID token from @react-oauth/google popup flow).
    * Returns: { accessToken, refreshToken, user, isNewUser }
    */
   signInWithToken: (idToken) => api.post("/auth/google", { idToken }),
