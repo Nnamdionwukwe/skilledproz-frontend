@@ -1,9 +1,29 @@
+// src/pages/worker/certifications/CertificationsPage.jsx
 import { useEffect, useState } from "react";
+import {
+  FiAward,
+  FiUploadCloud,
+  FiPlus,
+  FiFileText,
+  FiImage,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiX,
+  FiMaximize2,
+  FiExternalLink,
+  FiCalendar,
+  FiUser,
+  FiTrash2,
+} from "react-icons/fi";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
 import WorkerLayout from "../../../components/layout/WorkerLayout";
-import ui from "../../../components/ui/ui.module.css";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import styles from "./Certifications.module.css";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
 function fmtDate(d) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-NG", {
@@ -13,22 +33,27 @@ function fmtDate(d) {
   });
 }
 
+const isExpired = (d) => d && new Date(d) < new Date();
+
+const isImageUrl = (url) => {
+  if (!url) return false;
+  const clean = url.split("?")[0].toLowerCase();
+  return /\.(jpg|jpeg|png|webp|gif)$/.test(clean);
+};
+
+const isPdfUrl = (url) => {
+  if (!url) return false;
+  const clean = url.split("?")[0].toLowerCase();
+  return /\.pdf$/.test(clean);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main page
+// ─────────────────────────────────────────────────────────────────────────────
 export default function CertificationsPage() {
   const { user } = useAuthStore();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const refetch = () =>
-    api.get(`/workers/${user?.id}`).then((res) => setData(res.data.data));
-  useEffect(() => {
-    if (user?.id) {
-      api.get(`/workers/${user?.id}`).then((res) => {
-        setData(res.data.data);
-        setLoading(false);
-      });
-    }
-  }, [user?.id]);
-  const certs = data?.worker?.certifications || [];
-
   const [form, setForm] = useState({
     name: "",
     issuedBy: "",
@@ -38,6 +63,42 @@ export default function CertificationsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [lightbox, setLightbox] = useState(null); // { url, name }
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const fetchData = () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    api
+      .get(`/workers/${user.id}`)
+      .then((res) => setData(res.data.data))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Escape key closes the lightbox
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lightbox]);
+
+  const certs = data?.worker?.certifications || [];
 
   const set = (k) => (e) =>
     setForm((f) => ({
@@ -56,15 +117,9 @@ export default function CertificationsPage() {
       if (form.issueDate) fd.append("issueDate", form.issueDate);
       if (form.expiryDate) fd.append("expiryDate", form.expiryDate);
       if (form.file) fd.append("document", form.file);
-      const token = localStorage.getItem("accessToken");
-      await fetch(
-        `${import.meta.env.VITE_API_URL || "/api"}/workers/certifications`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        },
-      );
+
+      await api.post("/workers/certifications", fd);
+
       setForm({
         name: "",
         issuedBy: "",
@@ -73,205 +128,354 @@ export default function CertificationsPage() {
         file: null,
       });
       setMsg({ type: "success", text: "Certification added!" });
-      refetch();
+      fetchData();
     } catch (err) {
-      setMsg({ type: "error", text: err.message });
+      setMsg({
+        type: "error",
+        text: err.response?.data?.message || err.message || "Upload failed",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const isExpired = (d) => d && new Date(d) < new Date();
+  const confirmDelete = async () => {
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
+    if (!id) return;
+    try {
+      await api.delete(`/workers/certifications/${id}`);
+      setMsg({ type: "success", text: "Certification removed." });
+      fetchData();
+    } catch {
+      setMsg({ type: "error", text: "Delete failed. Please try again." });
+    }
+  };
 
   return (
     <WorkerLayout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-        {/* Add form */}
-        <div className={ui.card}>
-          <div className={ui.cardTitle} style={{ marginBottom: "1.125rem" }}>
-            Add Certification
+      <div className={styles.page}>
+        {/* ── Page header ── */}
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>Certifications</h1>
+            <p className={styles.pageSub}>
+              Add your trade certifications to build trust with clients
+            </p>
           </div>
+        </div>
+
+        {/* ── Add form ── */}
+        <div className={styles.card}>
+          <h3 className={styles.sectionTitle}>
+            <FiPlus className={styles.sectionIcon} />
+            Add Certification
+          </h3>
+
           {msg && (
             <div
-              style={{
-                padding: "0.75rem 1rem",
-                borderRadius: "var(--radius-md)",
-                marginBottom: "1rem",
-                background:
-                  msg.type === "success"
-                    ? "var(--green-light)"
-                    : "var(--red-light)",
-                color: msg.type === "success" ? "var(--green)" : "var(--red)",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
+              className={`${styles.alert} ${
+                msg.type === "success" ? styles.alertSuccess : styles.alertError
+              }`}
+              role="status"
             >
-              {msg.text}
+              {msg.type === "success" ? (
+                <FiCheckCircle size={16} />
+              ) : (
+                <FiAlertCircle size={16} />
+              )}
+              <span>{msg.text}</span>
+              <button
+                type="button"
+                className={styles.alertClose}
+                onClick={() => setMsg(null)}
+                aria-label="Dismiss"
+              >
+                <FiX size={14} />
+              </button>
             </div>
           )}
-          <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1rem",
-              }}
-            >
-              <div className={ui.inputGroup}>
-                <label className={ui.label}>Certification Name *</label>
+
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.formRow}>
+              <div className={styles.formField}>
+                <label className={styles.label}>
+                  Certification Name <span className={styles.req}>*</span>
+                </label>
                 <input
-                  className={ui.input}
+                  className={styles.input}
                   required
                   placeholder="e.g. City & Guilds Electrical"
                   value={form.name}
                   onChange={set("name")}
                 />
               </div>
-              <div className={ui.inputGroup}>
-                <label className={ui.label}>Issued By *</label>
+              <div className={styles.formField}>
+                <label className={styles.label}>
+                  Issued By <span className={styles.req}>*</span>
+                </label>
                 <input
-                  className={ui.input}
+                  className={styles.input}
                   required
                   placeholder="e.g. City & Guilds UK"
                   value={form.issuedBy}
                   onChange={set("issuedBy")}
                 />
               </div>
-              <div className={ui.inputGroup}>
-                <label className={ui.label}>Issue Date</label>
+              <div className={styles.formField}>
+                <label className={styles.label}>Issue Date</label>
                 <input
-                  className={ui.input}
+                  className={styles.input}
                   type="date"
                   value={form.issueDate}
                   onChange={set("issueDate")}
                 />
               </div>
-              <div className={ui.inputGroup}>
-                <label className={ui.label}>Expiry Date</label>
+              <div className={styles.formField}>
+                <label className={styles.label}>Expiry Date</label>
                 <input
-                  className={ui.input}
+                  className={styles.input}
                   type="date"
                   value={form.expiryDate}
                   onChange={set("expiryDate")}
                 />
               </div>
             </div>
-            <div className={ui.inputGroup}>
-              <label className={ui.label}>
+
+            <div className={styles.formField}>
+              <label className={styles.label}>
                 Certificate Document (optional)
               </label>
-              <input
-                className={ui.input}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={set("file")}
-              />
+              <label className={styles.fileDrop}>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  className={styles.hiddenInput}
+                  onChange={set("file")}
+                />
+                <FiUploadCloud size={22} className={styles.fileIcon} />
+                <span className={styles.fileText}>
+                  {form.file
+                    ? form.file.name
+                    : "Click to upload PDF, JPG, or PNG"}
+                </span>
+              </label>
             </div>
+
             <button
               type="submit"
-              className={`${ui.btn} ${ui.btnPrimary}`}
+              className={styles.submitBtn}
               disabled={saving}
             >
-              {saving ? "Saving..." : "+ Add Certification"}
+              {saving ? (
+                "Saving..."
+              ) : (
+                <>
+                  <FiPlus size={16} /> Add Certification
+                </>
+              )}
             </button>
           </form>
         </div>
 
-        {/* List */}
-        <div className={ui.card}>
-          <div className={ui.cardTitle} style={{ marginBottom: "1.125rem" }}>
-            My Certifications ({certs.length})
-          </div>
+        {/* ── List ── */}
+        <div className={styles.card}>
+          <h3 className={styles.sectionTitle}>
+            <FiAward className={styles.sectionIcon} />
+            My Certifications
+            <span className={styles.count}>({certs.length})</span>
+          </h3>
+
           {loading ? (
-            <div>
+            <div className={styles.list}>
               {[1, 2].map((i) => (
-                <div
-                  key={i}
-                  className={ui.skeleton}
-                  style={{ height: 72, marginBottom: 12 }}
-                />
+                <div key={i} className={styles.skCard} />
               ))}
             </div>
           ) : certs.length === 0 ? (
-            <div className={ui.empty}>
-              <div className={ui.emptyIcon}>🏅</div>
-              <div className={ui.emptyTitle}>No certifications added</div>
-              <div className={ui.emptyDesc}>
+            <div className={styles.empty}>
+              <span className={styles.emptyIcon}>
+                <FiAward />
+              </span>
+              <p className={styles.emptyTitle}>No certifications added</p>
+              <p className={styles.emptySub}>
                 Add your trade certifications to build trust with clients
-              </div>
+              </p>
             </div>
           ) : (
-            certs.map((c) => (
-              <div
-                key={c.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  padding: "1rem 0",
-                  borderBottom: "1px solid var(--surface-2)",
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "var(--radius-md)",
-                    background: isExpired(c.expiryDate)
-                      ? "var(--red-light)"
-                      : "var(--green-light)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.5rem",
-                    flexShrink: 0,
-                  }}
-                >
-                  🏅
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: "0.9375rem",
-                      marginBottom: "2px",
-                    }}
-                  >
-                    {c.name}
-                  </div>
-                  <div style={{ fontSize: "0.8125rem", color: "var(--ink-4)" }}>
-                    Issued by {c.issuedBy} · {fmtDate(c.issueDate)}
-                    {c.expiryDate && ` · Expires ${fmtDate(c.expiryDate)}`}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {isExpired(c.expiryDate) && (
-                    <span className={`${ui.badge} ${ui.badgeCancelled}`}>
-                      Expired
-                    </span>
-                  )}
-                  {c.documentUrl && (
-                    <a
-                      href={c.documentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`${ui.btn} ${ui.btnOutline} ${ui.btnSm}`}
+            <div className={styles.list}>
+              {certs.map((c) => {
+                const expired = isExpired(c.expiryDate);
+                const hasDoc = !!c.documentUrl;
+                const img = hasDoc && isImageUrl(c.documentUrl);
+                const pdf = hasDoc && isPdfUrl(c.documentUrl);
+
+                return (
+                  <div key={c.id} className={styles.certCard}>
+                    <div
+                      className={`${styles.certIcon} ${
+                        expired ? styles.certIconExpired : ""
+                      }`}
                     >
-                      View
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))
+                      <FiAward size={22} />
+                    </div>
+
+                    <div className={styles.certBody}>
+                      <div className={styles.certTitleRow}>
+                        <span className={styles.certName}>{c.name}</span>
+                        {expired && (
+                          <span className={styles.badgeExpired}>Expired</span>
+                        )}
+                      </div>
+
+                      <div className={styles.certMeta}>
+                        <span className={styles.metaItem}>
+                          <FiUser size={12} /> {c.issuedBy || "—"}
+                        </span>
+                        {c.issueDate && (
+                          <span className={styles.metaItem}>
+                            <FiCalendar size={12} /> {fmtDate(c.issueDate)}
+                          </span>
+                        )}
+                        {c.expiryDate && (
+                          <span
+                            className={`${styles.metaItem} ${
+                              expired ? styles.metaItemExpired : ""
+                            }`}
+                          >
+                            <FiCalendar size={12} /> Expires{" "}
+                            {fmtDate(c.expiryDate)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className={styles.certActions}>
+                      {hasDoc && img && (
+                        <button
+                          type="button"
+                          className={styles.iconBtn}
+                          onClick={() =>
+                            setLightbox({
+                              url: c.documentUrl,
+                              name: c.name,
+                              type: "image",
+                            })
+                          }
+                          aria-label={`View ${c.name} full screen`}
+                        >
+                          <FiMaximize2 size={15} />
+                          <span className={styles.btnLabel}>View</span>
+                        </button>
+                      )}
+
+                      {hasDoc && pdf && (
+                        <button
+                          type="button"
+                          className={styles.iconBtn}
+                          onClick={() =>
+                            setLightbox({
+                              url: c.documentUrl,
+                              name: c.name,
+                              type: "pdf",
+                            })
+                          }
+                          aria-label={`View ${c.name} full screen`}
+                        >
+                          <FiFileText size={15} />
+                          <span className={styles.btnLabel}>View</span>
+                        </button>
+                      )}
+
+                      {hasDoc && !img && !pdf && (
+                        <a
+                          href={c.documentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={styles.iconBtn}
+                          aria-label={`Open ${c.name}`}
+                        >
+                          <FiExternalLink size={15} />
+                          <span className={styles.btnLabel}>Open</span>
+                        </a>
+                      )}
+
+                      <button
+                        type="button"
+                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                        onClick={() => setConfirmDeleteId(c.id)}
+                        aria-label={`Delete ${c.name}`}
+                      >
+                        <FiTrash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
+
+      {/* ── Fullscreen viewer ── */}
+      {lightbox && (
+        <div
+          className={styles.lightbox}
+          onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.name}
+        >
+          <button
+            type="button"
+            className={styles.lightboxClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(null);
+            }}
+            aria-label="Close"
+          >
+            <FiX size={22} />
+          </button>
+
+          <div
+            className={styles.lightboxContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {lightbox.type === "pdf" ? (
+              <iframe
+                src={lightbox.url}
+                title={lightbox.name}
+                className={styles.lightboxPdf}
+              />
+            ) : (
+              <img
+                src={lightbox.url}
+                alt={lightbox.name}
+                className={styles.lightboxImg}
+              />
+            )}
+
+            {lightbox.name && (
+              <div className={styles.lightboxCaption}>
+                <p className={styles.lightboxTitle}>{lightbox.name}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm delete modal ── */}
+      <ConfirmationModal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Delete certification?"
+        message="This certification and its document will be permanently removed. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+      />
     </WorkerLayout>
   );
 }
