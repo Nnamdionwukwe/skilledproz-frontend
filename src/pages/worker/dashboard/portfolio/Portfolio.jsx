@@ -1,10 +1,13 @@
+// src/pages/worker/portfolio/PortfolioPage.jsx
 import { useState, useEffect, useRef } from "react";
 import styles from "./Portfolio.module.css";
 import api from "../../../../lib/api";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
 import { useAuthStore } from "../../../../store/authStore";
 
-// ── Video Intro sub-component ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Video Intro sub-component
+// ─────────────────────────────────────────────────────────────────────────────
 function VideoIntro({ currentUrl, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentUrl || null);
@@ -19,15 +22,24 @@ function VideoIntro({ currentUrl, onUpdate }) {
   async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 100 * 1024 * 1024)
-      return setError("Video must be under 100MB.");
-    if (!file.type.startsWith("video/"))
-      return setError("Please upload a video file (MP4, MOV, WebM).");
+
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Video must be under 100MB.");
+      return;
+    }
+    if (!file.type.startsWith("video/")) {
+      setError("Please upload a video file (MP4, MOV, WebM).");
+      return;
+    }
+
     setPreview(URL.createObjectURL(file));
     setUploading(true);
     setError("");
+    setSuccess("");
+
     const form = new FormData();
     form.append("file", file);
+
     try {
       const res = await api.post("/workers/video-intro", form, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -39,15 +51,18 @@ function VideoIntro({ currentUrl, onUpdate }) {
       setPreview(currentUrl || null);
     } finally {
       setUploading(false);
+      // Reset the input so the same file can be re-selected if needed
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
   async function handleDelete() {
-    if (!confirm("Remove your video intro?")) return;
+    if (!window.confirm("Remove your video intro?")) return;
     try {
       await api.delete("/workers/video-intro");
       setPreview(null);
       setSuccess("Video intro removed.");
+      setError("");
       onUpdate?.(null);
     } catch {
       setError("Failed to remove.");
@@ -65,9 +80,16 @@ function VideoIntro({ currentUrl, onUpdate }) {
 
       {preview ? (
         <div className={styles.videoWrap}>
-          <video src={preview} className={styles.video} controls playsInline />
+          <video
+            src={preview}
+            className={styles.video}
+            controls
+            playsInline
+            preload="metadata"
+          />
           <div className={styles.videoActions}>
             <button
+              type="button"
               className={styles.reuploadBtn}
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
@@ -80,7 +102,12 @@ function VideoIntro({ currentUrl, onUpdate }) {
                 "Replace Video"
               )}
             </button>
-            <button className={styles.deleteBtn} onClick={handleDelete}>
+            <button
+              type="button"
+              className={styles.deleteBtn}
+              onClick={handleDelete}
+              disabled={uploading}
+            >
               Remove
             </button>
           </div>
@@ -88,7 +115,15 @@ function VideoIntro({ currentUrl, onUpdate }) {
       ) : (
         <div
           className={styles.dropzone}
-          onClick={() => fileRef.current?.click()}
+          onClick={() => !uploading && fileRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (!uploading) fileRef.current?.click();
+            }
+          }}
         >
           <span className={styles.dropIcon}>🎥</span>
           <p className={styles.dropTitle}>
@@ -107,19 +142,22 @@ function VideoIntro({ currentUrl, onUpdate }) {
         ref={fileRef}
         type="file"
         accept="video/*"
-        style={{ display: "none" }}
+        className={styles.hiddenInput}
         onChange={handleFile}
       />
+
       {error && <p className={styles.videoError}>⚠️ {error}</p>}
       {success && <p className={styles.videoSuccess}>✅ {success}</p>}
     </div>
   );
 }
 
-// ── Main Portfolio page ───────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Portfolio page
+// ─────────────────────────────────────────────────────────────────────────────
 export default function PortfolioPage() {
   const { user } = useAuthStore();
-  const [worker, setWorker] = useState(null); // ← null guard fixed
+  const [worker, setWorker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ title: "", description: "", file: null });
   const [saving, setSaving] = useState(false);
@@ -127,7 +165,10 @@ export default function PortfolioPage() {
   const [deletingId, setDeletingId] = useState(null);
 
   function fetchWorker() {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
     api
       .get(`/workers/${user.id}`)
       .then((res) => setWorker(res.data.data?.worker ?? null))
@@ -137,16 +178,18 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     fetchWorker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // Safe: derive portfolio only after worker is loaded
   const portfolio = worker?.portfolio ?? [];
   const videoUrl = worker?.videoIntroUrl ?? null;
 
   async function handleUpload(e) {
     e.preventDefault();
-    if (!form.file)
-      return setMsg({ type: "error", text: "Please select an image" });
+    if (!form.file) {
+      setMsg({ type: "error", text: "Please select an image" });
+      return;
+    }
     setSaving(true);
     setMsg(null);
     try {
@@ -169,7 +212,7 @@ export default function PortfolioPage() {
   }
 
   async function handleDelete(id) {
-    if (!confirm("Delete this portfolio item?")) return;
+    if (!window.confirm("Delete this portfolio item?")) return;
     setDeletingId(id);
     try {
       await api.delete(`/workers/portfolio/${id}`);
@@ -184,6 +227,16 @@ export default function PortfolioPage() {
   return (
     <WorkerLayout>
       <div className={styles.page}>
+        {/* ── Page header ── */}
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>Portfolio</h1>
+            <p className={styles.pageSub}>
+              Showcase your best work with photos and a video intro
+            </p>
+          </div>
+        </div>
+
         {/* ── Video intro section ── */}
         <VideoIntro
           currentUrl={videoUrl}
@@ -198,7 +251,10 @@ export default function PortfolioPage() {
 
           {msg && (
             <div
-              className={`${styles.alert} ${msg.type === "success" ? styles.alertSuccess : styles.alertError}`}
+              className={`${styles.alert} ${
+                msg.type === "success" ? styles.alertSuccess : styles.alertError
+              }`}
+              role="status"
             >
               {msg.text}
             </div>
@@ -230,6 +286,7 @@ export default function PortfolioPage() {
                 />
               </div>
             </div>
+
             <div className={styles.formField}>
               <label className={styles.label}>Description (optional)</label>
               <input
@@ -241,6 +298,7 @@ export default function PortfolioPage() {
                 }
               />
             </div>
+
             <button
               type="submit"
               className={styles.uploadBtn}
@@ -281,6 +339,7 @@ export default function PortfolioPage() {
                       src={item.imageUrl}
                       alt={item.title}
                       className={styles.img}
+                      loading="lazy"
                     />
                   </div>
                   <div className={styles.cardBody}>
@@ -289,6 +348,7 @@ export default function PortfolioPage() {
                       <p className={styles.itemDesc}>{item.description}</p>
                     )}
                     <button
+                      type="button"
                       className={styles.deleteItemBtn}
                       onClick={() => handleDelete(item.id)}
                       disabled={deletingId === item.id}
