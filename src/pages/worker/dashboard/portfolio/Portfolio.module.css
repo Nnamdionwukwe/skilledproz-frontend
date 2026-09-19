@@ -594,3 +594,114 @@
     }
   }
 }
+
+/* ── Add these to Portfolio.module.css ── */
+
+/* Section title with icon */
+.sectionIcon {
+  color: var(--orange);
+  font-size: 1.05em;
+  margin-right: 0.5rem;
+  vertical-align: -2px;
+}
+
+/* Error / success messages with icons */
+.videoError,
+.videoSuccess {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 600;
+}
+
+/* Alert with icon + close button layout */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  padding-right: 2.25rem;
+}
+
+.alert svg {
+  flex-shrink: 0;
+}
+
+.alert > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.alertClose {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+
+.alertClose:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Icon-only dropzone — bigger, softer */
+.dropIcon {
+  font-size: clamp(2.25rem, 8vw, 2.75rem);
+  color: var(--orange);
+  opacity: 0.75;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Empty icon color */
+.emptyIcon {
+  font-size: clamp(2.25rem, 8vw, 2.75rem);
+  opacity: 0.5;
+  color: var(--text-dim);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Delete item button — inline icon + label */
+.deleteItemBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Upload button — inline icon + label */
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* Reupload + delete video buttons — inline icons */
+.reuploadBtn,
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+/* Reduced motion already covers these, no change needed */

@@ -1,8 +1,20 @@
 // src/pages/worker/portfolio/PortfolioPage.jsx
 import { useState, useEffect, useRef } from "react";
+import {
+  FiVideo,
+  FiUploadCloud,
+  FiImage,
+  FiTrash2,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiPlus,
+  FiRefreshCw,
+  FiX,
+} from "react-icons/fi";
 import styles from "./Portfolio.module.css";
 import api from "../../../../lib/api";
 import WorkerLayout from "../../../../components/layout/WorkerLayout";
+import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import { useAuthStore } from "../../../../store/authStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,6 +25,7 @@ function VideoIntro({ currentUrl, onUpdate }) {
   const [preview, setPreview] = useState(currentUrl || null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -25,10 +38,12 @@ function VideoIntro({ currentUrl, onUpdate }) {
 
     if (file.size > 100 * 1024 * 1024) {
       setError("Video must be under 100MB.");
+      setSuccess("");
       return;
     }
     if (!file.type.startsWith("video/")) {
       setError("Please upload a video file (MP4, MOV, WebM).");
+      setSuccess("");
       return;
     }
 
@@ -51,13 +66,12 @@ function VideoIntro({ currentUrl, onUpdate }) {
       setPreview(currentUrl || null);
     } finally {
       setUploading(false);
-      // Reset the input so the same file can be re-selected if needed
       if (fileRef.current) fileRef.current.value = "";
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm("Remove your video intro?")) return;
+  async function confirmDelete() {
+    setConfirmOpen(false);
     try {
       await api.delete("/workers/video-intro");
       setPreview(null);
@@ -72,7 +86,10 @@ function VideoIntro({ currentUrl, onUpdate }) {
   return (
     <div className={styles.videoSection}>
       <div className={styles.sectionHeader}>
-        <h3 className={styles.sectionTitle}>🎬 Video Introduction</h3>
+        <h3 className={styles.sectionTitle}>
+          <FiVideo className={styles.sectionIcon} />
+          Video Introduction
+        </h3>
         <p className={styles.sectionSub}>
           Record a 60-second intro to stand out. Hirers love it.
         </p>
@@ -99,16 +116,18 @@ function VideoIntro({ currentUrl, onUpdate }) {
                   <span className={styles.spinner} /> Uploading...
                 </>
               ) : (
-                "Replace Video"
+                <>
+                  <FiRefreshCw size={14} /> Replace Video
+                </>
               )}
             </button>
             <button
               type="button"
               className={styles.deleteBtn}
-              onClick={handleDelete}
+              onClick={() => setConfirmOpen(true)}
               disabled={uploading}
             >
-              Remove
+              <FiTrash2 size={14} /> Remove
             </button>
           </div>
         </div>
@@ -125,7 +144,9 @@ function VideoIntro({ currentUrl, onUpdate }) {
             }
           }}
         >
-          <span className={styles.dropIcon}>🎥</span>
+          <span className={styles.dropIcon}>
+            <FiUploadCloud />
+          </span>
           <p className={styles.dropTitle}>
             {uploading ? "Uploading..." : "Upload your intro video"}
           </p>
@@ -146,8 +167,28 @@ function VideoIntro({ currentUrl, onUpdate }) {
         onChange={handleFile}
       />
 
-      {error && <p className={styles.videoError}>⚠️ {error}</p>}
-      {success && <p className={styles.videoSuccess}>✅ {success}</p>}
+      {error && (
+        <p className={styles.videoError}>
+          <FiAlertCircle size={14} /> {error}
+        </p>
+      )}
+      {success && (
+        <p className={styles.videoSuccess}>
+          <FiCheckCircle size={14} /> {success}
+        </p>
+      )}
+
+      {/* Confirm delete video modal */}
+      <ConfirmationModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Remove video intro?"
+        message="This will permanently delete your video introduction. Hirers will no longer see it on your profile."
+        confirmLabel="Remove"
+        cancelLabel="Keep it"
+        confirmVariant="danger"
+      />
     </div>
   );
 }
@@ -163,6 +204,7 @@ export default function PortfolioPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   function fetchWorker() {
     if (!user?.id) {
@@ -211,8 +253,11 @@ export default function PortfolioPage() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!window.confirm("Delete this portfolio item?")) return;
+  async function confirmDelete() {
+    const id = pendingDelete;
+    setPendingDelete(null);
+    if (!id) return;
+
     setDeletingId(id);
     try {
       await api.delete(`/workers/portfolio/${id}`);
@@ -256,7 +301,20 @@ export default function PortfolioPage() {
               }`}
               role="status"
             >
-              {msg.text}
+              {msg.type === "success" ? (
+                <FiCheckCircle size={16} />
+              ) : (
+                <FiAlertCircle size={16} />
+              )}
+              <span>{msg.text}</span>
+              <button
+                type="button"
+                className={styles.alertClose}
+                onClick={() => setMsg(null)}
+                aria-label="Dismiss"
+              >
+                <FiX size={14} />
+              </button>
             </div>
           )}
 
@@ -304,7 +362,13 @@ export default function PortfolioPage() {
               className={styles.uploadBtn}
               disabled={saving}
             >
-              {saving ? "Uploading..." : "+ Add to Portfolio"}
+              {saving ? (
+                "Uploading..."
+              ) : (
+                <>
+                  <FiPlus size={16} /> Add to Portfolio
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -324,7 +388,9 @@ export default function PortfolioPage() {
             </div>
           ) : portfolio.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.emptyIcon}>🖼️</span>
+              <span className={styles.emptyIcon}>
+                <FiImage />
+              </span>
               <p className={styles.emptyTitle}>No portfolio items yet</p>
               <p className={styles.emptySub}>
                 Upload photos of your completed work to attract more clients
@@ -350,10 +416,16 @@ export default function PortfolioPage() {
                     <button
                       type="button"
                       className={styles.deleteItemBtn}
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setPendingDelete(item.id)}
                       disabled={deletingId === item.id}
                     >
-                      {deletingId === item.id ? "Deleting..." : "🗑 Remove"}
+                      {deletingId === item.id ? (
+                        "Deleting..."
+                      ) : (
+                        <>
+                          <FiTrash2 size={13} /> Remove
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -362,6 +434,18 @@ export default function PortfolioPage() {
           )}
         </div>
       </div>
+
+      {/* ── Confirm delete portfolio item modal ── */}
+      <ConfirmationModal
+        isOpen={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete portfolio item?"
+        message="This portfolio item will be permanently removed from your profile. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+      />
     </WorkerLayout>
   );
 }
