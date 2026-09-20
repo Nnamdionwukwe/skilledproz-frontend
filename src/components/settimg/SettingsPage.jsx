@@ -1,11 +1,11 @@
 // src/pages/Settings/SettingsPage.jsx
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
-import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import styles from "./SettingsPage.module.css";
 import {
   useCurrency,
@@ -43,6 +43,9 @@ import {
   FiShieldOff,
   FiSearch,
   FiMapPin,
+  FiAlertCircle,
+  FiPauseCircle,
+  FiTrash2,
 } from "react-icons/fi";
 
 const ALL_LANGUAGES = [
@@ -215,10 +218,233 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [saving, setSaving] = useState("");
 
-  // NEW: password confirmation for account deactivation
+  // Deactivation state (both flows)
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBlockerModal, setShowBlockerModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deactivationCheck, setDeactivationCheck] = useState(null);
+  const [checkLoading, setCheckLoading] = useState(false);
+
+  const fileRef = useRef();
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Load profile on mount ──────────────────────────────────────────────
+  useEffect(() => {
+    api
+      .get("/settings/profile")
+      .then((res) => {
+        const u = res.data.data.user;
+        setProfile(u);
+        setForm({
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          bio: u.bio || "",
+          phone: u.phone || "",
+          country: u.country || "",
+          city: u.city || "",
+          state: u.state || "",
+          address: u.address || "",
+          currency: u.currency || "USD",
+          gender: u.gender || "",
+        });
+        setHiringPrefs({
+          defaultEstimatedUnit: u.defaultEstUnit || "hours",
+          defaultEstimatedValue: u.defaultEstValue || "",
+        });
+        setNotifs({
+          notifBookings: u.notifBookings ?? true,
+          notifMessages: u.notifMessages ?? true,
+          notifPayments: u.notifPayments ?? true,
+          notifReviews: u.notifReviews ?? true,
+          notifMarketing: u.notifMarketing ?? false,
+        });
+        setPrivacy({
+          profileVisible: u.profileVisible ?? true,
+          showPhone: u.showPhone ?? false,
+          showLocation: u.showLocation ?? true,
+          showEmail: u.showEmail ?? false,
+          showGender: u.showGender ?? false,
+        });
+        if (u.workerProfile) {
+          const wp = u.workerProfile;
+          setWorkForm({
+            title: wp.title || "",
+            description: wp.description || "",
+            yearsExperience: wp.yearsExperience || "",
+            serviceRadius: wp.serviceRadius || "25",
+            isAvailable: wp.isAvailable ?? true,
+          });
+          setPricing({
+            hourlyRate: wp.hourlyRate || "",
+            dailyRate: wp.dailyRate || "",
+            weeklyRate: wp.weeklyRate || "",
+            monthlyRate: wp.monthlyRate || "",
+            yearlyRate: wp.yearlyRate || "",
+            customRate: wp.customRate || "",
+            customRateLabel: wp.customRateLabel || "",
+            pricingNote: wp.pricingNote || "",
+            currency: wp.currency || "USD",
+          });
+        }
+        if (u.hirerProfile) {
+          setCompanyForm({
+            companyName: u.hirerProfile.companyName || "",
+            companySize: u.hirerProfile.companySize || "",
+            website: u.hirerProfile.website || "",
+          });
+        }
+        updateUser?.(u);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ── Refetch deactivation check whenever Security tab opens ─────────────
+  useEffect(() => {
+    if (tab === "security") {
+      refreshCheck();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  // ── Activity + Security prefetch ───────────────────────────────────────
+  useEffect(() => {
+    if (tab === "activity" && !activity) {
+      api
+        .get("/settings/activity")
+        .then((r) => setActivity(r.data.data))
+        .catch(() => {});
+    }
+    if (tab === "security" && !security) {
+      api
+        .get("/settings/security")
+        .then((r) => setSecurity(r.data.data))
+        .catch(() => {});
+    }
+    if (tab === "security" && pinStatus === null) {
+      api
+        .get("/payments/pin/status")
+        .then((r) => setPinStatus(r.data.data))
+        .catch(() => {});
+    }
+  }, [tab]);
+
+  async function refreshCheck() {
+    setCheckLoading(true);
+    try {
+      const r = await api.get("/settings/deactivation-check");
+      setDeactivationCheck(r.data.data);
+      return r.data.data;
+    } catch {
+      setDeactivationCheck({
+        canPause: true,
+        canDelete: true,
+        blockers: [],
+        currentState: { isPaused: false, deletionScheduledAt: null },
+      });
+      return null;
+    } finally {
+      setCheckLoading(false);
+    }
+  }
+
+  async function openPauseFlow() {
+    setCheckLoading(true);
+    const data = await refreshCheck();
+    setCheckLoading(false);
+
+    if (!data) {
+      showToast("Could not check your account status", "error");
+      return;
+    }
+    if (!data.canPause) {
+      setShowBlockerModal(true);
+      return;
+    }
+    setShowPauseModal(true);
+  }
+
+  async function openDeleteFlow() {
+    setCheckLoading(true);
+    const data = await refreshCheck();
+    setCheckLoading(false);
+
+    if (!data) {
+      showToast("Could not check your account status", "error");
+      return;
+    }
+    if (!data.canDelete) {
+      setShowBlockerModal(true);
+      return;
+    }
+    setShowDeleteModal(true);
+  }
+
+  async function confirmPause() {
+    if (!deletePassword) {
+      showToast("Please enter your password", "error");
+      return;
+    }
+    setSaving("pause");
+    try {
+      await api.post("/settings/pause", { password: deletePassword });
+      showToast("Account paused. Log back in any time to reactivate.");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1500);
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Failed to pause account",
+        "error",
+      );
+      setSaving("");
+    }
+  }
+
+  async function confirmDeleteAccount() {
+    if (!deletePassword) {
+      showToast("Please enter your password", "error");
+      return;
+    }
+    if (deleteConfirmText !== "DELETE") {
+      showToast('Please type "DELETE" to confirm', "error");
+      return;
+    }
+    setSaving("delete");
+    try {
+      await api.delete("/settings/account", {
+        data: {
+          password: deletePassword,
+          reason: deleteReason || undefined,
+          confirmDelete: "DELETE",
+        },
+      });
+      showToast("Account scheduled for deletion. Redirecting…");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1500);
+    } catch (err) {
+      const status = err.response?.status;
+      showToast(
+        err.response?.data?.message || "Failed to delete account",
+        "error",
+      );
+      if (status === 409) {
+        await refreshCheck();
+        setShowBlockerModal(true);
+      }
+      setSaving("");
+    }
+  }
 
   const [form, setForm] = useState({
     firstName: user?.firstName || "",
@@ -289,84 +515,6 @@ export default function SettingsPage() {
 
   const [activity, setActivity] = useState(null);
   const [security, setSecurity] = useState(null);
-
-  const [saving, setSaving] = useState("");
-  const fileRef = useRef();
-
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  useEffect(() => {
-    api
-      .get("/settings/profile")
-      .then((res) => {
-        const u = res.data.data.user;
-        setProfile(u);
-        setForm({
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
-          bio: u.bio || "",
-          phone: u.phone || "",
-          country: u.country || "",
-          city: u.city || "",
-          state: u.state || "",
-          address: u.address || "",
-          currency: u.currency || "USD",
-          gender: u.gender || "",
-        });
-        setHiringPrefs({
-          defaultEstimatedUnit: u.defaultEstUnit || "hours",
-          defaultEstimatedValue: u.defaultEstValue || "",
-        });
-        setNotifs({
-          notifBookings: u.notifBookings ?? true,
-          notifMessages: u.notifMessages ?? true,
-          notifPayments: u.notifPayments ?? true,
-          notifReviews: u.notifReviews ?? true,
-          notifMarketing: u.notifMarketing ?? false,
-        });
-        setPrivacy({
-          profileVisible: u.profileVisible ?? true,
-          showPhone: u.showPhone ?? false,
-          showLocation: u.showLocation ?? true,
-          showEmail: u.showEmail ?? false,
-          showGender: u.showGender ?? false,
-        });
-        if (u.workerProfile) {
-          const wp = u.workerProfile;
-          setWorkForm({
-            title: wp.title || "",
-            description: wp.description || "",
-            yearsExperience: wp.yearsExperience || "",
-            serviceRadius: wp.serviceRadius || "25",
-            isAvailable: wp.isAvailable ?? true,
-          });
-          setPricing({
-            hourlyRate: wp.hourlyRate || "",
-            dailyRate: wp.dailyRate || "",
-            weeklyRate: wp.weeklyRate || "",
-            monthlyRate: wp.monthlyRate || "",
-            yearlyRate: wp.yearlyRate || "",
-            customRate: wp.customRate || "",
-            customRateLabel: wp.customRateLabel || "",
-            pricingNote: wp.pricingNote || "",
-            currency: wp.currency || "USD",
-          });
-        }
-        if (u.hirerProfile) {
-          setCompanyForm({
-            companyName: u.hirerProfile.companyName || "",
-            companySize: u.hirerProfile.companySize || "",
-            website: u.hirerProfile.website || "",
-          });
-        }
-        updateUser?.(u);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   async function saveProfile() {
     setSaving("profile");
@@ -572,52 +720,6 @@ export default function SettingsPage() {
       setSaving("");
     }
   }
-
-  function openDeleteModal() {
-    if (!deletePassword) {
-      showToast("Please enter your password first", "error");
-      return;
-    }
-    setShowDeleteModal(true);
-  }
-
-  async function confirmDeleteAccount() {
-    setShowDeleteModal(false);
-    setSaving("delete");
-    try {
-      await api.delete("/settings/account", {
-        data: { password: deletePassword },
-      });
-      window.location.href = "/login";
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || "Failed to deactivate account",
-        "error",
-      );
-      setSaving("");
-    }
-  }
-
-  useEffect(() => {
-    if (tab === "activity" && !activity) {
-      api
-        .get("/settings/activity")
-        .then((r) => setActivity(r.data.data))
-        .catch(() => {});
-    }
-    if (tab === "security" && !security) {
-      api
-        .get("/settings/security")
-        .then((r) => setSecurity(r.data.data))
-        .catch(() => {});
-    }
-    if (tab === "security" && pinStatus === null) {
-      api
-        .get("/payments/pin/status")
-        .then((r) => setPinStatus(r.data.data))
-        .catch(() => {});
-    }
-  }, [tab]);
 
   return (
     <Layout>
@@ -1775,33 +1877,173 @@ export default function SettingsPage() {
                 </Card>
 
                 <Card
-                  title="Danger Zone"
+                  title="Account Status"
                   icon={<FiAlertTriangle size={20} />}
-                  desc="Irreversible actions"
+                  desc="Pause or permanently delete your account"
                 >
-                  <div className={styles.dangerBlock}>
-                    <div className={styles.dangerBody}>
-                      <p className={styles.dangerTitle}>Deactivate Account</p>
-                      <p className={styles.dangerDesc}>
-                        Your profile will be hidden and you'll be logged out.
-                        Contact support to reactivate.
-                      </p>
-                      <input
-                        className={`${styles.input} ${styles.dangerInput}`}
-                        type="password"
-                        placeholder="Enter your password to confirm"
-                        value={deletePassword}
-                        onChange={(e) => setDeletePassword(e.target.value)}
-                        autoComplete="current-password"
-                      />
+                  {/* Current state banner */}
+                  {deactivationCheck?.currentState?.deletionScheduledAt && (
+                    <div className={styles.stateBannerDanger}>
+                      <FiAlertCircle size={14} />
+                      <span>
+                        Your account is scheduled for permanent deletion on{" "}
+                        <strong>
+                          {new Date(
+                            deactivationCheck.currentState.deletionScheduledAt,
+                          ).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </strong>
+                        . Log in to cancel.
+                      </span>
+                      <button
+                        className={styles.stateBannerBtn}
+                        onClick={async () => {
+                          try {
+                            await api.post("/settings/cancel-deletion");
+                            showToast("Deletion cancelled. Welcome back!");
+                            setDeactivationCheck(null);
+                          } catch {
+                            showToast("Failed to cancel deletion", "error");
+                          }
+                        }}
+                      >
+                        Cancel deletion
+                      </button>
                     </div>
-                    <button
-                      className={styles.dangerBtn}
-                      onClick={openDeleteModal}
-                      disabled={saving === "delete"}
+                  )}
+
+                  {deactivationCheck?.currentState?.isPaused &&
+                    !deactivationCheck?.currentState?.deletionScheduledAt && (
+                      <div className={styles.stateBannerWarning}>
+                        <FiPauseCircle size={14} />
+                        <span>Your account is currently paused.</span>
+                        <button
+                          className={styles.stateBannerBtn}
+                          onClick={async () => {
+                            try {
+                              await api.post("/settings/resume");
+                              showToast("Account resumed. Welcome back!");
+                              setDeactivationCheck(null);
+                            } catch {
+                              showToast("Failed to resume account", "error");
+                            }
+                          }}
+                        >
+                          Resume account
+                        </button>
+                      </div>
+                    )}
+
+                  {/* Blocker notice */}
+                  {checkLoading ? (
+                    <div className={styles.eligibilityLoading}>
+                      <span className={styles.spinnerDark} />
+                      <span>Checking your account status…</span>
+                    </div>
+                  ) : deactivationCheck &&
+                    !deactivationCheck.canPause &&
+                    deactivationCheck.blockers.length > 0 ? (
+                    <div className={styles.blockerNotice}>
+                      <div className={styles.blockerNoticeHead}>
+                        <FiAlertTriangle size={16} />
+                        <span>
+                          {deactivationCheck.blockers.length} issue
+                          {deactivationCheck.blockers.length === 1
+                            ? ""
+                            : "s"}{" "}
+                          to resolve first
+                        </span>
+                      </div>
+                      <ul className={styles.blockerList}>
+                        {deactivationCheck.blockers.slice(0, 3).map((b) => (
+                          <li key={b.code}>
+                            <strong>{b.label}</strong>
+                            <span>{b.hint}</span>
+                          </li>
+                        ))}
+                        {deactivationCheck.blockers.length > 3 && (
+                          <li className={styles.blockerMore}>
+                            +{deactivationCheck.blockers.length - 3} more…
+                          </li>
+                        )}
+                      </ul>
+                      <button
+                        type="button"
+                        className={styles.blockerSeeAllBtn}
+                        onClick={() => setShowBlockerModal(true)}
+                      >
+                        See all blockers →
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Two options side by side */}
+                  <div className={styles.dangerGrid}>
+                    {/* Option A — Pause */}
+                    <div className={styles.dangerOption}>
+                      <div className={styles.dangerOptionHead}>
+                        <span className={styles.dangerOptionIcon}>
+                          <FiPauseCircle size={20} />
+                        </span>
+                        <div>
+                          <p className={styles.dangerOptionTitle}>
+                            Take a break
+                          </p>
+                          <p className={styles.dangerOptionSub}>
+                            Temporary · Reversible
+                          </p>
+                        </div>
+                      </div>
+                      <p className={styles.dangerOptionDesc}>
+                        Hide your profile and pause new bookings. Your data is
+                        saved. Log back in any time to reactivate your account.
+                      </p>
+                      <button
+                        type="button"
+                        className={styles.dangerOptionBtn}
+                        onClick={openPauseFlow}
+                        disabled={saving === "pause" || checkLoading}
+                      >
+                        {saving === "pause" ? "Pausing…" : "Pause Account"}
+                      </button>
+                    </div>
+
+                    {/* Option B — Delete */}
+                    <div
+                      className={`${styles.dangerOption} ${styles.dangerOptionDanger}`}
                     >
-                      {saving === "delete" ? "Deactivating..." : "Deactivate"}
-                    </button>
+                      <div className={styles.dangerOptionHead}>
+                        <span
+                          className={`${styles.dangerOptionIcon} ${styles.dangerOptionIconRed}`}
+                        >
+                          <FiTrash2 size={20} />
+                        </span>
+                        <div>
+                          <p className={styles.dangerOptionTitle}>
+                            Leave SkilledProz
+                          </p>
+                          <p className={styles.dangerOptionSub}>
+                            Permanent · 30-day grace period
+                          </p>
+                        </div>
+                      </div>
+                      <p className={styles.dangerOptionDesc}>
+                        Permanently delete your profile, portfolio, and personal
+                        data after a 30-day grace period. This cannot be undone
+                        once the period ends.
+                      </p>
+                      <button
+                        type="button"
+                        className={`${styles.dangerOptionBtn} ${styles.dangerOptionBtnRed}`}
+                        onClick={openDeleteFlow}
+                        disabled={saving === "delete" || checkLoading}
+                      >
+                        {saving === "delete" ? "Processing…" : "Delete Account"}
+                      </button>
+                    </div>
                   </div>
                 </Card>
               </>
@@ -1868,17 +2110,214 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Deactivate Account Confirmation Modal ── */}
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={confirmDeleteAccount}
-        title="Deactivate your account?"
-        message="This will hide your profile and log you out. You can contact support to reactivate your account later."
-        confirmLabel="Deactivate"
-        cancelLabel="Cancel"
-        confirmVariant="danger"
-      />
+      {/* ── Pause Account Modal ── */}
+      {showPauseModal && (
+        <div
+          className={styles.blockerOverlay}
+          onClick={() => setShowPauseModal(false)}
+        >
+          <div
+            className={styles.blockerBox}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.blockerHeader}>
+              <span className={styles.blockerIconWarn}>
+                <FiPauseCircle size={22} />
+              </span>
+              <div>
+                <h3 className={styles.blockerTitle}>Pause your account?</h3>
+                <p className={styles.blockerSubtitle}>
+                  Reversible anytime — just log back in
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>Password</label>
+              <input
+                className={styles.input}
+                type="password"
+                placeholder="Enter your password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+
+            <div className={styles.blockerActions}>
+              <button
+                className={styles.blockerCancelBtn}
+                onClick={() => setShowPauseModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.blockerConfirmBtn}
+                onClick={confirmPause}
+                disabled={saving === "pause"}
+              >
+                {saving === "pause" ? "Pausing…" : "Pause Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Account Modal ── */}
+      {showDeleteModal && (
+        <div
+          className={styles.blockerOverlay}
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div
+            className={styles.blockerBox}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.blockerHeader}>
+              <span className={styles.blockerIconDanger}>
+                <FiTrash2 size={22} />
+              </span>
+              <div>
+                <h3 className={styles.blockerTitle}>Delete your account?</h3>
+                <p className={styles.blockerSubtitle}>
+                  Permanent · 30-day grace period
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.deleteNoticeList}>
+              <p>Here&apos;s what happens when you delete:</p>
+              <ul>
+                <li>Your profile is hidden immediately</li>
+                <li>Your data is deleted permanently after 30 days</li>
+                <li>
+                  Your reviews remain (anonymised as &quot;Former User&quot;)
+                </li>
+                <li>Transaction records are kept for legal compliance</li>
+                <li>Log in within 30 days to cancel</li>
+              </ul>
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>Password</label>
+              <input
+                className={styles.input}
+                type="password"
+                placeholder="Enter your password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>
+                Why are you leaving? (optional)
+              </label>
+              <textarea
+                className={styles.textarea}
+                placeholder="Tell us what went wrong — helps us improve"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                maxLength={300}
+                rows={2}
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>
+                Type <strong>DELETE</strong> to confirm
+              </label>
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="DELETE"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+
+            <div className={styles.blockerActions}>
+              <button
+                className={styles.blockerCancelBtn}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.blockerDeleteBtn}
+                onClick={confirmDeleteAccount}
+                disabled={
+                  saving === "delete" ||
+                  deleteConfirmText !== "DELETE" ||
+                  !deletePassword
+                }
+              >
+                {saving === "delete" ? "Processing…" : "Delete Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Blocker Modal ── */}
+      {showBlockerModal && deactivationCheck && (
+        <div
+          className={styles.blockerOverlay}
+          onClick={() => setShowBlockerModal(false)}
+        >
+          <div
+            className={styles.blockerBox}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.blockerHeader}>
+              <span className={styles.blockerIconDanger}>
+                <FiAlertTriangle size={22} />
+              </span>
+              <div>
+                <h3 className={styles.blockerTitle}>Before you can proceed</h3>
+                <p className={styles.blockerSubtitle}>
+                  Please resolve these first
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.blockerItems}>
+              {deactivationCheck.blockers.map((b) => (
+                <div key={b.code} className={styles.blockerItem}>
+                  <div className={styles.blockerItemHead}>
+                    <span className={styles.blockerCount}>{b.count}</span>
+                    <strong>{b.label}</strong>
+                  </div>
+                  <p className={styles.blockerHint}>{b.hint}</p>
+                  {b.route && (
+                    <Link
+                      to={b.route}
+                      className={styles.blockerLink}
+                      onClick={() => setShowBlockerModal(false)}
+                    >
+                      Go fix this →
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.blockerActions}>
+              <button
+                className={styles.blockerCloseBtn}
+                onClick={() => setShowBlockerModal(false)}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
