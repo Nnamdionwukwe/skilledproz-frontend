@@ -217,6 +217,9 @@ export default function SettingsPage() {
   const [toast, setToast] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // NEW: password confirmation for account deactivation
+  const [deletePassword, setDeletePassword] = useState("");
+
   const [form, setForm] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
@@ -570,13 +573,28 @@ export default function SettingsPage() {
     }
   }
 
+  function openDeleteModal() {
+    if (!deletePassword) {
+      showToast("Please enter your password first", "error");
+      return;
+    }
+    setShowDeleteModal(true);
+  }
+
   async function confirmDeleteAccount() {
     setShowDeleteModal(false);
+    setSaving("delete");
     try {
-      await api.delete("/settings/account");
+      await api.delete("/settings/account", {
+        data: { password: deletePassword },
+      });
       window.location.href = "/login";
-    } catch {
-      showToast("Failed", "error");
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Failed to deactivate account",
+        "error",
+      );
+      setSaving("");
     }
   }
 
@@ -1762,18 +1780,27 @@ export default function SettingsPage() {
                   desc="Irreversible actions"
                 >
                   <div className={styles.dangerBlock}>
-                    <div>
+                    <div className={styles.dangerBody}>
                       <p className={styles.dangerTitle}>Deactivate Account</p>
                       <p className={styles.dangerDesc}>
                         Your profile will be hidden and you'll be logged out.
                         Contact support to reactivate.
                       </p>
+                      <input
+                        className={`${styles.input} ${styles.dangerInput}`}
+                        type="password"
+                        placeholder="Enter your password to confirm"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        autoComplete="current-password"
+                      />
                     </div>
                     <button
                       className={styles.dangerBtn}
-                      onClick={() => setShowDeleteModal(true)}
+                      onClick={openDeleteModal}
+                      disabled={saving === "delete"}
                     >
-                      Deactivate
+                      {saving === "delete" ? "Deactivating..." : "Deactivate"}
                     </button>
                   </div>
                 </Card>
@@ -1847,7 +1874,7 @@ export default function SettingsPage() {
         onClose={() => setShowDeleteModal(false)}
         onConfirm={confirmDeleteAccount}
         title="Deactivate your account?"
-        message="Your profile will be hidden and you'll be logged out. You can contact support to reactivate your account later."
+        message="This will hide your profile and log you out. You can contact support to reactivate your account later."
         confirmLabel="Deactivate"
         cancelLabel="Cancel"
         confirmVariant="danger"
