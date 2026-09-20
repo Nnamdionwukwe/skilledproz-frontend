@@ -29,13 +29,27 @@ import {
   FiSearch,
   FiArrowLeft,
   FiBookmark,
-  FiBookmark as FiBookmarkFilled,
+  FiVideo,
+  FiX,
+  FiMaximize2,
 } from "react-icons/fi";
 import VideoIntroSection from "./VideoIntroSection";
 import ReportButton from "../../pages/reports/ReportButton";
 import useSavedWorker from "../../hooks/useSavedWorker";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const isPdfUrl = (url) => {
+  if (!url) return false;
+  const clean = url.split("?")[0].toLowerCase();
+  return /\.pdf$/.test(clean);
+};
+
+const isImageUrl = (url) => {
+  if (!url) return false;
+  const clean = url.split("?")[0].toLowerCase();
+  return /\.(jpg|jpeg|png|webp|gif)$/.test(clean);
+};
 
 export default function WorkerPublicProfile() {
   const { userId } = useParams();
@@ -84,6 +98,21 @@ export default function WorkerPublicProfile() {
       .finally(() => setLoading(false));
   }, [userId]);
 
+  // ── Escape key closes the lightbox ────────────────────────────────────────
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lightbox]);
+
   if (loading)
     return (
       <Layout>
@@ -105,6 +134,8 @@ export default function WorkerPublicProfile() {
 
   const { user, categories, portfolio, certifications, availability } = worker;
 
+  const hasVideo = !!worker.videoIntroUrl;
+
   const availDay = (day) =>
     availability.find((a) => a.dayOfWeek === day && a.isAvailable);
 
@@ -119,6 +150,20 @@ export default function WorkerPublicProfile() {
     hasMonthlyRate ||
     hasYearlyRate ||
     hasCustomRate;
+
+  // ── Tab list — video is now included ──────────────────────────────────────
+  const tabs = [
+    { key: "about", label: "About" },
+    { key: "portfolio", label: "Portfolio", count: portfolio.length },
+    ...(hasVideo ? [{ key: "video", label: "Video Intro" }] : []),
+    {
+      key: "certifications",
+      label: "Certifications",
+      count: certifications.length,
+    },
+    { key: "availability", label: "Availability" },
+    { key: "reviews", label: "Reviews", count: worker.totalReviews },
+  ];
 
   return (
     <Layout>
@@ -290,48 +335,44 @@ export default function WorkerPublicProfile() {
 
             {!isOwnProfile && (
               <div className={styles.actionBtns}>
-                {!isOwnProfile && (
-                  <div className={styles.actionBtns}>
-                    <button
-                      className={styles.bookBtn}
-                      onClick={() =>
-                        navigate(`/bookings/create?workerId=${userId}`)
-                      }
-                    >
-                      Book Now
-                    </button>
+                <button
+                  className={styles.bookBtn}
+                  onClick={() =>
+                    navigate(`/bookings/create?workerId=${userId}`)
+                  }
+                >
+                  Book Now
+                </button>
 
-                    {isHirer && (
-                      <button
-                        className={`${styles.saveBtn} ${isSaved ? styles.saveBtnActive : ""}`}
-                        onClick={toggle}
-                        disabled={checkingSave || toggling}
-                        title={isSaved ? "Remove from saved" : "Save worker"}
-                        type="button"
-                        aria-pressed={isSaved}
-                      >
-                        <FiBookmark
-                          size={16}
-                          fill={isSaved ? "currentColor" : "none"}
-                        />
-                      </button>
-                    )}
-
-                    <button
-                      className={styles.msgBtn}
-                      onClick={() => navigate(`/messages?with=${userId}`)}
-                      title="Message"
-                    >
-                      <FiMessageCircle size={16} />
-                    </button>
-
-                    <ReportButton
-                      targetType="USER"
-                      targetId={worker.userId}
-                      targetName={`${worker.firstName} ${worker.lastName}`}
+                {isHirer && (
+                  <button
+                    className={`${styles.saveBtn} ${isSaved ? styles.saveBtnActive : ""}`}
+                    onClick={toggle}
+                    disabled={checkingSave || toggling}
+                    title={isSaved ? "Remove from saved" : "Save worker"}
+                    type="button"
+                    aria-pressed={isSaved}
+                  >
+                    <FiBookmark
+                      size={16}
+                      fill={isSaved ? "currentColor" : "none"}
                     />
-                  </div>
+                  </button>
                 )}
+
+                <button
+                  className={styles.msgBtn}
+                  onClick={() => navigate(`/messages?with=${userId}`)}
+                  title="Message"
+                >
+                  <FiMessageCircle size={16} />
+                </button>
+
+                <ReportButton
+                  targetType="USER"
+                  targetId={worker.userId}
+                  targetName={`${worker.firstName} ${worker.lastName}`}
+                />
               </div>
             )}
 
@@ -345,27 +386,15 @@ export default function WorkerPublicProfile() {
 
         {/* ── Tabs ── */}
         <div className={styles.tabBar}>
-          {[
-            "about",
-            "portfolio",
-            "certifications",
-            "availability",
-            "reviews",
-          ].map((t) => (
+          {tabs.map(({ key, label, count }) => (
             <button
-              key={t}
-              className={`${styles.tabBtn} ${tab === t ? styles.tabBtnActive : ""}`}
-              onClick={() => setTab(t)}
+              key={key}
+              className={`${styles.tabBtn} ${tab === key ? styles.tabBtnActive : ""}`}
+              onClick={() => setTab(key)}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-              {t === "portfolio" && portfolio.length > 0 && (
-                <span className={styles.tabCount}>{portfolio.length}</span>
-              )}
-              {t === "certifications" && certifications.length > 0 && (
-                <span className={styles.tabCount}>{certifications.length}</span>
-              )}
-              {t === "reviews" && worker.totalReviews > 0 && (
-                <span className={styles.tabCount}>{worker.totalReviews}</span>
+              {label}
+              {typeof count === "number" && count > 0 && (
+                <span className={styles.tabCount}>{count}</span>
               )}
             </button>
           ))}
@@ -450,14 +479,29 @@ export default function WorkerPublicProfile() {
               ) : (
                 <div className={styles.portfolioGrid}>
                   {portfolio.map((item) => (
-                    <div
-                      title="Click to view full size"
+                    <button
                       key={item.id}
+                      type="button"
                       className={styles.portfolioCard}
-                      onClick={() => setLightbox({ type: "portfolio", item })}
+                      onClick={() =>
+                        setLightbox({
+                          type: "portfolio",
+                          url: item.imageUrl,
+                          title: item.title,
+                          description: item.description,
+                        })
+                      }
+                      aria-label={`View ${item.title} full screen`}
                     >
                       <div className={styles.portfolioImg}>
-                        <img src={item.imageUrl} alt={item.title} />
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          loading="lazy"
+                        />
+                        <span className={styles.portfolioZoom}>
+                          <FiMaximize2 size={16} />
+                        </span>
                       </div>
                       <div className={styles.portfolioBody}>
                         <p className={styles.portfolioTitle}>{item.title}</p>
@@ -467,17 +511,25 @@ export default function WorkerPublicProfile() {
                           </p>
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
             </section>
           )}
 
-          <VideoIntroSection
-            videoUrl={worker.videoIntroUrl}
-            workerName={user.firstName}
-          />
+          {/* Video Intro — NEW TAB */}
+          {tab === "video" && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <FiVideo size={16} /> Video Introduction
+              </h2>
+              <VideoIntroSection
+                videoUrl={worker.videoIntroUrl}
+                workerName={user.firstName}
+              />
+            </section>
+          )}
 
           {/* Certifications */}
           {tab === "certifications" && (
@@ -520,14 +572,23 @@ export default function WorkerPublicProfile() {
                         </span>
                       )}
                       {cert.documentUrl && (
-                        <a
-                          href={cert.documentUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
                           className={styles.certLink}
+                          onClick={() =>
+                            setLightbox({
+                              type: isPdfUrl(cert.documentUrl) ? "pdf" : "cert",
+                              url: cert.documentUrl,
+                              title: cert.name,
+                              issuer: cert.issuedBy,
+                              issueDate: cert.issueDate,
+                              expiryDate: cert.expiryDate,
+                              isVerified: cert.verified,
+                            })
+                          }
                         >
                           View <FiChevronRight size={12} />
-                        </a>
+                        </button>
                       )}
                     </div>
                   ))}
@@ -616,99 +677,94 @@ export default function WorkerPublicProfile() {
         </div>
       </div>
 
-      {/* ── LIGHTBOX ── */}
+      {/* ── FULLSCREEN LIGHTBOX ── */}
       {lightbox && (
         <div
           className={styles.lightboxOverlay}
           onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.title}
         >
+          <button
+            type="button"
+            className={styles.lightboxCloseBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(null);
+            }}
+            aria-label="Close"
+          >
+            <FiX size={22} />
+          </button>
+
           <div
-            className={styles.lightboxBox}
+            className={styles.lightboxContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              className={styles.lightboxClose}
-              onClick={() => setLightbox(null)}
-            >
-              <FiX size={16} />
-            </button>
-
+            {/* Portfolio image */}
             {lightbox.type === "portfolio" && (
               <>
-                {lightbox.item.imageUrl && (
-                  <img
-                    src={lightbox.item.imageUrl}
-                    alt={lightbox.item.title}
-                    className={styles.lightboxImg}
-                  />
+                <img
+                  src={lightbox.url}
+                  alt={lightbox.title}
+                  className={styles.lightboxImg}
+                />
+                {(lightbox.title || lightbox.description) && (
+                  <div className={styles.lightboxCaption}>
+                    {lightbox.title && (
+                      <h2 className={styles.lightboxTitle}>{lightbox.title}</h2>
+                    )}
+                    {lightbox.description && (
+                      <p className={styles.lightboxDesc}>
+                        {lightbox.description}
+                      </p>
+                    )}
+                  </div>
                 )}
-                <div className={styles.lightboxInfo}>
-                  <h2 className={styles.lightboxTitle}>
-                    {lightbox.item.title}
-                  </h2>
-                  {lightbox.item.description && (
+              </>
+            )}
+
+            {/* Cert image */}
+            {lightbox.type === "cert" && (
+              <>
+                <img
+                  src={lightbox.url}
+                  alt={lightbox.title}
+                  className={styles.lightboxImg}
+                />
+                <div className={styles.lightboxCaption}>
+                  {lightbox.title && (
+                    <h2 className={styles.lightboxTitle}>{lightbox.title}</h2>
+                  )}
+                  {lightbox.issuer && (
                     <p className={styles.lightboxDesc}>
-                      {lightbox.item.description}
+                      Issued by <strong>{lightbox.issuer}</strong>
                     </p>
                   )}
                 </div>
               </>
             )}
 
-            {lightbox.type === "cert" && (
-              <div className={styles.lightboxCert}>
-                <div className={styles.lightboxCertIcon}>
-                  <FiAward size={40} />
-                </div>
-                <h2 className={styles.lightboxTitle}>{lightbox.item.name}</h2>
-                {lightbox.item.issuer && (
-                  <p className={styles.lightboxCertMeta}>
-                    Issued by <strong>{lightbox.item.issuer}</strong>
-                  </p>
-                )}
-                <div className={styles.lightboxCertDates}>
-                  {lightbox.item.issueDate && (
-                    <div className={styles.lightboxCertDate}>
-                      <span>Issue date</span>
-                      <strong>
-                        {new Date(lightbox.item.issueDate).toLocaleDateString(
-                          "en-GB",
-                          { day: "numeric", month: "long", year: "numeric" },
-                        )}
-                      </strong>
-                    </div>
-                  )}
-                  {lightbox.item.expiryDate && (
-                    <div className={styles.lightboxCertDate}>
-                      <span>Expiry date</span>
-                      <strong>
-                        {new Date(lightbox.item.expiryDate).toLocaleDateString(
-                          "en-GB",
-                          { day: "numeric", month: "long", year: "numeric" },
-                        )}
-                      </strong>
-                    </div>
-                  )}
-                </div>
-                {lightbox.item.isVerified && (
-                  <div
-                    className={`${styles.badge} ${styles.badgeGreen}`}
-                    style={{ margin: "1rem auto 0" }}
-                  >
-                    <CheckCircle2 size={13} /> Verified by SkilledProz
+            {/* Cert PDF */}
+            {lightbox.type === "pdf" && (
+              <>
+                <iframe
+                  src={lightbox.url}
+                  title={lightbox.title}
+                  className={styles.lightboxPdf}
+                />
+                {lightbox.title && (
+                  <div className={styles.lightboxCaption}>
+                    <h2 className={styles.lightboxTitle}>{lightbox.title}</h2>
+                    {lightbox.issuer && (
+                      <p className={styles.lightboxDesc}>
+                        Issued by <strong>{lightbox.issuer}</strong>
+                      </p>
+                    )}
                   </div>
                 )}
-                {lightbox.item.documentUrl && (
-                  <a
-                    href={lightbox.item.documentUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={styles.lightboxDocLink}
-                  >
-                    <FiFileText size={14} /> View Certificate Document
-                  </a>
-                )}
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -717,7 +773,7 @@ export default function WorkerPublicProfile() {
   );
 }
 
-/* ── Sub-components ─────────────────────────────────────────────────────────── */
+/* ── Sub-components ──────────────────────────────────────────────────────── */
 
 function RatePill({ value, suffix, currency }) {
   return (
