@@ -224,6 +224,8 @@ export default function SettingsPage() {
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBlockerModal, setShowBlockerModal] = useState(false);
+  // ✅ Separate password state per modal — prevents stale/shared value bugs
+  const [pausePassword, setPausePassword] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -359,6 +361,8 @@ export default function SettingsPage() {
   }
 
   async function openPauseFlow() {
+    // ✅ Start with a clean password field every time
+    setPausePassword("");
     setCheckLoading(true);
     const data = await refreshCheck();
     setCheckLoading(false);
@@ -375,6 +379,10 @@ export default function SettingsPage() {
   }
 
   async function openDeleteFlow() {
+    // ✅ Start with clean fields every time
+    setDeletePassword("");
+    setDeleteReason("");
+    setDeleteConfirmText("");
     setCheckLoading(true);
     const data = await refreshCheck();
     setCheckLoading(false);
@@ -391,13 +399,13 @@ export default function SettingsPage() {
   }
 
   async function confirmPause() {
-    if (!deletePassword) {
+    if (!pausePassword) {
       showToast("Please enter your password", "error");
       return;
     }
     setSaving("pause");
     try {
-      await api.post("/settings/pause", { password: deletePassword });
+      await api.post("/settings/pause", { password: pausePassword });
       showToast("Account paused. Log back in any time to reactivate.");
       setTimeout(() => {
         window.location.href = "/login";
@@ -2115,7 +2123,10 @@ export default function SettingsPage() {
       {showPauseModal && (
         <div
           className={styles.blockerOverlay}
-          onClick={() => setShowPauseModal(false)}
+          onClick={() => {
+            setShowPauseModal(false);
+            setPausePassword("");
+          }}
         >
           <div
             className={styles.blockerBox}
@@ -2139,16 +2150,19 @@ export default function SettingsPage() {
                 className={styles.input}
                 type="password"
                 placeholder="Enter your password"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-                autoComplete="current-password"
+                value={pausePassword}
+                onChange={(e) => setPausePassword(e.target.value)}
+                autoComplete="new-password"
               />
             </div>
 
             <div className={styles.blockerActions}>
               <button
                 className={styles.blockerCancelBtn}
-                onClick={() => setShowPauseModal(false)}
+                onClick={() => {
+                  setShowPauseModal(false);
+                  setPausePassword("");
+                }}
               >
                 Cancel
               </button>
@@ -2168,7 +2182,12 @@ export default function SettingsPage() {
       {showDeleteModal && (
         <div
           className={styles.blockerOverlay}
-          onClick={() => setShowDeleteModal(false)}
+          onClick={() => {
+            setShowDeleteModal(false);
+            setDeletePassword("");
+            setDeleteConfirmText("");
+            setDeleteReason("");
+          }}
         >
           <div
             className={styles.blockerBox}
@@ -2207,7 +2226,7 @@ export default function SettingsPage() {
                 placeholder="Enter your password"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </div>
 
@@ -2244,7 +2263,9 @@ export default function SettingsPage() {
                 className={styles.blockerCancelBtn}
                 onClick={() => {
                   setShowDeleteModal(false);
+                  setDeletePassword("");
                   setDeleteConfirmText("");
+                  setDeleteReason("");
                 }}
               >
                 Cancel
