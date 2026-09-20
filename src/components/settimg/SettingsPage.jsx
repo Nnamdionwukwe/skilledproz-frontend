@@ -1,9 +1,11 @@
+// src/pages/Settings/SettingsPage.jsx
 import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../../store/authStore";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import styles from "./SettingsPage.module.css";
 import {
   useCurrency,
@@ -131,39 +133,35 @@ const ALL_LANGUAGES = [
   { code: "zu", name: "Zulu" },
 ];
 
+// Currencies accepted by Flutterwave (verified from official support docs)
 const CURRENCIES = [
-  "USD",
-  "EUR",
-  "GBP",
-  "NGN",
-  "GHS",
-  "KES",
-  "ZAR",
-  "INR",
-  "CAD",
-  "AUD",
-  "JPY",
-  "CNY",
-  "BRL",
-  "MXN",
-  "EGP",
-  "TZS",
-  "UGX",
-  "RWF",
-  "XOF",
-  "MAD",
-  "PHP",
-  "IDR",
-  "VND",
-  "THB",
-  "BDT",
-  "PKR",
-  "AED",
-  "SAR",
-  "QAR",
-  "MYR",
-  "SGD",
-  "HKD",
+  // International
+  "USD", // United States Dollar
+  "EUR", // Euro
+  "GBP", // British Pound Sterling
+  "CAD", // Canadian Dollar
+
+  // African
+  "NGN", // Nigerian Naira
+  "GHS", // Ghanaian Cedi
+  "KES", // Kenyan Shilling
+  "ZAR", // South African Rand
+  "TZS", // Tanzanian Shilling
+  "UGX", // Ugandan Shilling
+  "RWF", // Rwandan Franc
+  "XOF", // West African CFA Franc BCEAO
+  "XAF", // Central African CFA Franc
+  "EGP", // Egyptian Pound
+  "MWK", // Malawian Kwacha
+  "MAD", // Moroccan Dirham
+  "ZMW", // Zambian Kwacha
+  "SLL", // Sierra Leonean Leone
+
+  // Additional supported currencies
+  "CLP", // Chilean Peso
+  "COP", // Colombian Peso
+  "GNF", // Guinean Franc
+  "STD", // São Tomé & Príncipe Dobra
 ];
 
 const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
@@ -217,6 +215,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [form, setForm] = useState({
     firstName: user?.firstName || "",
@@ -571,13 +570,8 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleDeleteAccount() {
-    if (
-      !window.confirm(
-        "Deactivate your account? You can contact support to reactivate.",
-      )
-    )
-      return;
+  async function confirmDeleteAccount() {
+    setShowDeleteModal(false);
     try {
       await api.delete("/settings/account");
       window.location.href = "/login";
@@ -1777,7 +1771,7 @@ export default function SettingsPage() {
                     </div>
                     <button
                       className={styles.dangerBtn}
-                      onClick={handleDeleteAccount}
+                      onClick={() => setShowDeleteModal(true)}
                     >
                       Deactivate
                     </button>
@@ -1846,6 +1840,18 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Deactivate Account Confirmation Modal ── */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDeleteAccount}
+        title="Deactivate your account?"
+        message="Your profile will be hidden and you'll be logged out. You can contact support to reactivate your account later."
+        confirmLabel="Deactivate"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+      />
     </Layout>
   );
 }
