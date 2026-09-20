@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
@@ -23,14 +23,14 @@ import {
   FaBell,
   FaShieldAlt,
   FaGem,
-  FaRocket,
   FaCog,
   FaSignOutAlt,
   FaBars,
   FaUserCircle,
   FaEnvelope,
   FaWallet,
-  FaMoneyBillWave, // Add this for refund icon
+  FaMoneyBillWave,
+  FaChevronDown,
 } from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
@@ -166,11 +166,6 @@ const NAV = [
         path: "/dashboard/hirer/subscription",
         icon: <FaGem />,
       },
-      // {
-      //   label: "Boost Listing",
-      //   path: "/dashboard/hirer/featured",
-      //   icon: <FaRocket />,
-      // },
       { label: "Settings", path: "/settings", icon: <FaCog /> },
     ],
   },
@@ -219,14 +214,18 @@ const PAGE_TITLES = {
     title: "Payment History",
     sub: "Your payment records",
   },
-  "/dashboard/worker/subscription": {
+  "/dashboard/hirer/subscription": {
     title: "Subscriptions",
     sub: "Manage your subscription",
   },
-  // "/dashboard/worker/featured": {
-  //   title: "Featured Boost",
-  //   sub: "Boost your listing",
-  // },
+  "/dashboard/hirer/jobs-management": {
+    title: "Jobs Management",
+    sub: "Manage your job posts",
+  },
+  "/dashboard/hirer/verification": {
+    title: "Verification",
+    sub: "Verify your identity",
+  },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
   "/dashboard/hirer/wallet": {
     title: "My Wallet",
@@ -236,6 +235,12 @@ const PAGE_TITLES = {
     title: "Refund History",
     sub: "View and track your refund requests",
   },
+  "/referrals": { title: "Referrals", sub: "Invite and earn" },
+  "/campaign": { title: "Campaigns", sub: "Your campaigns" },
+  "/my-reports": { title: "My Reports", sub: "Track your reports" },
+  "/settings": { title: "Settings", sub: "Manage your preferences" },
+  "/feed": { title: "Community Feed", sub: "See what's happening" },
+  "/my-posts": { title: "My Posts", sub: "Your community posts" },
 };
 
 function getPageInfo(pathname) {
@@ -262,6 +267,16 @@ function isNavActive(itemPath, pathname) {
   if (itemPath === "/refunds")
     return pathname === "/refunds" || pathname.startsWith("/refunds/");
   return pathname === itemPath;
+}
+
+/** Find which group contains the active item */
+function findActiveGroup(pathname) {
+  for (const group of NAV) {
+    for (const item of group.items) {
+      if (isNavActive(item.path, pathname)) return group.group;
+    }
+  }
+  return null;
 }
 
 // ─── Confirmation Modal ──────────────────────────────────────────────────
@@ -308,28 +323,106 @@ export default function HirerLayout({ children }) {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  // ── Collapsible groups ─────────────────────────────────────────────────
+  // Starts with ALL groups open (desktop default).
+  // On mobile open, we collapse all but the active one.
+  const [openGroups, setOpenGroups] = useState(
+    () => new Set(NAV.map((g) => g.group)),
+  );
+
+  // ── Ref for auto-scrolling the active nav item ─────────────────────────
+  const activeItemRef = useRef(null);
+
   // ── Fetch unread notifications ──────────────────────────────────────────
-  useEffect(() => {
-    api
-      .get("/notifications?limit=1")
-      .then((res) => setUnreadCount(res.data.data?.unreadCount || 0))
-      .catch(() => {});
-  }, [location.pathname]);
+  const fetchUnread = useCallback(async () => {
+    try {
+      const res = await api.get("/notifications?limit=1");
+      setUnreadCount(res.data.data?.unreadCount || 0);
+    } catch (e) {
+      // Silent fail
+    }
+  }, []);
 
   // ── Fetch unread messages ──────────────────────────────────────────────
+  const fetchUnreadMessages = useCallback(async () => {
+    try {
+      const res = await api.get("/messages/conversations");
+      const conversations = res.data.data?.conversations || [];
+      const total = conversations.reduce(
+        (sum, c) => sum + (c.unreadCount || 0),
+        0,
+      );
+      setUnreadMessageCount(total);
+    } catch (e) {
+      setUnreadMessageCount(0);
+    }
+  }, []);
+
+  // ── Fetch on route change ──────────────────────────────────────────────
   useEffect(() => {
-    api
-      .get("/messages/conversations")
-      .then((res) => {
-        const conversations = res.data.data?.conversations || [];
-        const total = conversations.reduce(
-          (sum, c) => sum + (c.unreadCount || 0),
-          0,
-        );
-        setUnreadMessageCount(total);
-      })
-      .catch(() => setUnreadMessageCount(0));
+    fetchUnread();
+    fetchUnreadMessages();
+  }, [location.pathname, fetchUnread, fetchUnreadMessages]);
+
+  // ── Auto-expand the group that contains the active item ────────────────
+  useEffect(() => {
+    const activeGroup = findActiveGroup(location.pathname);
+    if (!activeGroup) return;
+    setOpenGroups((prev) => {
+      if (prev.has(activeGroup)) return prev;
+      const next = new Set(prev);
+      next.add(activeGroup);
+      return next;
+    });
   }, [location.pathname]);
+
+  // ── Toggle a group open/closed ─────────────────────────────────────────
+  const toggleGroup = (groupName) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupName)) next.delete(groupName);
+      else next.add(groupName);
+      return next;
+    });
+  };
+
+  // ── On mobile sidebar open: collapse all groups except the active one ──
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 960px)").matches;
+    if (!isMobile) return;
+
+    const activeGroup = findActiveGroup(location.pathname);
+    setOpenGroups(activeGroup ? new Set([activeGroup]) : new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sidebarOpen]);
+
+  // ── Auto-scroll to active item on route change ────────────────────────
+  useEffect(() => {
+    if (!activeItemRef.current) return;
+    const raf = requestAnimationFrame(() => {
+      activeItemRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [location.pathname, openGroups]);
+
+  // ── Auto-scroll when mobile sidebar opens ─────────────────────────────
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    if (!activeItemRef.current) return;
+    const t = setTimeout(() => {
+      activeItemRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [sidebarOpen, openGroups]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -346,10 +439,8 @@ export default function HirerLayout({ children }) {
 
   return (
     <div className={styles.shell}>
-      {/* ── Mobile overlay ── */}
       {sidebarOpen && <div className={styles.overlay} onClick={closeSidebar} />}
 
-      {/* ── Sidebar ── */}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ""}`}>
         <div className={styles.sidebarLogo}>
           <div className={styles.logoText}>
@@ -387,32 +478,74 @@ export default function HirerLayout({ children }) {
         </div>
 
         <nav className={styles.sidebarNav}>
-          {NAV.map((group) => (
-            <div key={group.group} className={styles.navGroup}>
-              <div className={styles.navGroupLabel}>{group.group}</div>
-              {group.items.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`${styles.navItem} ${isNavActive(item.path, location.pathname) ? styles.active : ""}`}
-                  onClick={closeSidebar}
+          {NAV.map((group) => {
+            const isOpen = openGroups.has(group.group);
+            const hasActive = group.items.some((item) =>
+              isNavActive(item.path, location.pathname),
+            );
+
+            return (
+              <div
+                key={group.group}
+                className={`${styles.navGroup} ${isOpen ? styles.navGroupOpen : ""}`}
+              >
+                <button
+                  type="button"
+                  className={`${styles.navGroupLabel} ${
+                    hasActive ? styles.navGroupLabelActive : ""
+                  }`}
+                  onClick={() => toggleGroup(group.group)}
+                  aria-expanded={isOpen}
                 >
-                  <span className={styles.navIcon}>{item.icon}</span>
-                  {item.label}
-                  {item.badge === "unread" && unreadCount > 0 && (
-                    <span className={styles.navBadge}>
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  )}
-                  {item.badge === "message" && unreadMessageCount > 0 && (
-                    <span className={styles.navBadge}>
-                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          ))}
+                  <span>{group.group}</span>
+                  <FaChevronDown
+                    size={11}
+                    className={`${styles.navGroupChevron} ${
+                      isOpen ? styles.navGroupChevronOpen : ""
+                    }`}
+                  />
+                </button>
+
+                {isOpen && (
+                  <div className={styles.navGroupItems}>
+                    {group.items.map((item) => {
+                      const isActive = isNavActive(
+                        item.path,
+                        location.pathname,
+                      );
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          ref={isActive ? activeItemRef : null}
+                          className={`${styles.navItem} ${
+                            isActive ? styles.active : ""
+                          }`}
+                          onClick={closeSidebar}
+                        >
+                          <span className={styles.navIcon}>{item.icon}</span>
+                          {item.label}
+                          {item.badge === "unread" && unreadCount > 0 && (
+                            <span className={styles.navBadge}>
+                              {unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                          )}
+                          {item.badge === "message" &&
+                            unreadMessageCount > 0 && (
+                              <span className={styles.navBadge}>
+                                {unreadMessageCount > 99
+                                  ? "99+"
+                                  : unreadMessageCount}
+                              </span>
+                            )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -428,7 +561,6 @@ export default function HirerLayout({ children }) {
         </div>
       </aside>
 
-      {/* ── Main ── */}
       <div className={styles.main}>
         <header className={styles.header}>
           <div className={styles.headerLeft}>
@@ -445,7 +577,6 @@ export default function HirerLayout({ children }) {
           </div>
 
           <div className={styles.headerRight}>
-            {/* ── Notification Bell ── */}
             <Link
               to="/dashboard/hirer/notifications"
               className={styles.headerIconBtn}
@@ -459,7 +590,6 @@ export default function HirerLayout({ children }) {
               )}
             </Link>
 
-            {/* ── Message Icon ── */}
             <Link
               to="/messages"
               className={styles.headerIconBtn}
@@ -473,7 +603,6 @@ export default function HirerLayout({ children }) {
               )}
             </Link>
 
-            {/* ── User Avatar ── */}
             <Link to="/profile/me" className={styles.headerIconBtn}>
               <div className={styles.headerAvatar}>
                 {user?.avatar ? (
@@ -498,7 +627,6 @@ export default function HirerLayout({ children }) {
         <div className={styles.content}>{children}</div>
       </div>
 
-      {/* ─── Logout Confirmation Modal ─── */}
       <ConfirmationModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
