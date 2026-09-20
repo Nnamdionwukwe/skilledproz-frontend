@@ -330,13 +330,14 @@ export default function SettingsPage() {
         .then((r) => setSecurity(r.data.data))
         .catch(() => {});
     }
-    if (tab === "security" && pinStatus === null) {
+    // ✅ Only workers have a withdrawal PIN — skip for hirers
+    if (tab === "security" && isWorker && pinStatus === null) {
       api
         .get("/payments/pin/status")
         .then((r) => setPinStatus(r.data.data))
         .catch(() => {});
     }
-  }, [tab]);
+  }, [tab, isWorker]);
 
   async function refreshCheck() {
     setCheckLoading(true);
