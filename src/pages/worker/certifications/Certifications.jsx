@@ -48,6 +48,37 @@ const isPdfUrl = (url) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Skeleton loader — mirrors the real certification card layout
+// ─────────────────────────────────────────────────────────────────────────────
+function CertificationsSkeleton() {
+  return (
+    <div className={styles.list} aria-busy="true" aria-live="polite">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className={styles.skCertCard}>
+          {/* Icon block */}
+          <div className={`${styles.skBlock} ${styles.skCertIcon}`} />
+
+          {/* Body — title + meta rows */}
+          <div className={styles.skCertBody}>
+            <div className={`${styles.skBlock} ${styles.skCertTitle}`} />
+            <div className={styles.skCertMeta}>
+              <div className={`${styles.skBlock} ${styles.skMetaShort}`} />
+              <div className={`${styles.skBlock} ${styles.skMetaShort}`} />
+            </div>
+          </div>
+
+          {/* Actions — two pill buttons */}
+          <div className={styles.skCertActions}>
+            <div className={`${styles.skBlock} ${styles.skActionBtn}`} />
+            <div className={`${styles.skBlock} ${styles.skActionBtn}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CertificationsPage() {
@@ -287,11 +318,7 @@ export default function CertificationsPage() {
           </h3>
 
           {loading ? (
-            <div className={styles.list}>
-              {[1, 2].map((i) => (
-                <div key={i} className={styles.skCard} />
-              ))}
-            </div>
+            <CertificationsSkeleton />
           ) : certs.length === 0 ? (
             <div className={styles.empty}>
               <span className={styles.emptyIcon}>

@@ -773,3 +773,116 @@
     }
   }
 }
+/* ─────────────────────────────────────────────────────────────────────────────
+   SKELETON LOADER — mirrors the real certification card layout
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.skBlock {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: skShimmer 1.4s infinite;
+  border-radius: 8px;
+}
+
+.skCertCard {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: clamp(0.875rem, 3vw, 1.125rem) clamp(0.875rem, 3vw, 1rem);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .skCertCard {
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+}
+@media (max-width: 400px) {
+  .skCertCard {
+    padding: 0.75rem 0.875rem;
+    gap: 0.625rem;
+  }
+}
+
+.skCertIcon {
+  width: clamp(40px, 10vw, 48px);
+  height: clamp(40px, 10vw, 48px);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.skCertBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skCertTitle {
+  width: 60%;
+  max-width: 220px;
+  height: 14px;
+}
+
+.skCertMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.875rem;
+}
+
+.skMetaShort {
+  width: 90px;
+  height: 10px;
+}
+
+.skCertActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .skCertActions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+    margin-top: 0.25rem;
+  }
+}
+
+.skActionBtn {
+  width: 72px;
+  height: 34px;
+  border-radius: 8px;
+}
+@media (max-width: 480px) {
+  .skActionBtn {
+    width: 34px;
+    height: 32px;
+  }
+}
+
+@keyframes skShimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skBlock {
+    animation: none;
+  }
+}

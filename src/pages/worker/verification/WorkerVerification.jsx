@@ -43,6 +43,52 @@ function StatusIcon({ status }) {
   return <FiUnlock size={32} />;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Skeleton loader — mirrors the real page structure
+// ─────────────────────────────────────────────────────────────────────────────
+function VerificationSkeleton() {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      {/* Status card skeleton */}
+      <div className={styles.skStatusCard}>
+        <div className={`${styles.skBlock} ${styles.skStatusIcon}`} />
+        <div className={styles.skStatusBody}>
+          <div className={styles.skStatusRow}>
+            <div className={`${styles.skBlock} ${styles.skLabelSm}`} />
+            <div className={`${styles.skBlock} ${styles.skBadgePill}`} />
+          </div>
+          <div className={`${styles.skBlock} ${styles.skTextLine}`} />
+          <div className={`${styles.skBlock} ${styles.skTextShort}`} />
+        </div>
+      </div>
+
+      {/* Info box skeleton */}
+      <div className={styles.skInfoBox}>
+        <div className={`${styles.skBlock} ${styles.skInfoTitle}`} />
+        <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
+        <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
+        <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
+      </div>
+
+      {/* Form fields skeleton */}
+      <div className={styles.skFormGrid}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className={styles.skField}>
+            <div className={`${styles.skBlock} ${styles.skFieldLabel}`} />
+            <div className={`${styles.skBlock} ${styles.skFieldInput}`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Dropzone skeleton */}
+      <div className={`${styles.skBlock} ${styles.skDropzone}`} />
+
+      {/* Submit button skeleton */}
+      <div className={`${styles.skBlock} ${styles.skSubmitBtn}`} />
+    </div>
+  );
+}
+
 export default function WorkerVerification() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -101,7 +147,7 @@ export default function WorkerVerification() {
   return (
     <WorkerLayout>
       <div className={styles.page}>
-        {/* Header */}
+        {/* Header — always visible */}
         <div className={styles.pageHeader}>
           <div className={styles.badge2}>
             <FiShield size={12} />
@@ -114,238 +160,236 @@ export default function WorkerVerification() {
           </p>
         </div>
 
-        {/* Status card */}
-        {!loading && status && (
-          <div className={styles.statusCard}>
-            <div className={styles.statusLeft}>
-              <div className={styles.statusIcon}>
-                <StatusIcon status={status.verificationStatus} />
-              </div>
-              <div className={styles.statusInfo}>
-                <div className={styles.statusRow}>
-                  <span className={styles.statusLabel}>Identity Status</span>
-                  <StatusBadge status={status.verificationStatus} />
-                </div>
-                <p className={styles.statusMsg}>{status.statusMessage}</p>
-                {status.lastSubmittedAt && (
-                  <p className={styles.statusDate}>
-                    Submitted:{" "}
-                    {new Date(status.lastSubmittedAt).toLocaleDateString(
-                      "en-GB",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      },
-                    )}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className={styles.statusRight}>
-              {status.backgroundCheck && (
-                <div className={styles.checkItem}>
-                  <span className={styles.checkIcon}>
-                    <FiShield size={14} />
-                  </span>
-                  <span className={styles.checkLabel}>
-                    Background Check Cleared
-                  </span>
-                </div>
-              )}
-              {/* <div className={styles.checkItem}>
-                <span className={styles.checkIcon}>
-                  <FiFileText size={14} />
-                </span>
-                <span className={styles.checkLabel}>
-                  {status.certifications?.length || 0} Certification
-                  {status.certifications?.length !== 1 ? "s" : ""} on file
-                </span>
-              </div> */}
-            </div>
-          </div>
-        )}
-
-        {/* ID Verification content */}
-        <div className={styles.tabContent}>
-          {loading ? (
-            <div className={styles.alreadyVerified}>
-              <span className={styles.bigIcon}>
-                <FiClock size={36} />
-              </span>
-              <h3>Loading verification status…</h3>
-            </div>
-          ) : status?.verificationStatus === "VERIFIED" ? (
-            <div className={styles.alreadyVerified}>
-              <span className={styles.bigIcon}>
-                <ShieldCheck size={50} />
-              </span>
-              <h3>Your identity is verified</h3>
-              <p>Your profile shows the Verified badge to hirers.</p>
-            </div>
-          ) : status?.verificationStatus === "PENDING" ? (
-            <div className={styles.pendingBox}>
-              <span className={styles.bigIcon}>
-                <FiClock size={50} />
-              </span>
-              <h3>Verification under review</h3>
-              <p>
-                We&apos;ve received your documents and our team is reviewing
-                them. This usually takes 24–48 hours.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className={styles.infoBox}>
-                <h3 className={styles.infoTitle}>What you need</h3>
-                <ul className={styles.infoList}>
-                  <li>
-                    A valid government-issued ID (National ID, Passport, etc.)
-                  </li>
-                  <li>A clear photo or scan of the document</li>
-                  <li>Your ID number must be visible and legible</li>
-                  <li>Accepted formats: JPG, PNG, PDF (max 10MB)</li>
-                </ul>
-              </div>
-
-              <form className={styles.form} onSubmit={handleIdSubmit}>
-                <div className={styles.formGrid}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>ID Type *</label>
-                    <select
-                      className={styles.input}
-                      value={idType}
-                      onChange={(e) => setIdType(e.target.value)}
-                    >
-                      <option value="">Select ID type</option>
-                      {ID_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
+        {/* Loading — skeleton mirrors real layout */}
+        {loading ? (
+          <VerificationSkeleton />
+        ) : (
+          <>
+            {/* Status card */}
+            {status && (
+              <div className={styles.statusCard}>
+                <div className={styles.statusLeft}>
+                  <div className={styles.statusIcon}>
+                    <StatusIcon status={status.verificationStatus} />
                   </div>
-
-                  <div className={styles.field}>
-                    <label className={styles.label}>ID Number *</label>
-                    <input
-                      className={styles.input}
-                      placeholder="e.g. A123456789"
-                      value={idNumber}
-                      onChange={(e) => setIdNumber(e.target.value)}
-                    />
-                  </div>
-
-                  <div className={styles.field}>
-                    <label className={styles.label}>Date of Birth</label>
-                    <input
-                      className={styles.input}
-                      type="date"
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                    />
-                  </div>
-
-                  <div className={styles.field}>
-                    <label className={styles.label}>Nationality</label>
-                    <input
-                      className={styles.input}
-                      placeholder="e.g. Nigerian"
-                      value={nationality}
-                      onChange={(e) => setNationality(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label}>Upload ID Document *</label>
-                  <div
-                    className={`${styles.dropzone} ${
-                      idFile ? styles.dropzoneHasFile : ""
-                    }`}
-                    onClick={() =>
-                      document.getElementById("idFileInput")?.click()
-                    }
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        document.getElementById("idFileInput")?.click();
-                      }
-                    }}
-                  >
-                    <input
-                      id="idFileInput"
-                      type="file"
-                      accept="image/*,.pdf"
-                      style={{ display: "none" }}
-                      onChange={(e) => setIdFile(e.target.files[0])}
-                    />
-                    {idFile ? (
-                      <div className={styles.fileSelected}>
-                        <span className={styles.fileIcon}>
-                          <FiFileText size={18} />
-                        </span>
-                        <span className={styles.fileName}>{idFile.name}</span>
-                        <button
-                          type="button"
-                          className={styles.removeFile}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIdFile(null);
-                          }}
-                          aria-label="Remove file"
-                        >
-                          <FiX size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className={styles.dropzoneInner}>
-                        <span className={styles.dropzoneIcon}>
-                          <FiUploadCloud size={28} />
-                        </span>
-                        <p className={styles.dropzoneText}>
-                          Click to upload or drag and drop
-                        </p>
-                        <p className={styles.dropzoneHint}>
-                          JPG, PNG or PDF — max 10MB
-                        </p>
-                      </div>
+                  <div className={styles.statusInfo}>
+                    <div className={styles.statusRow}>
+                      <span className={styles.statusLabel}>
+                        Identity Status
+                      </span>
+                      <StatusBadge status={status.verificationStatus} />
+                    </div>
+                    <p className={styles.statusMsg}>{status.statusMessage}</p>
+                    {status.lastSubmittedAt && (
+                      <p className={styles.statusDate}>
+                        Submitted:{" "}
+                        {new Date(status.lastSubmittedAt).toLocaleDateString(
+                          "en-GB",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )}
+                      </p>
                     )}
                   </div>
                 </div>
-
-                {idError && (
-                  <div className={styles.errorBox}>
-                    <FiAlertCircle size={15} />
-                    <span>{idError}</span>
-                  </div>
-                )}
-                {idSuccess && (
-                  <div className={styles.successBox}>
-                    <FiCheckCircle size={15} />
-                    <span>{idSuccess}</span>
-                  </div>
-                )}
-
-                <button
-                  className={styles.submitBtn}
-                  type="submit"
-                  disabled={submittingId}
-                >
-                  {submittingId ? (
-                    <>
-                      <span className={styles.spinner} /> Submitting...
-                    </>
-                  ) : (
-                    "Submit for Verification"
+                <div className={styles.statusRight}>
+                  {status.backgroundCheck && (
+                    <div className={styles.checkItem}>
+                      <span className={styles.checkIcon}>
+                        <FiShield size={14} />
+                      </span>
+                      <span className={styles.checkLabel}>
+                        Background Check Cleared
+                      </span>
+                    </div>
                   )}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
+                </div>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className={styles.tabContent}>
+              {status?.verificationStatus === "VERIFIED" ? (
+                <div className={styles.alreadyVerified}>
+                  <span className={styles.bigIcon}>
+                    <ShieldCheck size={50} />
+                  </span>
+                  <h3>Your identity is verified</h3>
+                  <p>Your profile shows the Verified badge to hirers.</p>
+                </div>
+              ) : status?.verificationStatus === "PENDING" ? (
+                <div className={styles.pendingBox}>
+                  <span className={styles.bigIcon}>
+                    <FiClock size={50} />
+                  </span>
+                  <h3>Verification under review</h3>
+                  <p>
+                    We&apos;ve received your documents and our team is reviewing
+                    them. This usually takes 24–48 hours.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.infoBox}>
+                    <h3 className={styles.infoTitle}>What you need</h3>
+                    <ul className={styles.infoList}>
+                      <li>
+                        A valid government-issued ID (National ID, Passport,
+                        etc.)
+                      </li>
+                      <li>A clear photo or scan of the document</li>
+                      <li>Your ID number must be visible and legible</li>
+                      <li>Accepted formats: JPG, PNG, PDF (max 10MB)</li>
+                    </ul>
+                  </div>
+
+                  <form className={styles.form} onSubmit={handleIdSubmit}>
+                    <div className={styles.formGrid}>
+                      <div className={styles.field}>
+                        <label className={styles.label}>ID Type *</label>
+                        <select
+                          className={styles.input}
+                          value={idType}
+                          onChange={(e) => setIdType(e.target.value)}
+                        >
+                          <option value="">Select ID type</option>
+                          {ID_TYPES.map((t) => (
+                            <option key={t.value} value={t.value}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className={styles.field}>
+                        <label className={styles.label}>ID Number *</label>
+                        <input
+                          className={styles.input}
+                          placeholder="e.g. A123456789"
+                          value={idNumber}
+                          onChange={(e) => setIdNumber(e.target.value)}
+                        />
+                      </div>
+
+                      <div className={styles.field}>
+                        <label className={styles.label}>Date of Birth</label>
+                        <input
+                          className={styles.input}
+                          type="date"
+                          value={dob}
+                          onChange={(e) => setDob(e.target.value)}
+                        />
+                      </div>
+
+                      <div className={styles.field}>
+                        <label className={styles.label}>Nationality</label>
+                        <input
+                          className={styles.input}
+                          placeholder="e.g. Nigerian"
+                          value={nationality}
+                          onChange={(e) => setNationality(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        Upload ID Document *
+                      </label>
+                      <div
+                        className={`${styles.dropzone} ${
+                          idFile ? styles.dropzoneHasFile : ""
+                        }`}
+                        onClick={() =>
+                          document.getElementById("idFileInput")?.click()
+                        }
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            document.getElementById("idFileInput")?.click();
+                          }
+                        }}
+                      >
+                        <input
+                          id="idFileInput"
+                          type="file"
+                          accept="image/*,.pdf"
+                          style={{ display: "none" }}
+                          onChange={(e) => setIdFile(e.target.files[0])}
+                        />
+                        {idFile ? (
+                          <div className={styles.fileSelected}>
+                            <span className={styles.fileIcon}>
+                              <FiFileText size={18} />
+                            </span>
+                            <span className={styles.fileName}>
+                              {idFile.name}
+                            </span>
+                            <button
+                              type="button"
+                              className={styles.removeFile}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIdFile(null);
+                              }}
+                              aria-label="Remove file"
+                            >
+                              <FiX size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className={styles.dropzoneInner}>
+                            <span className={styles.dropzoneIcon}>
+                              <FiUploadCloud size={28} />
+                            </span>
+                            <p className={styles.dropzoneText}>
+                              Click to upload or drag and drop
+                            </p>
+                            <p className={styles.dropzoneHint}>
+                              JPG, PNG or PDF — max 10MB
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {idError && (
+                      <div className={styles.errorBox}>
+                        <FiAlertCircle size={15} />
+                        <span>{idError}</span>
+                      </div>
+                    )}
+                    {idSuccess && (
+                      <div className={styles.successBox}>
+                        <FiCheckCircle size={15} />
+                        <span>{idSuccess}</span>
+                      </div>
+                    )}
+
+                    <button
+                      className={styles.submitBtn}
+                      type="submit"
+                      disabled={submittingId}
+                    >
+                      {submittingId ? (
+                        <>
+                          <span className={styles.spinner} /> Submitting...
+                        </>
+                      ) : (
+                        "Submit for Verification"
+                      )}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </WorkerLayout>
   );

@@ -19,6 +19,68 @@ import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import { useAuthStore } from "../../../../store/authStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Skeleton loader — mirrors the full page layout
+// ─────────────────────────────────────────────────────────────────────────────
+function PortfolioSkeleton() {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      {/* ── Video section skeleton ── */}
+      <div className={styles.skVideoSection}>
+        <div className={styles.skVideoHeader}>
+          <div className={`${styles.skBlock} ${styles.skVideoIcon}`} />
+          <div className={styles.skVideoHeaderText}>
+            <div className={`${styles.skBlock} ${styles.skVideoTitle}`} />
+            <div className={`${styles.skBlock} ${styles.skVideoSub}`} />
+          </div>
+        </div>
+        <div className={`${styles.skBlock} ${styles.skVideoBox}`} />
+      </div>
+
+      {/* ── Upload form skeleton ── */}
+      <div className={styles.skCard}>
+        <div className={`${styles.skBlock} ${styles.skCardTitle}`} />
+
+        <div className={styles.skFormRow}>
+          <div className={styles.skField}>
+            <div className={`${styles.skBlock} ${styles.skLabel}`} />
+            <div className={`${styles.skBlock} ${styles.skInput}`} />
+          </div>
+          <div className={styles.skField}>
+            <div className={`${styles.skBlock} ${styles.skLabel}`} />
+            <div className={`${styles.skBlock} ${styles.skInput}`} />
+          </div>
+        </div>
+
+        <div className={styles.skField}>
+          <div className={`${styles.skBlock} ${styles.skLabel}`} />
+          <div className={`${styles.skBlock} ${styles.skInput}`} />
+        </div>
+
+        <div className={`${styles.skBlock} ${styles.skBtn}`} />
+      </div>
+
+      {/* ── Portfolio grid skeleton ── */}
+      <div className={styles.skCard}>
+        <div className={`${styles.skBlock} ${styles.skCardTitle}`} />
+
+        <div className={styles.grid}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className={styles.skPortfolioCard}>
+              <div className={`${styles.skBlock} ${styles.skPortfolioImg}`} />
+              <div className={styles.skPortfolioBody}>
+                <div className={`${styles.skBlock} ${styles.skItemTitle}`} />
+                <div className={`${styles.skBlock} ${styles.skItemDesc}`} />
+                <div className={`${styles.skBlock} ${styles.skItemBtn}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Video Intro sub-component
 // ─────────────────────────────────────────────────────────────────────────────
 function VideoIntro({ currentUrl, onUpdate }) {
@@ -229,7 +291,6 @@ export default function PortfolioPage() {
       if (e.key === "Escape") setLightboxItem(null);
     };
     window.addEventListener("keydown", onKey);
-    // Prevent background scroll while lightbox is open
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -300,165 +361,168 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* ── Video intro section ── */}
-        <VideoIntro
-          currentUrl={videoUrl}
-          onUpdate={(url) =>
-            setWorker((w) => (w ? { ...w, videoIntroUrl: url } : w))
-          }
-        />
+        {/* ── Loading: full-page skeleton ── */}
+        {loading ? (
+          <PortfolioSkeleton />
+        ) : (
+          <>
+            {/* ── Video intro section ── */}
+            <VideoIntro
+              currentUrl={videoUrl}
+              onUpdate={(url) =>
+                setWorker((w) => (w ? { ...w, videoIntroUrl: url } : w))
+              }
+            />
 
-        {/* ── Upload form ── */}
-        <div className={styles.card}>
-          <h3 className={styles.sectionTitle}>Add Portfolio Item</h3>
+            {/* ── Upload form ── */}
+            <div className={styles.card}>
+              <h3 className={styles.sectionTitle}>Add Portfolio Item</h3>
 
-          {msg && (
-            <div
-              className={`${styles.alert} ${
-                msg.type === "success" ? styles.alertSuccess : styles.alertError
-              }`}
-              role="status"
-            >
-              {msg.type === "success" ? (
-                <FiCheckCircle size={16} />
-              ) : (
-                <FiAlertCircle size={16} />
-              )}
-              <span>{msg.text}</span>
-              <button
-                type="button"
-                className={styles.alertClose}
-                onClick={() => setMsg(null)}
-                aria-label="Dismiss"
-              >
-                <FiX size={14} />
-              </button>
-            </div>
-          )}
-
-          <form onSubmit={handleUpload} className={styles.uploadForm}>
-            <div className={styles.formRow}>
-              <div className={styles.formField}>
-                <label className={styles.label}>Title *</label>
-                <input
-                  className={styles.input}
-                  placeholder="e.g. Kitchen rewiring job"
-                  value={form.title}
-                  required
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, title: e.target.value }))
-                  }
-                />
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.label}>Photo *</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className={styles.input}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, file: e.target.files[0] }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className={styles.formField}>
-              <label className={styles.label}>Description (optional)</label>
-              <input
-                className={styles.input}
-                placeholder="Describe the work done..."
-                value={form.description}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-              />
-            </div>
-
-            <button
-              type="submit"
-              className={styles.uploadBtn}
-              disabled={saving}
-            >
-              {saving ? (
-                "Uploading..."
-              ) : (
-                <>
-                  <FiPlus size={16} /> Add to Portfolio
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* ── Portfolio grid ── */}
-        <div className={styles.card}>
-          <h3 className={styles.sectionTitle}>
-            My Portfolio{" "}
-            <span className={styles.count}>({portfolio.length})</span>
-          </h3>
-
-          {loading ? (
-            <div className={styles.grid}>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className={styles.skCard} />
-              ))}
-            </div>
-          ) : portfolio.length === 0 ? (
-            <div className={styles.empty}>
-              <span className={styles.emptyIcon}>
-                <FiImage />
-              </span>
-              <p className={styles.emptyTitle}>No portfolio items yet</p>
-              <p className={styles.emptySub}>
-                Upload photos of your completed work to attract more clients
-              </p>
-            </div>
-          ) : (
-            <div className={styles.grid}>
-              {portfolio.map((item) => (
-                <div key={item.id} className={styles.portfolioCard}>
+              {msg && (
+                <div
+                  className={`${styles.alert} ${
+                    msg.type === "success"
+                      ? styles.alertSuccess
+                      : styles.alertError
+                  }`}
+                  role="status"
+                >
+                  {msg.type === "success" ? (
+                    <FiCheckCircle size={16} />
+                  ) : (
+                    <FiAlertCircle size={16} />
+                  )}
+                  <span>{msg.text}</span>
                   <button
                     type="button"
-                    className={styles.imgWrap}
-                    onClick={() => setLightboxItem(item)}
-                    aria-label={`View ${item.title} full screen`}
+                    className={styles.alertClose}
+                    onClick={() => setMsg(null)}
+                    aria-label="Dismiss"
                   >
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className={styles.img}
-                      loading="lazy"
-                    />
-                    <span className={styles.imgOverlay}>
-                      <FiMaximize2 size={18} />
-                    </span>
+                    <FiX size={14} />
                   </button>
-                  <div className={styles.cardBody}>
-                    <p className={styles.itemTitle}>{item.title}</p>
-                    {item.description && (
-                      <p className={styles.itemDesc}>{item.description}</p>
-                    )}
-                    <button
-                      type="button"
-                      className={styles.deleteItemBtn}
-                      onClick={() => setPendingDelete(item.id)}
-                      disabled={deletingId === item.id}
-                    >
-                      {deletingId === item.id ? (
-                        "Deleting..."
-                      ) : (
-                        <>
-                          <FiTrash2 size={13} /> Remove
-                        </>
-                      )}
-                    </button>
+                </div>
+              )}
+
+              <form onSubmit={handleUpload} className={styles.uploadForm}>
+                <div className={styles.formRow}>
+                  <div className={styles.formField}>
+                    <label className={styles.label}>Title *</label>
+                    <input
+                      className={styles.input}
+                      placeholder="e.g. Kitchen rewiring job"
+                      value={form.title}
+                      required
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, title: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className={styles.formField}>
+                    <label className={styles.label}>Photo *</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className={styles.input}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, file: e.target.files[0] }))
+                      }
+                    />
                   </div>
                 </div>
-              ))}
+
+                <div className={styles.formField}>
+                  <label className={styles.label}>Description (optional)</label>
+                  <input
+                    className={styles.input}
+                    placeholder="Describe the work done..."
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, description: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className={styles.uploadBtn}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    "Uploading..."
+                  ) : (
+                    <>
+                      <FiPlus size={16} /> Add to Portfolio
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
-          )}
-        </div>
+
+            {/* ── Portfolio grid ── */}
+            <div className={styles.card}>
+              <h3 className={styles.sectionTitle}>
+                My Portfolio{" "}
+                <span className={styles.count}>({portfolio.length})</span>
+              </h3>
+
+              {portfolio.length === 0 ? (
+                <div className={styles.empty}>
+                  <span className={styles.emptyIcon}>
+                    <FiImage />
+                  </span>
+                  <p className={styles.emptyTitle}>No portfolio items yet</p>
+                  <p className={styles.emptySub}>
+                    Upload photos of your completed work to attract more clients
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.grid}>
+                  {portfolio.map((item) => (
+                    <div key={item.id} className={styles.portfolioCard}>
+                      <button
+                        type="button"
+                        className={styles.imgWrap}
+                        onClick={() => setLightboxItem(item)}
+                        aria-label={`View ${item.title} full screen`}
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className={styles.img}
+                          loading="lazy"
+                        />
+                        <span className={styles.imgOverlay}>
+                          <FiMaximize2 size={18} />
+                        </span>
+                      </button>
+                      <div className={styles.cardBody}>
+                        <p className={styles.itemTitle}>{item.title}</p>
+                        {item.description && (
+                          <p className={styles.itemDesc}>{item.description}</p>
+                        )}
+                        <button
+                          type="button"
+                          className={styles.deleteItemBtn}
+                          onClick={() => setPendingDelete(item.id)}
+                          disabled={deletingId === item.id}
+                        >
+                          {deletingId === item.id ? (
+                            "Deleting..."
+                          ) : (
+                            <>
+                              <FiTrash2 size={13} /> Remove
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Fullscreen image lightbox ── */}

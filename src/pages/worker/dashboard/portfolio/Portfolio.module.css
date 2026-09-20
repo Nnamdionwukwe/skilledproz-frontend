@@ -798,3 +798,191 @@
     }
   }
 }
+/* ─────────────────────────────────────────────────────────────────────────────
+   SKELETON LOADER — mirrors the full page layout
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.skBlock {
+  background: linear-gradient(
+    90deg,
+    var(--bg-panel) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    var(--bg-panel) 75%
+  );
+  background-size: 400px 100%;
+  animation: skShimmer 1.4s infinite;
+  border-radius: 8px;
+}
+
+/* ── Video section skeleton ── */
+.skVideoSection {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(1rem, 3.5vw, 1.5rem);
+  min-width: 0;
+}
+
+.skVideoHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.skVideoIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.skVideoHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.skVideoTitle {
+  width: 180px;
+  max-width: 60%;
+  height: 16px;
+}
+
+.skVideoSub {
+  width: 260px;
+  max-width: 85%;
+  height: 12px;
+}
+
+.skVideoBox {
+  width: 100%;
+  height: clamp(220px, 45vw, 340px);
+  border-radius: 10px;
+}
+
+/* ── Card skeleton (upload form + grid container) ── */
+.skCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(1rem, 3.5vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skCardTitle {
+  width: 180px;
+  max-width: 60%;
+  height: 16px;
+  margin-bottom: 0.25rem;
+}
+
+.skFormRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 600px) {
+  .skFormRow {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.skField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.skLabel {
+  width: 80px;
+  height: 10px;
+}
+
+.skInput {
+  width: 100%;
+  height: 42px;
+}
+
+.skBtn {
+  width: 180px;
+  height: 42px;
+  border-radius: 8px;
+  align-self: flex-start;
+}
+@media (max-width: 480px) {
+  .skBtn {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+/* ── Portfolio card skeleton ── */
+.skPortfolioCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.skPortfolioImg {
+  width: 100%;
+  height: clamp(140px, 22vw, 160px);
+  border-radius: 0;
+}
+@media (max-width: 480px) {
+  .skPortfolioImg {
+    height: 140px;
+  }
+}
+
+.skPortfolioBody {
+  padding: clamp(0.75rem, 2.5vw, 0.875rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.skItemTitle {
+  width: 70%;
+  height: 14px;
+}
+
+.skItemDesc {
+  width: 100%;
+  height: 10px;
+}
+
+.skItemBtn {
+  width: 80px;
+  height: 26px;
+  border-radius: 6px;
+  margin-top: 0.25rem;
+}
+
+/* ── Shimmer animation ── */
+@keyframes skShimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .skBlock {
+    animation: none;
+  }
+}
