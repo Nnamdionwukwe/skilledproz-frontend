@@ -1,6 +1,6 @@
 /* src/pages/worker/verification/Verification.module.css */
 /* ─────────────────────────────────────────────────────────────────────────────
-   Worker Verification — full-bleed, responsive across all screen sizes
+   Worker Identity Verification — responsive across all screen sizes
    Safe-area aware, no horizontal overflow, touch-friendly targets
    ───────────────────────────────────────────────────────────────────────────── */
 
@@ -163,17 +163,6 @@
   margin-top: 0.3rem;
 }
 
-.rejectionReason {
-  font-size: clamp(0.75rem, 2.4vw, 0.8rem);
-  color: var(--red);
-  margin-top: 0.3rem;
-  background: var(--red-dim);
-  padding: 0.4rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid var(--red);
-  overflow-wrap: anywhere;
-}
-
 .statusRight {
   display: flex;
   flex-direction: column;
@@ -241,62 +230,7 @@
   border: 1px solid var(--red);
 }
 
-/* ── Tabs ── */
-.tabs {
-  display: flex;
-  gap: 0.375rem;
-  margin-bottom: clamp(1rem, 3vw, 1.5rem);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  min-width: 0;
-}
-.tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.tab {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  font-size: clamp(0.8125rem, 2.5vw, 0.875rem);
-  font-weight: 500;
-  padding: 0.65rem clamp(0.625rem, 2vw, 1rem) 0.75rem;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition:
-    color 0.2s,
-    border-color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: -1px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  font-family: var(--font-body);
-  min-height: 40px;
-}
-
-.tab:hover {
-  color: var(--text);
-}
-
-.tabActive {
-  color: var(--orange);
-  border-bottom-color: var(--orange);
-}
-
-.tabBadge {
-  background: var(--orange-dim);
-  color: var(--orange);
-  font-size: 0.65rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 100px;
-  margin-left: 0.1rem;
-}
-
-/* ── Tab content ── */
+/* ── Content wrapper ── */
 .tabContent {
   animation: fadeUp 0.4s ease both;
   min-width: 0;
@@ -344,62 +278,6 @@
   left: 0;
   color: var(--orange);
   font-size: 0.75rem;
-}
-
-/* ── Type selector ── */
-.typeSelector {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
-}
-@media (max-width: 640px) {
-  .typeSelector {
-    grid-template-columns: 1fr;
-  }
-}
-
-.typeBtn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition:
-    border-color 0.2s,
-    background 0.2s;
-  gap: 0.3rem;
-  font-family: var(--font-body);
-  text-align: center;
-}
-
-.typeBtn:hover {
-  border-color: var(--border-hover);
-}
-
-.typeBtnActive {
-  background: var(--orange-dim);
-  border-color: var(--orange);
-}
-
-.typeBtnIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--orange);
-  margin-bottom: 4px;
-}
-.typeBtnLabel {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text);
-}
-.typeBtnSub {
-  font-size: 0.75rem;
-  color: var(--text-muted);
 }
 
 /* ── Form ── */
@@ -659,139 +537,7 @@
   cursor: not-allowed;
 }
 
-/* ── Certifications list ── */
-.certList {
-  margin-bottom: clamp(1.25rem, 3.5vw, 2rem);
-  min-width: 0;
-}
-
-.certListTitle {
-  font-family: var(--font-display);
-  font-size: clamp(0.9375rem, 2.8vw, 1rem);
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 0.875rem;
-}
-
-.certCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(0.625rem, 2.5vw, 1rem);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: clamp(0.75rem, 2.8vw, 1rem) clamp(0.875rem, 3vw, 1.25rem);
-  margin-bottom: 0.625rem;
-  transition: border-color 0.2s;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-.certCard:hover {
-  border-color: var(--border-hover);
-}
-
-.certLeft {
-  display: flex;
-  align-items: flex-start;
-  gap: clamp(0.5rem, 2vw, 0.875rem);
-  min-width: 0;
-  flex: 1;
-}
-
-.certIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--orange);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.certInfo {
-  min-width: 0;
-}
-
-.certName {
-  font-size: clamp(0.8125rem, 2.6vw, 0.9rem);
-  font-weight: 600;
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-.certIssuer {
-  font-size: clamp(0.6875rem, 2.2vw, 0.78rem);
-  color: var(--text-dim);
-  overflow-wrap: anywhere;
-}
-.certDate {
-  font-size: clamp(0.6875rem, 2.2vw, 0.72rem);
-  color: var(--text-muted);
-  margin-top: 0.15rem;
-}
-
-.certRight {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.5rem, 2vw, 0.75rem);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-@media (max-width: 560px) {
-  .certRight {
-    width: 100%;
-    justify-content: flex-end;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--border);
-  }
-}
-
-.viewLink {
-  font-size: clamp(0.6875rem, 2.2vw, 0.78rem);
-  color: var(--orange);
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-.viewLink:hover {
-  color: var(--orange-hover);
-  background: var(--orange-dim);
-}
-
-.deleteBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  opacity: 0.6;
-  transition:
-    opacity 0.2s,
-    color 0.15s,
-    background 0.15s;
-  padding: 0.35rem;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.deleteBtn:hover {
-  opacity: 1;
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.addCertSection {
-  padding-top: 0.5rem;
-  min-width: 0;
-}
-
-/* ── Already verified / pending states ── */
+/* ── Verified / pending states ── */
 .alreadyVerified,
 .pendingBox {
   display: flex;
@@ -860,10 +606,6 @@
     font-size: 0.5625rem;
     padding: 0.25rem 0.6rem;
   }
-  .tab {
-    padding: 0.55rem 0.5rem 0.65rem;
-    font-size: 0.75rem;
-  }
   .input {
     font-size: 0.75rem;
     padding: 0.5rem 0.625rem;
@@ -871,9 +613,6 @@
   .submitBtn {
     font-size: 0.8125rem;
     min-height: 42px;
-  }
-  .certCard {
-    padding: 0.625rem 0.75rem;
   }
 }
 
