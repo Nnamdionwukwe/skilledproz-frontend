@@ -1,37 +1,122 @@
+/* src/pages/worker/availability/Availability.module.css */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Worker Availability — responsive across all screen sizes
+   Mobile-first ordering, safe-area aware, no horizontal overflow
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Page shell ── */
 .page {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   max-width: 680px;
+  width: 100%;
+  min-width: 0;
   animation: fadeUp 0.3s ease;
 }
 
+/* ── Header ── */
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 5vw, 1.75rem);
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  font-size: clamp(0.8125rem, 2.6vw, 0.875rem);
+  color: var(--text-dim);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* ── Quick actions ── */
+.quickActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.quickBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0.45rem 0.875rem;
+  border-radius: 8px;
+  font-size: clamp(0.75rem, 2.4vw, 0.8rem);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  font-family: var(--font-body);
+  min-height: 34px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.quickBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.activeSummary {
+  font-size: clamp(0.6875rem, 2.2vw, 0.78rem);
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .quickActions {
+    gap: 0.375rem;
+  }
+  .activeSummary {
+    width: 100%;
+    margin-left: 0;
+    text-align: right;
+    margin-top: 0.125rem;
+  }
+}
+
+/* ── Card ── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: clamp(1rem, 3.5vw, 1.5rem);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .cardTitle {
   font-family: var(--font-display);
-  font-size: 0.9375rem;
+  font-size: clamp(0.875rem, 2.8vw, 0.9375rem);
   font-weight: 700;
   color: var(--text);
   margin-bottom: 0.25rem;
+  line-height: 1.3;
 }
 
 .cardDesc {
-  font-size: 0.8125rem;
+  font-size: clamp(0.75rem, 2.5vw, 0.8125rem);
   color: var(--text-muted);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
 }
 
-/* ── Day row ── */
+/* ── Day list ── */
 .dayList {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .dayRow {
@@ -39,13 +124,16 @@
   grid-template-columns: 150px 1fr;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding: clamp(0.625rem, 2.5vw, 0.75rem) clamp(0.75rem, 3vw, 1rem);
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg-input);
   transition:
     border-color 0.2s,
     background 0.2s;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .dayRow.active {
@@ -61,19 +149,21 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .dayName {
-  font-size: 0.9rem;
+  font-size: clamp(0.8125rem, 2.6vw, 0.9rem);
   font-weight: 600;
   color: var(--text-dim);
+  overflow-wrap: anywhere;
 }
 
 .dayRow.active .dayName {
   color: var(--orange);
 }
 
-/* Toggle switch */
+/* ── Toggle switch ── */
 .toggleBtn {
   width: 34px;
   height: 18px;
@@ -84,6 +174,7 @@
   transition: background 0.2s;
   border: none;
   flex-shrink: 0;
+  padding: 0;
 }
 
 .toggleBtn.on {
@@ -106,46 +197,67 @@
   transform: translateX(16px);
 }
 
-/* Time inputs */
+.toggleBtn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* ── Time inputs ── */
 .timeRow {
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  min-width: 0;
 }
 
 .timeInput {
-  padding: 0.375rem 0.625rem;
+  padding: clamp(0.3125rem, 1.5vw, 0.375rem) clamp(0.5rem, 2vw, 0.625rem);
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 0.8125rem;
+  font-size: clamp(0.75rem, 2.4vw, 0.8125rem);
   color: var(--text);
   outline: none;
   transition: border-color 0.15s;
   font-family: var(--font-body);
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .timeInput:focus {
   border-color: var(--border-focus);
 }
 
+/* Safari iOS: force shrink + proper rendering */
 .timeInput::-webkit-calendar-picker-indicator {
   filter: invert(0.5);
   cursor: pointer;
+  margin-left: 0.25rem;
+}
+.timeInput::-webkit-date-and-time-value {
+  text-align: left;
+}
+.timeInput::-webkit-datetime-edit {
+  padding: 0;
 }
 
 .timeSep {
-  font-size: 0.75rem;
+  font-size: clamp(0.6875rem, 2.2vw, 0.75rem);
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .offLabel {
-  font-size: 0.8125rem;
+  font-size: clamp(0.75rem, 2.5vw, 0.8125rem);
   color: var(--text-muted);
   font-style: italic;
+  overflow-wrap: anywhere;
 }
 
 /* ── Footer ── */
@@ -155,70 +267,20 @@
   border-top: 1px solid var(--border);
 }
 
-@media (max-width: 560px) {
-  .dayRow {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-}
-
-/* ── Add these to the provided CSS ── */
-
-.title {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-
-.sub {
-  font-size: 0.875rem;
-  color: var(--text-dim);
-}
-
-/* Quick actions */
-.quickActions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.quickBtn {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  padding: 0.45rem 0.875rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-  font-family: var(--font-body);
-}
-
-.quickBtn:hover {
-  border-color: var(--orange);
-  color: var(--orange);
-}
-
-.activeSummary {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-left: auto;
-}
-
-/* Alerts */
+/* ── Alerts ── */
 .alertError {
   background: var(--red-dim);
   border: 1px solid var(--red);
   color: var(--red);
   border-radius: 8px;
-  padding: 0.7rem 1rem;
-  font-size: 0.85rem;
+  padding: clamp(0.5625rem, 2.2vw, 0.7rem) clamp(0.75rem, 3vw, 1rem);
+  font-size: clamp(0.75rem, 2.5vw, 0.85rem);
   margin-top: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .alertSuccess {
@@ -226,26 +288,34 @@
   border: 1px solid var(--green);
   color: var(--green);
   border-radius: 8px;
-  padding: 0.7rem 1rem;
-  font-size: 0.85rem;
+  padding: clamp(0.5625rem, 2.2vw, 0.7rem) clamp(0.75rem, 3vw, 1rem);
+  font-size: clamp(0.75rem, 2.5vw, 0.85rem);
   margin-top: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-/* Save button */
+/* ── Save button ── */
 .saveBtn {
   background: var(--orange);
   color: var(--bg);
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 2rem;
-  font-size: 0.9rem;
+  padding: clamp(0.625rem, 2.2vw, 0.75rem) clamp(1.25rem, 4vw, 2rem);
+  font-size: clamp(0.8125rem, 2.5vw, 0.9rem);
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   transition: background 0.2s;
   font-family: var(--font-body);
+  min-height: 42px;
+  box-sizing: border-box;
 }
 
 .saveBtn:hover:not(:disabled) {
@@ -256,15 +326,15 @@
   cursor: not-allowed;
 }
 
-/* Skeleton */
+/* ── Skeleton ── */
 .skeleton {
-  height: 58px;
+  height: clamp(52px, 12vw, 58px);
   background: var(--bg-card);
   border-radius: 8px;
   animation: pulse 1.4s ease infinite;
 }
 
-/* Spinner */
+/* ── Spinner ── */
 .spinner {
   width: 14px;
   height: 14px;
@@ -273,4 +343,177 @@
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================ */
+
+/* Tablet & smaller */
+@media (max-width: 640px) {
+  .page {
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .cardDesc {
+    margin-bottom: 1rem;
+  }
+
+  .dayRow {
+    grid-template-columns: 130px 1fr;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+  }
+}
+
+/* Mobile — stack rows */
+@media (max-width: 560px) {
+  .dayRow {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+    padding: 0.75rem 0.875rem;
+  }
+
+  .dayLeft {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .dayName {
+    flex: 1;
+    margin-left: 0.5rem;
+  }
+
+  .timeRow {
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .offLabel {
+    display: block;
+    text-align: left;
+    width: 100%;
+  }
+
+  .saveBtn {
+    width: 100%;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+  .dayRow {
+    padding: 0.625rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .timeInput {
+    font-size: 0.75rem;
+    padding: 0.3125rem 0.5rem;
+  }
+
+  .timeSep {
+    font-size: 0.6875rem;
+  }
+
+  .toggleBtn {
+    width: 32px;
+    height: 18px;
+  }
+
+  .toggleThumb {
+    width: 12px;
+    height: 12px;
+  }
+
+  .toggleBtn.on .toggleThumb {
+    transform: translateX(14px);
+  }
+}
+
+/* Tiny phones (≤ 360px) */
+@media (max-width: 360px) {
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .sub {
+    font-size: 0.75rem;
+  }
+
+  .card {
+    padding: 0.875rem;
+  }
+
+  .dayRow {
+    padding: 0.5625rem 0.625rem;
+  }
+
+  .timeRow {
+    gap: 0.375rem;
+  }
+
+  .timeSep {
+    font-size: 0.625rem;
+  }
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+  .skeleton {
+    animation: none;
+  }
+  .spinner {
+    animation-duration: 1.4s;
+  }
+  .toggleThumb {
+    transition: none;
+  }
+}
+
+/* ── Safe-area support for notched devices ── */
+@supports (padding: env(safe-area-inset-left)) {
+  @media (max-width: 640px) {
+    .page {
+      padding-left: max(0, env(safe-area-inset-left));
+      padding-right: max(0, env(safe-area-inset-right));
+    }
+  }
 }
