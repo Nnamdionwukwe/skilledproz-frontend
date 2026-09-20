@@ -26,7 +26,6 @@ import {
   FiSettings,
   FiLogOut,
   FiMenu,
-  FiChevronDown,
   FiRotateCcw,
 } from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
@@ -218,16 +217,6 @@ function isNavActive(itemPath, pathname) {
   return pathname === itemPath;
 }
 
-/** Find which group contains the active item */
-function findActiveGroup(pathname) {
-  for (const group of NAV) {
-    for (const item of group.items) {
-      if (isNavActive(item.path, pathname)) return group.group;
-    }
-  }
-  return null;
-}
-
 // ─── Confirmation Modal ──────────────────────────────────────────────────
 function ConfirmationModal({
   isOpen,
@@ -275,14 +264,8 @@ export default function WorkerLayout({ children }) {
   const [loadingAvailability, setLoadingAvailability] = useState(true);
   const isFirstRender = useRef(true);
 
-  // ── Collapsible groups state ────────────────────────────────────────────
-  // Starts with ALL groups open (desktop default).
-  // On mobile open, we'll collapse all but the active one.
-  const [openGroups, setOpenGroups] = useState(
-    () => new Set(NAV.map((g) => g.group)),
-  );
-
-  // ── Refs for auto-scrolling ─────────────────────────────────────────────
+  // ── Refs for auto-scrolling the active nav item into view ───────────────
+  const navRef = useRef(null);
   const activeItemRef = useRef(null);
 
   // ── Fetch unread notifications ──────────────────────────────────────────
@@ -334,6 +317,7 @@ export default function WorkerLayout({ children }) {
     if (!user?.id || loadingAvailability) return;
 
     api.put("/workers/profile", { isAvailable: available }).catch(() => {
+      // Revert on error
       setAvailable((prev) => !prev);
     });
   }, [available, user?.id, loadingAvailability]);
@@ -349,45 +333,9 @@ export default function WorkerLayout({ children }) {
     return () => clearInterval(interval);
   }, [fetchUnread, fetchUnreadMessages]);
 
-  // ── Auto-expand the group that contains the active item ─────────────────
-  // Runs on route change. Ensures the group containing the active link is
-  // expanded so the user sees where they are.
-  useEffect(() => {
-    const activeGroup = findActiveGroup(location.pathname);
-    if (!activeGroup) return;
-    setOpenGroups((prev) => {
-      if (prev.has(activeGroup)) return prev; // already open — don't re-render
-      const next = new Set(prev);
-      next.add(activeGroup);
-      return next;
-    });
-  }, [location.pathname]);
-
-  // ── Toggle a group open/closed ──────────────────────────────────────────
-  const toggleGroup = (groupName) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupName)) next.delete(groupName);
-      else next.add(groupName);
-      return next;
-    });
-  };
-
-  // ── On mobile sidebar open: collapse all groups except the active one ───
-  // This gives the user a compact view with just the current group expanded.
-  useEffect(() => {
-    if (!sidebarOpen) return;
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 960px)").matches;
-    if (!isMobile) return;
-
-    const activeGroup = findActiveGroup(location.pathname);
-    setOpenGroups(activeGroup ? new Set([activeGroup]) : new Set());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sidebarOpen]);
-
   // ── AUTO-SCROLL: On route change, scroll the active nav item into view ──
+  // Runs whenever the URL changes. Uses a rAF so the DOM has already painted
+  // the new active class before we calculate positions.
   useEffect(() => {
     if (!activeItemRef.current) return;
     const raf = requestAnimationFrame(() => {
@@ -397,9 +345,10 @@ export default function WorkerLayout({ children }) {
       });
     });
     return () => cancelAnimationFrame(raf);
-  }, [location.pathname, openGroups]);
+  }, [location.pathname]);
 
-  // ── AUTO-SCROLL: When the mobile sidebar opens, scroll active item ──────
+  // ── AUTO-SCROLL: When the mobile sidebar is opened, scroll active item ──
+  // Only matters on mobile (sidebarOpen), but harmless on desktop.
   useEffect(() => {
     if (!sidebarOpen) return;
     if (!activeItemRef.current) return;
@@ -408,9 +357,9 @@ export default function WorkerLayout({ children }) {
         behavior: "smooth",
         block: "center",
       });
-    }, 80);
+    }, 50);
     return () => clearTimeout(t);
-  }, [sidebarOpen, openGroups]);
+  }, [sidebarOpen]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -465,79 +414,41 @@ export default function WorkerLayout({ children }) {
           </div>
         </div>
 
-        <nav className={styles.sidebarNav}>
-          {NAV.map((group) => {
-            const isOpen = openGroups.has(group.group);
-            const hasActive = group.items.some((item) =>
-              isNavActive(item.path, location.pathname),
-            );
-
-            return (
-              <div
-                key={group.group}
-                className={`${styles.navGroup} ${isOpen ? styles.navGroupOpen : ""}`}
-              >
-                {/* ── Clickable group label ── */}
-                <button
-                  type="button"
-                  className={`${styles.navGroupLabel} ${
-                    hasActive ? styles.navGroupLabelActive : ""
-                  }`}
-                  onClick={() => toggleGroup(group.group)}
-                  aria-expanded={isOpen}
-                >
-                  <span>{group.group}</span>
-                  <FiChevronDown
-                    size={14}
-                    className={`${styles.navGroupChevron} ${
-                      isOpen ? styles.navGroupChevronOpen : ""
+        <nav className={styles.sidebarNav} ref={navRef}>
+          {NAV.map((group) => (
+            <div key={group.group} className={styles.navGroup}>
+              <div className={styles.navGroupLabel}>{group.group}</div>
+              {group.items.map((item) => {
+                const isActive = isNavActive(item.path, location.pathname);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    ref={isActive ? activeItemRef : null}
+                    className={`${styles.navItem} ${
+                      isActive ? styles.active : ""
                     }`}
-                  />
-                </button>
-
-                {/* ── Items (collapsible) ── */}
-                {isOpen && (
-                  <div className={styles.navGroupItems}>
-                    {group.items.map((item) => {
-                      const isActive = isNavActive(
-                        item.path,
-                        location.pathname,
-                      );
-                      return (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          ref={isActive ? activeItemRef : null}
-                          className={`${styles.navItem} ${
-                            isActive ? styles.active : ""
-                          }`}
-                          onClick={closeSidebar}
-                        >
-                          <span className={styles.navIcon}>
-                            <item.icon size={18} />
-                          </span>
-                          {item.label}
-                          {item.badge === "unread" && unreadCount > 0 && (
-                            <span className={styles.navBadge}>
-                              {unreadCount > 99 ? "99+" : unreadCount}
-                            </span>
-                          )}
-                          {item.badge === "message" &&
-                            unreadMessageCount > 0 && (
-                              <span className={styles.navBadge}>
-                                {unreadMessageCount > 99
-                                  ? "99+"
-                                  : unreadMessageCount}
-                              </span>
-                            )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    onClick={closeSidebar}
+                  >
+                    <span className={styles.navIcon}>
+                      <item.icon size={18} />
+                    </span>
+                    {item.label}
+                    {item.badge === "unread" && unreadCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                    {item.badge === "message" && unreadMessageCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -585,6 +496,7 @@ export default function WorkerLayout({ children }) {
           </div>
 
           <div className={styles.headerRight}>
+            {/* ── Notification Bell ── */}
             <Link
               to="/dashboard/worker/notifications"
               className={styles.headerIconBtn}
@@ -598,6 +510,7 @@ export default function WorkerLayout({ children }) {
               )}
             </Link>
 
+            {/* ── Message Icon ── */}
             <Link
               to="/messages"
               className={styles.headerIconBtn}
@@ -611,6 +524,7 @@ export default function WorkerLayout({ children }) {
               )}
             </Link>
 
+            {/* ── User Avatar ── */}
             <Link to="/profile/me" className={styles.headerIconBtn}>
               <div className={styles.headerAvatar}>
                 {user?.avatar ? (
@@ -635,6 +549,7 @@ export default function WorkerLayout({ children }) {
         <div className={styles.content}>{children}</div>
       </div>
 
+      {/* ─── Logout Confirmation Modal ─── */}
       <ConfirmationModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
