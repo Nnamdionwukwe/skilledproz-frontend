@@ -1,134 +1,161 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import {
-  FiHome,
-  FiCalendar,
-  FiGrid,
-  FiSearch,
-  FiBookmark,
-  FiClipboard,
-  FiAlertCircle,
-  FiFeather,
-  FiEdit,
-  FiDollarSign,
-  FiArrowUp,
-  FiUsers,
-  FiSpeaker,
-  FiImage,
-  FiAward,
-  FiClock,
-  FiShield,
-  FiFlag,
-  FiStar,
-  FiBell,
-  FiMail,
-  FiPackage,
-  FiSettings,
-  FiLogOut,
-  FiMenu,
-  FiRotateCcw,
-} from "react-icons/fi";
-import styles from "./WorkerLayout.module.css";
+import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
+import {
+  FaHome,
+  FaBook,
+  FaCreditCard,
+  FaPlus,
+  FaClipboardList,
+  FaGavel,
+  FaNewspaper,
+  FaPenFancy,
+  FaBookmark,
+  FaSearch,
+  FaTools,
+  FaComments,
+  FaStar,
+  FaUserFriends,
+  FaFlag,
+  FaBullhorn,
+  FaBell,
+  FaShieldAlt,
+  FaGem,
+  FaCog,
+  FaSignOutAlt,
+  FaBars,
+  FaUserCircle,
+  FaEnvelope,
+  FaWallet,
+  FaMoneyBillWave,
+  FaChevronDown,
+} from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
 const NAV = [
   {
     group: "Overview",
     items: [
-      { label: "Dashboard", path: "/dashboard/worker", icon: FiHome },
-      { label: "My Bookings", path: "/bookings", icon: FiCalendar },
+      { label: "Dashboard", path: "/dashboard/hirer", icon: <FaHome /> },
+      { label: "My Bookings", path: "/bookings", icon: <FaBook /> },
       {
-        label: "Categories",
-        path: "/dashboard/worker/categories",
-        icon: FiGrid,
-      },
-      { label: "Browse Jobs", path: "/jobs", icon: FiSearch },
-      {
-        label: "Saved Jobs",
-        path: "/dashboard/worker/saved-jobs",
-        icon: FiBookmark,
+        label: "Payment History",
+        path: "/dashboard/hirer/payment-history",
+        icon: <FaCreditCard />,
       },
       {
-        label: "My Applications",
-        path: "/dashboard/worker/applications",
-        icon: FiClipboard,
+        label: "Post a Job",
+        path: "/dashboard/hirer/post-job",
+        icon: <FaPlus />,
       },
-      { label: "Disputes", path: "/disputes", icon: FiAlertCircle },
-      { label: "Community Feed", path: "/feed", icon: FiFeather },
-      { label: "My Posts", path: "/my-posts", icon: FiEdit },
+      {
+        label: "Jobs Management",
+        path: "/dashboard/hirer/jobs-management",
+        icon: <FaClipboardList />,
+      },
+      { label: "Disputes", path: "/disputes", icon: <FaGavel /> },
+      { label: "Community Feed", path: "/feed", icon: <FaNewspaper /> },
+      { label: "My Posts", path: "/my-posts", icon: <FaPenFancy /> },
     ],
   },
   {
-    group: "History",
+    group: "Workers",
     items: [
       {
-        label: "Completed Jobs",
-        path: "/dashboard/worker/completed-jobs",
-        icon: FiAward,
+        label: "Saved Workers",
+        path: "/dashboard/hirer/saved-workers",
+        icon: <FaBookmark />,
+      },
+      {
+        label: "Browse Workers",
+        path: "/search",
+        icon: <FaSearch />,
+      },
+      { label: "Browse By Categories", path: "/categories", icon: <FaTools /> },
+      {
+        label: "Messages",
+        path: "/messages",
+        icon: <FaComments />,
+        badge: "message",
       },
     ],
   },
   {
-    group: "Payouts",
+    group: "Reviews",
     items: [
       {
-        label: "Earnings",
-        path: "/dashboard/worker/earnings",
-        icon: FiDollarSign,
+        label: "Reviews Received",
+        path: "/dashboard/hirer/reviews/received",
+        icon: <FaStar />,
       },
       {
-        label: "Wallet",
-        path: "/dashboard/worker/withdrawals",
-        icon: FiArrowUp,
+        label: "Reviews Given",
+        path: "/dashboard/hirer/reviews/given",
+        icon: <FaPenFancy />,
       },
-      {
-        label: "Refunds",
-        path: "/dashboard/worker/refunds",
-        icon: FiRotateCcw,
-      },
-      { label: "Referrals", path: "/referrals", icon: FiUsers },
-      { label: "Campaigns", path: "/campaign", icon: FiSpeaker },
     ],
   },
   {
-    group: "Profile",
+    group: "Payments & Refunds",
     items: [
       {
-        label: "Portfolio",
-        path: "/dashboard/worker/portfolio",
-        icon: FiImage,
+        label: "My Wallet",
+        path: "/dashboard/hirer/wallet",
+        icon: <FaWallet />,
       },
       {
-        label: "Certifications",
-        path: "/dashboard/worker/certifications",
-        icon: FiAward,
+        label: "Refund History",
+        path: "/refunds",
+        icon: <FaMoneyBillWave />,
       },
+    ],
+  },
+  {
+    group: "Referrals",
+    items: [
       {
-        label: "Availability",
-        path: "/dashboard/worker/availability",
-        icon: FiClock,
+        label: "Referals",
+        path: "/referrals",
+        icon: <FaUserFriends />,
+      },
+    ],
+  },
+  {
+    group: "Reports",
+    items: [
+      {
+        label: "Reports",
+        path: "/my-reports",
+        icon: <FaFlag />,
+      },
+    ],
+  },
+  {
+    group: "Campaigns",
+    items: [
+      {
+        label: "Campaigns",
+        path: "/campaign",
+        icon: <FaBullhorn />,
+      },
+    ],
+  },
+  {
+    group: "Account",
+    items: [
+      {
+        label: "Notifications",
+        path: "/dashboard/hirer/notifications",
+        icon: <FaBell />,
+        badge: "unread",
       },
       {
         label: "Verification",
-        path: "/dashboard/worker/verification",
-        icon: FiShield,
+        path: "/dashboard/hirer/verification",
+        icon: <FaShieldAlt />,
       },
-      { label: "Reports", path: "/my-reports", icon: FiFlag },
-    ],
-  },
-  {
-    group: "Inbox",
-    items: [
-      { label: "Reviews", path: "/dashboard/worker/reviews", icon: FiStar },
-      {
-        label: "Notifications",
-        path: "/dashboard/worker/notifications",
-        icon: FiBell,
-        badge: "unread",
-      },
-      { label: "Messages", path: "/messages", icon: FiMail, badge: "message" },
     ],
   },
   {
@@ -136,67 +163,84 @@ const NAV = [
     items: [
       {
         label: "Subscriptions",
-        path: "/dashboard/worker/subscription",
-        icon: FiPackage,
+        path: "/dashboard/hirer/subscription",
+        icon: <FaGem />,
       },
-      { label: "Settings", path: "/settings", icon: FiSettings },
+      { label: "Settings", path: "/settings", icon: <FaCog /> },
     ],
   },
 ];
 
 // ─── Page titles map ──────────────────────────────────────────────────────
 const PAGE_TITLES = {
-  "/dashboard/worker": { title: "Dashboard", sub: "Your work at a glance" },
+  "/dashboard/hirer": { title: "Dashboard", sub: "Your hiring overview" },
   "/bookings": { title: "My Bookings", sub: "All your jobs" },
   "/bookings/create": { title: "Create Booking", sub: "Post a new job" },
-  "/dashboard/worker/earnings": { title: "Earnings", sub: "Track your income" },
-  "/dashboard/worker/saved-jobs": {
-    title: "Saved Jobs",
-    sub: "Your saved jobs",
+  "/dashboard/hirer/post-job": {
+    title: "Post a Job",
+    sub: "Find the right worker",
   },
-  "/dashboard/worker/portfolio": {
-    title: "Portfolio",
-    sub: "Showcase your work",
+  "/search": {
+    title: "Browse Jobs",
+    sub: "Get the right worker",
   },
-  "/dashboard/worker/certifications": {
-    title: "Certifications",
-    sub: "Your credentials",
+  "/categories": {
+    title: "Browse By Categories",
+    sub: "Find workers by skill",
   },
-  "/dashboard/worker/availability": {
-    title: "Availability",
-    sub: "Set your schedule",
+  "/dashboard/hirer/saved-workers": {
+    title: "Saved Workers",
+    sub: "Workers you've hired before",
   },
-  "/dashboard/worker/categories": {
-    title: "Categories",
-    sub: "Your trade categories",
+  "/dashboard/hirer/reviews/given": {
+    title: "Reviews Given",
+    sub: "Your feedback to workers",
   },
-  "/dashboard/worker/reviews": { title: "Reviews", sub: "What clients say" },
-  "/dashboard/worker/notifications": {
+  "/dashboard/hirer/reviews/received": {
+    title: "Reviews Received",
+    sub: "Feedback from workers",
+  },
+  "/messages": { title: "Messages", sub: "Your conversations" },
+  "/dashboard/hirer/profile": {
+    title: "Profile",
+    sub: "Your account information",
+  },
+  "/dashboard/hirer/notifications": {
     title: "Notifications",
     sub: "Stay up to date",
   },
-  "/dashboard/worker/applications": {
-    title: "My Applications",
-    sub: "Jobs you applied to",
-  },
-  "/messages": { title: "Messages", sub: "Your conversations" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
-  "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
-  "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
-  "/dashboard/worker/subscription": {
+  "/dashboard/hirer/payment-history": {
+    title: "Payment History",
+    sub: "Your payment records",
+  },
+  "/dashboard/hirer/subscription": {
     title: "Subscriptions",
     sub: "Manage your subscription",
   },
-  "/dashboard/worker/completed-jobs": {
-    title: "Jobs Done",
-    sub: "View your Jobs Done",
+  "/dashboard/hirer/jobs-management": {
+    title: "Jobs Management",
+    sub: "Manage your job posts",
   },
-  "/dashboard/worker/refunds": {
+  "/dashboard/hirer/verification": {
+    title: "Verification",
+    sub: "Verify your identity",
+  },
+  "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
+  "/dashboard/hirer/wallet": {
+    title: "My Wallet",
+    sub: "Manage your funds and payments",
+  },
+  "/refunds": {
     title: "Refund History",
-    sub: "Refunds affecting your earnings",
+    sub: "View and track your refund requests",
   },
+  "/referrals": { title: "Referrals", sub: "Invite and earn" },
+  "/campaign": { title: "Campaigns", sub: "Your campaigns" },
   "/my-reports": { title: "My Reports", sub: "Track your reports" },
   "/settings": { title: "Settings", sub: "Manage your preferences" },
+  "/feed": { title: "Community Feed", sub: "See what's happening" },
+  "/my-posts": { title: "My Posts", sub: "Your community posts" },
 };
 
 function getPageInfo(pathname) {
@@ -204,17 +248,35 @@ function getPageInfo(pathname) {
   if (pathname.startsWith("/bookings/"))
     return { title: "Booking Detail", sub: "Job details and actions" };
   if (pathname.startsWith("/profile/")) return { title: "Profile", sub: "" };
-  if (pathname.startsWith("/jobs/")) return { title: "Job Detail", sub: "" };
-  if (pathname.startsWith("/dashboard/worker/refunds/"))
-    return { title: "Refund Detail", sub: "Full refund breakdown" };
-  return { title: "Worker Portal", sub: "Manage your work" };
+  if (pathname.startsWith("/refunds/"))
+    return { title: "Refund Details", sub: "Refund request details" };
+  return { title: "SkilledProz", sub: "" };
 }
 
 function isNavActive(itemPath, pathname) {
-  if (itemPath === "/bookings" && pathname.startsWith("/bookings/"))
-    return true;
-  if (itemPath === "/jobs" && pathname.startsWith("/jobs/")) return true;
+  if (itemPath === "/bookings")
+    return pathname === "/bookings" || pathname.startsWith("/bookings/");
+  if (itemPath === "/dashboard/hirer/reviews/received")
+    return pathname === "/dashboard/hirer/reviews/received";
+  if (itemPath === "/dashboard/hirer/reviews/given")
+    return pathname === "/dashboard/hirer/reviews/given";
+  if (itemPath === "/dashboard/hirer/payment-history")
+    return pathname === "/dashboard/hirer/payment-history";
+  if (itemPath === "/dashboard/hirer/wallet")
+    return pathname === "/dashboard/hirer/wallet";
+  if (itemPath === "/refunds")
+    return pathname === "/refunds" || pathname.startsWith("/refunds/");
   return pathname === itemPath;
+}
+
+/** Find which group contains the active item */
+function findActiveGroup(pathname) {
+  for (const group of NAV) {
+    for (const item of group.items) {
+      if (isNavActive(item.path, pathname)) return group.group;
+    }
+  }
+  return null;
 }
 
 // ─── Confirmation Modal ──────────────────────────────────────────────────
@@ -252,20 +314,23 @@ function ConfirmationModal({
 }
 
 // ─── Main Layout ──────────────────────────────────────────────────────────
-export default function WorkerLayout({ children }) {
+export default function HirerLayout({ children }) {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const [available, setAvailable] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [loadingAvailability, setLoadingAvailability] = useState(true);
-  const isFirstRender = useRef(true);
 
-  // ── Refs for auto-scrolling the active nav item into view ───────────────
-  const navRef = useRef(null);
+  // ── Collapsible groups ─────────────────────────────────────────────────
+  // Starts with ALL groups open (desktop default).
+  // On mobile open, we collapse all but the active one.
+  const [openGroups, setOpenGroups] = useState(
+    () => new Set(NAV.map((g) => g.group)),
+  );
+
+  // ── Ref for auto-scrolling the active nav item ─────────────────────────
   const activeItemRef = useRef(null);
 
   // ── Fetch unread notifications ──────────────────────────────────────────
@@ -293,49 +358,48 @@ export default function WorkerLayout({ children }) {
     }
   }, []);
 
-  // ── Fetch worker availability on mount ──────────────────────────────────
-  useEffect(() => {
-    if (!user?.id) return;
-    api
-      .get("/workers/dashboard")
-      .then((res) => {
-        const profile = res.data.data?.profile;
-        if (profile && typeof profile.isAvailable === "boolean") {
-          setAvailable(profile.isAvailable);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingAvailability(false));
-  }, [user?.id]);
-
-  // ── Sync availability toggle to backend ──────────────────────────────────
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (!user?.id || loadingAvailability) return;
-
-    api.put("/workers/profile", { isAvailable: available }).catch(() => {
-      // Revert on error
-      setAvailable((prev) => !prev);
-    });
-  }, [available, user?.id, loadingAvailability]);
-
-  // ── Periodic fetch for notifications & messages ──────────────────────────
+  // ── Fetch on route change ──────────────────────────────────────────────
   useEffect(() => {
     fetchUnread();
     fetchUnreadMessages();
-    const interval = setInterval(() => {
-      fetchUnread();
-      fetchUnreadMessages();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [fetchUnread, fetchUnreadMessages]);
+  }, [location.pathname, fetchUnread, fetchUnreadMessages]);
 
-  // ── AUTO-SCROLL: On route change, scroll the active nav item into view ──
-  // Runs whenever the URL changes. Uses a rAF so the DOM has already painted
-  // the new active class before we calculate positions.
+  // ── Auto-expand the group that contains the active item ────────────────
+  useEffect(() => {
+    const activeGroup = findActiveGroup(location.pathname);
+    if (!activeGroup) return;
+    setOpenGroups((prev) => {
+      if (prev.has(activeGroup)) return prev;
+      const next = new Set(prev);
+      next.add(activeGroup);
+      return next;
+    });
+  }, [location.pathname]);
+
+  // ── Toggle a group open/closed ─────────────────────────────────────────
+  const toggleGroup = (groupName) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupName)) next.delete(groupName);
+      else next.add(groupName);
+      return next;
+    });
+  };
+
+  // ── On mobile sidebar open: collapse all groups except the active one ──
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 960px)").matches;
+    if (!isMobile) return;
+
+    const activeGroup = findActiveGroup(location.pathname);
+    setOpenGroups(activeGroup ? new Set([activeGroup]) : new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sidebarOpen]);
+
+  // ── Auto-scroll to active item on route change ────────────────────────
   useEffect(() => {
     if (!activeItemRef.current) return;
     const raf = requestAnimationFrame(() => {
@@ -345,10 +409,9 @@ export default function WorkerLayout({ children }) {
       });
     });
     return () => cancelAnimationFrame(raf);
-  }, [location.pathname]);
+  }, [location.pathname, openGroups]);
 
-  // ── AUTO-SCROLL: When the mobile sidebar is opened, scroll active item ──
-  // Only matters on mobile (sidebarOpen), but harmless on desktop.
+  // ── Auto-scroll when mobile sidebar opens ─────────────────────────────
   useEffect(() => {
     if (!sidebarOpen) return;
     if (!activeItemRef.current) return;
@@ -357,13 +420,13 @@ export default function WorkerLayout({ children }) {
         behavior: "smooth",
         block: "center",
       });
-    }, 50);
+    }, 80);
     return () => clearTimeout(t);
-  }, [sidebarOpen]);
+  }, [sidebarOpen, openGroups]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
-    : "WK";
+    : "H";
 
   const pageInfo = getPageInfo(location.pathname);
   const closeSidebar = () => setSidebarOpen(false);
@@ -383,7 +446,7 @@ export default function WorkerLayout({ children }) {
           <div className={styles.logoText}>
             Skilled<span>Proz</span>
           </div>
-          <div className={styles.logoRole}>Worker Portal</div>
+          <div className={styles.logoRole}>Hirer Portal</div>
         </div>
 
         <div className={styles.sidebarUser}>
@@ -403,77 +466,95 @@ export default function WorkerLayout({ children }) {
                 }}
               />
             ) : (
-              initials
+              <FaUserCircle size={24} />
             )}
           </div>
           <div>
             <div className={styles.sidebarUserName}>
               {user?.firstName} {user?.lastName}
             </div>
-            <div className={styles.sidebarUserBadge}>● Active Worker</div>
+            <div className={styles.sidebarUserBadge}>● Hirer</div>
           </div>
         </div>
 
-        <nav className={styles.sidebarNav} ref={navRef}>
-          {NAV.map((group) => (
-            <div key={group.group} className={styles.navGroup}>
-              <div className={styles.navGroupLabel}>{group.group}</div>
-              {group.items.map((item) => {
-                const isActive = isNavActive(item.path, location.pathname);
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    ref={isActive ? activeItemRef : null}
-                    className={`${styles.navItem} ${
-                      isActive ? styles.active : ""
+        <nav className={styles.sidebarNav}>
+          {NAV.map((group) => {
+            const isOpen = openGroups.has(group.group);
+            const hasActive = group.items.some((item) =>
+              isNavActive(item.path, location.pathname),
+            );
+
+            return (
+              <div
+                key={group.group}
+                className={`${styles.navGroup} ${isOpen ? styles.navGroupOpen : ""}`}
+              >
+                <button
+                  type="button"
+                  className={`${styles.navGroupLabel} ${
+                    hasActive ? styles.navGroupLabelActive : ""
+                  }`}
+                  onClick={() => toggleGroup(group.group)}
+                  aria-expanded={isOpen}
+                >
+                  <span>{group.group}</span>
+                  <FaChevronDown
+                    size={11}
+                    className={`${styles.navGroupChevron} ${
+                      isOpen ? styles.navGroupChevronOpen : ""
                     }`}
-                    onClick={closeSidebar}
-                  >
-                    <span className={styles.navIcon}>
-                      <item.icon size={18} />
-                    </span>
-                    {item.label}
-                    {item.badge === "unread" && unreadCount > 0 && (
-                      <span className={styles.navBadge}>
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    )}
-                    {item.badge === "message" && unreadMessageCount > 0 && (
-                      <span className={styles.navBadge}>
-                        {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+                  />
+                </button>
+
+                {isOpen && (
+                  <div className={styles.navGroupItems}>
+                    {group.items.map((item) => {
+                      const isActive = isNavActive(
+                        item.path,
+                        location.pathname,
+                      );
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          ref={isActive ? activeItemRef : null}
+                          className={`${styles.navItem} ${
+                            isActive ? styles.active : ""
+                          }`}
+                          onClick={closeSidebar}
+                        >
+                          <span className={styles.navIcon}>{item.icon}</span>
+                          {item.label}
+                          {item.badge === "unread" && unreadCount > 0 && (
+                            <span className={styles.navBadge}>
+                              {unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                          )}
+                          {item.badge === "message" &&
+                            unreadMessageCount > 0 && (
+                              <span className={styles.navBadge}>
+                                {unreadMessageCount > 99
+                                  ? "99+"
+                                  : unreadMessageCount}
+                              </span>
+                            )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <div className={styles.availToggle}>
-            <span className={styles.availLabel}>
-              {loadingAvailability
-                ? "⏳ Loading..."
-                : available
-                  ? "🟢 Available"
-                  : "⚫ Offline"}
-            </span>
-            <button
-              className={`${styles.toggle} ${available ? styles.on : ""}`}
-              onClick={() => setAvailable((v) => !v)}
-              disabled={loadingAvailability}
-            >
-              <span className={styles.toggleThumb} />
-            </button>
-          </div>
           <button
             className={styles.logoutBtn}
             onClick={() => setShowLogoutModal(true)}
           >
             <span className={styles.navIcon}>
-              <FiLogOut size={18} />
+              <FaSignOutAlt size={16} />
             </span>
             Log out
           </button>
@@ -487,7 +568,7 @@ export default function WorkerLayout({ children }) {
               className={styles.menuBtn}
               onClick={() => setSidebarOpen((v) => !v)}
             >
-              <FiMenu size={20} />
+              <FaBars size={18} />
             </button>
             <div className={styles.headerTitleWrap}>
               <span className={styles.headerTitle}>{pageInfo.title}</span>
@@ -497,11 +578,11 @@ export default function WorkerLayout({ children }) {
 
           <div className={styles.headerRight}>
             <Link
-              to="/dashboard/worker/notifications"
+              to="/dashboard/hirer/notifications"
               className={styles.headerIconBtn}
               style={{ position: "relative" }}
             >
-              <FiBell size={18} />
+              <FaBell size={18} />
               {unreadCount > 0 && (
                 <span className={styles.bellBadge}>
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -514,7 +595,7 @@ export default function WorkerLayout({ children }) {
               className={styles.headerIconBtn}
               style={{ position: "relative" }}
             >
-              <FiMail size={18} />
+              <FaEnvelope size={18} />
               {unreadMessageCount > 0 && (
                 <span className={styles.bellBadge}>
                   {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
@@ -536,7 +617,7 @@ export default function WorkerLayout({ children }) {
                     }}
                   />
                 ) : (
-                  initials
+                  <FaUserCircle size={20} />
                 )}
               </div>
             </Link>
