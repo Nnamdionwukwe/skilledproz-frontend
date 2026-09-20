@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
@@ -30,7 +30,6 @@ import {
   FaEnvelope,
   FaWallet,
   FaMoneyBillWave,
-  FaChevronDown,
 } from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
@@ -269,16 +268,6 @@ function isNavActive(itemPath, pathname) {
   return pathname === itemPath;
 }
 
-/** Find which group contains the active item */
-function findActiveGroup(pathname) {
-  for (const group of NAV) {
-    for (const item of group.items) {
-      if (isNavActive(item.path, pathname)) return group.group;
-    }
-  }
-  return null;
-}
-
 // ─── Confirmation Modal ──────────────────────────────────────────────────
 function ConfirmationModal({
   isOpen,
@@ -323,81 +312,31 @@ export default function HirerLayout({ children }) {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // ── Collapsible groups ─────────────────────────────────────────────────
-  // Starts with ALL groups open (desktop default).
-  // On mobile open, we collapse all but the active one.
-  const [openGroups, setOpenGroups] = useState(
-    () => new Set(NAV.map((g) => g.group)),
-  );
-
   // ── Ref for auto-scrolling the active nav item ─────────────────────────
   const activeItemRef = useRef(null);
 
   // ── Fetch unread notifications ──────────────────────────────────────────
-  const fetchUnread = useCallback(async () => {
-    try {
-      const res = await api.get("/notifications?limit=1");
-      setUnreadCount(res.data.data?.unreadCount || 0);
-    } catch (e) {
-      // Silent fail
-    }
-  }, []);
-
-  // ── Fetch unread messages ──────────────────────────────────────────────
-  const fetchUnreadMessages = useCallback(async () => {
-    try {
-      const res = await api.get("/messages/conversations");
-      const conversations = res.data.data?.conversations || [];
-      const total = conversations.reduce(
-        (sum, c) => sum + (c.unreadCount || 0),
-        0,
-      );
-      setUnreadMessageCount(total);
-    } catch (e) {
-      setUnreadMessageCount(0);
-    }
-  }, []);
-
-  // ── Fetch on route change ──────────────────────────────────────────────
   useEffect(() => {
-    fetchUnread();
-    fetchUnreadMessages();
-  }, [location.pathname, fetchUnread, fetchUnreadMessages]);
-
-  // ── Auto-expand the group that contains the active item ────────────────
-  useEffect(() => {
-    const activeGroup = findActiveGroup(location.pathname);
-    if (!activeGroup) return;
-    setOpenGroups((prev) => {
-      if (prev.has(activeGroup)) return prev;
-      const next = new Set(prev);
-      next.add(activeGroup);
-      return next;
-    });
+    api
+      .get("/notifications?limit=1")
+      .then((res) => setUnreadCount(res.data.data?.unreadCount || 0))
+      .catch(() => {});
   }, [location.pathname]);
 
-  // ── Toggle a group open/closed ─────────────────────────────────────────
-  const toggleGroup = (groupName) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupName)) next.delete(groupName);
-      else next.add(groupName);
-      return next;
-    });
-  };
-
-  // ── On mobile sidebar open: collapse all groups except the active one ──
+  // ── Fetch unread messages ──────────────────────────────────────────────
   useEffect(() => {
-    if (!sidebarOpen) return;
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 960px)").matches;
-    if (!isMobile) return;
-
-    const activeGroup = findActiveGroup(location.pathname);
-    setOpenGroups(activeGroup ? new Set([activeGroup]) : new Set());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sidebarOpen]);
+    api
+      .get("/messages/conversations")
+      .then((res) => {
+        const conversations = res.data.data?.conversations || [];
+        const total = conversations.reduce(
+          (sum, c) => sum + (c.unreadCount || 0),
+          0,
+        );
+        setUnreadMessageCount(total);
+      })
+      .catch(() => setUnreadMessageCount(0));
+  }, [location.pathname]);
 
   // ── Auto-scroll to active item on route change ────────────────────────
   useEffect(() => {
@@ -409,7 +348,7 @@ export default function HirerLayout({ children }) {
       });
     });
     return () => cancelAnimationFrame(raf);
-  }, [location.pathname, openGroups]);
+  }, [location.pathname]);
 
   // ── Auto-scroll when mobile sidebar opens ─────────────────────────────
   useEffect(() => {
@@ -422,7 +361,7 @@ export default function HirerLayout({ children }) {
       });
     }, 80);
     return () => clearTimeout(t);
-  }, [sidebarOpen, openGroups]);
+  }, [sidebarOpen]);
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -478,74 +417,38 @@ export default function HirerLayout({ children }) {
         </div>
 
         <nav className={styles.sidebarNav}>
-          {NAV.map((group) => {
-            const isOpen = openGroups.has(group.group);
-            const hasActive = group.items.some((item) =>
-              isNavActive(item.path, location.pathname),
-            );
-
-            return (
-              <div
-                key={group.group}
-                className={`${styles.navGroup} ${isOpen ? styles.navGroupOpen : ""}`}
-              >
-                <button
-                  type="button"
-                  className={`${styles.navGroupLabel} ${
-                    hasActive ? styles.navGroupLabelActive : ""
-                  }`}
-                  onClick={() => toggleGroup(group.group)}
-                  aria-expanded={isOpen}
-                >
-                  <span>{group.group}</span>
-                  <FaChevronDown
-                    size={11}
-                    className={`${styles.navGroupChevron} ${
-                      isOpen ? styles.navGroupChevronOpen : ""
+          {NAV.map((group) => (
+            <div key={group.group} className={styles.navGroup}>
+              <div className={styles.navGroupLabel}>{group.group}</div>
+              {group.items.map((item) => {
+                const isActive = isNavActive(item.path, location.pathname);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    ref={isActive ? activeItemRef : null}
+                    className={`${styles.navItem} ${
+                      isActive ? styles.active : ""
                     }`}
-                  />
-                </button>
-
-                {isOpen && (
-                  <div className={styles.navGroupItems}>
-                    {group.items.map((item) => {
-                      const isActive = isNavActive(
-                        item.path,
-                        location.pathname,
-                      );
-                      return (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          ref={isActive ? activeItemRef : null}
-                          className={`${styles.navItem} ${
-                            isActive ? styles.active : ""
-                          }`}
-                          onClick={closeSidebar}
-                        >
-                          <span className={styles.navIcon}>{item.icon}</span>
-                          {item.label}
-                          {item.badge === "unread" && unreadCount > 0 && (
-                            <span className={styles.navBadge}>
-                              {unreadCount > 99 ? "99+" : unreadCount}
-                            </span>
-                          )}
-                          {item.badge === "message" &&
-                            unreadMessageCount > 0 && (
-                              <span className={styles.navBadge}>
-                                {unreadMessageCount > 99
-                                  ? "99+"
-                                  : unreadMessageCount}
-                              </span>
-                            )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    onClick={closeSidebar}
+                  >
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    {item.label}
+                    {item.badge === "unread" && unreadCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                    {item.badge === "message" && unreadMessageCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className={styles.sidebarFooter}>
