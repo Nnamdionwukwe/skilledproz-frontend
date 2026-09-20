@@ -264,6 +264,10 @@ export default function WorkerLayout({ children }) {
   const [loadingAvailability, setLoadingAvailability] = useState(true);
   const isFirstRender = useRef(true);
 
+  // ── Refs for auto-scrolling the active nav item into view ───────────────
+  const navRef = useRef(null);
+  const activeItemRef = useRef(null);
+
   // ── Fetch unread notifications ──────────────────────────────────────────
   const fetchUnread = useCallback(async () => {
     try {
@@ -329,6 +333,34 @@ export default function WorkerLayout({ children }) {
     return () => clearInterval(interval);
   }, [fetchUnread, fetchUnreadMessages]);
 
+  // ── AUTO-SCROLL: On route change, scroll the active nav item into view ──
+  // Runs whenever the URL changes. Uses a rAF so the DOM has already painted
+  // the new active class before we calculate positions.
+  useEffect(() => {
+    if (!activeItemRef.current) return;
+    const raf = requestAnimationFrame(() => {
+      activeItemRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [location.pathname]);
+
+  // ── AUTO-SCROLL: When the mobile sidebar is opened, scroll active item ──
+  // Only matters on mobile (sidebarOpen), but harmless on desktop.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    if (!activeItemRef.current) return;
+    const t = setTimeout(() => {
+      activeItemRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [sidebarOpen]);
+
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "WK";
@@ -382,37 +414,39 @@ export default function WorkerLayout({ children }) {
           </div>
         </div>
 
-        <nav className={styles.sidebarNav}>
+        <nav className={styles.sidebarNav} ref={navRef}>
           {NAV.map((group) => (
             <div key={group.group} className={styles.navGroup}>
               <div className={styles.navGroupLabel}>{group.group}</div>
-              {group.items.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`${styles.navItem} ${
-                    isNavActive(item.path, location.pathname)
-                      ? styles.active
-                      : ""
-                  }`}
-                  onClick={closeSidebar}
-                >
-                  <span className={styles.navIcon}>
-                    <item.icon size={18} />
-                  </span>
-                  {item.label}
-                  {item.badge === "unread" && unreadCount > 0 && (
-                    <span className={styles.navBadge}>
-                      {unreadCount > 99 ? "99+" : unreadCount}
+              {group.items.map((item) => {
+                const isActive = isNavActive(item.path, location.pathname);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    ref={isActive ? activeItemRef : null}
+                    className={`${styles.navItem} ${
+                      isActive ? styles.active : ""
+                    }`}
+                    onClick={closeSidebar}
+                  >
+                    <span className={styles.navIcon}>
+                      <item.icon size={18} />
                     </span>
-                  )}
-                  {item.badge === "message" && unreadMessageCount > 0 && (
-                    <span className={styles.navBadge}>
-                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-                    </span>
-                  )}
-                </Link>
-              ))}
+                    {item.label}
+                    {item.badge === "unread" && unreadCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                    {item.badge === "message" && unreadMessageCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </nav>
