@@ -34,6 +34,7 @@ export default function Register() {
       ? {
           googleProfile: locationState.googleProfile,
           accessToken: locationState.accessToken,
+          refCode: locationState.refCode || null,
         }
       : storedPending;
 
@@ -47,11 +48,18 @@ export default function Register() {
       setLoading(true);
       setError("");
       try {
-        const result = await googleSignIn({
+        const payload = {
           accessToken: pending.accessToken,
           role: selected,
-        });
+        };
+        // Forward the referral code if we captured one.
+        const refCode =
+          pending.refCode || sessionStorage.getItem("pendingRefCode") || null;
+        if (refCode) payload.ref = refCode;
+
+        const result = await googleSignIn(payload);
         sessionStorage.removeItem("googlePendingSignup");
+        sessionStorage.removeItem("pendingRefCode");
 
         if (!result?.user) {
           setError("Could not complete signup. Please try again.");
@@ -75,7 +83,14 @@ export default function Register() {
     }
 
     // ── Normal email/password signup: route to the next step ────────────
-    navigate(selected === "HIRER" ? "/register/hirer" : "/register/worker");
+    // Propagate the referral code so the email signup form can pick it up.
+    const refCode = sessionStorage.getItem("pendingRefCode") || "";
+    const suffix = refCode ? `?ref=${refCode}` : "";
+    navigate(
+      selected === "HIRER"
+        ? `/register/hirer${suffix}`
+        : `/register/worker${suffix}`,
+    );
   };
 
   return (

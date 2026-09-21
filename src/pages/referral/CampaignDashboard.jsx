@@ -489,8 +489,17 @@ export default function CampaignDashboard() {
     loadAll();
   }, [loadAll]);
 
+  // ── Referral code: prefer the store, fall back to the campaign status
+  //    endpoint. The endpoint auto-generates a code if the user doesn't
+  //    have one yet, so this is always populated for logged-in users.
+  const referralCode = user?.referralCode || status?.code || "";
+
   async function copyLink() {
-    const link = `https://skilledproz.com/signup?ref=${user?.referralCode || ""}`;
+    if (!referralCode) {
+      showToast("Referral code not loaded yet", "error");
+      return;
+    }
+    const link = `https://skilledproz.com/signup?ref=${referralCode}`;
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -822,16 +831,15 @@ export default function CampaignDashboard() {
               <div className={styles.codeCard}>
                 <div className={styles.codeCardLeft}>
                   <p className={styles.codeLabel}>Your referral code</p>
-                  <p className={styles.codeValue}>
-                    {user?.referralCode || "Loading…"}
-                  </p>
+                  <p className={styles.codeValue}>{referralCode || "—"}</p>
                   <p className={styles.codeLink}>
-                    {`https://skilledproz.com/signup?ref=${user?.referralCode || ""}`}
+                    {`https://skilledproz.com/signup?ref=${referralCode}`}
                   </p>
                 </div>
                 <button
                   className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`}
                   onClick={copyLink}
+                  disabled={!referralCode}
                 >
                   {copied ? (
                     <>
@@ -846,7 +854,7 @@ export default function CampaignDashboard() {
                 <div className={styles.shareRow}>
                   <p className={styles.shareLabel}>Share via:</p>
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Join SkilledProz! Download the app, sign up with my code ${user?.referralCode} and follow us on social media. I earn ₦100 when you complete all tasks! https://skilledproz.com/signup?ref=${user?.referralCode}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(`Join SkilledProz! Download the app, sign up with my code ${referralCode} and follow us on social media. I earn ₦100 when you complete all tasks! https://skilledproz.com/signup?ref=${referralCode}`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnWa}`}
@@ -862,7 +870,7 @@ export default function CampaignDashboard() {
                     WhatsApp
                   </a>
                   <a
-                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Earn with me on SkilledProz! Use my referral code ${user?.referralCode} when you sign up`)}`}
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Earn with me on SkilledProz! Use my referral code ${referralCode} when you sign up`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnX}`}

@@ -17,11 +17,26 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [accountBlock, setAccountBlock] = useState(null);
+  const [refCode, setRefCode] = useState("");
 
   // Clear any stale pending Google signup whenever we land on /login.
   useEffect(() => {
     sessionStorage.removeItem("googlePendingSignup");
   }, []);
+
+  // Capture ?ref= from the URL and remember it for the whole auth flow.
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      const code = ref.toUpperCase().trim();
+      setRefCode(code);
+      sessionStorage.setItem("pendingRefCode", code);
+    } else {
+      // Fall back to anything previously stashed (e.g. after a reload).
+      const stored = sessionStorage.getItem("pendingRefCode");
+      if (stored) setRefCode(stored);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -97,13 +112,14 @@ export default function Login() {
   };
 
   // ── Google: NEW user → route to /register for role selection ──────────
-  const handleGoogleNewUser = (googleProfile, accessToken) => {
+  const handleGoogleNewUser = (googleProfile, accessToken, refFromGoogle) => {
+    const code = refFromGoogle || refCode || null;
     sessionStorage.setItem(
       "googlePendingSignup",
-      JSON.stringify({ googleProfile, accessToken }),
+      JSON.stringify({ googleProfile, accessToken, refCode: code }),
     );
     navigate("/register", {
-      state: { googleProfile, accessToken, from: "google" },
+      state: { googleProfile, accessToken, refCode: code, from: "google" },
     });
   };
 
@@ -186,6 +202,7 @@ export default function Login() {
 
         <GoogleSignInButton
           mode="signin"
+          refCode={refCode || undefined}
           onNewUser={handleGoogleNewUser}
           onSuccess={handleGoogleSuccess}
         />

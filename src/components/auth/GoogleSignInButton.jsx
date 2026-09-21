@@ -12,7 +12,10 @@ import s from "./GoogleSignInButton.module.css";
  *   - mode: "signin" | "signup"  (only affects the label)
  *   - role: "HIRER" | "WORKER"   (optional hint for NEW signups)
  *       Omit it to let the user pick their role on /register.
- *   - onNewUser: (googleProfile, accessToken) => void
+ *   - refCode: string | null     (referral code captured from ?ref= on the URL)
+ *       Forwarded to the backend on both the probe and complete calls.
+ *       Backend applies the referral only when a new user is actually created.
+ *   - onNewUser: (googleProfile, accessToken, refCode) => void
  *       Called when the backend says this is a NEW user and no role was
  *       supplied. Parent should route to /register.
  *   - onSuccess: (result) => void
@@ -25,6 +28,7 @@ import s from "./GoogleSignInButton.module.css";
 export default function GoogleSignInButton({
   mode = "signin",
   role,
+  refCode,
   onNewUser,
   onSuccess,
 }) {
@@ -43,13 +47,20 @@ export default function GoogleSignInButton({
         // Only include role when the caller provided one.
         const payload = { accessToken: tokenResponse.access_token };
         if (role) payload.role = role;
+        // Forward the captured referral code. Backend ignores it unless a
+        // new user is being created.
+        if (refCode) payload.ref = refCode;
 
         const result = await googleSignIn(payload);
 
         // ── New user needing a role ─────────────────────────────────────
         if (result?.needsRole) {
           if (onNewUser) {
-            onNewUser(result.googleProfile, tokenResponse.access_token);
+            onNewUser(
+              result.googleProfile,
+              tokenResponse.access_token,
+              refCode || null,
+            );
             return;
           }
           // Fallback — stash + navigate.
@@ -58,6 +69,7 @@ export default function GoogleSignInButton({
             JSON.stringify({
               googleProfile: result.googleProfile,
               accessToken: tokenResponse.access_token,
+              refCode: refCode || null,
             }),
           );
           navigate("/register", { replace: true });
