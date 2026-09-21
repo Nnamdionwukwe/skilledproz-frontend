@@ -18,6 +18,11 @@ export default function Login() {
   const [error, setError] = useState("");
   const [accountBlock, setAccountBlock] = useState(null);
 
+  // Clear any stale pending Google signup whenever we land on /login.
+  useEffect(() => {
+    sessionStorage.removeItem("googlePendingSignup");
+  }, []);
+
   useEffect(() => {
     const code = searchParams.get("code");
     const reason = searchParams.get("reason");
@@ -91,6 +96,30 @@ export default function Login() {
     }
   };
 
+  // ── Google: NEW user → route to /register for role selection ──────────
+  const handleGoogleNewUser = (googleProfile, accessToken) => {
+    sessionStorage.setItem(
+      "googlePendingSignup",
+      JSON.stringify({ googleProfile, accessToken }),
+    );
+    navigate("/register", {
+      state: { googleProfile, accessToken, from: "google" },
+    });
+  };
+
+  // ── Google: EXISTING user → go to their dashboard ─────────────────────
+  const handleGoogleSuccess = (result) => {
+    if (!result?.user) return;
+    const role = result.user.role;
+    const dest =
+      role === "ADMIN"
+        ? "/admin/dashboard"
+        : role === "WORKER"
+          ? "/dashboard/worker"
+          : "/dashboard/hirer";
+    navigate(dest, { replace: true });
+  };
+
   const blockContent = {
     banned: {
       title: "Account suspended",
@@ -121,7 +150,7 @@ export default function Login() {
           <p className={s.subtitle}>
             No account yet?{" "}
             <Link to="/register" className={s.link}>
-              Create one free
+              Create one free &nbsp;→
             </Link>
           </p>
         </div>
@@ -155,7 +184,11 @@ export default function Login() {
           </div>
         )}
 
-        <GoogleSignInButton mode="signin" />
+        <GoogleSignInButton
+          mode="signin"
+          onNewUser={handleGoogleNewUser}
+          onSuccess={handleGoogleSuccess}
+        />
 
         <div className={g.divider}>or</div>
 

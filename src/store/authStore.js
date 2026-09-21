@@ -99,18 +99,35 @@ export const useAuthStore = create(
       // ── Google Sign-In ─────────────────────────────────────────────────────
       // Accepts either { idToken } or { accessToken }, optionally with a
       // `role` hint ("HIRER" | "WORKER") used only for NEW signups.
+      //
+      // Two outcomes:
+      //   1. Existing user → tokens stored, user set, returns { user, isNewUser }
+      //   2. New user without a role → backend returns needsRole:true.
+      //      We do NOT store tokens or set a user; we return the pending
+      //      profile so the caller can route to /register.
+      //   3. New user with a role → tokens stored, user set, returns
+      //      { user, isNewUser: true }.
       googleSignIn: async (payload) => {
         set({ isLoading: true });
         try {
           const { data } = await api.post("/auth/google", payload);
-          get().setAuth(
-            data.data.user,
-            data.data.accessToken,
-            data.data.refreshToken,
-          );
+          const result = data.data;
+
+          // ── New user, role not yet chosen ──────────────────────────────
+          if (result.needsRole) {
+            return {
+              needsRole: true,
+              googleProfile: result.googleProfile,
+              isNewUser: true,
+            };
+          }
+
+          // ── Sign-in or completed signup ────────────────────────────────
+          get().setAuth(result.user, result.accessToken, result.refreshToken);
           return {
-            user: data.data.user,
-            isNewUser: data.data.isNewUser,
+            needsRole: false,
+            user: result.user,
+            isNewUser: result.isNewUser,
           };
         } finally {
           set({ isLoading: false });

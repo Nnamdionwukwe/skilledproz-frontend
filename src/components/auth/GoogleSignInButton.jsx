@@ -10,16 +10,23 @@ import s from "./GoogleSignInButton.module.css";
  *
  * Props:
  *   - mode: "signin" | "signup"  (only affects the label)
- *   - role: "HIRER" | "WORKER"   (hint for NEW signups only)
+ *   - role: "HIRER" | "WORKER"   (optional hint for NEW signups)
+ *       Omit it to let the user pick their role on /register.
+ *   - onNewUser: (googleProfile, accessToken) => void
+ *       Called when the backend says this is a NEW user and no role was
+ *       supplied. Parent should route to /register.
+ *   - onSuccess: (result) => void
+ *       Called on existing-user sign-in. Parent can navigate.
  *
  * On error:
- *   - ACCOUNT_BANNED / ACCOUNT_DELETED → redirect to /login?code=... so the
- *     Login page shows the correct banner.
+ *   - ACCOUNT_BANNED / ACCOUNT_DELETED → redirect to /login?code=...
  *   - Any other error → show inline message.
  */
 export default function GoogleSignInButton({
   mode = "signin",
-  role = "HIRER",
+  role,
+  onNewUser,
+  onSuccess,
 }) {
   const navigate = useNavigate();
   const { googleSignIn } = useAuthStore();
@@ -33,16 +40,40 @@ export default function GoogleSignInButton({
       setLoading(true);
       setError("");
       try {
-        const { user } = await googleSignIn({
-          accessToken: tokenResponse.access_token,
-          role,
-        });
+        // Only include role when the caller provided one.
+        const payload = { accessToken: tokenResponse.access_token };
+        if (role) payload.role = role;
 
-        // Success — send the user to their dashboard.
+        const result = await googleSignIn(payload);
+
+        // ── New user needing a role ─────────────────────────────────────
+        if (result?.needsRole) {
+          if (onNewUser) {
+            onNewUser(result.googleProfile, tokenResponse.access_token);
+            return;
+          }
+          // Fallback — stash + navigate.
+          sessionStorage.setItem(
+            "googlePendingSignup",
+            JSON.stringify({
+              googleProfile: result.googleProfile,
+              accessToken: tokenResponse.access_token,
+            }),
+          );
+          navigate("/register", { replace: true });
+          return;
+        }
+
+        // ── Existing user (or completed signup with role) ───────────────
+        if (onSuccess) {
+          onSuccess(result);
+          return;
+        }
+
         const dest =
-          user.role === "ADMIN"
+          result.user.role === "ADMIN"
             ? "/admin/dashboard"
-            : user.role === "WORKER"
+            : result.user.role === "WORKER"
               ? "/dashboard/worker"
               : "/dashboard/hirer";
         navigate(dest, { replace: true });
@@ -51,9 +82,6 @@ export default function GoogleSignInButton({
         const code = res?.code;
 
         // ── Account blocked: send the user to login with the ban banner ─────
-        // The Login page reads ?code=... from the URL and shows the correct
-        // "Account suspended" / "Account deactivated" banner with a
-        // "Contact support" button.
         if (
           code === "ACCOUNT_BANNED" ||
           code === "ACCOUNT_DELETED" ||
@@ -66,7 +94,7 @@ export default function GoogleSignInButton({
           return;
         }
 
-        // ── Any other error: show inline, keep the user on the page ─────────
+        // ── Any other error: show inline ────────────────────────────────
         const message =
           res?.message ||
           err?.message ||
