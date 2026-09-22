@@ -962,6 +962,17 @@ function WithdrawalConfirmModal({
   loading,
   withdrawalData,
 }) {
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+
+  // Reset PIN state whenever the modal opens with new data
+  useEffect(() => {
+    if (isOpen) {
+      setPin("");
+      setPinError("");
+    }
+  }, [isOpen]);
+
   if (!isOpen || !withdrawalData) return null;
 
   const { amount, currency, bankName, accountNumber, accountName } =
@@ -969,6 +980,15 @@ function WithdrawalConfirmModal({
   const fee = Math.min(amount * 0.01, 100);
   const netAmount = amount - fee;
   const symbol = getCurrencySymbol(currency);
+
+  function handleConfirmClick() {
+    if (!pin || pin.length !== 4) {
+      setPinError("Please enter your 4-digit withdrawal PIN");
+      return;
+    }
+    setPinError("");
+    onConfirm(pin);
+  }
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -1054,6 +1074,33 @@ function WithdrawalConfirmModal({
             </div>
           </div>
 
+          {/* ── Withdrawal PIN ── */}
+          <div className={styles.confirmPinBlock}>
+            <label className={styles.confirmSectionTitle}>Withdrawal PIN</label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              autoComplete="off"
+              placeholder="••••"
+              className={styles.pinInput}
+              value={pin}
+              onChange={(e) => {
+                setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
+                setPinError("");
+              }}
+            />
+            <p className={styles.pinHint}>
+              Enter the same 4-digit PIN you use for worker, referral, and
+              campaign withdrawals.
+            </p>
+            {pinError && (
+              <p className={styles.pinError}>
+                <FaExclamationTriangle size={12} /> {pinError}
+              </p>
+            )}
+          </div>
+
           <div className={styles.confirmWarning}>
             <FaExclamationTriangle size={16} />
             <span>
@@ -1074,7 +1121,7 @@ function WithdrawalConfirmModal({
             <button
               type="button"
               className={`${styles.modalConfirm} ${styles.confirmWithdrawBtn}`}
-              onClick={onConfirm}
+              onClick={handleConfirmClick}
               disabled={loading}
             >
               {loading ? (
@@ -1139,9 +1186,9 @@ function WithdrawModal({
     setShowConfirm(true);
   };
 
-  const handleConfirmWithdrawal = () => {
+  const handleConfirmWithdrawal = (pin) => {
     if (!withdrawalData) return;
-    onWithdraw(withdrawalData);
+    onWithdraw({ ...withdrawalData, pin });
     setShowConfirm(false);
     onClose();
   };
@@ -1627,11 +1674,16 @@ export default function HirerWallet() {
       );
       await fetchWallet(false);
     } catch (err) {
-      showMessage(
-        "Withdrawal Failed",
-        err.response?.data?.message || "Failed to process withdrawal",
-        "error",
-      );
+      const status = err.response?.status;
+      const msg = err.response?.data?.message || "Failed to process withdrawal";
+
+      // PIN-related failures get a clearer title so the user knows
+      // it's not a bank-details problem.
+      if (status === 401 || status === 403 || status === 429) {
+        showMessage("PIN Verification Failed", msg, "error");
+      } else {
+        showMessage("Withdrawal Failed", msg, "error");
+      }
     } finally {
       setSubmitting(false);
     }
