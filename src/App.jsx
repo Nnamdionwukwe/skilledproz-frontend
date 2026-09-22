@@ -208,14 +208,9 @@ export default function App() {
         <Route path="/landingpage" element={<LandingPage />} />
 
         {/* ── Guest-only auth pages ── */}
-        <Route
-          path="/login"
-          element={
-            // <GuestOnly>
-            <Login />
-            // </GuestOnly>
-          }
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Login />} />
+
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route
           path="/register"
