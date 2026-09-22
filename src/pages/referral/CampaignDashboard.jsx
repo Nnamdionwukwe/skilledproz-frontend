@@ -150,9 +150,59 @@ function Avatar({ name, avatar }) {
   );
 }
 
+// ─── Full-screen image viewer ─────────────────────────────────────────────────
+function FullscreenImage({ src, alt, onClose }) {
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  if (!src) return null;
+
+  return (
+    <div
+      className={styles.lightboxBackdrop}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        className={styles.lightboxClose}
+        onClick={onClose}
+        aria-label="Close"
+      >
+        <FiX size={22} />
+      </button>
+      <img
+        src={src}
+        alt={alt || "Screenshot"}
+        className={styles.lightboxImg}
+        onClick={(e) => e.stopPropagation()}
+      />
+      <a
+        href={src}
+        target="_blank"
+        rel="noreferrer"
+        className={styles.lightboxOpen}
+        onClick={(e) => e.stopPropagation()}
+      >
+        Open in new tab ↗
+      </a>
+    </div>
+  );
+}
+
 // ─── Social Platform Card ─────────────────────────────────────────────────────
-// Now requires a screenshot upload (file, not URL) before "Mark as followed"
-// becomes enabled.
+// Requires a screenshot upload (file, not URL) before "Mark as followed"
+// becomes enabled. Submitted screenshots open in a full-screen viewer.
 function SocialCard({
   task,
   done,
@@ -161,6 +211,7 @@ function SocialCard({
   link,
   screenshotUrl,
   onError,
+  onViewScreenshot,
 }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -285,6 +336,10 @@ function SocialCard({
                 src={preview}
                 alt="screenshot preview"
                 className={styles.socialPreviewImg}
+                onClick={() =>
+                  onViewScreenshot(preview, `${task.label} preview`)
+                }
+                style={{ cursor: "zoom-in" }}
               />
               <div className={styles.socialPreviewActions}>
                 <button
@@ -324,14 +379,15 @@ function SocialCard({
       )}
 
       {done && screenshotUrl && (
-        <a
-          href={screenshotUrl}
-          target="_blank"
-          rel="noreferrer"
+        <button
+          type="button"
           className={styles.socialProofView}
+          onClick={() =>
+            onViewScreenshot(screenshotUrl, `${task.label} screenshot`)
+          }
         >
           📎 View submitted screenshot
-        </a>
+        </button>
       )}
     </div>
   );
@@ -547,6 +603,7 @@ export default function CampaignDashboard() {
   const [reporting, setReporting] = useState(null);
   const [toast, setToast] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // { src, alt } | null
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -585,6 +642,11 @@ export default function CampaignDashboard() {
   //    endpoint. The endpoint auto-generates a code if the user doesn't
   //    have one yet, so this is always populated for logged-in users.
   const referralCode = user?.referralCode || status?.code || "";
+
+  // ── Reward + min withdrawal — sourced from the backend so we don't have
+  //    to keep two numbers in sync. Defaults match the new values (₦200 / ₦1000).
+  const rewardPerReferral = status?.rewardPerReferral || 200;
+  const minWithdrawal = status?.wallet?.minWithdrawal || 1000;
 
   async function copyLink() {
     if (!referralCode) {
@@ -685,13 +747,14 @@ export default function CampaignDashboard() {
             <p className={styles.eyebrow}>Daily Campaign</p>
             <h1 className={styles.pageTitle}>Refer &amp; Earn Daily</h1>
             <p className={styles.pageSubtitle}>
-              Earn <strong className={styles.highlight}>₦100</strong> for every
-              person who downloads the app, sets up their account, and follows
-              us on social media.
+              Earn{" "}
+              <strong className={styles.highlight}>₦{rewardPerReferral}</strong>{" "}
+              for every person who downloads the app, sets up their account, and
+              follows us on social media.
             </p>
           </div>
           <div className={styles.headerBadge}>
-            <FiDollarSign size={14} /> ₦100 / referral
+            <FiDollarSign size={14} /> ₦{rewardPerReferral} / referral
           </div>
         </div>
 
@@ -713,7 +776,7 @@ export default function CampaignDashboard() {
                   onClick={() => setShowWd(true)}
                   title={
                     !st?.wallet?.canWithdraw
-                      ? `Min. ${fmtAmt(st?.wallet?.minWithdrawal)}`
+                      ? `Min. ${fmtAmt(minWithdrawal)}`
                       : ""
                   }
                 >
@@ -721,7 +784,7 @@ export default function CampaignDashboard() {
                 </button>
                 {!st?.wallet?.canWithdraw && (
                   <p className={styles.walletHint}>
-                    Need {fmtAmt(st?.wallet?.minWithdrawal)} · You have{" "}
+                    Need {fmtAmt(minWithdrawal)} · You have{" "}
                     {fmtAmt(walletBalance)}
                   </p>
                 )}
@@ -830,7 +893,7 @@ export default function CampaignDashboard() {
                 <div>
                   <p className={styles.submitBannerTitle}>
                     {readyCount} referral{readyCount !== 1 ? "s" : ""} ready —
-                    earn {fmtAmt(readyCount * 100)}!
+                    earn {fmtAmt(readyCount * rewardPerReferral)}!
                   </p>
                   <p className={styles.submitBannerSub}>
                     Submit today's batch for admin review to get paid.
@@ -866,7 +929,7 @@ export default function CampaignDashboard() {
                   <p className={styles.submitBannerSub}>
                     {pendingRefs.length > 0
                       ? "Share your code with them so they can complete all 5 tasks."
-                      : "Share your referral code below — earn ₦100 per qualified person."}
+                      : `Share your referral code below — earn ₦${rewardPerReferral} per qualified person.`}
                   </p>
                 </div>
               </div>
@@ -904,7 +967,7 @@ export default function CampaignDashboard() {
                 <p>
                   If approved, you will earn{" "}
                   <strong className={styles.highlight}>
-                    {fmtAmt(readyCount * 100)}
+                    {fmtAmt(readyCount * rewardPerReferral)}
                   </strong>
                   .
                 </p>
@@ -989,7 +1052,7 @@ export default function CampaignDashboard() {
                 <div className={styles.shareRow}>
                   <p className={styles.shareLabel}>Share via:</p>
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Join SkilledProz! Download the app, sign up with my code ${referralCode} and follow us on social media. I earn ₦100 when you complete all tasks! https://skilledproz.com/signup?ref=${referralCode}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(`Join SkilledProz! Download the app, sign up with my code ${referralCode} and follow us on social media. I earn ₦${rewardPerReferral} when you complete all tasks! https://skilledproz.com/signup?ref=${referralCode}`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnWa}`}
@@ -1025,7 +1088,9 @@ export default function CampaignDashboard() {
 
               {/* How it works */}
               <div className={styles.howItWorks}>
-                <p className={styles.howTitle}>How to earn ₦100 per person</p>
+                <p className={styles.howTitle}>
+                  How to earn ₦{rewardPerReferral} per person
+                </p>
                 <div className={styles.howSteps}>
                   {[
                     {
@@ -1051,7 +1116,7 @@ export default function CampaignDashboard() {
                     {
                       step: "5",
                       icon: FiUpload,
-                      text: "You submit daily — admin verifies — ₦100 credited!",
+                      text: `You submit daily — admin verifies — ₦${rewardPerReferral} credited!`,
                     },
                   ].map((s) => {
                     const StepIcon = s.icon;
@@ -1159,7 +1224,7 @@ export default function CampaignDashboard() {
                         <Badge status={r.status} meta={REFERRAL_META} />
                         {r.status === "APPROVED" && (
                           <span className={styles.referralEarned}>
-                            +₦{r.rewardAmount}
+                            +{fmtAmt(r.rewardAmount)}
                           </span>
                         )}
                       </div>
@@ -1203,7 +1268,8 @@ export default function CampaignDashboard() {
                     {myTasks.allDone && (
                       <div className={styles.allDoneBanner}>
                         <FiCheckCircle size={14} /> All tasks done! Your
-                        referrer can now submit you for the ₦100 reward.
+                        referrer can now submit you for the ₦{rewardPerReferral}{" "}
+                        reward.
                       </div>
                     )}
                   </div>
@@ -1257,6 +1323,9 @@ export default function CampaignDashboard() {
                           onReport={reportFollow}
                           reporting={reporting}
                           onError={(msg) => showToast(msg, "error")}
+                          onViewScreenshot={(src, alt) =>
+                            setLightbox({ src, alt })
+                          }
                           link={
                             myTasks.social?.[
                               t.key?.replace("hasFollowed", "").toLowerCase()
@@ -1313,13 +1382,22 @@ export default function CampaignDashboard() {
       {showWd && (
         <WithdrawModal
           balance={walletBalance}
-          minWithdrawal={st?.wallet?.minWithdrawal || 500}
+          minWithdrawal={minWithdrawal}
           onClose={() => setShowWd(false)}
           onSuccess={() => {
             setShowWd(false);
             showToast("Withdrawal submitted! Processing in 1–3 days");
             loadAll();
           }}
+        />
+      )}
+
+      {/* ── Full-screen image viewer ── */}
+      {lightbox && (
+        <FullscreenImage
+          src={lightbox.src}
+          alt={lightbox.alt}
+          onClose={() => setLightbox(null)}
         />
       )}
     </Layout>
