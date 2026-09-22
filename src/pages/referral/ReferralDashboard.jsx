@@ -91,6 +91,15 @@ const STATUS_META = {
   FLAGGED: { label: "Flagged", cls: "red" },
 };
 
+// ─── Campaign status meta (for the cross-system badge) ──────────────────────
+const CAMPAIGN_STATUS_META = {
+  PENDING: { label: "In Progress", cls: "yellow" },
+  TASKS_DONE: { label: "Ready", cls: "green" },
+  SUBMITTED: { label: "Submitted", cls: "indigo" },
+  APPROVED: { label: "Paid", cls: "green" },
+  REJECTED: { label: "Rejected", cls: "red" },
+};
+
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
@@ -125,6 +134,22 @@ function StatusBadge({ status }) {
   return (
     <span className={`${styles.badge} ${styles[`badge_${m.cls}`]}`}>
       {m.label}
+    </span>
+  );
+}
+
+function CampaignBadge({ status }) {
+  if (!status) return null;
+  const m = CAMPAIGN_STATUS_META[status] || {
+    label: status,
+    cls: "dim",
+  };
+  return (
+    <span
+      className={`${styles.badge} ${styles[`badge_${m.cls}`]}`}
+      title="Daily campaign status"
+    >
+      🎯 {m.label}
     </span>
   );
 }
@@ -364,9 +389,6 @@ export default function ReferralDashboard() {
   }, [tab, leaderboard]);
 
   // ── Referral code + shareable link ────────────────────────────────────────
-  // We ignore the backend-provided `link` entirely — it may contain localhost
-  // during development. The canonical production link is built locally from
-  // the user's referral code.
   const referralCode = dashboard?.code || user?.referralCode || "";
   const refLink = buildRefLink(referralCode);
 
@@ -831,6 +853,30 @@ export default function ReferralDashboard() {
                           </span>
                           <span>· Joined {timeAgo(r.joinedAt)}</span>
                         </p>
+                        {/* ── NEW: campaign status row ── */}
+                        {r.campaign && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              marginTop: 4,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <CampaignBadge status={r.campaign.status} />
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              {r.campaign.tasksCompleted}/
+                              {r.campaign.tasksTotal} tasks ·{" "}
+                              {fmtAmt(r.campaign.rewardAmount)} reward
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className={styles.referralRight}>
                         <StatusBadge status={r.status} />
@@ -873,9 +919,6 @@ export default function ReferralDashboard() {
                   )}
                   <div className={styles.leaderboardList}>
                     {leaderboard.leaderboard?.map((u, i) => {
-                      const ts2 =
-                        TIER_STYLES[u.tier?.replace(/[^A-Z]/g, "")] ||
-                        TIER_STYLES.BRONZE;
                       const medal =
                         i === 0
                           ? "🥇"

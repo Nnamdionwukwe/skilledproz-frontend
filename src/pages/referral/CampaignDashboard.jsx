@@ -116,6 +116,16 @@ const REFERRAL_META = {
   REJECTED: { label: "Rejected", cls: "red" },
 };
 
+// ── Referral-program status meta (for the cross-system badge) ───────────────
+const REFERRAL_PROGRAM_STATUS_META = {
+  PENDING: { label: "Referral: Pending", cls: "yellow" },
+  QUALIFIED: { label: "Referral: Qualified", cls: "indigo" },
+  CONVERTED: { label: "Referral: Converted", cls: "blue" },
+  REWARDED: { label: "Referral: Rewarded", cls: "green" },
+  EXPIRED: { label: "Referral: Expired", cls: "dim" },
+  FLAGGED: { label: "Referral: Flagged", cls: "red" },
+};
+
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
@@ -132,6 +142,21 @@ function Badge({ status, meta }) {
   return (
     <span className={`${styles.badge} ${styles[`badge_${m.cls}`]}`}>
       {m.label}
+    </span>
+  );
+}
+function ReferralProgramBadge({ status }) {
+  if (!status) return null;
+  const m = REFERRAL_PROGRAM_STATUS_META[status] || {
+    label: `Referral: ${status}`,
+    cls: "dim",
+  };
+  return (
+    <span
+      className={`${styles.badge} ${styles[`badge_${m.cls}`]}`}
+      title="Referral program status"
+    >
+      👥 {m.label}
     </span>
   );
 }
@@ -613,17 +638,18 @@ export default function CampaignDashboard() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [statusRes, referralsRes, subsRes, tasksRes] =
-        await Promise.allSettled([
-          api.get("/campaign/status"),
-          api.get("/campaign/referrals?limit=50"),
-          api.get("/campaign/submissions?limit=30"),
-          api.get("/campaign/my-tasks"),
-        ]);
-      if (statusRes.status === "fulfilled")
-        setStatus(statusRes.value.data.data);
-      if (referralsRes.status === "fulfilled")
-        setReferrals(referralsRes.value.data.data?.referrals || []);
+      const [statusRes, subsRes, tasksRes] = await Promise.allSettled([
+        api.get("/campaign/status"),
+        api.get("/campaign/submissions?limit=30"),
+        api.get("/campaign/my-tasks"),
+      ]);
+      if (statusRes.status === "fulfilled") {
+        const statusData = statusRes.value.data.data;
+        setStatus(statusData);
+        // The /campaign/status endpoint now returns an enriched referrals
+        // array with each row carrying its referral-program status.
+        setReferrals(statusData?.referrals || []);
+      }
       if (subsRes.status === "fulfilled")
         setSubmissions(subsRes.value.data.data?.submissions || []);
       if (tasksRes.status === "fulfilled") setMyTasks(tasksRes.value.data.data);
@@ -1219,6 +1245,32 @@ export default function CampaignDashboard() {
                             {r.tasks.completedCount}/{r.tasks.totalCount} tasks
                           </span>
                         </div>
+                        {/* ── Cross-system: referral-program status ── */}
+                        {r.referralProgram && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              marginTop: 6,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <ReferralProgramBadge
+                              status={r.referralProgram.status}
+                            />
+                            {r.referralProgram.bonus > 0 && (
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  color: "var(--text-muted)",
+                                }}
+                              >
+                                {fmtAmt(r.referralProgram.bonus)} bonus
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className={styles.referralRight}>
                         <Badge status={r.status} meta={REFERRAL_META} />
