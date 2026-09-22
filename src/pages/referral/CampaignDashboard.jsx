@@ -1315,25 +1315,24 @@ export default function CampaignDashboard() {
                   <div className={styles.socialTasks}>
                     {myTasks.tasks
                       ?.filter((t) => !t.auto)
-                      .map((t) => (
-                        <SocialCard
-                          key={t.key}
-                          task={TASKS.find((tk) => tk.key === t.key)}
-                          done={t.done}
-                          onReport={reportFollow}
-                          reporting={reporting}
-                          onError={(msg) => showToast(msg, "error")}
-                          onViewScreenshot={(src, alt) =>
-                            setLightbox({ src, alt })
-                          }
-                          link={
-                            myTasks.social?.[
-                              t.key?.replace("hasFollowed", "").toLowerCase()
-                            ] || "#"
-                          }
-                          screenshotUrl={t.proofUrl}
-                        />
-                      ))}
+                      .map((t) => {
+                        const meta = TASKS.find((tk) => tk.key === t.key);
+                        return (
+                          <SocialCard
+                            key={t.key}
+                            task={meta}
+                            done={t.done}
+                            onReport={reportFollow}
+                            reporting={reporting}
+                            onError={(msg) => showToast(msg, "error")}
+                            onViewScreenshot={(src, alt) =>
+                              setLightbox({ src, alt })
+                            }
+                            link={myTasks.social?.[meta?.platform] || "#"}
+                            screenshotUrl={t.proofUrl}
+                          />
+                        );
+                      })}
                   </div>
 
                   <div className={styles.tasksNote}>
