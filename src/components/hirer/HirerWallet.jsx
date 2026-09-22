@@ -1,5 +1,6 @@
 // src/pages/hirer/HirerWallet.jsx
 // Complete Hirer Wallet with Multi-Currency Support & Withdrawal Confirmation
+// Styled to match the global design system (see global.css tokens)
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -77,16 +78,16 @@ function formatDateLong(date) {
 
 function getStatusColor(status) {
   const colors = {
-    PENDING: "#F59E0B",
+    PENDING: "var(--orange)",
     PROCESSING: "#3B82F6",
-    COMPLETED: "#10B981",
-    SUCCESS: "#10B981",
-    FAILED: "#EF4444",
-    REVERSED: "#6B7280",
-    CANCELLED: "#6B7280",
-    INITIATED: "#F59E0B",
+    COMPLETED: "var(--green)",
+    SUCCESS: "var(--green)",
+    FAILED: "var(--red)",
+    REVERSED: "var(--text-muted)",
+    CANCELLED: "var(--text-muted)",
+    INITIATED: "var(--orange)",
   };
-  return colors[status] || "#6B7280";
+  return colors[status] || "var(--text-muted)";
 }
 
 function getStatusLabel(status) {
@@ -212,7 +213,7 @@ function CopyButton({ text, label = "Copy" }) {
   };
 
   return (
-    <button className={styles.copyBtn} onClick={handleCopy}>
+    <button className={styles.copyBtn} onClick={handleCopy} type="button">
       {copied ? <FaCheck size={12} /> : <FaCopy size={12} />}
       <span>{copied ? "Copied!" : label}</span>
     </button>
@@ -230,7 +231,7 @@ function TransactionDetailModal({ transaction, onClose }) {
     transaction.type === "DEPOSIT" ||
     transaction.type === "REFUND" ||
     transaction.type === "BONUS";
-  const amountColor = isCredit ? "#10B981" : "#EF4444";
+  const amountColor = isCredit ? "var(--green)" : "var(--red)";
   const amountPrefix = isCredit ? "+" : "-";
 
   const handleDownloadReceipt = () => {
@@ -265,13 +266,11 @@ function TransactionDetailModal({ transaction, onClose }) {
         });
       } catch (err) {
         if (err.name !== "AbortError") {
-          // Fallback to copy
           await navigator.clipboard.writeText(shareText);
           alert("Transaction details copied to clipboard!");
         }
       }
     } else {
-      // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareText);
         alert("Transaction details copied to clipboard!");
@@ -302,7 +301,7 @@ function TransactionDetailModal({ transaction, onClose }) {
           <h3 className={styles.modalTitle}>
             <FaFileInvoice /> Transaction Details
           </h3>
-          <button className={styles.modalClose} onClick={onClose}>
+          <button className={styles.modalClose} onClick={onClose} type="button">
             <FaTimes />
           </button>
         </div>
@@ -369,12 +368,8 @@ function TransactionDetailModal({ transaction, onClose }) {
                 <span
                   className={styles.statusBadge}
                   style={{
-                    backgroundColor: getStatusColor(transaction.status) + "20",
+                    backgroundColor: "rgba(249, 115, 22, 0.15)",
                     color: getStatusColor(transaction.status),
-                    padding: "2px 12px",
-                    borderRadius: "999px",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
                   }}
                 >
                   {getStatusLabel(transaction.status)}
@@ -463,7 +458,7 @@ function TransactionDetailModal({ transaction, onClose }) {
                 <span
                   className={styles.statusBadge}
                   style={{
-                    backgroundColor: getStatusColor(transaction.status) + "20",
+                    backgroundColor: "rgba(249, 115, 22, 0.15)",
                     color: getStatusColor(transaction.status),
                   }}
                 >
@@ -501,14 +496,16 @@ function TransactionDetailModal({ transaction, onClose }) {
 
           <div className={styles.modalActions}>
             <button
-              className={`${styles.modalCancel} ${styles.detailActionBtn}`}
+              className={styles.modalCancel}
               onClick={onClose}
+              type="button"
             >
               <FaTimes size={14} /> Close
             </button>
             <button
               className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
               onClick={handlePrint}
+              type="button"
             >
               <FaPrint size={14} /> Print
             </button>
@@ -516,6 +513,7 @@ function TransactionDetailModal({ transaction, onClose }) {
               className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
               onClick={handleDownloadReceipt}
               disabled={downloading}
+              type="button"
             >
               <FaDownload size={14} />
               {downloading ? "Downloading..." : "Receipt"}
@@ -523,6 +521,7 @@ function TransactionDetailModal({ transaction, onClose }) {
             <button
               className={`${styles.detailActionBtn} ${styles.detailActionSuccess}`}
               onClick={handleShare}
+              type="button"
             >
               <FaShareAlt size={14} /> Share
             </button>
@@ -608,7 +607,7 @@ function generateReceiptHTML(transaction) {
       font-size: 18px;
       font-weight: 700;
     }
-    .value.positive { color: #10b981; }
+    .value.positive { color: #22c55e; }
     .value.negative { color: #ef4444; }
     .status-badge {
       display: inline-block;
@@ -616,16 +615,8 @@ function generateReceiptHTML(transaction) {
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
-      background: #10b98120;
-      color: #10b981;
-    }
-    .status-badge.pending {
-      background: #f59e0b20;
-      color: #f59e0b;
-    }
-    .status-badge.failed {
-      background: #ef444420;
-      color: #ef4444;
+      background: rgba(249, 115, 22, 0.15);
+      color: #f97316;
     }
     .footer {
       margin-top: 24px;
@@ -673,7 +664,7 @@ function generateReceiptHTML(transaction) {
     </div>
     <div class="row" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
       <span class="label" style="font-weight: 700;">Net Amount</span>
-      <span class="value amount" style="font-size: 20px; color: #10b981;">
+      <span class="value amount" style="font-size: 20px; color: #22c55e;">
         ${formatCurrency(transaction.netAmount || transaction.amount, transaction.currency)}
       </span>
     </div>
@@ -690,7 +681,7 @@ function generateReceiptHTML(transaction) {
     <div class="row">
       <span class="label">Status</span>
       <span class="value">
-        <span class="status-badge ${transaction.status.toLowerCase()}">
+        <span class="status-badge">
           ${getStatusLabel(transaction.status)}
         </span>
       </span>
@@ -762,8 +753,10 @@ function StatCard({ icon: Icon, label, value, accent }) {
       className={`${styles.statCard} ${accent ? styles[`accent_${accent}`] : ""}`}
     >
       <span className={styles.statIcon}>{Icon && <Icon size={16} />}</span>
-      <p className={styles.statValue}>{value}</p>
-      <p className={styles.statLabel}>{label}</p>
+      <div className={styles.statInfo}>
+        <p className={styles.statValue}>{value}</p>
+        <p className={styles.statLabel}>{label}</p>
+      </div>
     </div>
   );
 }
@@ -778,6 +771,7 @@ function CurrencyTab({ currency, balance, isActive, onClick }) {
 
   return (
     <button
+      type="button"
       className={`${styles.currencyTab} ${isActive ? styles.currencyTabActive : ""} ${isZero ? styles.currencyTabZero : ""}`}
       onClick={onClick}
       disabled={isZero}
@@ -802,7 +796,7 @@ function TransactionRow({ transaction, onView }) {
     transaction.type === "DEPOSIT" ||
     transaction.type === "REFUND" ||
     transaction.type === "BONUS";
-  const amountColor = isCredit ? "#10B981" : "#EF4444";
+  const amountColor = isCredit ? "var(--green)" : "var(--red)";
   const amountPrefix = isCredit ? "+" : "-";
 
   return (
@@ -841,8 +835,8 @@ function TransactionRow({ transaction, onView }) {
         <div
           className={styles.transactionStatus}
           style={{
-            backgroundColor: getStatusColor(transaction.status) + "15",
             color: getStatusColor(transaction.status),
+            borderColor: getStatusColor(transaction.status),
           }}
         >
           {getStatusIcon(transaction.status)}{" "}
@@ -884,7 +878,7 @@ function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
           <h3 className={styles.modalTitle}>
             <FaPlus /> Fund Wallet
           </h3>
-          <button className={styles.modalClose} onClick={onClose}>
+          <button className={styles.modalClose} onClick={onClose} type="button">
             <FaTimes />
           </button>
         </div>
@@ -965,7 +959,6 @@ function WithdrawalConfirmModal({
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
 
-  // Reset PIN state whenever the modal opens with new data
   useEffect(() => {
     if (isOpen) {
       setPin("");
@@ -1000,7 +993,7 @@ function WithdrawalConfirmModal({
           <h3 className={styles.modalTitle}>
             <FaExclamationTriangle /> Confirm Withdrawal
           </h3>
-          <button className={styles.modalClose} onClick={onClose}>
+          <button className={styles.modalClose} onClick={onClose} type="button">
             <FaTimes />
           </button>
         </div>
@@ -1074,7 +1067,6 @@ function WithdrawalConfirmModal({
             </div>
           </div>
 
-          {/* ── Withdrawal PIN ── */}
           <div className={styles.confirmPinBlock}>
             <label className={styles.confirmSectionTitle}>Withdrawal PIN</label>
             <input
@@ -1211,7 +1203,11 @@ function WithdrawModal({
             <h3 className={styles.modalTitle}>
               <FaMinus /> Withdraw Funds
             </h3>
-            <button className={styles.modalClose} onClick={handleClose}>
+            <button
+              className={styles.modalClose}
+              onClick={handleClose}
+              type="button"
+            >
               <FaTimes />
             </button>
           </div>
@@ -1354,7 +1350,7 @@ function MessageModal({ isOpen, onClose, title, message, type = "success" }) {
           <p className={styles.messageText}>{message}</p>
         </div>
         <div className={styles.messageActions}>
-          <button className={styles.messageBtn} onClick={onClose}>
+          <button className={styles.messageBtn} onClick={onClose} type="button">
             Got it
           </button>
         </div>
@@ -1677,8 +1673,6 @@ export default function HirerWallet() {
       const status = err.response?.status;
       const msg = err.response?.data?.message || "Failed to process withdrawal";
 
-      // PIN-related failures get a clearer title so the user knows
-      // it's not a bank-details problem.
       if (status === 401 || status === 403 || status === 429) {
         showMessage("PIN Verification Failed", msg, "error");
       } else {
@@ -1741,9 +1735,11 @@ export default function HirerWallet() {
           </div>
           <div className={styles.headerActions}>
             <button
+              type="button"
               className={styles.refreshBtn}
               onClick={refreshWallet}
               disabled={refreshing}
+              aria-label="Refresh wallet"
             >
               {refreshing ? <FaSpinner className={styles.spinning} /> : "⟳"}
             </button>
@@ -1819,12 +1815,14 @@ export default function HirerWallet() {
           </div>
           <div className={styles.balanceQuickActions}>
             <button
+              type="button"
               className={styles.quickAction}
               onClick={() => setShowDepositModal(true)}
             >
               <FaPlus /> Add Money
             </button>
             <button
+              type="button"
               className={`${styles.quickAction} ${!hasBalance ? styles.quickActionDisabled : ""}`}
               onClick={() => hasBalance && setShowWithdrawModal(true)}
               disabled={!hasBalance}
@@ -1926,6 +1924,7 @@ export default function HirerWallet() {
           {pagination.pages > 1 && (
             <div className={styles.pagination}>
               <button
+                type="button"
                 className={styles.pageBtn}
                 disabled={pagination.page === 1}
                 onClick={() =>
@@ -1938,6 +1937,7 @@ export default function HirerWallet() {
                 Page {pagination.page} of {pagination.pages}
               </span>
               <button
+                type="button"
                 className={styles.pageBtn}
                 disabled={pagination.page === pagination.pages}
                 onClick={() =>
