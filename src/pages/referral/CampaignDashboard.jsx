@@ -231,7 +231,7 @@ function SocialCard({
     tiktok: {
       bg: "rgba(0,0,0,0.2)",
       border: "rgba(255,255,255,0.15)",
-      color: "#fff",
+      color: "#3b82f6",
     },
   };
   const pc = platformColors[task.platform] || {};
