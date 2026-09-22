@@ -1,5 +1,5 @@
 // src/pages/referral/CampaignDashboard.jsx
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./CampaignDashboard.module.css";
@@ -151,9 +151,20 @@ function Avatar({ name, avatar }) {
 }
 
 // ─── Social Platform Card ─────────────────────────────────────────────────────
-function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
-  const [showUpload, setShowUpload] = useState(false);
-  const [proof, setProof] = useState("");
+// Now requires a screenshot upload (file, not URL) before "Mark as followed"
+// becomes enabled.
+function SocialCard({
+  task,
+  done,
+  onReport,
+  reporting,
+  link,
+  screenshotUrl,
+  onError,
+}) {
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const fileRef = useRef(null);
 
   const platformColors = {
     facebook: {
@@ -174,6 +185,38 @@ function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
   };
   const pc = platformColors[task.platform] || {};
   const TaskIcon = task.icon;
+
+  function pickFile(e) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      onError?.("Please upload an image file (JPG, PNG, or WebP).");
+      e.target.value = "";
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      onError?.("Image must be 5MB or smaller.");
+      e.target.value = "";
+      return;
+    }
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  }
+
+  function clearFile() {
+    setFile(null);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function submit() {
+    if (!file) {
+      onError?.("Please upload a screenshot first.");
+      return;
+    }
+    onReport(task.platform, file);
+  }
 
   return (
     <div
@@ -209,37 +252,86 @@ function SocialCard({ task, done, onReport, reporting, link, screenshotUrl }) {
             >
               Follow
             </a>
-            <button
-              className={styles.socialMarkBtn}
-              onClick={() => onReport(task.platform, proof)}
-              disabled={reporting === task.platform}
-            >
-              {reporting === task.platform ? (
-                <span className={styles.spinner} />
-              ) : (
-                "Mark done"
-              )}
-            </button>
           </div>
         )}
       </div>
+
       {!done && (
         <div className={styles.socialProofRow}>
-          <button
-            className={styles.socialProofToggle}
-            onClick={() => setShowUpload((v) => !v)}
-          >
-            <FiPaperclip size={12} /> Add screenshot (optional)
-          </button>
-          {showUpload && (
-            <input
-              className={styles.socialProofInput}
-              placeholder="Paste screenshot URL…"
-              value={proof}
-              onChange={(e) => setProof(e.target.value)}
-            />
+          <p className={styles.socialProofLabel}>
+            <FiPaperclip size={12} /> Upload a screenshot showing you follow
+            this page <span style={{ color: "var(--red)" }}>*</span>
+          </p>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={pickFile}
+          />
+
+          {!preview ? (
+            <button
+              type="button"
+              className={styles.socialProofToggle}
+              onClick={() => fileRef.current?.click()}
+            >
+              <FiUpload size={12} /> Choose image
+            </button>
+          ) : (
+            <div className={styles.socialPreviewWrap}>
+              <img
+                src={preview}
+                alt="screenshot preview"
+                className={styles.socialPreviewImg}
+              />
+              <div className={styles.socialPreviewActions}>
+                <button
+                  type="button"
+                  className={styles.socialPreviewBtn}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.socialPreviewBtn} ${styles.socialPreviewBtnRed}`}
+                  onClick={clearFile}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
           )}
+
+          <button
+            type="button"
+            className={styles.socialMarkBtn}
+            onClick={submit}
+            disabled={!file || reporting === task.platform}
+            title={!file ? "Upload a screenshot first" : ""}
+          >
+            {reporting === task.platform ? (
+              <>
+                <span className={styles.spinner} /> Uploading…
+              </>
+            ) : (
+              "Mark as followed"
+            )}
+          </button>
         </div>
+      )}
+
+      {done && screenshotUrl && (
+        <a
+          href={screenshotUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.socialProofView}
+        >
+          📎 View submitted screenshot
+        </a>
       )}
     </div>
   );
@@ -524,12 +616,20 @@ export default function CampaignDashboard() {
     }
   }
 
-  async function reportFollow(platform, screenshotUrl = "") {
+  // ── Now takes a File object and posts as multipart/form-data
+  async function reportFollow(platform, file) {
+    if (!file) {
+      showToast("Please upload a screenshot first", "error");
+      return;
+    }
     setReporting(platform);
     try {
-      const res = await api.post("/campaign/my-tasks/social", {
-        platform,
-        screenshotUrl: screenshotUrl || undefined,
+      const fd = new FormData();
+      fd.append("platform", platform);
+      fd.append("screenshot", file);
+
+      const res = await api.post("/campaign/my-tasks/social", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       showToast(
         `${platform} follow recorded${res.data.data?.allDone ? " — all tasks done!" : ""}`,
@@ -545,9 +645,19 @@ export default function CampaignDashboard() {
   const st = status;
   const readyCount = st?.stats?.readyToSubmit || 0;
   const alreadySubmitted = st?.alreadySubmittedToday;
-  const canSubmit = readyCount > 0 && !alreadySubmitted && !submitting;
   const hasMyTasks = myTasks?.hasCampaignReferral;
   const walletBalance = st?.wallet?.balance || 0;
+
+  // ── Submission preconditions ────────────────────────────────────────────
+  // Require at least one ready referral, AND every ready referral must have
+  // completed profile setup (task #2). If any is missing setup, the backend
+  // rejects the submission anyway — so we prevent it at the UI too.
+  const readyRefsWithTasks = referrals.filter((r) => r.status === "TASKS_DONE");
+  const allReadyHaveProfile = readyRefsWithTasks.every(
+    (r) => r.tasks?.hasSetupProfile === true,
+  );
+  const canSubmit =
+    readyCount > 0 && !alreadySubmitted && !submitting && allReadyHaveProfile;
 
   const TABS = [
     { key: "earn", label: "Earn Daily", icon: FiDollarSign },
@@ -667,7 +777,15 @@ export default function CampaignDashboard() {
         {/* ── Submit Banner ── */}
         {!loading && (
           <div
-            className={`${styles.submitBanner} ${alreadySubmitted ? styles.submitBannerDone : canSubmit ? styles.submitBannerReady : styles.submitBannerIdle}`}
+            className={`${styles.submitBanner} ${
+              alreadySubmitted
+                ? styles.submitBannerDone
+                : canSubmit
+                  ? styles.submitBannerReady
+                  : readyCount > 0 && !allReadyHaveProfile
+                    ? styles.submitBannerReady
+                    : styles.submitBannerIdle
+            }`}
           >
             {alreadySubmitted ? (
               <div className={styles.submitBannerContent}>
@@ -684,6 +802,23 @@ export default function CampaignDashboard() {
                       status={st?.todaySubmission?.status}
                       meta={SUBMISSION_META}
                     />
+                  </p>
+                </div>
+              </div>
+            ) : readyCount > 0 && !allReadyHaveProfile ? (
+              <div className={styles.submitBannerContent}>
+                <span className={styles.submitBannerIcon}>
+                  <FiAlertTriangle size={24} />
+                </span>
+                <div>
+                  <p className={styles.submitBannerTitle}>
+                    {readyRefsWithTasks.length} referral
+                    {readyRefsWithTasks.length !== 1 ? "s" : ""} not fully
+                    qualified
+                  </p>
+                  <p className={styles.submitBannerSub}>
+                    Some referrals still need to complete their profile setup
+                    before you can submit them.
                   </p>
                 </div>
               </div>
@@ -1121,6 +1256,7 @@ export default function CampaignDashboard() {
                           done={t.done}
                           onReport={reportFollow}
                           reporting={reporting}
+                          onError={(msg) => showToast(msg, "error")}
                           link={
                             myTasks.social?.[
                               t.key?.replace("hasFollowed", "").toLowerCase()
@@ -1132,8 +1268,8 @@ export default function CampaignDashboard() {
                   </div>
 
                   <div className={styles.tasksNote}>
-                    <FiFileText size={12} /> Screenshots are optional but help
-                    if admin needs to verify your follows.
+                    <FiFileText size={12} /> Upload a real screenshot for each
+                    platform — admin reviews them before approving your reward.
                   </div>
                 </>
               )}

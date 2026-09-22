@@ -1611,3 +1611,73 @@
     align-items: flex-start;
   }
 }
+/* ── Screenshot upload (Gap 2) ─────────────────────────────────────────────── */
+.socialProofLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+.socialProofLabel svg {
+  flex-shrink: 0;
+}
+
+.socialPreviewWrap {
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.socialPreviewImg {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.socialPreviewActions {
+  display: flex;
+  gap: 8px;
+}
+
+.socialPreviewBtn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  transition: all 0.12s;
+}
+.socialPreviewBtn:hover {
+  color: var(--text);
+  border-color: var(--border-hover);
+}
+
+.socialPreviewBtnRed {
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.socialPreviewBtnRed:hover {
+  background: var(--red-dim);
+}
+
+.socialProofView {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+  text-decoration: none;
+}
+.socialProofView:hover {
+  text-decoration: underline;
+}
