@@ -422,12 +422,14 @@ function SocialCard({
 function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
   const [form, setForm] = useState({
     amount: "",
+    pin: "",
     bankName: "",
     accountNumber: "",
     accountName: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pinNotSet, setPinNotSet] = useState(false);
 
   function setF(k, v) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -449,12 +451,29 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
       setError("All bank fields required");
       return;
     }
+    if (!form.pin || form.pin.length !== 4) {
+      setError("Please enter your 4-digit withdrawal PIN");
+      return;
+    }
     setLoading(true);
     try {
-      await api.post("/campaign/withdraw", form);
+      await api.post("/campaign/withdraw", {
+        amount: form.amount,
+        pin: form.pin,
+        bankName: form.bankName.trim(),
+        accountNumber: form.accountNumber.trim(),
+        accountName: form.accountName.trim(),
+      });
       onSuccess();
     } catch (e) {
-      setError(e.response?.data?.message || "Withdrawal failed");
+      const status = e.response?.status;
+      const msg = e.response?.data?.message || "Withdrawal failed";
+
+      // Detect the "PIN not set" case so we can show a helpful CTA
+      if (status === 403 && /pin/i.test(msg)) {
+        setPinNotSet(true);
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -517,11 +536,54 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
               />
             </div>
           ))}
+
+          {/* ── Withdrawal PIN ── */}
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Withdrawal PIN *</label>
+            <input
+              className={`${styles.input} ${styles.pinInput}`}
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="••••"
+              value={form.pin}
+              onChange={(e) => {
+                setF("pin", e.target.value.replace(/\D/g, "").slice(0, 4));
+              }}
+              autoComplete="off"
+            />
+            <p
+              className={styles.formHint}
+              style={{ textAlign: "left", margin: "4px 0 0" }}
+            >
+              The same 4-digit PIN you use for worker, referral, and campaign
+              withdrawals.
+            </p>
+          </div>
+
           {error && (
             <div className={styles.formError}>
               <FiAlertTriangle size={14} /> {error}
             </div>
           )}
+
+          {pinNotSet && (
+            <a
+              href="/settings?tab=security"
+              className={styles.formHint}
+              style={{
+                display: "block",
+                textAlign: "center",
+                color: "var(--orange)",
+                fontWeight: 700,
+                textDecoration: "underline",
+                marginBottom: 4,
+              }}
+            >
+              Set your withdrawal PIN in Settings → Security →
+            </a>
+          )}
+
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? (
               <>
