@@ -1,0 +1,351 @@
+═══════════════════════════════════════════════════════════════
+ADMIN MIGRATION PLAN
+═══════════════════════════════════════════════════════════════
+
+═════════════════════════════════════════════════════════════
+DOMAIN: audit
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/audit/admins  →  /api/admin/audit/admins
+
+Frontend files to update:
+  • src/pages/admin/AdminAuditLog.jsx
+      DELETE /audit/purge  (unchanged)
+      GET    /audit  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: campaign
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • adminGetSubmissions  (from src/controllers/campaign.controller.js)
+  • adminReviewSubmission  (from src/controllers/campaign.controller.js)
+  • adminApproveCampaignWithdrawal  (from src/controllers/campaign.controller.js)
+  • adminRejectCampaignWithdrawal  (from src/controllers/campaign.controller.js)
+  • adminGetCampaignStats  (from src/controllers/campaign.controller.js)
+  • adminGetCampaignWithdrawals  (from src/controllers/campaign.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/campaign/admin/stats  →  /api/admin/campaigns/stats
+  • GET    /api/campaign/admin/submissions  →  /api/admin/campaigns/submissions
+  • PATCH  /api/campaign/admin/submissions/:id/review  →  /api/admin/campaigns/submissions/:id/review
+  • GET    /api/campaign/admin/withdrawals  →  /api/admin/campaigns/withdrawals
+  • PATCH  /api/campaign/admin/withdrawals/:id/approve  →  /api/admin/campaigns/withdrawals/:id/approve
+  • PATCH  /api/campaign/admin/withdrawals/:id/reject  →  /api/admin/campaigns/withdrawals/:id/reject
+
+Frontend files to update:
+  • src/pages/admin/AdminCampaign.jsx
+      PATCH  /campaign/admin/submissions/:param/review  (unchanged)
+      PATCH  /campaign/admin/withdrawals/:param/reject  (unchanged)
+      GET    /campaign/admin/stats  (unchanged)
+      GET    /campaign/admin/submissions?:param  (unchanged)
+      GET    /campaign/admin/withdrawals?status=:param&page=:param&limit=20  (unchanged)
+      PATCH  /campaign/admin/withdrawals/:param/approve  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: category
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • deleteCategory  (from src/controllers/category.controller.js)
+  • updateCategory  (from src/controllers/category.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • PATCH  /api/categories/:id  →  /api/admin/categories/:id
+  • DELETE /api/categories/:id  →  /api/admin/categories/:id
+
+Frontend files to update:
+  • src/pages/admin/AdminJobPost.jsx
+      GET    /categories  (unchanged)
+      POST   /categories/suggest  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: dispute
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • resolveDispute  (from src/controllers/admin.dispute.controller.js)
+  • resolveDispute  (from src/controllers/dispute.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/disputes/admin/all  →  /api/admin/disputes/all
+  • PATCH  /api/disputes/admin/:id/resolve  →  /api/admin/disputes/:id/resolve
+
+═════════════════════════════════════════════════════════════
+DOMAIN: feedback
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/feedback/admin  →  /api/admin/feedback
+  • PATCH  /api/feedback/admin/:id/status  →  /api/admin/feedback/:id/status
+  • GET    /api/feedback/admin/:id  →  /api/admin/feedback/:id
+  • DELETE /api/feedback/admin/:id  →  /api/admin/feedback/:id
+  • GET    /api/feedback/admin/export/csv  →  /api/admin/feedback/export/csv
+
+Frontend files to update:
+  • src/pages/admin/AdminFeedback.jsx
+      PATCH  /feedback/admin/:param/status  (unchanged)
+      DELETE /feedback/admin/:param  (unchanged)
+      GET    /feedback/admin/export/csv?:param  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: insurance
+═════════════════════════════════════════════════════════════
+
+Frontend files to update:
+  • src/pages/admin/AdminInsurance.jsx
+      GET    /insurance/my  (unchanged)
+      GET    /insurance/my  (unchanged)
+      GET    /insurance/my  (unchanged)
+      GET    /insurance/my  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: job
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • adminCreateJobPost  (from src/controllers/adminJob.controller.js)
+  • adminGetAllJobPosts  (from src/controllers/adminJob.controller.js)
+  • adminGetJobPost  (from src/controllers/adminJob.controller.js)
+  • adminUpdateJobPost  (from src/controllers/adminJob.controller.js)
+  • adminDeleteJobPost  (from src/controllers/adminJob.controller.js)
+  • adminToggleJobStatus  (from src/controllers/adminJob.controller.js)
+  • adminBulkUpdateStatus  (from src/controllers/adminJob.controller.js)
+  • adminBulkDelete  (from src/controllers/adminJob.controller.js)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: misc
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/admin/logs/admin/:adminId  →  /api/admin/logs/:adminId
+
+═════════════════════════════════════════════════════════════
+DOMAIN: payment
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • approveWithdrawalPayout  (from src/controllers/payment.controller.js)
+  • getAllPayments  (from src/controllers/payment.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • POST   /api/payments/withdrawals/:withdrawalId/payout  →  /api/admin/payments/withdrawals/:withdrawalId/payout
+  • GET    /api/payments/  →  /api/admin/payments
+
+═════════════════════════════════════════════════════════════
+DOMAIN: referral
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • adminGetAllReferrals  (from src/controllers/referral.controller.js)
+  • adminGetReferralStats  (from src/controllers/referral.controller.js)
+  • adminFlagReferral  (from src/controllers/referral.controller.js)
+  • adminAdjustWallet  (from src/controllers/referral.controller.js)
+  • adminManualReward  (from src/controllers/referral.controller.js)
+  • adminExpireReferral  (from src/controllers/referral.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/referral/admin  →  /api/admin/referrals
+  • GET    /api/referral/admin/stats  →  /api/admin/referrals/stats
+  • PATCH  /api/referral/admin/:id/flag  →  /api/admin/referrals/:id/flag
+  • PATCH  /api/referral/admin/:id/expire  →  /api/admin/referrals/:id/expire
+  • POST   /api/referral/admin/:id/reward  →  /api/admin/referrals/:id/reward
+  • PATCH  /api/referral/admin/:id/wallet  →  /api/admin/referrals/:id/wallet
+
+Frontend files to update:
+  • src/pages/admin/AdminReferrals.jsx
+      POST   /referral/admin/:param/wallet  (unchanged)
+      PATCH  /referral/admin/:param/manual-reward  (unchanged)
+      PATCH  /referral/admin/:param/flag  (unchanged)
+      PATCH  /referral/admin/:param/expire  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: refund
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/refunds/admin/all  →  /api/admin/refunds/all
+  • GET    /api/refunds/admin/stats/summary  →  /api/admin/refunds/stats/summary
+  • PUT    /api/refunds/admin/bulk-approve  →  /api/admin/refunds/bulk-approve
+  • POST   /api/refunds/admin/bulk-approve  →  /api/admin/refunds/bulk-approve
+  • PUT    /api/refunds/admin/bulk-reject  →  /api/admin/refunds/bulk-reject
+  • POST   /api/refunds/admin/bulk-reject  →  /api/admin/refunds/bulk-reject
+  • PUT    /api/refunds/admin/settings/auto-approve  →  /api/admin/refunds/settings/auto-approve
+  • GET    /api/refunds/admin/settings/auto-approve  →  /api/admin/refunds/settings/auto-approve
+  • PUT    /api/refunds/admin/:id/approve  →  /api/admin/refunds/:id/approve
+  • PUT    /api/refunds/admin/:id/reject  →  /api/admin/refunds/:id/reject
+  • PUT    /api/refunds/admin/:id/reverse  →  /api/admin/refunds/:id/reverse
+  • GET    /api/refunds/admin/:id  →  /api/admin/refunds/:id
+
+═════════════════════════════════════════════════════════════
+DOMAIN: report
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • adminGetAllReports  (from src/controllers/report.controller.js)
+  • adminGetReportDetail  (from src/controllers/report.controller.js)
+  • adminGetReportsByTarget  (from src/controllers/report.controller.js)
+  • adminStartReview  (from src/controllers/report.controller.js)
+  • adminResolveReport  (from src/controllers/report.controller.js)
+  • adminDismissReport  (from src/controllers/report.controller.js)
+  • adminBulkDismiss  (from src/controllers/report.controller.js)
+  • adminGetReportStats  (from src/controllers/report.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/reports/admin/stats  →  /api/admin/reports/stats
+  • GET    /api/reports/admin  →  /api/admin/reports
+  • GET    /api/reports/admin/target/:targetType/:targetId  →  /api/admin/reports/target/:targetType/:targetId
+  • PATCH  /api/reports/admin/bulk-dismiss  →  /api/admin/reports/bulk-dismiss
+  • GET    /api/reports/admin/:id  →  /api/admin/reports/:id
+  • PATCH  /api/reports/admin/:id/review  →  /api/admin/reports/:id/review
+  • PATCH  /api/reports/admin/:id/resolve  →  /api/admin/reports/:id/resolve
+  • PATCH  /api/reports/admin/:id/dismiss  →  /api/admin/reports/:id/dismiss
+
+Frontend files to update:
+  • src/pages/admin/AdminReports.jsx
+      PATCH  /reports/admin/:param/resolve  (unchanged)
+      PATCH  /reports/admin/:param/dismiss  (unchanged)
+      PATCH  /reports/admin/:param/review  (unchanged)
+      GET    /reports/admin/stats  (unchanged)
+      GET    /reports/admin?:param  (unchanged)
+      PATCH  /reports/admin/bulk-dismiss  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: review
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • deleteReview  (from src/controllers/review.controller.js)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: subscription
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/subscriptions/admin/promo-codes  →  /api/admin/subscriptions/promo-codes
+  • POST   /api/subscriptions/admin/promo-codes  →  /api/admin/subscriptions/promo-codes
+  • GET    /api/subscriptions/admin/promo-codes/:id  →  /api/admin/subscriptions/promo-codes/:id
+  • PATCH  /api/subscriptions/admin/promo-codes/:id  →  /api/admin/subscriptions/promo-codes/:id
+  • PATCH  /api/subscriptions/admin/promo-codes/:id/toggle  →  /api/admin/subscriptions/promo-codes/:id/toggle
+  • DELETE /api/subscriptions/admin/promo-codes/:id  →  /api/admin/subscriptions/promo-codes/:id
+
+Frontend files to update:
+  • src/pages/admin/AdminPromoCodes.jsx
+      PATCH  /subscriptions/admin/promo-codes/:param  (unchanged)
+      POST   /subscriptions/admin/promo-codes  (unchanged)
+      DELETE /subscriptions/admin/promo-codes/:param  (unchanged)
+      GET    /subscriptions/admin/promo-codes  (unchanged)
+      PATCH  /subscriptions/admin/promo-codes/:param/toggle  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: survey
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/survey/admin/stats  →  /api/admin/surveys/stats
+  • GET    /api/survey/admin/responses  →  /api/admin/surveys/responses
+  • GET    /api/survey/admin/responses/:id  →  /api/admin/surveys/responses/:id
+  • PATCH  /api/survey/admin/responses/:id/status  →  /api/admin/surveys/responses/:id/status
+  • DELETE /api/survey/admin/responses/bulk  →  /api/admin/surveys/responses/bulk
+  • GET    /api/survey/admin/export/csv  →  /api/admin/surveys/export/csv
+
+Frontend files to update:
+  • src/pages/admin/AdminSurveys.jsx
+      PATCH  /survey/admin/responses/:param/status  (unchanged)
+      GET    /survey/admin/export/csv?:param  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: verification
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • getPendingVerifications  (from src/controllers/verification.controller.js)
+  • getVerificationStats  (from src/controllers/verification.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/verification/admin/stats  →  /api/admin/verifications/stats
+  • GET    /api/verification/admin/pending  →  /api/admin/verifications/pending
+  • GET    /api/verification/admin/verified  →  /api/admin/verifications/verified
+  • GET    /api/verification/admin/hirers/pending  →  /api/admin/verifications/hirers/pending
+  • PATCH  /api/verification/admin/certifications/:certId/verify  →  /api/admin/verifications/certifications/:certId/verify
+  • PATCH  /api/verification/admin/:userId/review  →  /api/admin/verifications/:userId/review
+  • PATCH  /api/verification/admin/:userId/background-check  →  /api/admin/verifications/:userId/background-check
+  • PATCH  /api/verification/admin/hirers/:userId/review  →  /api/admin/verifications/hirers/:userId/review
+
+Frontend files to update:
+  • src/pages/admin/AdminVerifications.jsx
+      PATCH  /verification/admin/certifications/:param/verify  (unchanged)
+      PATCH  /verification/admin/:param/background-check  (unchanged)
+      PATCH  /verification/admin/hirers/:param/review  (unchanged)
+      PATCH  /verification/admin/hirers/:param/review  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: waitlist
+═════════════════════════════════════════════════════════════
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/waitlist/admin/stats  →  /api/admin/waitlist/stats
+  • GET    /api/waitlist/admin/entries  →  /api/admin/waitlist/entries
+  • GET    /api/waitlist/admin/entries/:id  →  /api/admin/waitlist/entries/:id
+  • PATCH  /api/waitlist/admin/entries/:id/status  →  /api/admin/waitlist/entries/:id/status
+  • DELETE /api/waitlist/admin/entries/:id  →  /api/admin/waitlist/entries/:id
+  • GET    /api/waitlist/admin/export/csv  →  /api/admin/waitlist/export/csv
+  • POST   /api/waitlist/admin/broadcast  →  /api/admin/waitlist/broadcast
+  • GET    /api/waitlist/admin/campaigns  →  /api/admin/waitlist/campaigns
+  • POST   /api/waitlist/admin/launch  →  /api/admin/waitlist/launch
+
+Frontend files to update:
+  • src/pages/admin/AdminWaitlist.jsx
+      POST   /waitlist/admin/broadcast  (unchanged)
+      PATCH  /waitlist/admin/entries/:param/status  (unchanged)
+      DELETE /waitlist/admin/entries/:param  (unchanged)
+      GET    /waitlist/admin/export/csv?:param  (unchanged)
+      POST   /waitlist/admin/launch  (unchanged)
+
+═════════════════════════════════════════════════════════════
+DOMAIN: wallet
+═════════════════════════════════════════════════════════════
+
+Backend handlers to move → admin.controller.js:
+  • approveWithdrawal  (from src/controllers/hirerWallet.controller.js)
+  • rejectWithdrawal  (from src/controllers/hirerWallet.controller.js)
+
+Backend routes to move → admin.routes.js:
+  • GET    /api/wallet/admin/withdrawals  →  /api/admin/wallets/withdrawals
+  • PATCH  /api/wallet/admin/withdrawals/:id/approve  →  /api/admin/wallets/withdrawals/:id/approve
+  • PATCH  /api/wallet/admin/withdrawals/:id/reject  →  /api/admin/wallets/withdrawals/:id/reject
+  • GET    /api/wallet/admin/stats  →  /api/admin/wallets/stats
+
+Frontend files to update:
+  • src/pages/admin/AdminWallet.jsx
+      PATCH  /wallet/admin/withdrawals/:param/approve  (unchanged)
+      PATCH  /wallet/admin/withdrawals/:param/reject  (unchanged)
+
+═══════════════════════════════════════════════════════════════
+SUMMARY
+═══════════════════════════════════════════════════════════════
+Handlers to move:      39
+Routes to move:        78
+Frontend files to fix: 12
+Frontend calls to fix: 45
+
+Suggested migration order (fewest items first):
+   1. misc            (0h + 1r + 0f)
+   2. review          (1h + 0r + 0f)
+   3. insurance       (0h + 0r + 1f)
+   4. audit           (0h + 1r + 1f)
+   5. dispute         (2h + 2r + 0f)
+   6. payment         (2h + 2r + 0f)
+   7. category        (2h + 2r + 1f)
+   8. feedback        (0h + 5r + 1f)
+   9. wallet          (2h + 4r + 1f)
+  10. subscription    (0h + 6r + 1f)
+  11. survey          (0h + 6r + 1f)
+  12. job             (8h + 0r + 0f)
+  13. waitlist        (0h + 9r + 1f)
+  14. verification    (2h + 8r + 1f)
+  15. refund          (0h + 12r + 0f)
+  16. campaign        (6h + 6r + 1f)
+  17. referral        (6h + 6r + 1f)
+  18. report          (8h + 8r + 1f)

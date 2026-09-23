@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit:admin:frontend": "node scripts/audit-admin-frontend.mjs",
+    "audit:admin:match": "node scripts/audit-admin-match.mjs",
+    "audit:admin": "npm run audit:admin:frontend && npm run audit:admin:match"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",

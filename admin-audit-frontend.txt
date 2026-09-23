@@ -1,0 +1,113 @@
+═══════════════════════════════════════════════════════════════
+ADMIN FRONTEND AUDIT
+═══════════════════════════════════════════════════════════════
+
+Base URL detected: http://localhost:5000/api
+Admin pages dir:   src/pages/admin
+
+Admin component files found: 33
+
+─────────────────────────────────────────────────────────────
+PER-FILE API CALLS
+─────────────────────────────────────────────────────────────
+
+src/pages/admin/AdminAuditLog.jsx
+  DELETE /audit/purge                             ❌ NOT ADMIN
+  GET    /audit                                   ❌ NOT ADMIN
+
+src/pages/admin/AdminCampaign.jsx
+  PATCH  /campaign/admin/submissions/:param/review ❌ NOT ADMIN
+  PATCH  /campaign/admin/withdrawals/:param/reject ❌ NOT ADMIN
+  GET    /campaign/admin/stats                    ❌ NOT ADMIN
+  GET    /campaign/admin/submissions?:param       ❌ NOT ADMIN
+  GET    /campaign/admin/withdrawals?status=:param&page=:param&limit=20 ❌ NOT ADMIN
+  PATCH  /campaign/admin/withdrawals/:param/approve ❌ NOT ADMIN
+
+src/pages/admin/AdminFeedback.jsx
+  PATCH  /feedback/admin/:param/status            ❌ NOT ADMIN
+  DELETE /feedback/admin/:param                   ❌ NOT ADMIN
+  GET    /feedback/admin/export/csv?:param        ❌ NOT ADMIN
+
+src/pages/admin/AdminInsurance.jsx
+  GET    /insurance/my                            ❌ NOT ADMIN
+  GET    /insurance/my                            ❌ NOT ADMIN
+  GET    /insurance/my                            ❌ NOT ADMIN
+  GET    /insurance/my                            ❌ NOT ADMIN
+
+src/pages/admin/AdminJobPost.jsx
+  GET    /categories                              ❌ NOT ADMIN
+  POST   /categories/suggest                      ❌ NOT ADMIN
+
+src/pages/admin/AdminPromoCodes.jsx
+  PATCH  /subscriptions/admin/promo-codes/:param  ❌ NOT ADMIN
+  POST   /subscriptions/admin/promo-codes         ❌ NOT ADMIN
+  DELETE /subscriptions/admin/promo-codes/:param  ❌ NOT ADMIN
+  GET    /subscriptions/admin/promo-codes         ❌ NOT ADMIN
+  PATCH  /subscriptions/admin/promo-codes/:param/toggle ❌ NOT ADMIN
+
+src/pages/admin/AdminReferrals.jsx
+  POST   /referral/admin/:param/wallet            ❌ NOT ADMIN
+  PATCH  /referral/admin/:param/manual-reward     ❌ NOT ADMIN
+  PATCH  /referral/admin/:param/flag              ❌ NOT ADMIN
+  PATCH  /referral/admin/:param/expire            ❌ NOT ADMIN
+
+src/pages/admin/AdminReports.jsx
+  PATCH  /reports/admin/:param/resolve            ❌ NOT ADMIN
+  PATCH  /reports/admin/:param/dismiss            ❌ NOT ADMIN
+  PATCH  /reports/admin/:param/review             ❌ NOT ADMIN
+  GET    /reports/admin/stats                     ❌ NOT ADMIN
+  GET    /reports/admin?:param                    ❌ NOT ADMIN
+  PATCH  /reports/admin/bulk-dismiss              ❌ NOT ADMIN
+
+src/pages/admin/AdminSurveys.jsx
+  PATCH  /survey/admin/responses/:param/status    ❌ NOT ADMIN
+  GET    /survey/admin/export/csv?:param          ❌ NOT ADMIN
+
+src/pages/admin/AdminVerifications.jsx
+  PATCH  /admin/users/:param/verify               ✅ admin
+  PATCH  /admin/users/:param/verify               ✅ admin
+  PATCH  /verification/admin/certifications/:param/verify ❌ NOT ADMIN
+  PATCH  /verification/admin/:param/background-check ❌ NOT ADMIN
+  PATCH  /verification/admin/hirers/:param/review ❌ NOT ADMIN
+  PATCH  /verification/admin/hirers/:param/review ❌ NOT ADMIN
+
+src/pages/admin/AdminWaitlist.jsx
+  POST   /waitlist/admin/broadcast                ❌ NOT ADMIN
+  PATCH  /waitlist/admin/entries/:param/status    ❌ NOT ADMIN
+  DELETE /waitlist/admin/entries/:param           ❌ NOT ADMIN
+  GET    /waitlist/admin/export/csv?:param        ❌ NOT ADMIN
+  POST   /waitlist/admin/launch                   ❌ NOT ADMIN
+
+src/pages/admin/AdminWallet.jsx
+  PATCH  /wallet/admin/withdrawals/:param/approve ❌ NOT ADMIN
+  PATCH  /wallet/admin/withdrawals/:param/reject  ❌ NOT ADMIN
+
+─────────────────────────────────────────────────────────────
+NON-ADMIN CALLS GROUPED BY SOURCE DOMAIN
+─────────────────────────────────────────────────────────────
+
+  /campaign/admin                          6 calls
+  /subscriptions/admin                     5 calls
+  /reports/admin                           5 calls
+  /waitlist/admin                          5 calls
+  /insurance/my                            4 calls
+  /referral/admin                          4 calls
+  /verification/admin                      4 calls
+  /feedback/admin                          3 calls
+  /survey/admin                            2 calls
+  /wallet/admin                            2 calls
+  /audit/purge                             1 call
+  /audit                                   1 call
+  /categories                              1 call
+  /categories/suggest                      1 call
+  /reports/admin?:param                    1 call
+
+═══════════════════════════════════════════════════════════════
+SUMMARY
+═══════════════════════════════════════════════════════════════
+Admin files scanned:       33
+Files with API calls:      32
+Files fully on /admin:     20
+Files with non-admin URLs: 12
+Total API calls:           102
+Non-admin calls to migrate: 45
