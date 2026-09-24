@@ -23,6 +23,14 @@ import {
   ShieldCheck,
   Building2,
   Users,
+  X,
+  Maximize2,
+  ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  FileText,
+  RotateCw,
+  RefreshCw,
 } from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -83,6 +91,22 @@ function Stars({ rating = 0, max = 5 }) {
       ))}
     </span>
   );
+}
+
+/**
+ * Classify a file URL for the full-screen viewer.
+ * Returns "image" | "video" | "pdf" | "other".
+ */
+function classifyFile(url) {
+  if (!url) return "other";
+  const u = url.split("?")[0].toLowerCase();
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(u))
+    return "image";
+  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(u)) return "video";
+  if (/\.pdf$/.test(u)) return "pdf";
+  if (u.includes("/image/upload/")) return "image";
+  if (u.includes("/video/upload/")) return "video";
+  return "other";
 }
 
 /* ── Avatar with upload support ──────────────────────────── */
@@ -239,6 +263,160 @@ function ProfileSkeleton() {
   );
 }
 
+/* ── Full-screen cert media viewer ───────────────────────── */
+function CertMediaViewer({ src, title, kind, onClose }) {
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+
+  useEffect(() => {
+    setZoom(1);
+    setRotation(0);
+  }, [src]);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+      if (kind === "image") {
+        if (e.key === "+" || e.key === "=")
+          setZoom((z) => Math.min(4, z + 0.25));
+        if (e.key === "-") setZoom((z) => Math.max(0.25, z - 0.25));
+        if (e.key === "r" || e.key === "R") setRotation((r) => (r + 90) % 360);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose, kind]);
+
+  return (
+    <div className={s.certFsBackdrop} onClick={onClose}>
+      <div className={s.certFsTopBar} onClick={(e) => e.stopPropagation()}>
+        <div className={s.certFsTitle}>
+          <FileText size={14} />
+          <span>{title}</span>
+        </div>
+
+        <div className={s.certFsControls}>
+          {kind === "image" && (
+            <>
+              <button
+                type="button"
+                className={s.certFsBtn}
+                onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))}
+                title="Zoom out (−)"
+              >
+                <ZoomOut size={14} />
+              </button>
+              <span className={s.certFsZoomLabel}>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                className={s.certFsBtn}
+                onClick={() => setZoom((z) => Math.min(4, z + 0.25))}
+                title="Zoom in (+)"
+              >
+                <ZoomIn size={14} />
+              </button>
+              <button
+                type="button"
+                className={s.certFsBtn}
+                onClick={() => setRotation((r) => (r + 90) % 360)}
+                title="Rotate (R)"
+              >
+                <RotateCw size={14} />
+              </button>
+              <button
+                type="button"
+                className={s.certFsBtn}
+                onClick={() => {
+                  setZoom(1);
+                  setRotation(0);
+                }}
+                title="Reset"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </>
+          )}
+          <a
+            href={src}
+            target="_blank"
+            rel="noreferrer"
+            className={s.certFsBtn}
+            title="Open in new tab"
+          >
+            <ExternalLink size={14} />
+          </a>
+          <a
+            href={src}
+            download
+            className={s.certFsBtn}
+            title="Download"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Maximize2 size={14} />
+          </a>
+          <button
+            type="button"
+            className={s.certFsCloseBtn}
+            onClick={onClose}
+            title="Close (Esc)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className={s.certFsStage} onClick={(e) => e.stopPropagation()}>
+        {kind === "image" && (
+          <img
+            src={src}
+            alt={title}
+            className={s.certFsImage}
+            style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
+            draggable={false}
+          />
+        )}
+
+        {kind === "video" && (
+          <video
+            src={src}
+            className={s.certFsVideo}
+            controls
+            autoPlay
+            playsInline
+            preload="metadata"
+          />
+        )}
+
+        {kind === "pdf" && (
+          <iframe src={src} title={title} className={s.certFsPdf} />
+        )}
+
+        {kind === "other" && (
+          <div className={s.certFsOther}>
+            <FileText size={48} />
+            <p>Preview not available for this file type.</p>
+            <a
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className={s.certFsOpenLink}
+            >
+              Open in new tab <ExternalLink size={12} />
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main component ──────────────────────────────────────── */
 export default function UserProfile() {
   const { id } = useParams();
@@ -256,6 +434,7 @@ export default function UserProfile() {
   const [reviewsTotal, setReviewsTotal] = useState(0);
 
   const [lightbox, setLightbox] = useState(null);
+  const [certMedia, setCertMedia] = useState(null); // { src, title, kind }
 
   const Layout = me?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
@@ -297,6 +476,11 @@ export default function UserProfile() {
     setUser((u) => ({ ...u, ...updated }));
     setEditing(false);
   };
+
+  function openCertMedia(src, title) {
+    if (!src) return;
+    setCertMedia({ src, title, kind: classifyFile(src) });
+  }
 
   /* ── Loading — skeleton instead of spinner ── */
   if (loading) return <ProfileSkeleton />;
@@ -777,59 +961,102 @@ export default function UserProfile() {
               </div>
             )}
 
-            {/* ── CERTIFICATIONS — clickable for full-page view ── */}
+            {/* ── CERTIFICATIONS — click to open document full-screen ── */}
             {tab === "Certifications" && (
               <div className={s.tabContent}>
                 {wp?.certifications?.length > 0 ? (
                   <div className={s.certList}>
-                    {wp.certifications.map((cert) => (
-                      <div
-                        key={cert.id}
-                        className={`${s.certCard} ${s.certCardClickable}`}
-                        onClick={() =>
-                          setLightbox({ type: "cert", item: cert })
-                        }
-                        title="Click to view full details"
-                      >
-                        <div className={s.certIcon}>
-                          <Award size={18} />
-                        </div>
-                        <div className={s.certInfo}>
-                          <p className={s.certName}>{cert.name}</p>
-                          {cert.issuer && (
-                            <p className={s.certIssuer}>
-                              Issued by {cert.issuer}
-                            </p>
-                          )}
-                          {cert.issuedAt && (
-                            <p className={s.certDate}>
-                              {new Date(cert.issuedAt).toLocaleDateString(
-                                "en",
-                                { month: "short", year: "numeric" },
-                              )}
-                              {cert.expiryDate &&
-                                ` – ${new Date(cert.expiryDate).toLocaleDateString("en", { month: "short", year: "numeric" })}`}
-                            </p>
-                          )}
-                        </div>
+                    {wp.certifications.map((cert) => {
+                      const hasDoc = !!cert.documentUrl;
+                      const status = cert.verified
+                        ? "verified"
+                        : cert.rejectionReason
+                          ? "rejected"
+                          : "pending";
+                      return (
                         <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            gap: 6,
-                            marginLeft: "auto",
+                          key={cert.id}
+                          className={`${s.certCard} ${s.certCardClickable}`}
+                          onClick={() => {
+                            if (hasDoc) {
+                              openCertMedia(
+                                cert.documentUrl,
+                                cert.name || "Certification",
+                              );
+                            } else {
+                              setLightbox({ type: "cert", item: cert });
+                            }
                           }}
+                          title={
+                            hasDoc
+                              ? "Click to view document full screen"
+                              : "Click to view details"
+                          }
                         >
-                          {cert.isVerified && (
-                            <div className={`${s.badge} ${s.badgeGreen}`}>
-                              <CheckCircle2 size={12} /> Verified
-                            </div>
-                          )}
-                          <span className={s.certViewHint}>View →</span>
+                          <div className={s.certIcon}>
+                            <Award size={18} />
+                          </div>
+                          <div className={s.certInfo}>
+                            <p className={s.certName}>{cert.name}</p>
+                            {cert.issuer && (
+                              <p className={s.certIssuer}>
+                                Issued by {cert.issuer}
+                              </p>
+                            )}
+                            {cert.issuedAt && (
+                              <p className={s.certDate}>
+                                {new Date(cert.issuedAt).toLocaleDateString(
+                                  "en",
+                                  { month: "short", year: "numeric" },
+                                )}
+                                {cert.expiryDate &&
+                                  ` – ${new Date(cert.expiryDate).toLocaleDateString("en", { month: "short", year: "numeric" })}`}
+                              </p>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              gap: 6,
+                              marginLeft: "auto",
+                            }}
+                          >
+                            {status === "verified" && (
+                              <div className={`${s.badge} ${s.badgeGreen}`}>
+                                <CheckCircle2 size={12} /> Verified
+                              </div>
+                            )}
+                            {status === "pending" && (
+                              <div
+                                className={`${s.badge} ${s.badgeGray}`}
+                                style={{
+                                  background: "rgba(234,179,8,0.12)",
+                                  color: "#eab308",
+                                }}
+                              >
+                                <Clock size={12} /> Pending
+                              </div>
+                            )}
+                            {status === "rejected" && (
+                              <div
+                                className={`${s.badge} ${s.badgeGray}`}
+                                style={{
+                                  background: "rgba(239,68,68,0.12)",
+                                  color: "var(--red)",
+                                }}
+                              >
+                                <AlertCircle size={12} /> Rejected
+                              </div>
+                            )}
+                            <span className={s.certViewHint}>
+                              {hasDoc ? "View doc →" : "View →"}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className={s.emptyCard}>
@@ -963,7 +1190,7 @@ export default function UserProfile() {
         </div>
       </div>
 
-      {/* ── LIGHTBOX ── */}
+      {/* ── LIGHTBOX (portfolio + fallback cert info) ── */}
       {lightbox && (
         <div className={s.lightboxOverlay} onClick={() => setLightbox(null)}>
           <div className={s.lightboxBox} onClick={(e) => e.stopPropagation()}>
@@ -995,7 +1222,7 @@ export default function UserProfile() {
               </>
             )}
 
-            {/* Certification lightbox */}
+            {/* Certification info lightbox — only used when no document */}
             {lightbox.type === "cert" && (
               <div className={s.lightboxCert}>
                 <div className={s.lightboxCertIcon}>
@@ -1053,6 +1280,16 @@ export default function UserProfile() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ── FULL-SCREEN CERT DOCUMENT VIEWER ── */}
+      {certMedia && (
+        <CertMediaViewer
+          src={certMedia.src}
+          title={certMedia.title}
+          kind={certMedia.kind}
+          onClose={() => setCertMedia(null)}
+        />
       )}
     </Layout>
   );
