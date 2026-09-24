@@ -813,3 +813,149 @@
     flex-wrap: wrap;
   }
 }
+/* ── ADDED ── video intro watch button */
+.videoWatchBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--orange);
+  background: var(--orange-dim);
+  color: var(--orange);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.videoWatchBtn:hover {
+  background: rgba(255, 107, 0, 0.2);
+}
+
+/* ── ADDED ── full-screen video modal */
+.videoModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+.videoModalStage {
+  width: 100%;
+  max-width: 1200px;
+  max-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videoModalPlayer {
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 4rem);
+  border-radius: 12px;
+  background: #000;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6);
+  outline: none;
+}
+
+.videoModalClose {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 3100;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.videoModalClose:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── ADDED ── icon alignment helpers (from previous pass) */
+.actionBtn svg,
+.actionRole svg,
+.viewBtn svg,
+.actionGreen svg,
+.actionRed svg,
+.tab svg,
+.pageBtn svg,
+.searchIcon svg,
+.videoWatchBtn svg {
+  display: block;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+}
+.searchWrap .searchInput {
+  padding-left: 2.25rem;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.tabStatusDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.tabStatusDot_active {
+  background: var(--green);
+}
+.tabStatusDot_banned {
+  background: var(--red);
+}
+.tabStatusDot_unverified {
+  background: var(--text-muted);
+}
+
+.verifBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.rolePill {
+  display: inline-flex;
+  align-items: center;
+}
+
+.modalActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
