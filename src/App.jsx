@@ -133,6 +133,7 @@ import WorkerRefundDetailPage from "./pages/worker/refunds/WorkerRefundDetailPag
 import WorkerRefundsPage from "./pages/worker/refunds/components/WorkerRefundsPage.jsx";
 import CreateBookingFromJob from "./components/hirer/CreateBookingFromJob.jsx";
 import PostDetail from "./pages/feed/PostDetail.jsx";
+import AdminRefunds from "./pages/admin/AdminRefunds.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -281,6 +282,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminDisputes />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/refunds"
+          element={
+            <RequireAdmin>
+              <AdminRefunds />
             </RequireAdmin>
           }
         />

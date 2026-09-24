@@ -4,6 +4,25 @@ import api from "../../lib/api";
 import AdminLayout from "../../components/layout/AdminLayout";
 import styles from "./AdminDisputes.module.css";
 
+// ─── Icons (react-icons — Feather family) ─────────────────────────────────────
+import {
+  FiAlertCircle,
+  FiCheckCircle,
+  FiClock,
+  FiFileText,
+  FiFolder,
+  FiUser,
+  FiTool,
+  FiCheck,
+  FiX,
+  FiChevronLeft,
+  FiChevronRight,
+  FiRefreshCw,
+  FiDollarSign,
+  FiExternalLink,
+  FiInfo,
+} from "react-icons/fi";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n, currency = "") {
@@ -70,7 +89,15 @@ function PartyCard({ user, role }) {
       className={`${styles.partyCard} ${isHirer ? styles.partyCardHirer : styles.partyCardWorker}`}
     >
       <div className={styles.partyLabel}>
-        {isHirer ? "🧑 Hirer" : "🔨 Worker"}
+        {isHirer ? (
+          <>
+            <FiUser size={11} /> Hirer
+          </>
+        ) : (
+          <>
+            <FiTool size={11} /> Worker
+          </>
+        )}
       </div>
       <div className={styles.partyAvatar}>
         {user?.avatar ? (
@@ -88,29 +115,22 @@ function PartyCard({ user, role }) {
   );
 }
 
-// ─── Resolution Button ────────────────────────────────────────────────────────
+// ─── Resolution Buttons ───────────────────────────────────────────────────────
 
 const RESOLUTIONS = [
   {
     key: "REFUND",
-    label: "💸 Refund Hirer",
-    sub: "Cancel booking · mark payment refunded",
+    label: "Refund Hirer",
+    icon: FiDollarSign,
+    sub: "Create refund · cancel booking · move money",
     cls: "refundBtn",
-    body: { refundHirer: true, releaseToWorker: false },
-  },
-  {
-    key: "SPLIT",
-    label: "✂️ Manual Split",
-    sub: "Complete booking · payment stays held",
-    cls: "splitBtn",
-    body: { refundHirer: false, releaseToWorker: false },
   },
   {
     key: "RELEASE",
-    label: "✅ Release to Worker",
-    sub: "Complete booking · release escrow",
+    label: "Release to Worker",
+    icon: FiCheckCircle,
+    sub: "Release escrow · complete booking · pay worker",
     cls: "releaseBtn",
-    body: { refundHirer: false, releaseToWorker: true },
   },
 ];
 
@@ -119,8 +139,17 @@ const RESOLUTIONS = [
 function DisputeCard({ dispute: d, isResolved, onResolved, i }) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState("");
+  const [refundPercent, setRefundPercent] = useState(100);
   const [resolving, setResolving] = useState(null); // resolution key being processed
   const [toast, setToast] = useState(null);
+
+  // ── Dispute-model field reads ─────────────────────────────────────────────
+  const booking = d.booking || {};
+  // Backend tells us who raised → the other party is "against"
+  const hirer = d.raisedByRole === "HIRER" ? d.raisedBy : d.against;
+  const worker = d.raisedByRole === "WORKER" ? d.raisedBy : d.against;
+  const rawStatus = d.rawStatus || d.status;
+  const isOpen = rawStatus === "PENDING_REVIEW";
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -128,20 +157,22 @@ function DisputeCard({ dispute: d, isResolved, onResolved, i }) {
   }
 
   async function handleResolve(res) {
-    const def = RESOLUTIONS.find((r) => r.key === res);
     setResolving(res);
     try {
-      await api.patch(`/admin/disputes/${d.id}/resolve`, {
+      // ── Body shape matches dispute.controller.js §4 ─────────────────────
+      const body = {
         resolution: res,
-        notes, // controller expects "notes" not "adminNotes"
-        ...def.body,
-      });
+        adminNotes: notes || undefined,
+      };
+      if (res === "REFUND") {
+        const pct = Math.max(1, Math.min(100, Number(refundPercent) || 100));
+        body.refundPercentage = pct;
+      }
+      await api.patch(`/disputes/admin/${d.id}/resolve`, body);
       showToast(
         res === "REFUND"
-          ? "Hirer refunded — booking cancelled"
-          : res === "RELEASE"
-            ? "Payment released to worker — booking completed"
-            : "Split marked — handle payment manually",
+          ? `Hirer refunded (${refundPercent}%) — booking cancelled, refund created`
+          : "Escrow released to worker — booking completed",
       );
       setTimeout(() => onResolved(d.id), 1500);
     } catch (e) {
@@ -167,45 +198,56 @@ function DisputeCard({ dispute: d, isResolved, onResolved, i }) {
         onClick={() => setOpen((o) => !o)}
       >
         <div className={styles.disputeAvatars}>
-          <div className={styles.da}>{d.hirer?.firstName?.[0] ?? "?"}</div>
+          <div className={styles.da}>{hirer?.firstName?.[0] ?? "?"}</div>
           <div className={`${styles.da} ${styles.daB}`}>
-            {d.worker?.firstName?.[0] ?? "?"}
+            {worker?.firstName?.[0] ?? "?"}
           </div>
         </div>
 
         <div className={styles.disputeMain}>
           <h3 className={styles.disputeTitle}>
-            {d.title || "Untitled Booking"}
+            {booking.title || "Untitled Booking"}
           </h3>
           <p className={styles.disputePeople}>
             <span className={styles.hirerSpan}>
-              🧑 {d.hirer?.firstName} {d.hirer?.lastName}
+              <FiUser size={11} /> {hirer?.firstName} {hirer?.lastName}
             </span>
             <span className={styles.vsDot}>vs</span>
             <span className={styles.workerSpan}>
-              🔨 {d.worker?.firstName} {d.worker?.lastName}
+              <FiTool size={11} /> {worker?.firstName} {worker?.lastName}
             </span>
           </p>
           <p className={styles.disputeMeta}>
-            {d.category?.name && <span>{d.category.name}</span>}
-            {d.category?.name && <span className={styles.metaDot}>·</span>}
-            <span>Opened {timeAgo(d.updatedAt)}</span>
-            {d.createdAt && (
-              <>
-                <span className={styles.metaDot}>·</span>
-                <span>Booked {fmtDate(d.createdAt)}</span>
-              </>
+            {/* ── Category (backend sends on booking.category) ── */}
+            {booking.category?.name && (
+              <span>
+                {booking.category.icon ? `${booking.category.icon} ` : ""}
+                {booking.category.name}
+              </span>
             )}
+            {booking.category?.name && (
+              <span className={styles.metaDot}>·</span>
+            )}
+            <span>Raised {timeAgo(d.createdAt)}</span>
+            {/* ── Raw status chip ── */}
+            <span className={styles.metaDot}>·</span>
+            <span style={{ textTransform: "capitalize" }}>
+              {rawStatus.replace("_", " ").toLowerCase()}
+            </span>
           </p>
         </div>
 
         <div className={styles.disputeRight}>
-          <span className={styles.disputeAmount}>₦{fmt(d.agreedRate)}</span>
-          {d.payment && (
+          <span className={styles.disputeAmount}>
+            {booking.currency || "₦"}
+            {fmt(booking.agreedRate)}
+          </span>
+          {/* ── Refund summary if a refund was created from this dispute ── */}
+          {d.refund && (
             <span
-              className={`${styles.payStatusPill} ${styles[`payStatus_${d.payment.status}`]}`}
+              className={`${styles.payStatusPill} ${styles[`payStatus_${d.refund.status}`]}`}
             >
-              {d.payment.status === "HELD" ? "🔒 Escrow" : d.payment.status}
+              Refund {d.refund.status}
             </span>
           )}
           <span className={styles.chevron}>{open ? "▲" : "▼"}</span>
@@ -215,43 +257,161 @@ function DisputeCard({ dispute: d, isResolved, onResolved, i }) {
       {/* ── Expanded Detail ── */}
       {open && (
         <div className={styles.disputeDetail}>
+          {/* ── Dispute reason block (Dispute model fields) ── */}
+          <div className={styles.paymentBlock}>
+            <p className={styles.blockTitle}>Dispute Details</p>
+            <div className={styles.payGrid}>
+              {d.disputeReason && (
+                <PayRow label="Reason" value={d.disputeReason} highlight />
+              )}
+              {d.disputeDescription && (
+                <PayRow label="Description" value={d.disputeDescription} />
+              )}
+              {Array.isArray(d.disputeEvidence) &&
+                d.disputeEvidence.length > 0 && (
+                  <PayRow
+                    label="Evidence"
+                    value={
+                      <span style={{ display: "inline-flex", gap: "0.5rem" }}>
+                        {d.disputeEvidence.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            File {idx + 1} <FiExternalLink size={10} />
+                          </a>
+                        ))}
+                      </span>
+                    }
+                  />
+                )}
+              <PayRow label="Raised By" value={d.raisedByRole || "—"} />
+              <PayRow label="Raised On" value={fmtDate(d.createdAt)} />
+              <PayRow
+                label="Previous Booking Status"
+                value={booking.status || "—"}
+              />
+            </div>
+          </div>
+
+          {/* ── Booking meta ── */}
+          <div className={styles.paymentBlock}>
+            <p className={styles.blockTitle}>Booking Details</p>
+            <div className={styles.payGrid}>
+              {booking.description && (
+                <PayRow label="Description" value={booking.description} />
+              )}
+              {booking.address && (
+                <PayRow label="Address" value={booking.address} />
+              )}
+              {booking.jobType && (
+                <PayRow label="Job Type" value={booking.jobType} />
+              )}
+              {booking.locationType && (
+                <PayRow label="Location Type" value={booking.locationType} />
+              )}
+              {booking.scheduledAt && (
+                <PayRow
+                  label="Scheduled"
+                  value={fmtDate(booking.scheduledAt)}
+                />
+              )}
+              {booking.estimatedHours != null && (
+                <PayRow
+                  label="Estimated Hours"
+                  value={booking.estimatedHours}
+                />
+              )}
+              {booking.estimatedUnit && (
+                <PayRow label="Unit" value={booking.estimatedUnit} />
+              )}
+              {booking.estimatedValue && (
+                <PayRow
+                  label="Estimated Value"
+                  value={booking.estimatedValue}
+                />
+              )}
+              {booking.quantity != null && booking.quantity !== 1 && (
+                <PayRow label="Quantity" value={booking.quantity} />
+              )}
+              {booking.isNegotiated && (
+                <PayRow label="Was Negotiated" value="Yes" />
+              )}
+              {booking.negotiatedRate != null && (
+                <PayRow
+                  label="Negotiated Rate"
+                  value={`${booking.currency || "₦"}${fmt(booking.negotiatedRate)}`}
+                />
+              )}
+              {booking.negotiationNote && (
+                <PayRow
+                  label="Negotiation Note"
+                  value={booking.negotiationNote}
+                />
+              )}
+              {booking.completedAt && (
+                <PayRow
+                  label="Completed"
+                  value={fmtDate(booking.completedAt)}
+                />
+              )}
+              {booking.cancelReason && (
+                <PayRow label="Cancel Reason" value={booking.cancelReason} />
+              )}
+            </div>
+          </div>
+
           {/* Parties */}
           <div className={styles.partyRow}>
-            <PartyCard user={d.hirer} role="hirer" />
+            <PartyCard user={hirer} role="hirer" />
             <div className={styles.vsBlock}>
               <span className={styles.vsText}>vs</span>
             </div>
-            <PartyCard user={d.worker} role="worker" />
+            <PartyCard user={worker} role="worker" />
           </div>
 
-          {/* Payment breakdown */}
-          {d.payment && (
+          {/* ── Refund summary (if created from this dispute) ── */}
+          {d.refund && (
             <div className={styles.paymentBlock}>
-              <p className={styles.blockTitle}>Payment Breakdown</p>
+              <p className={styles.blockTitle}>Linked Refund</p>
               <div className={styles.payGrid}>
+                <PayRow label="Reference" value={d.refund.reference} />
                 <PayRow
-                  label="Total Paid"
-                  value={`₦${fmt(d.payment.amount)}`}
+                  label="Amount"
+                  value={`${d.refund.currency || "₦"}${fmt(d.refund.amount)}`}
                 />
-                <PayRow
-                  label="Worker Payout"
-                  value={`₦${fmt(d.payment.workerPayout)}`}
-                />
-                <PayRow
-                  label="Platform Fee"
-                  value={`₦${fmt(d.payment.platformFee)}`}
-                />
-                <PayRow label="Provider" value={d.payment.provider || "—"} />
-                <PayRow
-                  label="Payment Status"
-                  value={d.payment.status}
-                  highlight
-                />
-                {d.payment.refundedAt && (
+                <PayRow label="Status" value={d.refund.status} highlight />
+                <PayRow label="Type" value={d.refund.refundType || "DISPUTE"} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Resolution info if already resolved ── */}
+          {!isOpen && (
+            <div className={styles.paymentBlock}>
+              <p className={styles.blockTitle}>Resolution</p>
+              <div className={styles.payGrid}>
+                {d.resolution && (
+                  <PayRow label="Resolution" value={d.resolution} highlight />
+                )}
+                {d.resolvedAt && (
+                  <PayRow label="Resolved At" value={fmtDate(d.resolvedAt)} />
+                )}
+                {d.resolvedBy && (
                   <PayRow
-                    label="Refunded At"
-                    value={fmtDate(d.payment.refundedAt)}
+                    label="Resolved By"
+                    value={`${d.resolvedBy.firstName ?? ""} ${d.resolvedBy.lastName ?? ""}`.trim()}
                   />
+                )}
+                {d.adminNotes && (
+                  <PayRow label="Admin Notes" value={d.adminNotes} />
                 )}
               </div>
             </div>
@@ -260,24 +420,26 @@ function DisputeCard({ dispute: d, isResolved, onResolved, i }) {
           {/* Timeline chips */}
           <div className={styles.timelineRow}>
             {[
-              { label: "Booking created", val: d.createdAt },
-              { label: "Dispute raised", val: d.updatedAt },
-            ].map((t) => (
-              <div key={t.label} className={styles.timelineChip}>
-                <span className={styles.timelineLabel}>{t.label}</span>
-                <span className={styles.timelineVal}>{fmtDate(t.val)}</span>
-              </div>
-            ))}
+              { label: "Dispute raised", val: d.createdAt },
+              { label: "Booking created", val: booking.createdAt },
+            ]
+              .filter((t) => t.val)
+              .map((t) => (
+                <div key={t.label} className={styles.timelineChip}>
+                  <span className={styles.timelineLabel}>{t.label}</span>
+                  <span className={styles.timelineVal}>{fmtDate(t.val)}</span>
+                </div>
+              ))}
           </div>
 
-          {/* Admin notes — key fixed to "notes" matching the controller */}
-          {!isResolved && (
+          {/* ── Admin notes + resolution actions (only when open) ── */}
+          {!isResolved && isOpen && (
             <>
               <div className={styles.notesSection}>
                 <label className={styles.notesLabel}>
                   Admin notes{" "}
                   <span className={styles.optional}>
-                    (sent to both parties)
+                    (shared with both parties)
                   </span>
                 </label>
                 <textarea
@@ -289,45 +451,72 @@ function DisputeCard({ dispute: d, isResolved, onResolved, i }) {
                 />
               </div>
 
-              {/* Resolution actions */}
               <div className={styles.resolutionBlock}>
                 <p className={styles.blockTitle}>Choose a Resolution</p>
+
+                {/* ── Refund percentage selector ── */}
+                <div className={styles.refundPercentRow}>
+                  <label htmlFor={`pct-${d.id}`}>Refund %</label>
+                  <input
+                    id={`pct-${d.id}`}
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={refundPercent}
+                    onChange={(e) => setRefundPercent(e.target.value)}
+                    className={styles.refundPercentInput}
+                  />
+                  <span className={styles.refundPercentHint}>
+                    1–100 · only used when REFUND is chosen
+                  </span>
+                </div>
+
                 <div className={styles.resolveActions}>
-                  {RESOLUTIONS.map((res) => (
-                    <button
-                      key={res.key}
-                      className={`${styles.resolveBtn} ${styles[res.cls]}`}
-                      onClick={() => handleResolve(res.key)}
-                      disabled={resolving !== null}
-                      title={res.sub}
-                    >
-                      {resolving === res.key ? (
-                        <span className={styles.spinnerText}>Processing…</span>
-                      ) : (
-                        <>
-                          <span className={styles.resolveBtnLabel}>
-                            {res.label}
+                  {RESOLUTIONS.map((res) => {
+                    const Icon = res.icon;
+                    return (
+                      <button
+                        key={res.key}
+                        className={`${styles.resolveBtn} ${styles[res.cls]}`}
+                        onClick={() => handleResolve(res.key)}
+                        disabled={resolving !== null}
+                        title={res.sub}
+                      >
+                        {resolving === res.key ? (
+                          <span className={styles.spinnerText}>
+                            <FiRefreshCw size={13} style={{ marginRight: 4 }} />
+                            Processing…
                           </span>
-                          <span className={styles.resolveBtnSub}>
-                            {res.sub}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  ))}
+                        ) : (
+                          <>
+                            <span className={styles.resolveBtnLabel}>
+                              <Icon size={13} /> {res.label}
+                            </span>
+                            <span className={styles.resolveBtnSub}>
+                              {res.sub}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 <p className={styles.splitNote}>
-                  ✂️ Manual Split keeps the booking completed and payment held —
-                  process individual transfers outside the platform.
+                  <FiInfo size={12} />
+                  Refund creates a Refund record and moves money back to the
+                  hirer. Release pays the worker from escrow. Both close the
+                  dispute immediately — a full history is visible in the Refunds
+                  page.
                 </p>
               </div>
             </>
           )}
 
-          {/* Resolved state */}
+          {/* ── Already resolved ── */}
           {isResolved && (
             <div className={styles.resolvedBadge}>
-              ✅ This dispute has been resolved
+              <FiCheckCircle size={14} />
+              This dispute has been resolved
             </div>
           )}
         </div>
@@ -359,9 +548,8 @@ export default function AdminDisputes() {
   const [loading, setLoading] = useState(true);
   const [pageToast, setPageToast] = useState(null);
 
-  // resolved=false → open disputes (default)
-  // resolved=true  → resolved disputes history
-  const tab = searchParams.get("tab") || "open"; // "open" | "resolved"
+  // tab: "open" | "resolved"
+  const tab = searchParams.get("tab") || "open";
   const page = parseInt(searchParams.get("page") || "1");
 
   function setParam(k, v) {
@@ -374,20 +562,33 @@ export default function AdminDisputes() {
 
   const isResolved = tab === "resolved";
 
+  // Backend `getAllDisputes` accepts `?status=` and paginates by Dispute rows.
+  //   open    → status = PENDING_REVIEW
+  //   resolved → no status filter (returns all); we filter client-side for
+  //              resolved ones because the backend filter is a single status
   const fetchDisputes = useCallback(() => {
     setLoading(true);
-    const params = {
-      page,
-      limit: 15,
-      resolved: isResolved ? "true" : "false",
-    };
+    const params = { page, limit: 15 };
+    if (!isResolved) params.status = "PENDING_REVIEW";
+
     api
-      .get("/admin/disputes", { params })
+      .get("/disputes/admin/all", { params })
       .then((r) => {
-        const d = r.data.data;
-        setDisputes(d.disputes || []);
-        setTotal(d.total || 0);
-        setPages(d.pages || 1);
+        const data = r.data.data;
+        let list = data.disputes || [];
+        if (isResolved) {
+          // Keep only resolved statuses when on the resolved tab
+          list = list.filter(
+            (d) =>
+              d.rawStatus &&
+              ["RESOLVED_REFUND", "RESOLVED_RELEASE", "CANCELLED"].includes(
+                d.rawStatus,
+              ),
+          );
+        }
+        setDisputes(list);
+        setTotal(data.total || 0);
+        setPages(data.pages || 1);
       })
       .catch(() => {
         setPageToast({ msg: "Failed to load disputes", type: "error" });
@@ -422,13 +623,21 @@ export default function AdminDisputes() {
         {/* ── Stats Bar ── */}
         <div className={styles.statsBar}>
           <StatCard
-            icon="⚖️"
+            icon={<FiAlertCircle size={16} />}
             label="Showing"
             value={total}
             accent={!isResolved && total > 0 ? "red" : undefined}
           />
-          <StatCard icon="📋" label="This page" value={disputes.length} />
-          <StatCard icon="📄" label="Pages" value={pages} />
+          <StatCard
+            icon={<FiFileText size={16} />}
+            label="This page"
+            value={disputes.length}
+          />
+          <StatCard
+            icon={<FiFileText size={16} />}
+            label="Pages"
+            value={pages}
+          />
         </div>
 
         {/* ── Tab Row ── */}
@@ -438,13 +647,13 @@ export default function AdminDisputes() {
               className={`${styles.tab} ${!isResolved ? styles.tabActive : ""}`}
               onClick={() => setParam("tab", "")}
             >
-              ⚖️ Open Disputes
+              <FiAlertCircle size={13} /> Open Disputes
             </button>
             <button
               className={`${styles.tab} ${isResolved ? styles.tabActive : ""}`}
               onClick={() => setParam("tab", "resolved")}
             >
-              ✅ Resolved History
+              <FiCheckCircle size={13} /> Resolved History
             </button>
           </div>
           <div className={styles.totalPill}>
@@ -461,12 +670,18 @@ export default function AdminDisputes() {
           </div>
         ) : disputes.length === 0 ? (
           <div className={styles.empty}>
-            <span>{isResolved ? "📂" : "⚖️"}</span>
+            <span>
+              {isResolved ? (
+                <FiFolder size={40} />
+              ) : (
+                <FiAlertCircle size={40} />
+              )}
+            </span>
             <p>{isResolved ? "No resolved disputes" : "No active disputes"}</p>
             <small>
               {isResolved
                 ? "Nothing has been resolved yet."
-                : "All disputes have been resolved. Great work! 🎉"}
+                : "All disputes have been resolved. Great work!"}
             </small>
           </div>
         ) : (
@@ -491,7 +706,7 @@ export default function AdminDisputes() {
               disabled={page === 1}
               onClick={() => setParam("page", String(page - 1))}
             >
-              ← Prev
+              <FiChevronLeft size={13} /> Prev
             </button>
             <span className={styles.pageInfo}>
               Page {page} of {pages} · {fmt(total)} total
@@ -501,7 +716,7 @@ export default function AdminDisputes() {
               disabled={page === pages}
               onClick={() => setParam("page", String(page + 1))}
             >
-              Next →
+              Next <FiChevronRight size={13} />
             </button>
           </div>
         )}

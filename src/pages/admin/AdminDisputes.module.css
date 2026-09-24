@@ -731,3 +731,95 @@
     display: none;
   }
 }
+/* ── ADDED ── refund percentage row above resolution buttons */
+.refundPercentRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.refundPercentRow label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.refundPercentInput {
+  width: 80px;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+  outline: none;
+}
+.refundPercentInput:focus {
+  border-color: var(--border-focus);
+}
+.refundPercentHint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+/* ── ADDED ── icon alignment helpers */
+.statIcon,
+.tab svg,
+.pageBtn svg,
+.resolveBtnLabel svg,
+.partyLabel svg,
+.hirerSpan svg,
+.workerSpan svg {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hirerSpan,
+.workerSpan {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.partyLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.resolveBtnLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.splitNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.resolvedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.empty svg {
+  opacity: 0.5;
+  color: var(--text-dim);
+}

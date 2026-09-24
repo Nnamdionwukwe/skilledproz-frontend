@@ -55,6 +55,7 @@ const NAV = [
       { label: "All Users", path: "/admin/users", icon: FiUsers },
       { label: "Verifications", path: "/admin/verifications", icon: FiShield },
       { label: "Disputes", path: "/admin/disputes", icon: FiAlertCircle },
+      { label: "Booking Refunds", path: "/admin/refunds", icon: FiBookOpen },
     ],
   },
   {
