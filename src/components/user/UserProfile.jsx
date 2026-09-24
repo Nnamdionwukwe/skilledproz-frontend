@@ -1241,15 +1241,20 @@ export default function UserProfile() {
                     Issued by <strong>{lightbox.item.issuer}</strong>
                   </p>
                 )}
+
+                {/* Issue + Expiry dates — kept exactly as before */}
                 <div className={s.lightboxCertDates}>
-                  {lightbox.item.issueDate && (
+                  {(lightbox.item.issueDate || lightbox.item.issuedAt) && (
                     <div className={s.lightboxCertDate}>
                       <span>Issue date</span>
                       <strong>
-                        {new Date(lightbox.item.issueDate).toLocaleDateString(
-                          "en-GB",
-                          { day: "numeric", month: "long", year: "numeric" },
-                        )}
+                        {new Date(
+                          lightbox.item.issueDate || lightbox.item.issuedAt,
+                        ).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
                       </strong>
                     </div>
                   )}
@@ -1265,6 +1270,7 @@ export default function UserProfile() {
                     </div>
                   )}
                 </div>
+
                 {lightbox.item.isVerified && (
                   <div
                     className={`${s.badge} ${s.badgeGreen}`}
