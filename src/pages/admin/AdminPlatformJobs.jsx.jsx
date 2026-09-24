@@ -12,6 +12,47 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import s from "./AdminPlatformJobs.module.css";
 
+// ─── Icons (react-icons — Feather family) ─────────────────────────────────────
+import {
+  FiBriefcase,
+  FiClock,
+  FiFileText,
+  FiGlobe,
+  FiMapPin,
+  FiShuffle,
+  FiEye,
+  FiCheckCircle,
+  FiXCircle,
+  FiRefreshCw,
+  FiTrash2,
+  FiAlertTriangle,
+  FiSearch,
+  FiX,
+  FiTag,
+  FiDollarSign,
+  FiCalendar,
+  FiUser,
+  FiUsers,
+  FiMail,
+  FiPhone,
+  FiMessageCircle,
+  FiLink,
+  FiBookOpen,
+  FiAward,
+  FiSliders,
+  FiActivity,
+  FiAlignLeft,
+  FiCornerDownRight,
+  FiTarget,
+  FiTrendingUp,
+  FiHome,
+  FiSend,
+  FiInbox,
+  FiChevronLeft,
+  FiChevronRight,
+  FiZap,
+} from "react-icons/fi";
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_TABS = [
   { key: "ALL", label: "All" },
@@ -33,16 +74,16 @@ const APP_STATUS_META = {
 };
 
 const JOB_TYPE_ICONS = {
-  FULL_TIME: { label: "Full-time", icon: "💼" },
-  PART_TIME: { label: "Part-time", icon: "⏰" },
-  CONTRACT: { label: "Contract", icon: "📄" },
-  TEMPORARY: { label: "Temporary", icon: "⏳" },
+  FULL_TIME: { label: "Full-time", icon: FiBriefcase },
+  PART_TIME: { label: "Part-time", icon: FiClock },
+  CONTRACT: { label: "Contract", icon: FiFileText },
+  TEMPORARY: { label: "Temporary", icon: FiClock },
 };
 
 const LOCATION_TYPE_META = {
-  REMOTE: { label: "Remote", icon: "🌐" },
-  ON_SITE: { label: "On-site", icon: "📍" },
-  HYBRID: { label: "Hybrid", icon: "🔀" },
+  REMOTE: { label: "Remote", icon: FiGlobe },
+  ON_SITE: { label: "On-site", icon: FiMapPin },
+  HYBRID: { label: "Hybrid", icon: FiShuffle },
 };
 
 const BUDGET_TYPE_LABELS = {
@@ -64,6 +105,82 @@ function fmtBudget(min, max, type, currency = "USD") {
   if (min && max) return `${currency} ${fmtN(min)}–${fmtN(max)}${sym}`;
   if (min) return `${currency} ${fmtN(min)}${sym}`;
   return `${currency} ${fmtN(max)}${sym}`;
+}
+
+// ── FIXED ── backend sends `budget`/`currency`/`budgetType` (single budget),
+// and optionally salaryAmount/salaryMin/salaryMax/salaryCurrency/salaryPeriod
+// for external-style jobs. Compute a single display string from the real
+// backend fields instead of the non-existent budgetMin/budgetMax/budgetCurrency.
+function computeBudgetLabel(job) {
+  if (!job) return "—";
+
+  const {
+    salaryAmount,
+    salaryMin,
+    salaryMax,
+    salaryCurrency,
+    salaryPeriod,
+    salaryText,
+  } = job;
+
+  const sym = (code) => {
+    if (!code) return "";
+    const map = { NGN: "₦", USD: "$", EUR: "€", GBP: "£" };
+    return map[code] || code + " ";
+  };
+
+  // Full text fallback if no numeric data at all
+  if (
+    salaryAmount == null &&
+    salaryMin == null &&
+    salaryMax == null &&
+    !job.budget &&
+    salaryText
+  ) {
+    return salaryText;
+  }
+
+  const periodSuffix =
+    {
+      HOURLY: "/hr",
+      DAILY: "/day",
+      WEEKLY: "/wk",
+      MONTHLY: "/mo",
+      YEARLY: "/yr",
+      ANNUALLY: "/yr",
+    }[salaryPeriod] || "";
+
+  const currency = salaryCurrency || job.currency || "USD";
+  const n = (v) => Number(v).toLocaleString();
+
+  if (salaryMin != null && salaryMax != null) {
+    return `${sym(currency)}${n(salaryMin)}–${n(salaryMax)}${periodSuffix}`;
+  }
+  if (salaryAmount != null) {
+    return `${sym(currency)}${n(salaryAmount)}${periodSuffix}`;
+  }
+  if (salaryMin != null) {
+    return `${sym(currency)}${n(salaryMin)}${periodSuffix}`;
+  }
+  if (salaryMax != null) {
+    return `${sym(currency)}${n(salaryMax)}${periodSuffix}`;
+  }
+
+  // Fall back to the flat `budget` field
+  if (job.budget != null) {
+    const typeSuffix =
+      {
+        FIXED: "",
+        HOURLY: "/hr",
+        DAILY: "/day",
+        WEEKLY: "/wk",
+        MONTHLY: "/mo",
+        CUSTOM: "",
+      }[job.budgetType] || "";
+    return `${sym(currency)}${n(job.budget)}${typeSuffix}`;
+  }
+
+  return "—";
 }
 
 function fmtDate(d) {
@@ -119,12 +236,13 @@ function Badge({ status, meta }) {
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, accent, delay }) {
+  const Icon = icon;
   return (
     <div
       className={`${s.statCard} ${accent ? s[`accent_${accent}`] : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <span className={s.statIcon}>{icon}</span>
+      <span className={s.statIcon}>{Icon ? <Icon size={18} /> : null}</span>
       <div className={s.statValue}>{value ?? "—"}</div>
       <div className={s.statLabel}>{label}</div>
       {sub && <div className={s.statSub}>{sub}</div>}
@@ -160,6 +278,17 @@ function ApplicationCard({ app }) {
           <span className={s.appMessage}>{truncate(app.message, 100)}</span>
         )}
         <span className={s.appDate}>{fmtRelative(app.createdAt)}</span>
+        {/* ── ADDED ── updatedAt + worker email ── */}
+        {app.updatedAt && app.updatedAt !== app.createdAt && (
+          <span className={s.appDate} style={{ opacity: 0.7 }}>
+            Updated {fmtRelative(app.updatedAt)}
+          </span>
+        )}
+        {app.worker?.email && (
+          <span className={s.appDate} style={{ opacity: 0.6 }}>
+            {app.worker.email}
+          </span>
+        )}
       </div>
       <span className={`${s.badge} ${s[`badge_${meta.color}`]}`}>
         {meta.label}
@@ -190,7 +319,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
           <div className={s.modalHeader}>
             <h3 className={s.modalTitle}>Job Detail</h3>
             <button className={s.modalClose} onClick={onClose}>
-              ✕
+              <FiX size={16} />
             </button>
           </div>
           <div className={s.modalBody}>
@@ -210,7 +339,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
           <div className={s.modalHeader}>
             <h3 className={s.modalTitle}>Job Detail</h3>
             <button className={s.modalClose} onClick={onClose}>
-              ✕
+              <FiX size={16} />
             </button>
           </div>
           <div className={s.modalBody}>
@@ -231,12 +360,14 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
 
   const jtype = JOB_TYPE_ICONS[job.jobType] ?? {
     label: job.jobType,
-    icon: "💼",
+    icon: FiBriefcase,
   };
   const ltype = LOCATION_TYPE_META[job.locationType] ?? {
     label: job.locationType,
-    icon: "📍",
+    icon: FiMapPin,
   };
+  const JTypeIcon = jtype.icon;
+  const LTypeIcon = ltype.icon;
 
   return (
     <div className={s.backdrop} onClick={onClose}>
@@ -248,7 +379,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
             <Badge status={job.status} meta={JOB_STATUS_META} />
           </div>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <FiX size={16} />
           </button>
         </div>
 
@@ -287,27 +418,29 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
               {/* Detail chips */}
               <div className={s.chipRow}>
                 {job.category && (
-                  <span className={s.chip}>🏷️ {job.category.name}</span>
-                )}
-                <span className={s.chip}>
-                  {jtype.icon} {jtype.label}
-                </span>
-                <span className={s.chip}>
-                  {ltype.icon} {ltype.label}
-                </span>
-                {(job.budgetMin || job.budgetMax) && (
-                  <span className={`${s.chip} ${s.chipGreen}`}>
-                    💰{" "}
-                    {fmtBudget(
-                      job.budgetMin,
-                      job.budgetMax,
-                      job.budgetType,
-                      job.budgetCurrency,
-                    )}
+                  <span className={s.chip}>
+                    <FiTag size={11} /> {job.category.name}
                   </span>
                 )}
+                <span className={s.chip}>
+                  <JTypeIcon size={11} /> {jtype.label}
+                </span>
+                <span className={s.chip}>
+                  <LTypeIcon size={11} /> {ltype.label}
+                </span>
+                {/* ── FIXED ── use real budget/salary fields via helper ── */}
+                {(() => {
+                  const label = computeBudgetLabel(job);
+                  return label !== "—" ? (
+                    <span className={`${s.chip} ${s.chipGreen}`}>
+                      <FiDollarSign size={11} /> {label}
+                    </span>
+                  ) : null;
+                })()}
                 {job.isUrgent && (
-                  <span className={`${s.chip} ${s.chipRed}`}>🔥 Urgent</span>
+                  <span className={`${s.chip} ${s.chipRed}`}>
+                    <FiZap size={11} /> Urgent
+                  </span>
                 )}
               </div>
 
@@ -322,18 +455,256 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
               {/* Address */}
               {job.address && (
                 <div className={s.detailRow}>
-                  <span className={s.detailRowIcon}>📍</span>
+                  <span className={s.detailRowIcon}>
+                    <FiMapPin size={13} />
+                  </span>
                   <span className={s.detailRowVal}>{job.address}</span>
                 </div>
               )}
 
-              {/* Expiry */}
-              {job.expiresAt && (
+              {/* ── FIXED ── backend field is expiryDate, not expiresAt ── */}
+              {job.expiryDate && (
                 <div className={s.detailRow}>
-                  <span className={s.detailRowIcon}>⏰</span>
-                  <span className={s.detailRowVal}>
-                    Expires {fmtDate(job.expiresAt)}
+                  <span className={s.detailRowIcon}>
+                    <FiClock size={13} />
                   </span>
+                  <span className={s.detailRowVal}>
+                    Expires {fmtDate(job.expiryDate)}
+                  </span>
+                </div>
+              )}
+
+              {/* ── ADDED ── schedule + duration + estimated fields ── */}
+              {(job.scheduledAt ||
+                job.estimatedHours != null ||
+                job.estimatedUnit ||
+                job.estimatedValue ||
+                job.durationType ||
+                job.durationValue) && (
+                <div className={s.descBox}>
+                  <span className={s.descLabel}>Schedule & Duration</span>
+                  {job.scheduledAt && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiCalendar size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Scheduled {fmtDate(job.scheduledAt)}
+                      </span>
+                    </div>
+                  )}
+                  {job.estimatedHours != null && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiClock size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        {job.estimatedHours} {job.estimatedUnit || "hours"}{" "}
+                        estimated
+                        {job.estimatedValue
+                          ? ` · ${job.estimatedValue} total`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
+                  {(job.durationType || job.durationValue) && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiClock size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Duration: {job.durationValue || "—"}{" "}
+                        {job.durationType || ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── ADDED ── requirements + responsibilities ── */}
+              {(job.minQualification ||
+                job.educationLevel ||
+                job.experienceLevel ||
+                job.experienceLength ||
+                job.languageRequirement ||
+                job.workingHours ||
+                job.applicantLocation ||
+                job.requirements ||
+                job.responsibilities) && (
+                <div className={s.descBox}>
+                  <span className={s.descLabel}>Requirements</span>
+                  {job.minQualification && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiAward size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Min. qualification: {job.minQualification}
+                      </span>
+                    </div>
+                  )}
+                  {job.educationLevel && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiBookOpen size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Education level: {job.educationLevel}
+                      </span>
+                    </div>
+                  )}
+                  {job.experienceLevel && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiTrendingUp size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Experience: {job.experienceLevel}
+                        {job.experienceLength
+                          ? ` (${job.experienceLength})`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
+                  {job.languageRequirement && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiMessageCircle size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Language: {job.languageRequirement}
+                      </span>
+                    </div>
+                  )}
+                  {job.workingHours && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiClock size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Working hours: {job.workingHours}
+                      </span>
+                    </div>
+                  )}
+                  {job.applicantLocation && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiGlobe size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Applicant location: {job.applicantLocation}
+                      </span>
+                    </div>
+                  )}
+                  {job.requirements && (
+                    <p className={s.descText} style={{ marginTop: 6 }}>
+                      {job.requirements}
+                    </p>
+                  )}
+                  {job.responsibilities && (
+                    <p className={s.descText} style={{ marginTop: 6 }}>
+                      {job.responsibilities}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── ADDED ── application channels ── */}
+              {(job.applicationUrl ||
+                job.applicationEmail ||
+                job.applicationWhatsApp ||
+                job.applicationPhone) && (
+                <div className={s.descBox}>
+                  <span className={s.descLabel}>How to Apply</span>
+                  {job.applicationUrl && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiLink size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        <a
+                          href={job.applicationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "var(--orange)" }}
+                        >
+                          {job.applicationUrl}
+                        </a>
+                      </span>
+                    </div>
+                  )}
+                  {job.applicationEmail && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiMail size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        {job.applicationEmail}
+                      </span>
+                    </div>
+                  )}
+                  {job.applicationWhatsApp && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiMessageCircle size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        WhatsApp {job.applicationWhatsApp}
+                      </span>
+                    </div>
+                  )}
+                  {job.applicationPhone && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiPhone size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        {job.applicationPhone}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── ADDED ── skills + notes + company + source ── */}
+              {(job.skills?.length ||
+                job.notes ||
+                job.companyName ||
+                job.sourcePlatform) && (
+                <div className={s.descBox}>
+                  <span className={s.descLabel}>Additional Info</span>
+                  {job.companyName && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiHome size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>{job.companyName}</span>
+                    </div>
+                  )}
+                  {job.sourcePlatform && (
+                    <div className={s.detailRow}>
+                      <span className={s.detailRowIcon}>
+                        <FiSend size={13} />
+                      </span>
+                      <span className={s.detailRowVal}>
+                        Source: {job.sourcePlatform}
+                      </span>
+                    </div>
+                  )}
+                  {job.skills?.length > 0 && (
+                    <div className={s.chipRow} style={{ marginTop: 6 }}>
+                      {job.skills.map((skill, i) => (
+                        <span key={i} className={s.chip}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {job.notes && (
+                    <p className={s.descText} style={{ marginTop: 6 }}>
+                      {job.notes}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -374,7 +745,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                         onStatusChange(job, "FILLED");
                       }}
                     >
-                      ✅ Mark Filled
+                      <FiCheckCircle size={13} /> Mark Filled
                     </button>
                     <button
                       className={s.btnStatusCancel}
@@ -383,7 +754,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                         onStatusChange(job, "CANCELLED");
                       }}
                     >
-                      🚫 Cancel Job
+                      <FiXCircle size={13} /> Cancel Job
                     </button>
                   </>
                 )}
@@ -395,7 +766,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                       onStatusChange(job, "OPEN");
                     }}
                   >
-                    🔄 Re-open Job
+                    <FiRefreshCw size={13} /> Re-open Job
                   </button>
                 )}
                 <button
@@ -405,7 +776,7 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                     onDelete(job);
                   }}
                 >
-                  🗑 Delete Job
+                  <FiTrash2 size={13} /> Delete Job
                 </button>
               </div>
             </>
@@ -414,7 +785,9 @@ function DetailModal({ jobId, onClose, onStatusChange, onDelete }) {
             <div className={s.appList}>
               {job.applications?.length === 0 ? (
                 <div className={s.empty}>
-                  <span className={s.emptyIcon}>📭</span>
+                  <span className={s.emptyIcon}>
+                    <FiInbox size={32} />
+                  </span>
                   <p className={s.emptyTitle}>No applications yet</p>
                 </div>
               ) : (
@@ -436,11 +809,17 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const meta = {
-    OPEN: { label: "Re-open", icon: "🔄", btn: s.btnStatusReopen },
-    FILLED: { label: "Fill", icon: "✅", btn: s.btnStatusFill },
-    CANCELLED: { label: "Cancel", icon: "🚫", btn: s.btnStatusCancel },
-  }[targetStatus] ?? { label: targetStatus, icon: "⚡", btn: s.btnSubmit };
+  const metaMap = {
+    OPEN: { label: "Re-open", icon: FiRefreshCw, btn: s.btnStatusReopen },
+    FILLED: { label: "Fill", icon: FiCheckCircle, btn: s.btnStatusFill },
+    CANCELLED: { label: "Cancel", icon: FiXCircle, btn: s.btnStatusCancel },
+  };
+  const meta = metaMap[targetStatus] ?? {
+    label: targetStatus,
+    icon: FiZap,
+    btn: s.btnSubmit,
+  };
+  const MetaIcon = meta.icon;
 
   async function handleConfirm() {
     setLoading(true);
@@ -462,9 +841,11 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>{meta.icon} Change Job Status</h3>
+          <h3 className={s.modalTitle}>
+            <MetaIcon size={14} /> Change Job Status
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <FiX size={16} />
           </button>
         </div>
         <div className={s.modalBody}>
@@ -515,7 +896,9 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
               {loading ? (
                 <span className={s.spinner} />
               ) : (
-                `${meta.icon} Confirm`
+                <>
+                  <MetaIcon size={13} /> Confirm
+                </>
               )}
             </button>
           </div>
@@ -548,14 +931,18 @@ function DeleteModal({ job, onClose, onSuccess }) {
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>🗑 Delete Job Post</h3>
+          <h3 className={s.modalTitle}>
+            <FiTrash2 size={14} /> Delete Job Post
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <FiX size={16} />
           </button>
         </div>
         <div className={s.modalBody}>
           <div className={s.deleteWarning}>
-            <span className={s.deleteWarningIcon}>⚠️</span>
+            <span className={s.deleteWarningIcon}>
+              <FiAlertTriangle size={18} />
+            </span>
             <p className={s.deleteWarningText}>
               This will permanently remove the job post and notify the hirer.
               All {job._count?.applications ?? 0} application(s) will also be
@@ -610,7 +997,9 @@ function DeleteModal({ job, onClose, onSuccess }) {
               {loading ? (
                 <span className={s.spinner} />
               ) : (
-                "🗑 Delete Permanently"
+                <>
+                  <FiTrash2 size={13} /> Delete Permanently
+                </>
               )}
             </button>
           </div>
@@ -622,20 +1011,26 @@ function DeleteModal({ job, onClose, onSuccess }) {
 
 // ─── Table Row ────────────────────────────────────────────────────────────────
 function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
-  const jtype = JOB_TYPE_ICONS[job.jobType] ?? { icon: "💼" };
-  const ltype = LOCATION_TYPE_META[job.locationType] ?? { icon: "📍" };
+  const jtype = JOB_TYPE_ICONS[job.jobType] ?? { icon: FiBriefcase };
+  const ltype = LOCATION_TYPE_META[job.locationType] ?? { icon: FiMapPin };
+  const JTypeIcon = jtype.icon;
+  const LTypeIcon = ltype.icon;
 
   return (
     <div className={s.tableRow} style={{ animationDelay: `${index * 0.025}s` }}>
       {/* Title + badges */}
       <div className={s.tdJob}>
-        <div className={s.tdJobTitle}>{job.title}</div>
+        {/* ── ADDED ── description tooltip ── */}
+        <div className={s.tdJobTitle} title={job.description || ""}>
+          {job.title}
+        </div>
         <div className={s.tdJobMeta}>
           <span className={s.typeChip}>
-            {jtype.icon} {JOB_TYPE_ICONS[job.jobType]?.label ?? job.jobType}
+            <JTypeIcon size={11} />{" "}
+            {JOB_TYPE_ICONS[job.jobType]?.label ?? job.jobType}
           </span>
           <span className={s.typeChip}>
-            {ltype.icon}{" "}
+            <LTypeIcon size={11} />{" "}
             {LOCATION_TYPE_META[job.locationType]?.label ?? job.locationType}
           </span>
         </div>
@@ -655,15 +1050,8 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
       {/* Category */}
       <div className={s.tdMeta}>{job.category?.name || "—"}</div>
 
-      {/* Budget */}
-      <div className={s.tdBudget}>
-        {fmtBudget(
-          job.budgetMin,
-          job.budgetMax,
-          job.budgetType,
-          job.budgetCurrency,
-        )}
-      </div>
+      {/* ── FIXED ── backend sends budget/currency/budgetType not budgetMin/Max ── */}
+      <div className={s.tdBudget}>{computeBudgetLabel(job)}</div>
 
       {/* Applications count */}
       <div className={s.tdApps}>
@@ -687,7 +1075,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
           onClick={() => onDetail(job.id)}
           title="View detail"
         >
-          👁
+          <FiEye size={13} />
         </button>
         {job.status === "OPEN" && (
           <>
@@ -696,14 +1084,14 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
               onClick={() => onStatusChange(job, "FILLED")}
               title="Mark filled"
             >
-              ✅
+              <FiCheckCircle size={13} />
             </button>
             <button
               className={s.cancelBtn}
               onClick={() => onStatusChange(job, "CANCELLED")}
               title="Cancel job"
             >
-              🚫
+              <FiXCircle size={13} />
             </button>
           </>
         )}
@@ -713,7 +1101,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
             onClick={() => onStatusChange(job, "OPEN")}
             title="Re-open"
           >
-            🔄
+            <FiRefreshCw size={13} />
           </button>
         )}
         <button
@@ -721,7 +1109,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
           onClick={() => onDelete(job)}
           title="Delete"
         >
-          🗑
+          <FiTrash2 size={13} />
         </button>
       </div>
     </div>
@@ -839,10 +1227,15 @@ export default function AdminPlatformJobs() {
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
             <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+              {toast.type === "success" ? (
+                <FiCheckCircle size={13} />
+              ) : (
+                <FiXCircle size={13} />
+              )}{" "}
+              {toast.msg}
             </span>
             <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
+              <FiX size={14} />
             </button>
           </div>
         )}
@@ -864,7 +1257,7 @@ export default function AdminPlatformJobs() {
         {/* ── Stats ── */}
         <div className={s.statsGrid}>
           <StatCard
-            icon="💼"
+            icon={FiBriefcase}
             label="Total Jobs"
             value={total}
             sub="All statuses"
@@ -872,7 +1265,7 @@ export default function AdminPlatformJobs() {
             delay={0}
           />
           <StatCard
-            icon="🟢"
+            icon={FiCheckCircle}
             label="Open"
             value={openCount}
             sub="Accepting applications"
@@ -880,7 +1273,7 @@ export default function AdminPlatformJobs() {
             delay={0.05}
           />
           <StatCard
-            icon="✅"
+            icon={FiCheckCircle}
             label="Filled"
             value={filledCount}
             sub="Position hired"
@@ -888,7 +1281,7 @@ export default function AdminPlatformJobs() {
             delay={0.1}
           />
           <StatCard
-            icon="📨"
+            icon={FiSend}
             label="Applications"
             value={totalApps}
             sub="Across this page"
@@ -931,7 +1324,9 @@ export default function AdminPlatformJobs() {
 
             {/* Search */}
             <div className={s.searchBar}>
-              <span className={s.searchIcon}>🔍</span>
+              <span className={s.searchIcon}>
+                <FiSearch size={13} />
+              </span>
               <input
                 className={s.searchInput}
                 placeholder="Search job title…"
@@ -946,7 +1341,7 @@ export default function AdminPlatformJobs() {
                     load(1, filter, "", categoryId);
                   }}
                 >
-                  ✕
+                  <FiX size={12} />
                 </button>
               )}
             </div>
@@ -970,7 +1365,9 @@ export default function AdminPlatformJobs() {
               <SkeletonRows />
             ) : jobs.length === 0 ? (
               <div className={s.empty}>
-                <span className={s.emptyIcon}>💼</span>
+                <span className={s.emptyIcon}>
+                  <FiBriefcase size={32} />
+                </span>
                 <p className={s.emptyTitle}>
                   {filter === "ALL" && !search
                     ? "No job posts yet"
@@ -1019,7 +1416,7 @@ export default function AdminPlatformJobs() {
               disabled={page === 1 || loading}
               onClick={() => load(page - 1)}
             >
-              ← Prev
+              <FiChevronLeft size={13} /> Prev
             </button>
             <span className={s.pageInfo}>
               Page {page} of {pages}
@@ -1029,7 +1426,7 @@ export default function AdminPlatformJobs() {
               disabled={page === pages || loading}
               onClick={() => load(page + 1)}
             >
-              Next →
+              Next <FiChevronRight size={13} />
             </button>
           </div>
         )}

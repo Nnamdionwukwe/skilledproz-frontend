@@ -4,6 +4,29 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import styles from "./AdminVerifications.module.css";
 
+// ─── Icons (react-icons — Feather family) ─────────────────────────────────────
+import {
+  FiClock,
+  FiCheckCircle,
+  FiXCircle,
+  FiCircle,
+  FiTool,
+  FiBriefcase,
+  FiShield,
+  FiFileText,
+  FiCheck,
+  FiX,
+  FiExternalLink,
+  FiChevronLeft,
+  FiChevronRight,
+  FiRefreshCw,
+  FiUser,
+  FiAlertTriangle,
+  FiBookOpen,
+  FiAward,
+  FiImage,
+} from "react-icons/fi";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDate(d) {
@@ -28,6 +51,11 @@ function Toast({ toast }) {
   if (!toast) return null;
   return (
     <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+      {toast.type === "error" ? (
+        <FiXCircle size={13} />
+      ) : (
+        <FiCheckCircle size={13} />
+      )}
       {toast.msg}
     </div>
   );
@@ -36,12 +64,15 @@ function Toast({ toast }) {
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 function StatCard({ icon, label, value, accent, onClick, active }) {
+  const Icon = icon;
   return (
     <button
       className={`${styles.statCard} ${accent ? styles[`accent_${accent}`] : ""} ${active ? styles.statCardActive : ""}`}
       onClick={onClick}
     >
-      <span className={styles.statIcon}>{icon}</span>
+      <span className={styles.statIcon}>
+        {Icon ? <Icon size={16} /> : null}
+      </span>
       <div className={styles.statVal}>{value ?? "—"}</div>
       <div className={styles.statLabel}>{label}</div>
     </button>
@@ -52,13 +83,34 @@ function StatCard({ icon, label, value, accent, onClick, active }) {
 
 function VerifBadge({ status }) {
   const map = {
-    VERIFIED: { cls: styles.badgeVerified, label: "✓ Verified" },
-    PENDING: { cls: styles.badgePending, label: "⏳ Pending" },
-    REJECTED: { cls: styles.badgeRejected, label: "✕ Rejected" },
-    UNVERIFIED: { cls: styles.badgeUnverified, label: "Unverified" },
+    VERIFIED: {
+      cls: styles.badgeVerified,
+      icon: <FiCheck size={10} />,
+      label: "Verified",
+    },
+    PENDING: {
+      cls: styles.badgePending,
+      icon: <FiClock size={10} />,
+      label: "Pending",
+    },
+    REJECTED: {
+      cls: styles.badgeRejected,
+      icon: <FiX size={10} />,
+      label: "Rejected",
+    },
+    UNVERIFIED: {
+      cls: styles.badgeUnverified,
+      icon: null,
+      label: "Unverified",
+    },
   };
   const s = map[status] || map.UNVERIFIED;
-  return <span className={`${styles.badge} ${s.cls}`}>{s.label}</span>;
+  return (
+    <span className={`${styles.badge} ${s.cls}`}>
+      {s.icon}
+      {s.label}
+    </span>
+  );
 }
 
 // ─── Document Viewer Modal ────────────────────────────────────────────────────
@@ -70,7 +122,7 @@ function DocViewerModal({ docs, name, onClose }) {
         <div className={styles.docModalHeader}>
           <p className={styles.docModalTitle}>Documents — {name}</p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <FiX size={16} />
           </button>
         </div>
         <div className={styles.docGrid}>
@@ -90,7 +142,7 @@ function DocViewerModal({ docs, name, onClose }) {
                     rel="noreferrer"
                     className={styles.docLink}
                   >
-                    📄 Document {i + 1}
+                    <FiFileText size={13} /> Document {i + 1}
                   </a>
                 )}
               </div>
@@ -112,9 +164,11 @@ function RejectModal({ name, onConfirm, onClose, loading }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <p className={styles.modalTitle}>Reject Verification</p>
+          <p className={styles.modalTitle}>
+            <FiAlertTriangle size={14} /> Reject Verification
+          </p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <FiX size={16} />
           </button>
         </div>
         <div className={styles.modalBody}>
@@ -146,7 +200,9 @@ function RejectModal({ name, onConfirm, onClose, loading }) {
               {loading ? (
                 <span className={styles.spinner} />
               ) : (
-                "✕ Confirm Reject"
+                <>
+                  <FiXCircle size={13} /> Confirm Reject
+                </>
               )}
             </button>
           </div>
@@ -160,17 +216,25 @@ function RejectModal({ name, onConfirm, onClose, loading }) {
 
 function WorkerCard({ item, onAction, i }) {
   const [open, setOpen] = useState(false);
-  const [acting, setActing] = useState(null); // "verify" | "reject" | certId | "bgcheck"
+  const [acting, setActing] = useState(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [docOpen, setDocOpen] = useState(false);
   const [toast, setToast] = useState(null);
-  const [bgChecked, setBgChecked] = useState(
-    item.backgroundCheckPassed ?? false,
-  );
+
+  const [bgChecked, setBgChecked] = useState(item.backgroundCheck ?? false);
 
   const u = item.user;
-  const wp = item; // workerProfile fields are on item itself
+  const wp = item;
   const name = `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim();
+
+  // Documents: prefer submissionData.documentUrl, fall back to wp.idDocument
+  const sub = item.submissionData || {};
+  const docs = [sub.documentUrl, wp.idDocument].filter(
+    (v, i, arr) => v && arr.indexOf(v) === i,
+  );
+
+  const certs = wp.certifications || [];
+  const categories = wp.categories || [];
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -180,9 +244,8 @@ function WorkerCard({ item, onAction, i }) {
   async function handleVerify() {
     setActing("verify");
     try {
-      // PATCH /admin/users/:userId/verify — correct method + path
       await api.patch(`/admin/users/${u.id}/verify`, { status: "VERIFIED" });
-      showToast("Worker verified ✅");
+      showToast("Worker verified");
       setTimeout(() => onAction(u.id, "VERIFIED"), 1200);
     } catch (e) {
       showToast(e?.response?.data?.message || "Verification failed", "error");
@@ -195,7 +258,6 @@ function WorkerCard({ item, onAction, i }) {
     setActing("reject");
     setRejectOpen(false);
     try {
-      // PATCH /admin/users/:userId/verify — with status + notes body
       await api.patch(`/admin/users/${u.id}/verify`, {
         status: "REJECTED",
         notes,
@@ -212,9 +274,10 @@ function WorkerCard({ item, onAction, i }) {
   async function handleCertVerify(certId) {
     setActing(certId);
     try {
-      // PATCH /verification/admin/certifications/:certId/verify
-      await api.patch(`/verification/admin/certifications/${certId}/verify`);
-      showToast("Certification verified ✅");
+      await api.patch(`/verification/admin/certifications/${certId}/verify`, {
+        verified: true,
+      });
+      showToast("Certification verified");
       onAction(u.id, "cert_verified");
     } catch (e) {
       showToast(
@@ -229,15 +292,12 @@ function WorkerCard({ item, onAction, i }) {
   async function handleBgCheck(checked) {
     setActing("bgcheck");
     try {
-      // PATCH /verification/admin/:userId/background-check
       await api.patch(`/verification/admin/${u.id}/background-check`, {
         passed: checked,
       });
       setBgChecked(checked);
       showToast(
-        checked
-          ? "Background check passed ✅"
-          : "Background check marked failed",
+        checked ? "Background check passed" : "Background check marked failed",
       );
     } catch (e) {
       showToast(
@@ -248,9 +308,6 @@ function WorkerCard({ item, onAction, i }) {
       setActing(null);
     }
   }
-
-  const certs = wp.certifications || [];
-  const docs = wp.idDocuments || [];
 
   return (
     <div
@@ -300,7 +357,7 @@ function WorkerCard({ item, onAction, i }) {
 
         <div className={styles.cardRight}>
           <span className={styles.submittedLabel}>
-            Submitted {timeAgo(wp.updatedAt)}
+            Submitted {timeAgo(item.submittedAt || wp.updatedAt)}
           </span>
           <span className={styles.chevron}>{open ? "▲" : "▼"}</span>
         </div>
@@ -309,39 +366,211 @@ function WorkerCard({ item, onAction, i }) {
       {/* ── Expanded Detail ── */}
       {open && (
         <div className={styles.cardDetail}>
+          {/* Contact / location */}
+          <div className={styles.detailSection}>
+            <p className={styles.sectionTitle}>Contact &amp; Location</p>
+            <div className={styles.fieldGrid}>
+              <Field label="Email" value={u?.email || "—"} />
+              <Field label="Phone" value={u?.phone || "—"} />
+              <Field
+                label="Location"
+                value={[u?.city, u?.country].filter(Boolean).join(", ") || "—"}
+              />
+              <Field label="Joined" value={fmtDate(u?.createdAt)} />
+            </div>
+          </div>
+
           {/* Identity fields */}
           <div className={styles.detailSection}>
-            <p className={styles.sectionTitle}>Identity</p>
+            <p className={styles.sectionTitle}>Professional</p>
             <div className={styles.fieldGrid}>
-              <Field label="Email" value={u?.email} />
               <Field label="Title" value={wp.title || "—"} />
               <Field
                 label="Hourly Rate"
                 value={
                   wp.hourlyRate
-                    ? `₦${Number(wp.hourlyRate).toLocaleString()}/hr`
+                    ? `${wp.currency || "₦"}${Number(wp.hourlyRate).toLocaleString()}/hr`
                     : "—"
                 }
               />
               <Field label="Currency" value={wp.currency || "—"} />
               <Field
-                label="Description"
+                label="Profile Currency"
+                value={wp.profileCurrency || "—"}
+              />
+              <Field
+                label="Daily Rate"
                 value={
-                  wp.description
-                    ? wp.description.slice(0, 100) +
-                      (wp.description.length > 100 ? "…" : "")
+                  wp.dailyRate
+                    ? `${wp.currency || "₦"}${Number(wp.dailyRate).toLocaleString()}`
                     : "—"
                 }
               />
+              <Field
+                label="Weekly Rate"
+                value={
+                  wp.weeklyRate
+                    ? `${wp.currency || "₦"}${Number(wp.weeklyRate).toLocaleString()}`
+                    : "—"
+                }
+              />
+              <Field
+                label="Monthly Rate"
+                value={
+                  wp.monthlyRate
+                    ? `${wp.currency || "₦"}${Number(wp.monthlyRate).toLocaleString()}`
+                    : "—"
+                }
+              />
+              <Field
+                label="Yearly Rate"
+                value={
+                  wp.yearlyRate
+                    ? `${wp.currency || "₦"}${Number(wp.yearlyRate).toLocaleString()}`
+                    : "—"
+                }
+              />
+              <Field
+                label="Custom Rate"
+                value={
+                  wp.customRate
+                    ? `${wp.currency || "₦"}${Number(wp.customRate).toLocaleString()}`
+                    : "—"
+                }
+              />
+              <Field
+                label="Custom Rate Label"
+                value={wp.customRateLabel || "—"}
+              />
+              <Field label="Pricing Note" value={wp.pricingNote || "—"} />
+              <Field
+                label="Description"
+                value={
+                  wp.description
+                    ? wp.description.slice(0, 140) +
+                      (wp.description.length > 140 ? "…" : "")
+                    : "—"
+                }
+              />
+              <Field
+                label="Years Experience"
+                value={wp.yearsExperience ?? "—"}
+              />
+              <Field
+                label="Service Radius (km)"
+                value={wp.serviceRadius ?? "—"}
+              />
+              <Field label="Available" value={wp.isAvailable ? "Yes" : "No"} />
+              <Field
+                label="Avg Rating"
+                value={wp.avgRating != null ? `${wp.avgRating}★` : "—"}
+              />
+              <Field label="Total Reviews" value={wp.totalReviews ?? 0} />
+              <Field label="Completed Jobs" value={wp.completedJobs ?? 0} />
+              <Field
+                label="Response Rate"
+                value={wp.responseRate ? `${wp.responseRate}%` : "—"}
+              />
+              <Field
+                label="Total Earnings"
+                value={
+                  wp.totalEarnings
+                    ? `${wp.currency || "₦"}${Number(wp.totalEarnings).toLocaleString()}`
+                    : 0
+                }
+              />
+              <Field
+                label="Video Intro"
+                value={
+                  wp.videoIntroUrl ? (
+                    <a
+                      href={wp.videoIntroUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                      }}
+                    >
+                      Watch <FiExternalLink size={10} />
+                    </a>
+                  ) : (
+                    "—"
+                  )
+                }
+              />
+              <Field label="Joined (profile)" value={fmtDate(wp.createdAt)} />
+              <Field label="Last Updated" value={fmtDate(wp.updatedAt)} />
             </div>
           </div>
+
+          {/* Categories */}
+          {categories.length > 0 && (
+            <div className={styles.detailSection}>
+              <p className={styles.sectionTitle}>Categories</p>
+              <div className={styles.fieldGrid}>
+                <Field
+                  label="Assigned"
+                  value={categories
+                    .map((c) =>
+                      `${c.category?.icon || ""} ${c.category?.name || ""}`.trim(),
+                    )
+                    .join(", ")}
+                />
+                <Field
+                  label="Primary"
+                  value={
+                    categories.find((c) => c.isPrimary)?.category?.name || "—"
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Submission data */}
+          {(sub.idType ||
+            sub.idNumber ||
+            sub.dateOfBirth ||
+            sub.nationality ||
+            sub.submittedAt) && (
+            <div className={styles.detailSection}>
+              <p className={styles.sectionTitle}>ID Submission</p>
+              <div className={styles.fieldGrid}>
+                {sub.idType && <Field label="ID Type" value={sub.idType} />}
+                {sub.idNumber && (
+                  <Field label="ID Number" value={sub.idNumber} />
+                )}
+                {sub.dateOfBirth && (
+                  <Field
+                    label="Date of Birth"
+                    value={fmtDate(sub.dateOfBirth)}
+                  />
+                )}
+                {sub.nationality && (
+                  <Field label="Nationality" value={sub.nationality} />
+                )}
+                {sub.submittedAt && (
+                  <Field label="Submitted" value={fmtDate(sub.submittedAt)} />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Background check */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Background Check</p>
             <div className={styles.bgCheckRow}>
               <span className={styles.bgCheckLabel}>
-                {bgChecked ? "✅ Passed" : "⏳ Not yet checked"}
+                {bgChecked ? (
+                  <>
+                    <FiCheckCircle size={13} /> Passed
+                  </>
+                ) : (
+                  <>
+                    <FiClock size={13} /> Not yet checked
+                  </>
+                )}
               </span>
               <div className={styles.bgCheckBtns}>
                 <button
@@ -386,9 +615,38 @@ function WorkerCard({ item, onAction, i }) {
                             : " (no expiry)"}
                         </span>
                       )}
+                      {cert.documentUrl && (
+                        <a
+                          href={cert.documentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={styles.docLink}
+                          style={{ marginTop: 4, fontSize: "0.7rem" }}
+                        >
+                          <FiFileText size={11} /> View document
+                        </a>
+                      )}
+                      {cert.createdAt && (
+                        <span
+                          className={styles.certDate}
+                          style={{ opacity: 0.7 }}
+                        >
+                          Uploaded {fmtDate(cert.createdAt)}
+                        </span>
+                      )}
+                      {cert.updatedAt && cert.updatedAt !== cert.createdAt && (
+                        <span
+                          className={styles.certDate}
+                          style={{ opacity: 0.7 }}
+                        >
+                          Updated {fmtDate(cert.updatedAt)}
+                        </span>
+                      )}
                     </div>
-                    {cert.isVerified ? (
-                      <span className={styles.certVerified}>✓ Verified</span>
+                    {cert.verified ? (
+                      <span className={styles.certVerified}>
+                        <FiCheck size={11} /> Verified
+                      </span>
                     ) : (
                       <button
                         className={styles.btnSmallGreen}
@@ -418,7 +676,8 @@ function WorkerCard({ item, onAction, i }) {
                 className={styles.viewDocsBtn}
                 onClick={() => setDocOpen(true)}
               >
-                📄 View {docs.length} document{docs.length !== 1 ? "s" : ""}
+                <FiFileText size={13} /> View {docs.length} document
+                {docs.length !== 1 ? "s" : ""}
               </button>
             )}
           </div>
@@ -435,7 +694,9 @@ function WorkerCard({ item, onAction, i }) {
                   <span className={styles.spinner} /> Verifying…
                 </>
               ) : (
-                "✅ Verify Worker"
+                <>
+                  <FiCheckCircle size={13} /> Verify Worker
+                </>
               )}
             </button>
             <button
@@ -448,7 +709,9 @@ function WorkerCard({ item, onAction, i }) {
                   <span className={styles.spinner} /> Rejecting…
                 </>
               ) : (
-                "✕ Reject"
+                <>
+                  <FiXCircle size={13} /> Reject
+                </>
               )}
             </button>
           </div>
@@ -490,11 +753,16 @@ function HirerCard({ item, onAction, i }) {
   const [open, setOpen] = useState(false);
   const [acting, setActing] = useState(null);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [docOpen, setDocOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
   const u = item.user;
-  const hp = item.hirerProfile || item;
+  const hp = u?.hirerProfile || item.hirerProfile || item;
   const name = `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim();
+  const sub = item.submissionData || {};
+
+  // Documents to show in viewer — only from submissionData
+  const docs = sub.documentUrl ? [sub.documentUrl] : [];
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -504,11 +772,10 @@ function HirerCard({ item, onAction, i }) {
   async function handleApprove() {
     setActing("approve");
     try {
-      // PATCH /verification/admin/hirers/:userId/review
       await api.patch(`/verification/admin/hirers/${u.id}/review`, {
         status: "VERIFIED",
       });
-      showToast("Hirer approved ✅");
+      showToast("Hirer approved");
       setTimeout(() => onAction(u.id, "VERIFIED"), 1200);
     } catch (e) {
       showToast(e?.response?.data?.message || "Approval failed", "error");
@@ -523,7 +790,7 @@ function HirerCard({ item, onAction, i }) {
     try {
       await api.patch(`/verification/admin/hirers/${u.id}/review`, {
         status: "REJECTED",
-        notes,
+        rejectionReason: notes,
       });
       showToast("Hirer rejected");
       setTimeout(() => onAction(u.id, "REJECTED"), 1200);
@@ -533,6 +800,8 @@ function HirerCard({ item, onAction, i }) {
       setActing(null);
     }
   }
+
+  const submittedAt = item.submittedAt || u?.createdAt;
 
   return (
     <div
@@ -552,13 +821,15 @@ function HirerCard({ item, onAction, i }) {
         <div className={styles.cardMain}>
           <div className={styles.cardNameRow}>
             <span className={styles.cardName}>{name}</span>
-            <span className={styles.hirerPill}>🏢 Hirer</span>
+            <span className={styles.hirerPill}>
+              <FiBriefcase size={11} /> Hirer
+            </span>
           </div>
           <p className={styles.cardEmail}>{u?.email}</p>
           <p className={styles.cardMeta}>
             {hp.companyName && <span>{hp.companyName}</span>}
             {hp.companyName && <span className={styles.dot}>·</span>}
-            <span>Submitted {timeAgo(item.updatedAt || item.createdAt)}</span>
+            <span>Submitted {timeAgo(submittedAt)}</span>
           </p>
         </div>
         <div className={styles.cardRight}>
@@ -568,16 +839,92 @@ function HirerCard({ item, onAction, i }) {
 
       {open && (
         <div className={styles.cardDetail}>
+          {/* Contact & Location */}
+          <div className={styles.detailSection}>
+            <p className={styles.sectionTitle}>Contact &amp; Location</p>
+            <div className={styles.fieldGrid}>
+              <Field label="Email" value={u?.email || "—"} />
+              <Field label="Phone" value={u?.phone || "—"} />
+              <Field
+                label="Location"
+                value={[u?.city, u?.country].filter(Boolean).join(", ") || "—"}
+              />
+              <Field label="Joined" value={fmtDate(u?.createdAt)} />
+            </div>
+          </div>
+
+          {/* Company details */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Company Details</p>
             <div className={styles.fieldGrid}>
               <Field label="Company" value={hp.companyName || "—"} />
               <Field label="Company Size" value={hp.companySize || "—"} />
               <Field label="Website" value={hp.website || "—"} />
-              <Field label="Email" value={u?.email || "—"} />
-              <Field label="Joined" value={fmtDate(u?.createdAt)} />
+              <Field label="Total Hires" value={hp.totalHires ?? 0} />
+              <Field label="Total Spent" value={hp.totalSpent ?? 0} />
+              <Field label="Profile ID" value={hp.id || "—"} />
             </div>
           </div>
+
+          {/* Verification submission */}
+          {(sub.verificationType ||
+            sub.idType ||
+            sub.idNumber ||
+            sub.companyRegNumber ||
+            sub.companyCountry ||
+            sub.website ||
+            sub.documentUrl ||
+            sub.status ||
+            sub.submittedAt) && (
+            <div className={styles.detailSection}>
+              <p className={styles.sectionTitle}>Verification Submission</p>
+              <div className={styles.fieldGrid}>
+                {sub.verificationType && (
+                  <Field
+                    label="Verification Type"
+                    value={sub.verificationType}
+                  />
+                )}
+                {sub.idType && <Field label="ID Type" value={sub.idType} />}
+                {sub.idNumber && (
+                  <Field label="ID Number" value={sub.idNumber} />
+                )}
+                {sub.companyRegNumber && (
+                  <Field
+                    label="Company Reg Number"
+                    value={sub.companyRegNumber}
+                  />
+                )}
+                {sub.companyCountry && (
+                  <Field label="Company Country" value={sub.companyCountry} />
+                )}
+                {sub.website && <Field label="Website" value={sub.website} />}
+                {sub.status && (
+                  <Field
+                    label="Submission Status"
+                    value={<VerifBadge status={sub.status} />}
+                  />
+                )}
+                {sub.submittedAt && (
+                  <Field label="Submitted" value={fmtDate(sub.submittedAt)} />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Documents */}
+          {docs.length > 0 && (
+            <div className={styles.detailSection}>
+              <p className={styles.sectionTitle}>Submitted Documents</p>
+              <button
+                className={styles.viewDocsBtn}
+                onClick={() => setDocOpen(true)}
+              >
+                <FiFileText size={13} /> View {docs.length} document
+                {docs.length !== 1 ? "s" : ""}
+              </button>
+            </div>
+          )}
 
           <div className={styles.actionBar}>
             <button
@@ -590,7 +937,9 @@ function HirerCard({ item, onAction, i }) {
                   <span className={styles.spinner} /> Approving…
                 </>
               ) : (
-                "✅ Approve Hirer"
+                <>
+                  <FiCheckCircle size={13} /> Approve Hirer
+                </>
               )}
             </button>
             <button
@@ -603,7 +952,9 @@ function HirerCard({ item, onAction, i }) {
                   <span className={styles.spinner} /> Rejecting…
                 </>
               ) : (
-                "✕ Reject"
+                <>
+                  <FiXCircle size={13} /> Reject
+                </>
               )}
             </button>
           </div>
@@ -616,6 +967,13 @@ function HirerCard({ item, onAction, i }) {
           loading={acting === "reject"}
           onConfirm={handleReject}
           onClose={() => setRejectOpen(false)}
+        />
+      )}
+      {docOpen && (
+        <DocViewerModal
+          docs={docs}
+          name={name}
+          onClose={() => setDocOpen(false)}
         />
       )}
     </div>
@@ -650,10 +1008,9 @@ export default function AdminVerifications() {
     setTimeout(() => setPageToast(null), 3500);
   }
 
-  // ── Fetch stats (always) ────────────────────────────────────────────────────
+  // ── Fetch stats ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    // GET /admin/verifications/stats → { unverified, pending, verified, rejected }
     api
       .get("/admin/verifications/stats")
       .then((r) => setStats(r.data.data))
@@ -664,16 +1021,17 @@ export default function AdminVerifications() {
 
   const fetchItems = useCallback(() => {
     setLoading(true);
+    // ── CHANGED ── worker queue now uses the richer verification.controller
+    // endpoint (which returns phone/country/city/categories/submissionData).
     const endpoint =
       tab === "hirers"
-        ? "/verification/admin/hirers/pending" // hirer queue
-        : "/admin/verifications/pending"; // worker queue — GET /admin/verifications/pending
+        ? "/verification/admin/hirers/pending"
+        : "/verification/admin/pending";
 
     api
       .get(endpoint, { params: { page, limit: 10 } })
       .then((r) => {
         const d = r.data.data;
-        // Worker response key: verifications; Hirer response may vary
         setItems(d.verifications || d.hirers || d.workers || []);
         setTotal(d.total || 0);
         setPages(d.pages || 1);
@@ -690,16 +1048,14 @@ export default function AdminVerifications() {
 
   function handleAction(userId, result) {
     if (result === "VERIFIED" || result === "REJECTED") {
-      // Remove from queue and refresh stats
       setItems((prev) => prev.filter((item) => item.user?.id !== userId));
       setTotal((t) => Math.max(0, t - 1));
       showPageToast(
         result === "VERIFIED"
-          ? "Verification approved ✅"
+          ? "Verification approved"
           : "Verification rejected",
         result === "VERIFIED" ? "success" : "warn",
       );
-      // Refresh stats counters
       api
         .get("/admin/verifications/stats")
         .then((r) => setStats(r.data.data))
@@ -722,28 +1078,28 @@ export default function AdminVerifications() {
           </div>
         </div>
 
-        {/* ── Stats Bar — GET /admin/verifications/stats ── */}
+        {/* ── Stats Bar ── */}
         <div className={styles.statsBar}>
           <StatCard
-            icon="⏳"
+            icon={FiClock}
             label="Pending"
             value={stats?.pending ?? "—"}
             accent="amber"
           />
           <StatCard
-            icon="✅"
+            icon={FiCheckCircle}
             label="Verified"
             value={stats?.verified ?? "—"}
             accent="green"
           />
           <StatCard
-            icon="✕"
+            icon={FiXCircle}
             label="Rejected"
             value={stats?.rejected ?? "—"}
             accent="red"
           />
           <StatCard
-            icon="⚪"
+            icon={FiCircle}
             label="Unverified"
             value={stats?.unverified ?? "—"}
           />
@@ -756,13 +1112,13 @@ export default function AdminVerifications() {
               className={`${styles.tab} ${tab === "workers" ? styles.tabActive : ""}`}
               onClick={() => setParam("tab", "workers")}
             >
-              🔨 Worker Queue
+              <FiTool size={12} /> Worker Queue
             </button>
             <button
               className={`${styles.tab} ${tab === "hirers" ? styles.tabActive : ""}`}
               onClick={() => setParam("tab", "hirers")}
             >
-              🏢 Hirer Queue
+              <FiBriefcase size={12} /> Hirer Queue
             </button>
           </div>
           <span className={styles.totalPill}>{total} pending</span>
@@ -777,11 +1133,17 @@ export default function AdminVerifications() {
           </div>
         ) : items.length === 0 ? (
           <div className={styles.empty}>
-            <span>{tab === "hirers" ? "🏢" : "🛡️"}</span>
+            <span>
+              {tab === "hirers" ? (
+                <FiBriefcase size={32} />
+              ) : (
+                <FiShield size={32} />
+              )}
+            </span>
             <p>
               No pending {tab === "hirers" ? "hirer" : "worker"} verifications
             </p>
-            <small>All submissions have been reviewed. 🎉</small>
+            <small>All submissions have been reviewed.</small>
           </div>
         ) : (
           <div className={styles.cardList}>
@@ -813,7 +1175,7 @@ export default function AdminVerifications() {
               disabled={page === 1}
               onClick={() => setParam("page", String(page - 1))}
             >
-              ← Prev
+              <FiChevronLeft size={13} /> Prev
             </button>
             <span className={styles.pageInfo}>
               Page {page} of {pages} · {total} total
@@ -823,7 +1185,7 @@ export default function AdminVerifications() {
               disabled={page === pages}
               onClick={() => setParam("page", String(page + 1))}
             >
-              Next →
+              Next <FiChevronRight size={13} />
             </button>
           </div>
         )}

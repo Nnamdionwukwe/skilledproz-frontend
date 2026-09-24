@@ -1286,3 +1286,318 @@
 .primaryBtn:hover {
   background: var(--primary-dark);
 }
+/* ── ADDED ── make SVG icons inherit their button's accent colour clearly */
+.viewBtn svg,
+.fillBtn svg,
+.cancelBtn svg,
+.reopenBtn svg,
+.deleteBtn svg {
+  color: currentColor;
+  stroke-width: 2.2;
+}
+
+/* Give each action button a visible icon colour by default (not just on hover) */
+.viewBtn {
+  color: var(--orange);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+.viewBtn:hover {
+  color: var(--orange);
+  background: var(--orange-dim);
+  border-color: var(--orange);
+}
+
+.fillBtn {
+  color: var(--green);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.fillBtn:hover {
+  color: var(--green);
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.cancelBtn {
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.3);
+}
+.cancelBtn:hover {
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.1);
+  border-color: #eab308;
+}
+
+.reopenBtn {
+  color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.3);
+}
+.reopenBtn:hover {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.1);
+  border-color: #818cf8;
+}
+
+.deleteBtn {
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.deleteBtn:hover {
+  color: var(--red);
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+/* Stat card icons — give them the accent colour */
+.statIcon svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+.accent_orange .statIcon {
+  color: var(--orange);
+}
+.accent_green .statIcon {
+  color: var(--green);
+}
+.accent_indigo .statIcon {
+  color: #818cf8;
+}
+.accent_yellow .statIcon {
+  color: #eab308;
+}
+
+/* Empty-state icons */
+.emptyIcon svg {
+  color: var(--text-muted);
+  stroke-width: 1.8;
+}
+
+/* Toast icon colours */
+.toast svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* Search icon */
+.searchIcon svg {
+  color: var(--text-muted);
+  stroke-width: 2.2;
+}
+
+/* Chip icons */
+.chip svg {
+  color: inherit;
+  stroke-width: 2.2;
+  opacity: 0.85;
+}
+
+/* Detail row icons */
+.detailRowIcon svg {
+  color: var(--text-dim);
+  stroke-width: 2;
+}
+
+/* Type chip icons in rows */
+.typeChip svg {
+  color: var(--text-muted);
+  stroke-width: 2.2;
+}
+
+/* Modal title icons */
+.modalTitle svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* Delete warning icon */
+.deleteWarningIcon svg {
+  color: var(--red);
+  stroke-width: 2.2;
+}
+
+/* Pagination arrow icons */
+.pageBtn svg {
+  color: inherit;
+  stroke-width: 2.2;
+  vertical-align: middle;
+}
+
+/* Close button icon */
+.modalClose svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* Search clear icon */
+.searchClear svg {
+  color: var(--text-muted);
+  stroke-width: 2.2;
+}
+.searchClear:hover svg {
+  color: var(--text);
+}
+
+/* Status action buttons in detail modal — make icons match their text */
+.btnStatusFill svg,
+.btnStatusCancel svg,
+.btnStatusReopen svg,
+.btnDelete svg,
+.btnDeleteConfirm svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* The X icon in toast close */
+.toastClose svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+/* ── ADDED ── icon alignment helpers */
+.statIcon svg,
+.verifyBtn svg,
+.rejectBtn svg,
+.viewDocsBtn svg,
+.badge svg,
+.certVerified svg,
+.btnSmallGreen svg,
+.btnSmallRed svg,
+.hirerPill svg,
+.pageBtn svg,
+.modalClose svg,
+.tab svg,
+.empty svg,
+.docLink svg,
+.bgCheckLabel svg,
+.toast svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verifyBtn,
+.rejectBtn,
+.viewDocsBtn,
+.btnSmallGreen,
+.btnSmallRed,
+.tab,
+.hirerPill,
+.docLink,
+.pageBtn,
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.certVerified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.empty svg {
+  opacity: 0.5;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modalTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── ADDED ── doc grid icons */
+.docCard svg {
+  color: var(--text-dim);
+}
+
+/* ── ADDED ── stat card icons (they are buttons, so text color applies) */
+.statCard svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.statIcon svg,
+.verifyBtn svg,
+.rejectBtn svg,
+.viewDocsBtn svg,
+.badge svg,
+.certVerified svg,
+.btnSmallGreen svg,
+.btnSmallRed svg,
+.hirerPill svg,
+.pageBtn svg,
+.modalClose svg,
+.tab svg,
+.empty svg,
+.docLink svg,
+.bgCheckLabel svg,
+.toast svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.verifyBtn,
+.rejectBtn,
+.viewDocsBtn,
+.btnSmallGreen,
+.btnSmallRed,
+.tab,
+.hirerPill,
+.docLink,
+.pageBtn,
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+}
+.badge,
+.certVerified,
+.modalTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.empty svg {
+  opacity: 0.5;
+}
+.statCard svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -260,7 +260,10 @@ export default function App() {
 
         {/* ════════════════════════════════════════
             ADMIN ROUTES
+            (ordered to match AdminLayout NAV groups)
         ════════════════════════════════════════ */}
+
+        {/* ── Dashboard ── */}
         <Route
           path="/admin"
           element={
@@ -270,10 +273,28 @@ export default function App() {
           }
         />
         <Route
+          path="/admin/analytics"
+          element={
+            <RequireAdmin>
+              <AdminAnalytics />
+            </RequireAdmin>
+          }
+        />
+
+        {/* ── User Management ── */}
+        <Route
           path="/admin/users"
           element={
             <RequireAdmin>
               <AdminUsers />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/verifications"
+          element={
+            <RequireAdmin>
+              <AdminVerifications />
             </RequireAdmin>
           }
         />
@@ -293,54 +314,50 @@ export default function App() {
             </RequireAdmin>
           }
         />
+
+        {/* ── Job Management ── */}
         <Route
-          path="/admin/broadcast"
+          path="/admin/platform/jobs"
           element={
             <RequireAdmin>
-              <AdminBroadcast />
+              <AdminPlatformJobs />
             </RequireAdmin>
           }
         />
         <Route
-          path="/admin/analytics"
+          path="/admin/external/jobs"
           element={
             <RequireAdmin>
-              <AdminAnalytics />
+              <AdminExternalJobs />
             </RequireAdmin>
           }
         />
         <Route
-          path="/admin/verifications"
+          path="/admin/external/jobs/create"
           element={
             <RequireAdmin>
-              <AdminVerifications />
+              <AdminJobPost />
             </RequireAdmin>
           }
         />
         <Route
-          path="/admin/bookings"
+          path="/admin/external/jobs/edit/:id"
           element={
             <RequireAdmin>
-              <AdminBookings />
+              <AdminJobPost />
             </RequireAdmin>
           }
         />
         <Route
-          path="/admin/categories"
+          path="/admin/external/jobs/:id/stats"
           element={
             <RequireAdmin>
-              <AdminCategories />
+              <AdminExternalJobStats />
             </RequireAdmin>
           }
         />
-        <Route
-          path="/admin/reviews"
-          element={
-            <RequireAdmin>
-              <AdminReviews />
-            </RequireAdmin>
-          }
-        />
+
+        {/* ── Financials ── */}
         <Route
           path="/admin/payments"
           element={
@@ -382,109 +399,18 @@ export default function App() {
           }
         />
         <Route
-          path="/admin/Posts"
+          path="/admin/promocodes"
           element={
             <RequireAdmin>
-              <AdminPosts />
+              <AdminPromoCodes />
             </RequireAdmin>
           }
         />
-        <Route
-          path="/admin/messages"
-          element={
-            <RequireAdmin>
-              <AdminMessages />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/video-calls"
-          element={
-            <RequireAdmin>
-              <AdminVideoCalls />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/platform/jobs"
-          element={
-            <RequireAdmin>
-              <AdminPlatformJobs />
-            </RequireAdmin>
-          }
-        />
-
-        <Route
-          path="/admin/external/jobs"
-          element={
-            <RequireAdmin>
-              <AdminExternalJobs />
-            </RequireAdmin>
-          }
-        />
-
-        <Route
-          path="/admin/external/jobs/create"
-          element={
-            <RequireAdmin>
-              <AdminJobPost />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/external/jobs/edit/:id"
-          element={
-            <RequireAdmin>
-              <AdminJobPost />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/external/jobs/:id/stats"
-          element={
-            <RequireAdmin>
-              <AdminExternalJobStats />
-            </RequireAdmin>
-          }
-        />
-
         <Route
           path="/admin/featured"
           element={
             <RequireAdmin>
               <AdminFeatured />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/campaigns"
-          element={
-            <RequireAdmin>
-              <AdminCampaign />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/referrals"
-          element={
-            <RequireAdmin>
-              <AdminReferrals />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/reports"
-          element={
-            <RequireAdmin>
-              <AdminReports />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/audit-logs"
-          element={
-            <RequireAdmin>
-              <AdminAuditLog />
             </RequireAdmin>
           }
         />
@@ -497,18 +423,44 @@ export default function App() {
           }
         />
         <Route
-          path="/admin/promocodes"
+          path="/admin/wallet"
           element={
             <RequireAdmin>
-              <AdminPromoCodes />
+              <AdminWallet />
+            </RequireAdmin>
+          }
+        />
+
+        {/* ── Content & Community ── */}
+        <Route
+          path="/admin/posts"
+          element={
+            <RequireAdmin>
+              <AdminPosts />
             </RequireAdmin>
           }
         />
         <Route
-          path="/admin/settings"
+          path="/admin/Posts"
           element={
             <RequireAdmin>
-              <AdminSettings />
+              <AdminPosts />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/reviews"
+          element={
+            <RequireAdmin>
+              <AdminReviews />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <RequireAdmin>
+              <AdminCategories />
             </RequireAdmin>
           }
         />
@@ -536,19 +488,87 @@ export default function App() {
             </RequireAdmin>
           }
         />
+
+        {/* ── Engagement & Support ── */}
+        <Route
+          path="/admin/bookings"
+          element={
+            <RequireAdmin>
+              <AdminBookings />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/messages"
+          element={
+            <RequireAdmin>
+              <AdminMessages />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/video-calls"
+          element={
+            <RequireAdmin>
+              <AdminVideoCalls />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <RequireAdmin>
+              <AdminReports />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/campaigns"
+          element={
+            <RequireAdmin>
+              <AdminCampaign />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/referrals"
+          element={
+            <RequireAdmin>
+              <AdminReferrals />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <RequireAdmin>
+              <AdminAuditLog />
+            </RequireAdmin>
+          }
+        />
+
+        {/* ── System ── */}
+        <Route
+          path="/admin/broadcast"
+          element={
+            <RequireAdmin>
+              <AdminBroadcast />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <RequireAdmin>
+              <AdminSettings />
+            </RequireAdmin>
+          }
+        />
         <Route
           path="/admin/adminlogs"
           element={
             <RequireAdmin>
               <AdminLogs />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/wallet"
-          element={
-            <RequireAdmin>
-              <AdminWallet />
             </RequireAdmin>
           }
         />
