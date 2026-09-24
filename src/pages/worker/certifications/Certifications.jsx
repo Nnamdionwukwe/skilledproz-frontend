@@ -14,6 +14,7 @@ import {
   FiCalendar,
   FiUser,
   FiTrash2,
+  FiClock,
 } from "react-icons/fi";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
@@ -46,6 +47,44 @@ const isPdfUrl = (url) => {
   const clean = url.split("?")[0].toLowerCase();
   return /\.pdf$/.test(clean);
 };
+
+/**
+ * Derive a display status for a certification.
+ * Returns one of: "verified" | "rejected" | "pending"
+ */
+function certStatus(cert) {
+  if (cert?.verified) return "verified";
+  if (cert?.rejectionReason) return "rejected";
+  return "pending";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Status Badge
+// ─────────────────────────────────────────────────────────────────────────────
+function CertStatusBadge({ status }) {
+  if (status === "verified") {
+    return (
+      <span className={`${styles.statusBadge} ${styles.statusVerified}`}>
+        <FiCheckCircle size={11} />
+        Verified
+      </span>
+    );
+  }
+  if (status === "rejected") {
+    return (
+      <span className={`${styles.statusBadge} ${styles.statusRejected}`}>
+        <FiX size={11} />
+        Rejected
+      </span>
+    );
+  }
+  return (
+    <span className={`${styles.statusBadge} ${styles.statusPending}`}>
+      <FiClock size={11} />
+      Pending review
+    </span>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Skeleton loader — mirrors the real certification card layout
@@ -336,6 +375,7 @@ export default function CertificationsPage() {
                 const hasDoc = !!c.documentUrl;
                 const img = hasDoc && isImageUrl(c.documentUrl);
                 const pdf = hasDoc && isPdfUrl(c.documentUrl);
+                const status = certStatus(c);
 
                 return (
                   <div key={c.id} className={styles.certCard}>
@@ -350,6 +390,7 @@ export default function CertificationsPage() {
                     <div className={styles.certBody}>
                       <div className={styles.certTitleRow}>
                         <span className={styles.certName}>{c.name}</span>
+                        <CertStatusBadge status={status} />
                         {expired && (
                           <span className={styles.badgeExpired}>Expired</span>
                         )}
@@ -375,6 +416,22 @@ export default function CertificationsPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* Rejection note — only shown when rejected */}
+                      {status === "rejected" && c.rejectionReason && (
+                        <div className={styles.rejectionNote}>
+                          <FiAlertCircle size={12} />
+                          <span>{c.rejectionReason}</span>
+                        </div>
+                      )}
+
+                      {/* Verified-at stamp — only shown when verified */}
+                      {status === "verified" && c.verifiedAt && (
+                        <div className={styles.verifiedNote}>
+                          <FiCheckCircle size={12} />
+                          <span>Verified on {fmtDate(c.verifiedAt)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className={styles.certActions}>
