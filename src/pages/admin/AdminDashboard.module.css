@@ -7,33 +7,56 @@
   animation: fadeUp 0.3s ease;
 }
 
-/* ── Alerts pill (replaces inline alert banners) ───────────────────────────── */
+/* ── Alert Banners ─────────────────────────────────────────────────────────── */
 
-.alertsPill {
-  display: inline-flex;
+.alertBanner {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  align-self: flex-start;
-  padding: 0.5rem 0.875rem;
-  border-radius: 999px;
-  background: rgba(234, 179, 8, 0.1);
-  border: 1px solid rgba(234, 179, 8, 0.28);
-  color: #ca8a04;
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: all 0.15s;
+  gap: 0.625rem;
+  padding: 0.75rem 1.125rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
 }
-.alertsPill:hover {
-  background: rgba(234, 179, 8, 0.16);
+
+.alertRed {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--red);
+}
+.alertRed:hover {
+  background: rgba(239, 68, 68, 0.13);
+}
+
+.alertAmber {
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  color: #ca8a04;
+}
+.alertAmber:hover {
+  background: rgba(234, 179, 8, 0.13);
+}
+
+.alertGreen {
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: var(--green);
+}
+.alertGreen:hover {
+  background: rgba(34, 197, 94, 0.13);
+}
+
+.alertArrow {
+  margin-left: auto;
 }
 
 /* ── Stats Grid ────────────────────────────────────────────────────────────── */
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.875rem;
 }
 
@@ -46,8 +69,8 @@
     border-color 0.15s,
     transform 0.15s;
   cursor: default;
-  min-width: 0;
 }
+
 .statCard:hover {
   border-color: var(--border-hover);
   transform: translateY(-1px);
@@ -73,35 +96,22 @@
   margin-bottom: 0.625rem;
 }
 .statIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  flex-shrink: 0;
+  font-size: 1rem;
 }
 .statLabel {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .accent_orange .statLabel {
   color: rgba(255, 107, 0, 0.6);
-}
-.accent_orange .statIcon {
-  color: var(--orange);
 }
 .accent_green .statLabel {
   color: rgba(34, 197, 94, 0.6);
 }
 .accent_amber .statLabel {
   color: rgba(202, 138, 4, 0.7);
-}
-.accent_amber .statIcon {
-  color: #ca8a04;
 }
 
 .statValue {
@@ -112,7 +122,6 @@
   letter-spacing: -0.02em;
   line-height: 1;
   margin-bottom: 4px;
-  overflow-wrap: anywhere;
 }
 .accent_orange .statValue {
   color: var(--orange);
@@ -128,7 +137,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
 }
 .statSub {
   font-size: 0.75rem;
@@ -152,7 +160,7 @@
 
 .secondaryBar {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.625rem;
 }
 
@@ -164,15 +172,10 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.625rem 0.875rem;
-  min-width: 0;
 }
 
 .qsIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  flex-shrink: 0;
+  font-size: 1.125rem;
 }
 
 .qsValue {
@@ -182,7 +185,6 @@
   color: var(--text);
   letter-spacing: -0.01em;
   line-height: 1.1;
-  overflow-wrap: anywhere;
 }
 .qsOf {
   font-size: 0.7rem;
@@ -195,16 +197,13 @@
   letter-spacing: 0.06em;
   color: var(--text-muted);
   margin-top: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Two-column Layout ─────────────────────────────────────────────────────── */
 
 .twoCol {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
 }
 
@@ -215,14 +214,12 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
-  min-width: 0;
 }
 
 .panelHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
 }
@@ -240,9 +237,6 @@
   margin: 0;
 }
 .panelLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   font-size: 0.75rem;
   color: var(--orange);
   text-decoration: none;
@@ -254,37 +248,26 @@
 
 /* ── Bar Chart ─────────────────────────────────────────────────────────────── */
 
-.barChartScroll {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
 .barChart {
   display: flex;
   align-items: flex-end;
   gap: 0.375rem;
   padding: 1.25rem 1.25rem 0;
   height: 140px;
-  min-width: 100%;
 }
 
 .barWrap {
-  flex: 1 0 44px;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   height: 100%;
-  min-width: 44px;
 }
 
 .barLabel {
   font-size: 0.65rem;
   color: var(--text-muted);
-  white-space: nowrap;
 }
 
 .barTrack {
@@ -298,6 +281,7 @@
   position: relative;
 }
 
+/* Revenue bar — layered: GMV (dim) behind Revenue (solid) */
 .barFillGmv {
   position: absolute;
   bottom: 0;
@@ -316,6 +300,7 @@
   transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Signup bars */
 .barFillWorker {
   position: absolute;
   bottom: 0;
@@ -341,14 +326,6 @@
   font-size: 0.6rem;
   color: var(--text-muted);
   text-align: center;
-  white-space: nowrap;
-}
-.barValueSub {
-  font-size: 0.55rem;
-  color: var(--text-dim);
-  text-align: center;
-  white-space: nowrap;
-  opacity: 0.75;
 }
 
 .chartLegend {
@@ -358,14 +335,12 @@
   padding: 0.625rem 1.25rem 0.875rem;
   font-size: 0.7rem;
   color: var(--text-muted);
-  flex-wrap: wrap;
 }
 .legendDot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* ── Booking Funnel ────────────────────────────────────────────────────────── */
@@ -379,7 +354,7 @@
 
 .funnelStep {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) 40px;
+  grid-template-columns: 90px 1fr 40px;
   align-items: center;
   gap: 0.625rem;
 }
@@ -387,7 +362,6 @@
 .funnelMeta {
   display: flex;
   flex-direction: column;
-  min-width: 0;
 }
 .funnelLabel {
   font-size: 0.75rem;
@@ -428,7 +402,6 @@
   gap: 0.625rem;
   padding: 0.625rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  min-width: 0;
 }
 .catRow:last-child {
   border-bottom: none;
@@ -438,15 +411,9 @@
   font-size: 0.7rem;
   color: var(--text-muted);
   width: 18px;
-  flex-shrink: 0;
 }
 .catIcon {
   font-size: 0.9375rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  flex-shrink: 0;
 }
 .catInfo {
   flex: 1;
@@ -457,17 +424,6 @@
   font-weight: 600;
   color: var(--text);
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.catParent {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-weight: 400;
 }
 .catBar {
   height: 3px;
@@ -486,7 +442,6 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 1px;
-  flex-shrink: 0;
 }
 .catCount {
   font-size: 0.7rem;
@@ -510,18 +465,12 @@
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   transition: background 0.12s;
-  min-width: 0;
 }
 .bookingRow:last-child {
   border-bottom: none;
 }
 .bookingRow:hover {
   background: var(--bg-card);
-}
-
-.bookingAvatars {
-  display: flex;
-  flex-shrink: 0;
 }
 
 .bookingInfo {
@@ -541,30 +490,16 @@
   font-size: 0.75rem;
   color: var(--text-dim);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.bookingMetaSub {
-  font-size: 0.65rem;
-  color: var(--text-dim);
-  opacity: 0.75;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .bookingRight {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 3px;
-  flex-shrink: 0;
 }
 .bookingAmount {
   font-size: 0.75rem;
   color: var(--text-muted);
-  white-space: nowrap;
 }
 
 /* ── Disputes ──────────────────────────────────────────────────────────────── */
@@ -577,7 +512,6 @@
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   transition: background 0.12s;
-  min-width: 0;
 }
 .disputeRow:last-child {
   border-bottom: none;
@@ -608,7 +542,6 @@
   position: absolute;
   top: 0;
   left: 0;
-  overflow: hidden;
 }
 .miniAvatarB {
   left: 12px;
@@ -634,25 +567,12 @@
   font-size: 0.75rem;
   color: var(--text-dim);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.disputeMetaSub {
-  font-size: 0.65rem;
-  color: var(--text-dim);
-  opacity: 0.75;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .disputeAmount {
   font-size: 0.75rem;
   color: var(--red);
   font-weight: 600;
   flex-shrink: 0;
-  white-space: nowrap;
 }
 
 /* ── Leaderboard Rows (workers / hirers) ───────────────────────────────────── */
@@ -664,7 +584,6 @@
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border);
   transition: background 0.12s;
-  min-width: 0;
 }
 .leaderRow:last-child {
   border-bottom: none;
@@ -678,20 +597,14 @@
   width: 28px;
   text-align: center;
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 .rankGold {
-  color: #eab308;
   filter: drop-shadow(0 0 4px rgba(234, 179, 8, 0.5));
 }
 .rankSilver {
-  color: #94a3b8;
   filter: drop-shadow(0 0 4px rgba(148, 163, 184, 0.4));
 }
 .rankBronze {
-  color: #b4783c;
   filter: drop-shadow(0 0 4px rgba(180, 120, 60, 0.4));
 }
 
@@ -734,15 +647,10 @@
 .leaderMeta {
   font-size: 0.7rem;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .verifiedBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  display: inline-block;
   background: var(--green-dim);
   color: var(--green);
   font-size: 0.6rem;
@@ -760,7 +668,6 @@
   text-align: right;
   flex-shrink: 0;
   letter-spacing: -0.01em;
-  white-space: nowrap;
 }
 .leaderStatLabel {
   font-size: 0.65rem;
@@ -776,7 +683,6 @@
   font-weight: 700;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  white-space: nowrap;
 }
 .pending {
   background: rgba(234, 179, 8, 0.12);
@@ -810,12 +716,12 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 2.5rem 1rem;
+  padding: 2.5rem;
   color: var(--text-dim);
   font-size: 0.875rem;
-  text-align: center;
 }
-.empty svg {
+.empty span {
+  font-size: 1.75rem;
   opacity: 0.5;
 }
 
@@ -852,143 +758,133 @@
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 
-/* Large tablet — collapse secondary bar to 4 cols */
 @media (max-width: 1100px) {
   .secondaryBar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-/* Tablet — collapse stats to 2 cols, stack two-column panels */
 @media (max-width: 900px) {
   .statsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
   .twoCol {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
   .secondaryBar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-/* Small tablet / large phone */
 @media (max-width: 600px) {
-  .page {
-    gap: 1rem;
-  }
   .statsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.625rem;
+    grid-template-columns: 1fr 1fr;
   }
   .statValue {
     font-size: 1.25rem;
   }
-  .statCard {
-    padding: 0.875rem 1rem;
-  }
   .secondaryBar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
   .funnelStep {
-    grid-template-columns: 70px minmax(0, 1fr) 32px;
-  }
-  .panelHeader {
-    padding: 0.875rem 1rem;
-  }
-  .catRow,
-  .bookingRow,
-  .disputeRow,
-  .leaderRow {
-    padding: 0.625rem 1rem;
-    gap: 0.5rem;
+    grid-template-columns: 70px 1fr 32px;
   }
 }
-
-/* Small phones — everything single column */
-@media (max-width: 480px) {
-  .statsGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .secondaryBar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .statValue {
-    font-size: 1.5rem;
-  }
-  .qsValue {
-    font-size: 0.9375rem;
-  }
-  .panelTitle {
-    font-size: 0.875rem;
-  }
-  .panelLink {
-    font-size: 0.7rem;
-  }
-  .funnelStep {
-    grid-template-columns: minmax(0, 1fr) auto;
-    row-gap: 4px;
-  }
-  .funnelMeta {
-    grid-column: 1 / 3;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-  .funnelTrack {
-    grid-column: 1 / 2;
-  }
-  .funnelPct {
-    grid-column: 2 / 3;
-  }
-  .catStats {
-    display: none;
-  }
-  .catRow {
-    gap: 0.5rem;
-  }
-  .bookingAmount,
-  .disputeAmount {
-    font-size: 0.7rem;
-  }
-  .leaderRank {
-    width: 22px;
-    font-size: 0.85rem;
-  }
-  .leaderAvatar {
-    width: 26px;
-    height: 26px;
-  }
+/* ── ADDED ── sub-line under bar charts */
+.barValueSub {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0.75;
 }
 
-/* Very small phones (iPhone SE 1st gen, Galaxy Fold closed) */
-@media (max-width: 360px) {
-  .secondaryBar {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .statValue {
-    font-size: 1.35rem;
-  }
-  .quickStat {
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
-  }
-  .barChart {
-    padding: 0.875rem 0.875rem 0;
-    height: 120px;
-  }
-  .chartLegend {
-    padding: 0.5rem 0.875rem 0.75rem;
-    font-size: 0.65rem;
-  }
-  .panelHeader {
-    padding: 0.75rem 0.875rem;
-  }
-  .catRow,
-  .bookingRow,
-  .disputeRow,
-  .leaderRow {
-    padding: 0.5rem 0.875rem;
-  }
+/* ── ADDED ── parent category under name */
+.catParent {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 1px;
+}
+
+/* ── ADDED ── user-submitted category badge */
+.catUserBadge {
+  display: inline-block;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  margin-top: 2px;
+}
+
+/* ── ADDED ── booking / dispute meta sub-line */
+.bookingMetaSub,
+.disputeMetaSub {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  opacity: 0.75;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── ADDED ── booking-row leading avatar wrapper */
+.bookingAvatars {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* ── ADDED ── verified badge gets a check icon inline */
+.verifiedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ── ADDED ── alert icon color adapts to variant */
+.alertRed .alertIconColor {
+  color: var(--red);
+}
+.alertAmber .alertIconColor {
+  color: #ca8a04;
+}
+.alertGreen .alertIconColor {
+  color: var(--green);
+}
+/* ── ADDED ── horizontal scroll wrapper for bar charts */
+.barChartScroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* ── ADDED ── alerts pill (re-open modal after dismissal) */
+.alertsPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  padding: 0.5rem 0.875rem;
+  border-radius: 999px;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+  color: #ca8a04;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.alertsPill:hover {
+  background: rgba(234, 179, 8, 0.16);
 }

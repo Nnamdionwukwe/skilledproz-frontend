@@ -79,49 +79,47 @@ function RevenueChart({ monthly }) {
 
   return (
     <div className={styles.chartWrap}>
-      <div className={styles.barChartScroll}>
-        <div className={styles.barChart}>
-          {monthly.map((m) => (
-            <div key={m.month} className={styles.barGroup}>
-              <div className={styles.barWrap}>
-                {/* GMV — background dim bar */}
-                <div
-                  className={styles.barGmv}
-                  style={{ height: `${Math.max(3, (m.gmv / maxGMV) * 120)}px` }}
-                  title={`GMV: ₦${fmtFull(m.gmv)}`}
-                />
-                {/* Revenue — foreground solid bar */}
-                <div
-                  className={styles.bar}
-                  style={{
-                    height: `${Math.max(3, (m.revenue / maxRev) * 120)}px`,
-                  }}
-                  title={`Revenue: ₦${fmtFull(m.revenue)}`}
-                />
-              </div>
-              <div className={styles.barLabel}>{m.month?.slice(5)}</div>
-              <div className={styles.barVal}>₦{fmt(m.revenue)}</div>
-              {/* ── workerPayouts (backend sends per month) */}
-              {(m.workerPayouts ?? 0) > 0 && (
-                <div
-                  className={styles.barValSub}
-                  title={`Worker payouts: ₦${fmtFull(m.workerPayouts)}`}
-                >
-                  ₦{fmt(m.workerPayouts)}
-                </div>
-              )}
-              {/* ── payment count (backend sends per month) */}
-              {m.count != null && (
-                <div
-                  className={styles.barValSub}
-                  title={`${m.count} payments processed`}
-                >
-                  {m.count} pmts
-                </div>
-              )}
+      <div className={styles.barChart}>
+        {monthly.map((m) => (
+          <div key={m.month} className={styles.barGroup}>
+            <div className={styles.barWrap}>
+              {/* GMV — background dim bar */}
+              <div
+                className={styles.barGmv}
+                style={{ height: `${Math.max(3, (m.gmv / maxGMV) * 120)}px` }}
+                title={`GMV: ₦${fmtFull(m.gmv)}`}
+              />
+              {/* Revenue — foreground solid bar */}
+              <div
+                className={styles.bar}
+                style={{
+                  height: `${Math.max(3, (m.revenue / maxRev) * 120)}px`,
+                }}
+                title={`Revenue: ₦${fmtFull(m.revenue)}`}
+              />
             </div>
-          ))}
-        </div>
+            <div className={styles.barLabel}>{m.month?.slice(5)}</div>
+            <div className={styles.barVal}>₦{fmt(m.revenue)}</div>
+            {/* ── workerPayouts (backend sends per month) */}
+            {(m.workerPayouts ?? 0) > 0 && (
+              <div
+                className={styles.barValSub}
+                title={`Worker payouts: ₦${fmtFull(m.workerPayouts)}`}
+              >
+                ₦{fmt(m.workerPayouts)}
+              </div>
+            )}
+            {/* ── payment count (backend sends per month) */}
+            {m.count != null && (
+              <div
+                className={styles.barValSub}
+                title={`${m.count} payments processed`}
+              >
+                {m.count} pmts
+              </div>
+            )}
+          </div>
+        ))}
       </div>
       <div className={styles.chartLegend}>
         <span>
@@ -153,35 +151,33 @@ function SignupChart({ growth }) {
 
   return (
     <div className={styles.chartWrap}>
-      <div className={styles.barChartScroll}>
-        <div className={styles.barChart}>
-          {growth.map((m) => (
-            <div key={m.month} className={styles.barGroup}>
-              <div className={styles.barWrap}>
-                <div
-                  className={styles.barWorker}
-                  style={{
-                    height: `${Math.max(3, ((m.workers || 0) / maxTotal) * 120)}px`,
-                  }}
-                  title={`Workers: ${m.workers}`}
-                />
-                <div
-                  className={styles.barHirer}
-                  style={{
-                    height: `${Math.max(3, ((m.hirers || 0) / maxTotal) * 120)}px`,
-                  }}
-                  title={`Hirers: ${m.hirers}`}
-                />
-              </div>
-              <div className={styles.barLabel}>{m.month?.slice(5)}</div>
-              <div className={styles.barVal}>{m.total || 0}</div>
-              {/* ── ADDED ── split workers/hirers numeric (backend sends both) */}
-              <div className={styles.barValSub}>
-                {m.workers || 0}w · {m.hirers || 0}h
-              </div>
+      <div className={styles.barChart}>
+        {growth.map((m) => (
+          <div key={m.month} className={styles.barGroup}>
+            <div className={styles.barWrap}>
+              <div
+                className={styles.barWorker}
+                style={{
+                  height: `${Math.max(3, ((m.workers || 0) / maxTotal) * 120)}px`,
+                }}
+                title={`Workers: ${m.workers}`}
+              />
+              <div
+                className={styles.barHirer}
+                style={{
+                  height: `${Math.max(3, ((m.hirers || 0) / maxTotal) * 120)}px`,
+                }}
+                title={`Hirers: ${m.hirers}`}
+              />
             </div>
-          ))}
-        </div>
+            <div className={styles.barLabel}>{m.month?.slice(5)}</div>
+            <div className={styles.barVal}>{m.total || 0}</div>
+            {/* ── ADDED ── split workers/hirers numeric (backend sends both) */}
+            <div className={styles.barValSub}>
+              {m.workers || 0}w · {m.hirers || 0}h
+            </div>
+          </div>
+        ))}
       </div>
       <div className={styles.chartLegend}>
         <span>
