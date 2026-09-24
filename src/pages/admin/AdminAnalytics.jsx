@@ -3,6 +3,31 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import styles from "./AdminAnalytics.module.css";
 
+// ─── Icons (react-icons — same family as AdminLayout) ─────────────────────────
+import {
+  FiUsers,
+  FiTool,
+  FiBriefcase,
+  FiClipboard,
+  FiDollarSign,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiAlertCircle,
+  FiFileText,
+  FiPlayCircle,
+  FiStar,
+  FiTag,
+  FiUserPlus,
+  FiZap,
+  FiCheckCircle,
+  FiXCircle,
+  FiRefreshCw,
+  FiRadio,
+  FiCheck,
+  FiCornerDownRight,
+} from "react-icons/fi";
+import { FaTrophy, FaMedal, FaAward } from "react-icons/fa";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n, currency = "") {
@@ -54,29 +79,49 @@ function RevenueChart({ monthly }) {
 
   return (
     <div className={styles.chartWrap}>
-      <div className={styles.barChart}>
-        {monthly.map((m) => (
-          <div key={m.month} className={styles.barGroup}>
-            <div className={styles.barWrap}>
-              {/* GMV — background dim bar */}
-              <div
-                className={styles.barGmv}
-                style={{ height: `${Math.max(3, (m.gmv / maxGMV) * 120)}px` }}
-                title={`GMV: ₦${fmtFull(m.gmv)}`}
-              />
-              {/* Revenue — foreground solid bar */}
-              <div
-                className={styles.bar}
-                style={{
-                  height: `${Math.max(3, (m.revenue / maxRev) * 120)}px`,
-                }}
-                title={`Revenue: ₦${fmtFull(m.revenue)}`}
-              />
+      <div className={styles.barChartScroll}>
+        <div className={styles.barChart}>
+          {monthly.map((m) => (
+            <div key={m.month} className={styles.barGroup}>
+              <div className={styles.barWrap}>
+                {/* GMV — background dim bar */}
+                <div
+                  className={styles.barGmv}
+                  style={{ height: `${Math.max(3, (m.gmv / maxGMV) * 120)}px` }}
+                  title={`GMV: ₦${fmtFull(m.gmv)}`}
+                />
+                {/* Revenue — foreground solid bar */}
+                <div
+                  className={styles.bar}
+                  style={{
+                    height: `${Math.max(3, (m.revenue / maxRev) * 120)}px`,
+                  }}
+                  title={`Revenue: ₦${fmtFull(m.revenue)}`}
+                />
+              </div>
+              <div className={styles.barLabel}>{m.month?.slice(5)}</div>
+              <div className={styles.barVal}>₦{fmt(m.revenue)}</div>
+              {/* ── workerPayouts (backend sends per month) */}
+              {(m.workerPayouts ?? 0) > 0 && (
+                <div
+                  className={styles.barValSub}
+                  title={`Worker payouts: ₦${fmtFull(m.workerPayouts)}`}
+                >
+                  ₦{fmt(m.workerPayouts)}
+                </div>
+              )}
+              {/* ── payment count (backend sends per month) */}
+              {m.count != null && (
+                <div
+                  className={styles.barValSub}
+                  title={`${m.count} payments processed`}
+                >
+                  {m.count} pmts
+                </div>
+              )}
             </div>
-            <div className={styles.barLabel}>{m.month?.slice(5)}</div>
-            <div className={styles.barVal}>₦{fmt(m.revenue)}</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       <div className={styles.chartLegend}>
         <span>
@@ -108,29 +153,35 @@ function SignupChart({ growth }) {
 
   return (
     <div className={styles.chartWrap}>
-      <div className={styles.barChart}>
-        {growth.map((m) => (
-          <div key={m.month} className={styles.barGroup}>
-            <div className={styles.barWrap}>
-              <div
-                className={styles.barWorker}
-                style={{
-                  height: `${Math.max(3, ((m.workers || 0) / maxTotal) * 120)}px`,
-                }}
-                title={`Workers: ${m.workers}`}
-              />
-              <div
-                className={styles.barHirer}
-                style={{
-                  height: `${Math.max(3, ((m.hirers || 0) / maxTotal) * 120)}px`,
-                }}
-                title={`Hirers: ${m.hirers}`}
-              />
+      <div className={styles.barChartScroll}>
+        <div className={styles.barChart}>
+          {growth.map((m) => (
+            <div key={m.month} className={styles.barGroup}>
+              <div className={styles.barWrap}>
+                <div
+                  className={styles.barWorker}
+                  style={{
+                    height: `${Math.max(3, ((m.workers || 0) / maxTotal) * 120)}px`,
+                  }}
+                  title={`Workers: ${m.workers}`}
+                />
+                <div
+                  className={styles.barHirer}
+                  style={{
+                    height: `${Math.max(3, ((m.hirers || 0) / maxTotal) * 120)}px`,
+                  }}
+                  title={`Hirers: ${m.hirers}`}
+                />
+              </div>
+              <div className={styles.barLabel}>{m.month?.slice(5)}</div>
+              <div className={styles.barVal}>{m.total || 0}</div>
+              {/* ── ADDED ── split workers/hirers numeric (backend sends both) */}
+              <div className={styles.barValSub}>
+                {m.workers || 0}w · {m.hirers || 0}h
+              </div>
             </div>
-            <div className={styles.barLabel}>{m.month?.slice(5)}</div>
-            <div className={styles.barVal}>{m.total || 0}</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       <div className={styles.chartLegend}>
         <span>
@@ -230,8 +281,6 @@ function ProviderChart({ byProvider }) {
 function Leaderboard({ rows, type }) {
   if (!rows?.length) return <div className={styles.noData}>No data yet</div>;
 
-  const medals = ["🥇", "🥈", "🥉"];
-
   return (
     <div className={styles.leaderList}>
       {rows.map((u, i) => {
@@ -242,7 +291,7 @@ function Leaderboard({ rows, type }) {
         const subValue =
           type === "worker"
             ? u.workerProfile?.hourlyRate
-              ? `₦${fmtFull(u.workerProfile.hourlyRate)}/hr`
+              ? `${u.workerProfile.currency || "₦"}${fmtFull(u.workerProfile.hourlyRate)}/hr`
               : ""
             : u.hirerProfile?.totalSpent
               ? `₦${fmt(u.hirerProfile.totalSpent)} spent`
@@ -250,8 +299,18 @@ function Leaderboard({ rows, type }) {
 
         return (
           <div key={u.id} className={styles.leaderRow}>
-            <span className={styles.leaderMedal}>
-              {medals[i] || `#${i + 1}`}
+            <span
+              className={`${styles.leaderMedal} ${i === 0 ? styles.rankGold : i === 1 ? styles.rankSilver : i === 2 ? styles.rankBronze : ""}`}
+            >
+              {i === 0 ? (
+                <FaTrophy size={16} />
+              ) : i === 1 ? (
+                <FaMedal size={16} />
+              ) : i === 2 ? (
+                <FaAward size={16} />
+              ) : (
+                `#${i + 1}`
+              )}
             </span>
             <div className={styles.leaderAvatar}>
               {u.avatar ? (
@@ -267,7 +326,9 @@ function Leaderboard({ rows, type }) {
               {subValue && <span className={styles.leaderSub}>{subValue}</span>}
               {type === "worker" &&
                 u.workerProfile?.verificationStatus === "VERIFIED" && (
-                  <span className={styles.verifiedPill}>✓ Verified</span>
+                  <span className={styles.verifiedPill}>
+                    <FiCheck size={10} /> Verified
+                  </span>
                 )}
             </div>
             <span className={styles.leaderStat}>
@@ -304,9 +365,22 @@ function CategoryTable({ categories }) {
         >
           <div className={styles.catRank}>#{i + 1}</div>
           <div className={styles.catInfo}>
-            <span className={styles.catIcon}>{c.icon || "🔧"}</span>
+            <span className={styles.catIcon}>
+              {c.icon ? c.icon : <FiTool size={14} />}
+            </span>
             <div className={styles.catDetails}>
               <span className={styles.catName}>{c.name}</span>
+              {/* ── parent category (backend include: { parent: true }) */}
+              {c.parent?.name && (
+                <span className={styles.catParent}>
+                  <FiCornerDownRight size={10} />
+                  {c.parent.name}
+                </span>
+              )}
+              {/* ── user-submitted badge (backend scalar) */}
+              {c.isUserSubmitted && (
+                <span className={styles.catUserBadge}>User suggested</span>
+              )}
               <div className={styles.catBar}>
                 <div
                   className={styles.catBarFill}
@@ -411,11 +485,8 @@ export default function AdminAnalytics() {
   const topW = statsData?.topWorkers || [];
   const topH = statsData?.topHirers || [];
 
-  // Revenue from detailed endpoint (array); fallback to stats monthlyRevenue
   const revenueMonthly = revenueData?.monthly || [];
   const byProvider = revenueData?.byProvider || {};
-
-  // User growth from detailed endpoint
   const usersGrowth = usersData?.growth || [];
 
   return (
@@ -445,9 +516,12 @@ export default function AdminAnalytics() {
               onClick={() => setRefreshKey((k) => k + 1)}
               title="Refresh data"
             >
-              ↻
+              <FiRefreshCw size={16} />
             </button>
-            <div className={styles.liveTag}>● Live</div>
+            <div className={styles.liveTag}>
+              <FiRadio size={10} />
+              Live
+            </div>
           </div>
         </div>
 
@@ -459,25 +533,25 @@ export default function AdminAnalytics() {
             <div className={styles.statsGrid}>
               {/* Row 1 — Users */}
               <StatCard
-                icon="👥"
+                icon={<FiUsers size={16} />}
                 label="Total Users"
                 value={fmtFull(ov.totalUsers)}
                 delay={0}
               />
               <StatCard
-                icon="🔨"
+                icon={<FiTool size={16} />}
                 label="Workers"
                 value={fmtFull(ov.totalWorkers)}
                 delay={0.03}
               />
               <StatCard
-                icon="🏢"
+                icon={<FiBriefcase size={16} />}
                 label="Hirers"
                 value={fmtFull(ov.totalHirers)}
                 delay={0.06}
               />
               <StatCard
-                icon="🆕"
+                icon={<FiUserPlus size={16} />}
                 label="New Today"
                 value={ov.newUsersToday}
                 delay={0.09}
@@ -486,27 +560,27 @@ export default function AdminAnalytics() {
 
               {/* Row 2 — Bookings */}
               <StatCard
-                icon="📋"
+                icon={<FiClipboard size={16} />}
                 label="Total Bookings"
                 value={fmtFull(ov.totalBookings)}
                 delay={0.12}
               />
               <StatCard
-                icon="⚡"
+                icon={<FiZap size={16} />}
                 label="Active"
                 value={fmtFull(ov.activeBookings)}
                 delay={0.15}
                 accent="orange"
               />
               <StatCard
-                icon="✅"
+                icon={<FiCheckCircle size={16} />}
                 label="Completed"
                 value={fmtFull(ov.completedBookings)}
                 delay={0.18}
                 accent="green"
               />
               <StatCard
-                icon="❌"
+                icon={<FiXCircle size={16} />}
                 label="Cancelled"
                 value={fmtFull(ov.cancelledBookings)}
                 delay={0.21}
@@ -514,7 +588,7 @@ export default function AdminAnalytics() {
 
               {/* Row 3 — Money */}
               <StatCard
-                icon="💰"
+                icon={<FiDollarSign size={16} />}
                 label="Platform Revenue"
                 value={fmt(ov.totalRevenue, "₦")}
                 delay={0.24}
@@ -522,14 +596,14 @@ export default function AdminAnalytics() {
                 sub="Fees earned"
               />
               <StatCard
-                icon="📈"
+                icon={<FiTrendingUp size={16} />}
                 label="Gross Volume"
                 value={fmt(ov.totalGMV, "₦")}
                 delay={0.27}
                 sub="Total transacted"
               />
               <StatCard
-                icon="💸"
+                icon={<FiTrendingDown size={16} />}
                 label="Pending Payouts"
                 value={fmt(ov.pendingPayouts, "₦")}
                 delay={0.3}
@@ -537,7 +611,7 @@ export default function AdminAnalytics() {
                 sub={`${ov.pendingPayoutCount ?? 0} requests`}
               />
               <StatCard
-                icon="⚖️"
+                icon={<FiAlertCircle size={16} />}
                 label="Disputes"
                 value={fmtFull(ov.disputedBookings)}
                 delay={0.33}
@@ -546,25 +620,25 @@ export default function AdminAnalytics() {
 
               {/* Row 4 — Platform */}
               <StatCard
-                icon="📝"
+                icon={<FiFileText size={16} />}
                 label="Total Job Posts"
                 value={fmtFull(ov.totalJobPosts)}
                 delay={0.36}
               />
               <StatCard
-                icon="🟢"
+                icon={<FiPlayCircle size={16} />}
                 label="Open Jobs"
                 value={fmtFull(ov.openJobPosts)}
                 delay={0.39}
               />
               <StatCard
-                icon="⭐"
+                icon={<FiStar size={16} />}
                 label="Reviews"
                 value={fmtFull(ov.totalReviews)}
                 delay={0.42}
               />
               <StatCard
-                icon="🏷️"
+                icon={<FiTag size={16} />}
                 label="Categories"
                 value={fmtFull(ov.totalCategories)}
                 delay={0.45}
@@ -611,7 +685,7 @@ export default function AdminAnalytics() {
                 <Leaderboard rows={topW} type="worker" />
               </Panel>
 
-              <Panel title="Top Hirers" sub="By total bookings placed">
+              <Panel title="Top Hirers" sub="Total bookings placed">
                 <Leaderboard rows={topH} type="hirer" />
               </Panel>
             </div>
