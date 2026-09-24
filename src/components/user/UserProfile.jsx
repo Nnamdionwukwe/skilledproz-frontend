@@ -31,6 +31,8 @@ import {
   FileText,
   RotateCw,
   RefreshCw,
+  Settings,
+  Sparkles,
 } from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -59,9 +61,12 @@ function ProBadge({ isOwn }) {
         borderRadius: "100px",
         fontWeight: 800,
         letterSpacing: "0.04em",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
       }}
     >
-      ⭐ PRO
+      <Sparkles size={10} /> PRO
     </span>
   );
 }
@@ -596,7 +601,7 @@ export default function UserProfile() {
                   className={s.editBtn}
                   onClick={() => navigate("/settings")}
                 >
-                  ⚙️ Settings
+                  <Settings size={13} /> Settings
                 </button>
               )}
             </div>
@@ -933,7 +938,9 @@ export default function UserProfile() {
                             </p>
                           )}
                         </div>
-                        <div className={s.portfolioExpand}>⛶ View full</div>
+                        <div className={s.portfolioExpand}>
+                          <Maximize2 size={11} /> View full
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1198,7 +1205,7 @@ export default function UserProfile() {
               className={s.lightboxClose}
               onClick={() => setLightbox(null)}
             >
-              ✕
+              <X size={18} />
             </button>
 
             {/* Portfolio lightbox */}
@@ -1273,7 +1280,7 @@ export default function UserProfile() {
                     rel="noreferrer"
                     className={s.lightboxDocLink}
                   >
-                    📄 View Certificate Document →
+                    <FileText size={13} /> View Certificate Document
                   </a>
                 )}
               </div>
