@@ -2,7 +2,33 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../lib/api";
 import AdminLayout from "../../components/layout/AdminLayout";
+import AlertModal from "../../components/ui/AlertModal";
 import styles from "./AdminDashboard.module.css";
+
+// ─── Icons (react-icons — same family as AdminLayout) ─────────────────────────
+import {
+  FiUsers,
+  FiTool,
+  FiBriefcase,
+  FiClipboard,
+  FiDollarSign,
+  FiTrendingDown,
+  FiCheckCircle,
+  FiFileText,
+  FiStar,
+  FiAlertCircle,
+  FiTag,
+  FiXCircle,
+  FiClock,
+  FiSlash,
+  FiAlertTriangle,
+  FiCreditCard,
+  FiBarChart2,
+  FiArrowRight,
+  FiCheck,
+  FiCornerDownRight,
+} from "react-icons/fi";
+import { FaTrophy, FaMedal, FaAward } from "react-icons/fa";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,6 +54,35 @@ function fmtFull(n, currency = "") {
   }).format(n);
   return currency ? `${currency} ${formatted}` : formatted;
 }
+
+// ── ADDED ── Relative time helper (for booking/dispute age)
+function timeAgo(date) {
+  if (!date) return "";
+  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(date).toLocaleDateString();
+}
+
+// ── ADDED ── Extended status badge map (covers backend statuses not in original)
+const STATUS_MAP = {
+  PENDING: { cls: "pending", label: "Pending" },
+  ACCEPTED: { cls: "accepted", label: "Accepted" },
+  IN_PROGRESS: { cls: "active", label: "In Progress" },
+  COMPLETED: { cls: "completed", label: "Completed" },
+  CANCELLED: { cls: "cancelled", label: "Cancelled" },
+  DISPUTED: { cls: "disputed", label: "Disputed" },
+  REJECTED: { cls: "cancelled", label: "Rejected" },
+  REFUNDED: { cls: "cancelled", label: "Refunded" },
+  HELD: { cls: "pending", label: "Held" },
+  RELEASED: { cls: "completed", label: "Released" },
+  FAILED: { cls: "disputed", label: "Failed" },
+};
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -65,15 +120,7 @@ function StatCard({ label, value, sub, icon, accent, link, delta }) {
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 function Badge({ status }) {
-  const map = {
-    PENDING: { cls: "pending", label: "Pending" },
-    ACCEPTED: { cls: "accepted", label: "Accepted" },
-    IN_PROGRESS: { cls: "active", label: "In Progress" },
-    COMPLETED: { cls: "completed", label: "Completed" },
-    CANCELLED: { cls: "cancelled", label: "Cancelled" },
-    DISPUTED: { cls: "disputed", label: "Disputed" },
-  };
-  const s = map[status] || { cls: "pending", label: status };
+  const s = STATUS_MAP[status] || { cls: "pending", label: status };
   return <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>;
 }
 
@@ -92,6 +139,13 @@ export default function AdminDashboard() {
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ── ADDED ── richer verification stats (unverified/rejected now used)
+  const [verifFull, setVerifFull] = useState(null);
+
+  // ── ADDED ── alerts modal state
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [alertsDismissed, setAlertsDismissed] = useState(false);
+
   useEffect(() => {
     Promise.all([
       api.get("/admin/stats"),
@@ -104,6 +158,8 @@ export default function AdminDashboard() {
         setRecentBookings(bookingsRes.data.data?.bookings || []);
         setDisputes(disputesRes.data.data?.disputes || []);
         setVerifStats(verifRes.data.data);
+        // ── ADDED ── keep the full stats object too
+        setVerifFull(verifRes.data.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -132,6 +188,55 @@ export default function AdminDashboard() {
 
   // ── Funnel: derive % relative to first stage
   const funnelBase = funnel[0]?.count || 1;
+
+  // ── ADDED ── build the alerts list from backend data (replaces 4 alert banners)
+  const alerts = [];
+  if (o?.disputedBookings > 0) {
+    alerts.push({
+      icon: FiAlertCircle,
+      variant: "red",
+      label: `${o.disputedBookings} active dispute${o.disputedBookings !== 1 ? "s" : ""} require your attention`,
+      description: "Open disputes are waiting for admin resolution.",
+      to: "/admin/disputes",
+    });
+  }
+  if (verifStats?.pending > 0) {
+    alerts.push({
+      icon: FiCreditCard,
+      variant: "amber",
+      label: `${verifStats.pending} worker verification${verifStats.pending !== 1 ? "s" : ""} waiting for review`,
+      description: "Verify worker identities to unlock their full profile.",
+      to: "/admin/verifications",
+    });
+  }
+  if (o?.pendingPayoutCount > 0) {
+    alerts.push({
+      icon: FiTrendingDown,
+      variant: "green",
+      label: `${o.pendingPayoutCount} withdrawal${o.pendingPayoutCount !== 1 ? "s" : ""} pending — ${fmtFull(o.pendingPayouts, "₦")} total`,
+      description: "Approve or reject pending withdrawal requests.",
+      to: "/admin/payments?tab=withdrawals",
+    });
+  }
+  if (verifFull?.rejected > 0) {
+    alerts.push({
+      icon: FiSlash,
+      variant: "red",
+      label: `${verifFull.rejected} worker verification${verifFull.rejected !== 1 ? "s" : ""} previously rejected`,
+      description: "Rejected verifications may need re-submission review.",
+      to: "/admin/verifications",
+    });
+  }
+
+  // ── ADDED ── auto-open the alerts modal once after load if there's anything to show
+  useEffect(() => {
+    if (loading) return;
+    if (alertsDismissed) return;
+    if (alerts.length > 0) {
+      setAlertsOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, alerts.length]);
 
   if (loading) {
     return (
@@ -167,52 +272,36 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className={styles.page}>
-        {/* ── Alert Banners ── */}
-        {o?.disputedBookings > 0 && (
-          <Link
-            to="/admin/disputes"
-            className={`${styles.alertBanner} ${styles.alertRed}`}
+        {/* ── ADDED ── Alerts modal (replaces the previous 4 inline alert banners) */}
+        <AlertModal
+          isOpen={alertsOpen}
+          onClose={() => {
+            setAlertsOpen(false);
+            setAlertsDismissed(true);
+          }}
+          title="Attention Required"
+          subtitle={`${alerts.length} item${alerts.length !== 1 ? "s" : ""} need your review.`}
+          alerts={alerts}
+        />
+
+        {/* ── ADDED ── small inline pill to re-open the modal after dismissal */}
+        {alerts.length > 0 && !alertsOpen && (
+          <button
+            type="button"
+            className={styles.alertsPill}
+            onClick={() => setAlertsOpen(true)}
           >
-            <span>⚠️</span>
+            <FiAlertTriangle size={14} />
             <span>
-              {o.disputedBookings} active dispute
-              {o.disputedBookings !== 1 ? "s" : ""} require your attention
+              {alerts.length} pending alert{alerts.length !== 1 ? "s" : ""}
             </span>
-            <span className={styles.alertArrow}>→</span>
-          </Link>
-        )}
-        {verifStats?.pending > 0 && (
-          <Link
-            to="/admin/verifications"
-            className={`${styles.alertBanner} ${styles.alertAmber}`}
-          >
-            <span>🪪</span>
-            <span>
-              {verifStats.pending} worker verification
-              {verifStats.pending !== 1 ? "s" : ""} waiting for review
-            </span>
-            <span className={styles.alertArrow}>→</span>
-          </Link>
-        )}
-        {o?.pendingPayoutCount > 0 && (
-          <Link
-            to="/admin/payments?tab=withdrawals"
-            className={`${styles.alertBanner} ${styles.alertGreen}`}
-          >
-            <span>💸</span>
-            <span>
-              {o.pendingPayoutCount} withdrawal
-              {o.pendingPayoutCount !== 1 ? "s" : ""} pending —{" "}
-              {fmtFull(o.pendingPayouts, "₦")} total
-            </span>
-            <span className={styles.alertArrow}>→</span>
-          </Link>
+          </button>
         )}
 
         {/* ── Primary Stat Cards ── */}
         <div className={styles.statsGrid}>
           <StatCard
-            icon="👥"
+            icon={<FiUsers size={16} />}
             label="Total Users"
             value={fmt(o?.totalUsers)}
             accent="orange"
@@ -220,21 +309,21 @@ export default function AdminDashboard() {
             delta={o?.newUsersToday}
           />
           <StatCard
-            icon="🔨"
+            icon={<FiTool size={16} />}
             label="Workers"
             value={fmt(o?.totalWorkers)}
             sub={`${verifStats?.verified || 0} verified`}
             link="/admin/users?role=WORKER"
           />
           <StatCard
-            icon="🏢"
+            icon={<FiBriefcase size={16} />}
             label="Hirers"
             value={fmt(o?.totalHirers)}
             sub="Registered"
             link="/admin/users?role=HIRER"
           />
           <StatCard
-            icon="📋"
+            icon={<FiClipboard size={16} />}
             label="Total Bookings"
             value={fmt(o?.totalBookings)}
             sub={`${o?.activeBookings || 0} active`}
@@ -242,7 +331,7 @@ export default function AdminDashboard() {
             delta={o?.newBookingsToday}
           />
           <StatCard
-            icon="💰"
+            icon={<FiDollarSign size={16} />}
             label="Platform Revenue"
             value={fmt(o?.totalRevenue, "₦")}
             sub="Fees earned"
@@ -250,7 +339,7 @@ export default function AdminDashboard() {
             link="/admin/payments"
           />
           <StatCard
-            icon="💸"
+            icon={<FiTrendingDown size={16} />}
             label="Pending Payouts"
             value={fmt(o?.pendingPayouts, "₦")}
             sub={`${o?.pendingPayoutCount || 0} requests`}
@@ -262,21 +351,27 @@ export default function AdminDashboard() {
         {/* ── Secondary Quick-Stats Bar ── */}
         <div className={styles.secondaryBar}>
           <div className={styles.quickStat}>
-            <span className={styles.qsIcon}>✅</span>
+            <span className={styles.qsIcon}>
+              <FiCheckCircle size={16} />
+            </span>
             <div>
               <div className={styles.qsValue}>{fmt(o?.completedBookings)}</div>
               <div className={styles.qsLabel}>Completed</div>
             </div>
           </div>
           <div className={styles.quickStat}>
-            <span className={styles.qsIcon}>💼</span>
+            <span className={styles.qsIcon}>
+              <FiBriefcase size={16} />
+            </span>
             <div>
               <div className={styles.qsValue}>{fmt(o?.totalGMV, "₦")}</div>
               <div className={styles.qsLabel}>Gross Volume</div>
             </div>
           </div>
           <div className={styles.quickStat}>
-            <span className={styles.qsIcon}>📝</span>
+            <span className={styles.qsIcon}>
+              <FiFileText size={16} />
+            </span>
             <div>
               <div className={styles.qsValue}>
                 {fmt(o?.openJobPosts)}
@@ -286,14 +381,18 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className={styles.quickStat}>
-            <span className={styles.qsIcon}>⭐</span>
+            <span className={styles.qsIcon}>
+              <FiStar size={16} />
+            </span>
             <div>
               <div className={styles.qsValue}>{fmt(o?.totalReviews)}</div>
               <div className={styles.qsLabel}>Reviews</div>
             </div>
           </div>
           <div className={styles.quickStat}>
-            <span className={styles.qsIcon}>⚖️</span>
+            <span className={styles.qsIcon}>
+              <FiAlertCircle size={16} />
+            </span>
             <div>
               <div
                 className={styles.qsValue}
@@ -305,10 +404,57 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className={styles.quickStat}>
-            <span className={styles.qsIcon}>🏷️</span>
+            <span className={styles.qsIcon}>
+              <FiTag size={16} />
+            </span>
             <div>
               <div className={styles.qsValue}>{fmt(o?.totalCategories)}</div>
               <div className={styles.qsLabel}>Categories</div>
+            </div>
+          </div>
+
+          <div className={styles.quickStat}>
+            <span className={styles.qsIcon}>
+              <FiXCircle size={16} />
+            </span>
+            <div>
+              <div className={styles.qsValue}>{fmt(o?.cancelledBookings)}</div>
+              <div className={styles.qsLabel}>Cancelled</div>
+            </div>
+          </div>
+
+          <div className={styles.quickStat}>
+            <span className={styles.qsIcon}>
+              <FiClock size={16} />
+            </span>
+            <div>
+              <div className={styles.qsValue}>{fmt(verifFull?.unverified)}</div>
+              <div className={styles.qsLabel}>Unverified</div>
+            </div>
+          </div>
+
+          <div className={styles.quickStat}>
+            <span className={styles.qsIcon}>
+              <FiClock size={16} />
+            </span>
+            <div>
+              <div className={styles.qsValue}>{fmt(verifFull?.pending)}</div>
+              <div className={styles.qsLabel}>Pending Verif.</div>
+            </div>
+          </div>
+
+          <div className={styles.quickStat}>
+            <span className={styles.qsIcon}>
+              <FiSlash size={16} />
+            </span>
+            <div>
+              <div
+                className={styles.qsValue}
+                style={verifFull?.rejected > 0 ? { color: "var(--red)" } : {}}
+              >
+                {fmt(verifFull?.rejected)}
+              </div>
+              <div className={styles.qsLabel}>Rejected Verif.</div>
             </div>
           </div>
         </div>
@@ -325,40 +471,47 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <Link to="/admin/payments" className={styles.panelLink}>
-                Details →
+                Details <FiArrowRight size={12} />
               </Link>
             </div>
             {revenueEntries.length === 0 ? (
               <div className={styles.empty}>
-                <span>📊</span>
+                <FiBarChart2 size={28} />
                 <p>No revenue data yet</p>
               </div>
             ) : (
-              <div className={styles.barChart}>
-                {revenueEntries.map(([month, v]) => {
-                  const rev = typeof v === "object" ? v.revenue || 0 : v || 0;
-                  const gmv = typeof v === "object" ? v.gmv || 0 : 0;
-                  return (
-                    <div key={month} className={styles.barWrap}>
-                      <div className={styles.barLabel}>{month.slice(5)}</div>
-                      <div className={styles.barTrack}>
-                        {gmv > 0 && (
+              <div className={styles.barChartScroll}>
+                <div className={styles.barChart}>
+                  {revenueEntries.map(([month, v]) => {
+                    const rev = typeof v === "object" ? v.revenue || 0 : v || 0;
+                    const gmv = typeof v === "object" ? v.gmv || 0 : 0;
+                    return (
+                      <div key={month} className={styles.barWrap}>
+                        <div className={styles.barLabel}>{month.slice(5)}</div>
+                        <div className={styles.barTrack}>
+                          {gmv > 0 && (
+                            <div
+                              className={styles.barFillGmv}
+                              style={{
+                                height: `${(gmv / Math.max(...revenueEntries.map(([, x]) => (typeof x === "object" ? x.gmv : 0)), 1)) * 100}%`,
+                              }}
+                            />
+                          )}
                           <div
-                            className={styles.barFillGmv}
-                            style={{
-                              height: `${(gmv / Math.max(...revenueEntries.map(([, x]) => (typeof x === "object" ? x.gmv : 0)), 1)) * 100}%`,
-                            }}
+                            className={styles.barFill}
+                            style={{ height: `${(rev / maxRevenue) * 100}%` }}
                           />
+                        </div>
+                        <div className={styles.barValue}>₦{fmt(rev)}</div>
+                        {gmv > 0 && (
+                          <div className={styles.barValueSub}>
+                            GMV ₦{fmt(gmv)}
+                          </div>
                         )}
-                        <div
-                          className={styles.barFill}
-                          style={{ height: `${(rev / maxRevenue) * 100}%` }}
-                        />
                       </div>
-                      <div className={styles.barValue}>₦{fmt(rev)}</div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
             <div className={styles.chartLegend}>
@@ -388,36 +541,41 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <Link to="/admin/users" className={styles.panelLink}>
-                All Users →
+                All Users <FiArrowRight size={12} />
               </Link>
             </div>
             {signupEntries.length === 0 ? (
               <div className={styles.empty}>
-                <span>👥</span>
+                <FiUsers size={28} />
                 <p>No signup data yet</p>
               </div>
             ) : (
-              <div className={styles.barChart}>
-                {signupEntries.map(([month, v]) => (
-                  <div key={month} className={styles.barWrap}>
-                    <div className={styles.barLabel}>{month.slice(5)}</div>
-                    <div className={styles.barTrack}>
-                      <div
-                        className={styles.barFillWorker}
-                        style={{
-                          height: `${((v.workers || 0) / maxSignups) * 100}%`,
-                        }}
-                      />
-                      <div
-                        className={styles.barFillHirer}
-                        style={{
-                          height: `${((v.hirers || 0) / maxSignups) * 100}%`,
-                        }}
-                      />
+              <div className={styles.barChartScroll}>
+                <div className={styles.barChart}>
+                  {signupEntries.map(([month, v]) => (
+                    <div key={month} className={styles.barWrap}>
+                      <div className={styles.barLabel}>{month.slice(5)}</div>
+                      <div className={styles.barTrack}>
+                        <div
+                          className={styles.barFillWorker}
+                          style={{
+                            height: `${((v.workers || 0) / maxSignups) * 100}%`,
+                          }}
+                        />
+                        <div
+                          className={styles.barFillHirer}
+                          style={{
+                            height: `${((v.hirers || 0) / maxSignups) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <div className={styles.barValue}>{v.total || 0}</div>
+                      <div className={styles.barValueSub}>
+                        {v.workers || 0}w · {v.hirers || 0}h
+                      </div>
                     </div>
-                    <div className={styles.barValue}>{v.total || 0}</div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
             <div className={styles.chartLegend}>
@@ -479,7 +637,7 @@ export default function AdminDashboard() {
               })}
               {funnel.length === 0 && (
                 <div className={styles.empty}>
-                  <span>📊</span>
+                  <FiBarChart2 size={28} />
                   <p>No funnel data yet</p>
                 </div>
               )}
@@ -491,15 +649,23 @@ export default function AdminDashboard() {
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Top Categories</h2>
               <Link to="/admin/categories" className={styles.panelLink}>
-                Manage →
+                Manage <FiArrowRight size={12} />
               </Link>
             </div>
             {top.slice(0, 6).map((cat, i) => (
               <div key={cat.id} className={styles.catRow}>
                 <span className={styles.catRank}>#{i + 1}</span>
-                <span className={styles.catIcon}>{cat.icon || "🔧"}</span>
+                <span className={styles.catIcon}>
+                  {cat.icon ? cat.icon : <FiTool size={14} />}
+                </span>
                 <div className={styles.catInfo}>
                   <span className={styles.catName}>{cat.name}</span>
+                  {cat.parent?.name && (
+                    <span className={styles.catParent}>
+                      <FiCornerDownRight size={10} />
+                      {cat.parent.name}
+                    </span>
+                  )}
                   <div className={styles.catBar}>
                     <div
                       className={styles.catBarFill}
@@ -521,12 +687,17 @@ export default function AdminDashboard() {
                   <span className={styles.catWorkers}>
                     {cat._count?.workers || 0} workers
                   </span>
+                  {cat._count?.jobPosts != null && (
+                    <span className={styles.catWorkers}>
+                      {cat._count.jobPosts} jobs
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
             {top.length === 0 && (
               <div className={styles.empty}>
-                <span>🏷️</span>
+                <FiTag size={28} />
                 <p>No categories yet</p>
               </div>
             )}
@@ -540,12 +711,12 @@ export default function AdminDashboard() {
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Recent Bookings</h2>
               <Link to="/admin/bookings" className={styles.panelLink}>
-                All →
+                All <FiArrowRight size={12} />
               </Link>
             </div>
             {recentBookings.length === 0 ? (
               <div className={styles.empty}>
-                <span>📋</span>
+                <FiClipboard size={28} />
                 <p>No bookings yet</p>
               </div>
             ) : (
@@ -555,19 +726,47 @@ export default function AdminDashboard() {
                   to={`/admin/bookings`}
                   className={styles.bookingRow}
                 >
+                  <div className={styles.bookingAvatars}>
+                    <div className={styles.miniAvatar}>
+                      {b.hirer?.avatar ? (
+                        <img
+                          src={b.hirer.avatar}
+                          alt=""
+                          className={styles.laImg}
+                        />
+                      ) : (
+                        <>
+                          {b.hirer?.firstName?.[0]}
+                          {b.hirer?.lastName?.[0]}
+                        </>
+                      )}
+                    </div>
+                  </div>
                   <div className={styles.bookingInfo}>
                     <p className={styles.bookingTitle}>
                       {b.title || "Untitled Booking"}
                     </p>
-                    <p className={styles.bookingMeta}>
-                      {b.hirer?.firstName} → {b.worker?.firstName} ·{" "}
-                      {b.category?.name}
+                    <p
+                      className={styles.bookingMeta}
+                      title={`${b.hirer?.email || ""} → ${b.worker?.email || ""}`}
+                    >
+                      {b.hirer?.firstName} {b.hirer?.lastName} →{" "}
+                      {b.worker?.firstName} {b.worker?.lastName}
+                      {b.category?.name
+                        ? ` · ${b.category.icon || ""} ${b.category.name}`
+                        : ""}
+                    </p>
+                    <p className={styles.bookingMetaSub}>
+                      {b.createdAt ? timeAgo(b.createdAt) : ""}
+                      {b.payments?.[0]?.status
+                        ? ` · Payment: ${b.payments[0].status}`
+                        : ""}
                     </p>
                   </div>
                   <div className={styles.bookingRight}>
                     <Badge status={b.status} />
                     <span className={styles.bookingAmount}>
-                      {fmtFull(b.agreedRate, "₦")}
+                      {fmtFull(b.agreedRate, b.currency || "₦")}
                     </span>
                   </div>
                 </Link>
@@ -580,13 +779,13 @@ export default function AdminDashboard() {
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Active Disputes</h2>
               <Link to="/admin/disputes" className={styles.panelLink}>
-                All →
+                All <FiArrowRight size={12} />
               </Link>
             </div>
             {disputes.length === 0 ? (
               <div className={styles.empty}>
-                <span>⚖️</span>
-                <p>No active disputes 🎉</p>
+                <FiCheckCircle size={28} />
+                <p>No active disputes</p>
               </div>
             ) : (
               disputes.slice(0, 4).map((d) => (
@@ -597,12 +796,34 @@ export default function AdminDashboard() {
                 >
                   <div className={styles.disputeAvatars}>
                     <div className={styles.miniAvatar}>
-                      {d.hirer?.firstName?.[0] || "?"}
+                      {d.hirer?.avatar ? (
+                        <img
+                          src={d.hirer.avatar}
+                          alt=""
+                          className={styles.laImg}
+                        />
+                      ) : (
+                        <>
+                          {d.hirer?.firstName?.[0] || "?"}
+                          {d.hirer?.lastName?.[0] || ""}
+                        </>
+                      )}
                     </div>
                     <div
                       className={`${styles.miniAvatar} ${styles.miniAvatarB}`}
                     >
-                      {d.worker?.firstName?.[0] || "?"}
+                      {d.worker?.avatar ? (
+                        <img
+                          src={d.worker.avatar}
+                          alt=""
+                          className={styles.laImg}
+                        />
+                      ) : (
+                        <>
+                          {d.worker?.firstName?.[0] || "?"}
+                          {d.worker?.lastName?.[0] || ""}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className={styles.disputeInfo}>
@@ -610,11 +831,23 @@ export default function AdminDashboard() {
                       {d.title || "Unnamed Booking"}
                     </p>
                     <p className={styles.disputeMeta}>
-                      {d.hirer?.firstName} vs {d.worker?.firstName}
+                      {d.hirer?.firstName} {d.hirer?.lastName} vs{" "}
+                      {d.worker?.firstName} {d.worker?.lastName}
+                      {d.category?.name
+                        ? ` · ${d.category.icon || ""} ${d.category.name}`
+                        : ""}
+                    </p>
+                    <p className={styles.disputeMetaSub}>
+                      {d.updatedAt
+                        ? `Waiting since ${new Date(d.updatedAt).toLocaleDateString()} (${timeAgo(d.updatedAt)})`
+                        : ""}
+                      {d.payments?.[0]?.status
+                        ? ` · Escrow: ${d.payments[0].status}`
+                        : ""}
                     </p>
                   </div>
                   <span className={styles.disputeAmount}>
-                    {fmtFull(d.agreedRate, "₦")}
+                    {fmtFull(d.agreedRate, d.currency || "₦")}
                   </span>
                 </Link>
               ))
@@ -629,12 +862,12 @@ export default function AdminDashboard() {
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Top Workers</h2>
               <Link to="/admin/users?role=WORKER" className={styles.panelLink}>
-                All →
+                All <FiArrowRight size={12} />
               </Link>
             </div>
             {tw.length === 0 ? (
               <div className={styles.empty}>
-                <span>🔨</span>
+                <FiTool size={28} />
                 <p>No worker data yet</p>
               </div>
             ) : (
@@ -643,7 +876,15 @@ export default function AdminDashboard() {
                   <span
                     className={`${styles.leaderRank} ${i === 0 ? styles.rankGold : i === 1 ? styles.rankSilver : i === 2 ? styles.rankBronze : ""}`}
                   >
-                    {i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${i + 1}`}
+                    {i === 0 ? (
+                      <FaTrophy size={16} />
+                    ) : i === 1 ? (
+                      <FaMedal size={16} />
+                    ) : i === 2 ? (
+                      <FaAward size={16} />
+                    ) : (
+                      `#${i + 1}`
+                    )}
                   </span>
                   <div className={styles.leaderAvatar}>
                     {w.avatar ? (
@@ -661,10 +902,12 @@ export default function AdminDashboard() {
                     </span>
                     <span className={styles.leaderMeta}>
                       {w.workerProfile?.verificationStatus === "VERIFIED" && (
-                        <span className={styles.verifiedBadge}>✓ Verified</span>
+                        <span className={styles.verifiedBadge}>
+                          <FiCheck size={10} /> Verified
+                        </span>
                       )}
                       {w.workerProfile?.hourlyRate
-                        ? ` ₦${fmtFull(w.workerProfile.hourlyRate)}/hr`
+                        ? ` ${w.workerProfile.currency || "₦"}${fmtFull(w.workerProfile.hourlyRate)}/hr`
                         : ""}
                     </span>
                   </div>
@@ -682,12 +925,12 @@ export default function AdminDashboard() {
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Top Hirers</h2>
               <Link to="/admin/users?role=HIRER" className={styles.panelLink}>
-                All →
+                All <FiArrowRight size={12} />
               </Link>
             </div>
             {th.length === 0 ? (
               <div className={styles.empty}>
-                <span>🏢</span>
+                <FiBriefcase size={28} />
                 <p>No hirer data yet</p>
               </div>
             ) : (
@@ -696,7 +939,15 @@ export default function AdminDashboard() {
                   <span
                     className={`${styles.leaderRank} ${i === 0 ? styles.rankGold : i === 1 ? styles.rankSilver : i === 2 ? styles.rankBronze : ""}`}
                   >
-                    {i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${i + 1}`}
+                    {i === 0 ? (
+                      <FaTrophy size={16} />
+                    ) : i === 1 ? (
+                      <FaMedal size={16} />
+                    ) : i === 2 ? (
+                      <FaAward size={16} />
+                    ) : (
+                      `#${i + 1}`
+                    )}
                   </span>
                   <div className={styles.leaderAvatar}>
                     {h.avatar ? (
