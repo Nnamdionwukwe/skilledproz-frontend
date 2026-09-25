@@ -1,51 +1,16 @@
-/* AdminVideoCalls.module.css */
+/* AdminVideoCalls.module.css — full responsive rewrite */
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 .page {
   padding: 20px 16px 60px;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  box-sizing: border-box;
   animation: fadeUp 0.3s ease both;
-}
-
-/* ─── Toast ───────────────────────────────────────────────────────────────── */
-.toast {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  animation: slideDown 0.2s ease;
-  position: sticky;
-  top: 12px;
-  z-index: 50;
-}
-.toast_success {
-  background: var(--green-dim);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  color: var(--green);
-}
-.toast_error {
-  background: var(--red-dim);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: var(--red);
-}
-.toastClose {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 16px;
-  cursor: pointer;
-  opacity: 0.6;
-}
-.toastClose:hover {
-  opacity: 1;
 }
 
 /* ─── Header ──────────────────────────────────────────────────────────────── */
@@ -66,7 +31,7 @@
 }
 .pageTitle {
   font-family: var(--font-display);
-  font-size: clamp(20px, 5vw, 26px);
+  font-size: clamp(18px, 5vw, 26px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: -0.02em;
@@ -75,6 +40,8 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  line-height: 1.15;
+  min-width: 0;
 }
 .pageSubtitle {
   font-size: 13px;
@@ -90,6 +57,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 2px 10px;
+  flex-shrink: 0;
 }
 
 .livePill {
@@ -103,6 +71,7 @@
   border: 1px solid rgba(34, 197, 94, 0.25);
   border-radius: 20px;
   padding: 3px 10px;
+  flex-shrink: 0;
 }
 .livePillDot {
   width: 7px;
@@ -126,6 +95,7 @@
   color: #818cf8;
   align-self: flex-start;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .readOnlyDot {
   width: 7px;
@@ -138,7 +108,7 @@
 /* ─── Stats ───────────────────────────────────────────────────────────────── */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 .statCard {
@@ -150,45 +120,54 @@
   flex-direction: column;
   gap: 4px;
   animation: fadeUp 0.4s ease both;
+  min-width: 0;
+  overflow: hidden;
 }
 .accent_orange {
   border-color: rgba(249, 115, 22, 0.25);
   background: var(--orange-dim);
 }
-.accent_orange .statValue {
+.accent_orange .statValue,
+.accent_orange .statIcon {
   color: var(--orange);
 }
 .accent_green {
   border-color: rgba(34, 197, 94, 0.2);
   background: var(--green-dim);
 }
-.accent_green .statValue {
+.accent_green .statValue,
+.accent_green .statIcon {
   color: var(--green);
 }
 .accent_indigo {
   border-color: rgba(129, 140, 248, 0.25);
   background: rgba(129, 140, 248, 0.07);
 }
-.accent_indigo .statValue {
+.accent_indigo .statValue,
+.accent_indigo .statIcon {
   color: #818cf8;
 }
 .accent_yellow {
   border-color: rgba(234, 179, 8, 0.25);
   background: rgba(234, 179, 8, 0.07);
 }
-.accent_yellow .statValue {
+.accent_yellow .statValue,
+.accent_yellow .statIcon {
   color: #eab308;
 }
 .statIcon {
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
 }
 .statValue {
   font-family: var(--font-display);
-  font-size: clamp(18px, 4vw, 26px);
+  font-size: clamp(16px, 4vw, 26px);
   font-weight: 900;
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 .statLabel {
   font-size: 10px;
@@ -199,6 +178,7 @@
 .statSub {
   font-size: 10px;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 
 /* ─── Status breakdown chips ──────────────────────────────────────────────── */
@@ -208,7 +188,7 @@
   flex-wrap: wrap;
 }
 .statusChip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
@@ -236,9 +216,6 @@
   border-radius: 10px;
   padding: 1px 7px;
 }
-
-.statusChip_yellow {
-}
 .statusChip_green {
   color: var(--green);
   border-color: rgba(34, 197, 94, 0.2);
@@ -259,7 +236,13 @@
   border-color: rgba(249, 115, 22, 0.2);
   background: var(--orange-dim);
 }
+.statusChip_yellow {
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.2);
+  background: rgba(234, 179, 8, 0.07);
+}
 .statusChip_dim {
+  color: var(--text-muted);
 }
 
 /* ─── Toolbar ─────────────────────────────────────────────────────────────── */
@@ -267,6 +250,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 .filterBar {
   display: flex;
@@ -275,13 +259,14 @@
   scrollbar-width: none;
   flex-wrap: nowrap;
   padding-bottom: 2px;
+  min-width: 0;
 }
 .filterBar::-webkit-scrollbar {
   display: none;
 }
 .filterTab {
   flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 6px 14px;
@@ -329,17 +314,20 @@
   border-radius: 10px;
   padding: 9px 14px;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .searchBar:focus-within {
   border-color: var(--orange);
 }
 .searchIcon {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
   color: var(--text-muted);
   flex-shrink: 0;
 }
 .searchInput {
   flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   outline: none;
@@ -354,8 +342,11 @@
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 13px;
   cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 .searchClear:hover {
   color: var(--text);
@@ -371,6 +362,7 @@
   border: 1px solid rgba(34, 197, 94, 0.25);
   border-radius: 12px;
   animation: fadeUp 0.3s ease;
+  flex-wrap: wrap;
 }
 .activeBannerDot {
   width: 10px;
@@ -385,6 +377,8 @@
   color: var(--green);
   margin: 0;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .activeBannerText strong {
   font-weight: 700;
@@ -412,7 +406,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
-  overflow-x: auto;
+  min-width: 0;
 }
 .tableHead {
   display: none;
@@ -420,19 +414,20 @@
 .tableBody {
   display: flex;
   flex-direction: column;
-  min-width: 680px;
+  min-width: 0;
 }
 
 .tableRow {
-  display: grid;
-  grid-template-columns: 2.4fr 1.5fr 1fr 0.8fr 1fr 0.7fr;
-  align-items: center;
-  gap: 10px;
-  padding: 13px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   position: relative;
   animation: fadeUp 0.3s ease both;
   transition: background 0.12s;
+  min-width: 0;
+  cursor: pointer;
 }
 .tableRow:last-child {
   border-bottom: none;
@@ -444,8 +439,10 @@
   background: rgba(34, 197, 94, 0.04);
   border-left: 3px solid var(--green);
 }
+.tableRowDeclined {
+  border-left: 3px solid var(--red);
+}
 
-/* Live indicator pulse */
 .activeIndicator {
   position: absolute;
   left: 0;
@@ -456,7 +453,6 @@
   animation: glow 2s infinite;
 }
 
-/* Participants cell */
 .tdParticipants {
   display: flex;
   align-items: center;
@@ -466,7 +462,7 @@
 .tdParticipantStack {
   display: flex;
   flex-direction: column;
-  gap: -4px;
+  flex-shrink: 0;
 }
 .tdParticipantStack .avatar {
   margin-top: -8px;
@@ -484,19 +480,14 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .tdReceiverName {
   font-size: 11px;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
-/* Booking cell */
 .tdBooking {
   display: flex;
   align-items: center;
@@ -512,16 +503,14 @@
 .tdBookingTitle {
   font-size: 12px;
   color: var(--text-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .tdNone {
   font-size: 12px;
   color: var(--text-muted);
 }
 
-/* Status cell */
 .tdStatus {
   display: flex;
   align-items: center;
@@ -536,9 +525,6 @@
   flex-shrink: 0;
 }
 
-/* Duration cell */
-.tdDuration {
-}
 .durationVal {
   font-size: 12px;
   font-weight: 700;
@@ -546,7 +532,6 @@
   font-family: monospace;
 }
 
-/* Date cell */
 .tdDate {
   display: flex;
   flex-direction: column;
@@ -561,7 +546,6 @@
   color: var(--text-muted);
 }
 
-/* Action */
 .tdActions {
   display: flex;
   justify-content: flex-end;
@@ -576,7 +560,7 @@
   font-weight: 700;
   cursor: pointer;
   font-family: var(--font-body);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   transition: all 0.15s;
@@ -598,7 +582,7 @@
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 .badge_yellow {
   background: rgba(234, 179, 8, 0.12);
@@ -631,7 +615,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
@@ -690,7 +674,10 @@
   text-align: center;
 }
 .emptyIcon {
-  font-size: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
   opacity: 0.4;
 }
 .emptyTitle {
@@ -698,11 +685,13 @@
   font-weight: 700;
   color: var(--text);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .emptySub {
   font-size: 12px;
   color: var(--text-muted);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .emptyReset {
   margin-top: 8px;
@@ -745,6 +734,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
+  flex-wrap: wrap;
 }
 .pageBtn {
   padding: 7px 18px;
@@ -756,7 +746,11 @@
   font-weight: 600;
   cursor: pointer;
   font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .pageBtn:hover:not(:disabled) {
   border-color: var(--orange);
@@ -769,6 +763,47 @@
 .pageInfo {
   font-size: 12px;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ─── Copy pill ──────────────────────────────────────────────────────────── */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+.dimText {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 /* ─── Modal ───────────────────────────────────────────────────────────────── */
@@ -782,6 +817,7 @@
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.15s ease;
+  padding: 0;
 }
 .modal {
   background: var(--bg-panel);
@@ -792,6 +828,7 @@
   max-height: 92vh;
   overflow-y: auto;
   animation: slideUp 0.22s ease;
+  box-sizing: border-box;
 }
 .modalHeader {
   display: flex;
@@ -814,7 +851,9 @@
   min-width: 0;
 }
 .modalIcon {
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--orange);
 }
 .modalTitle {
   font-family: var(--font-display);
@@ -822,6 +861,7 @@
   font-weight: 800;
   color: var(--text);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .modalClose {
   width: 30px;
@@ -830,9 +870,8 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-dim);
-  font-size: 13px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
@@ -858,6 +897,7 @@
   border-radius: 16px;
   padding: 20px 16px;
   gap: 0;
+  flex-wrap: wrap;
 }
 .heroParticipant {
   display: flex;
@@ -865,6 +905,7 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 .heroName {
   font-size: 14px;
@@ -872,6 +913,7 @@
   color: var(--text);
   margin: 0;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 .heroRole {
   font-size: 10px;
@@ -894,7 +936,9 @@
   background: var(--border);
 }
 .heroDividerIcon {
-  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--orange);
 }
 .heroDuration {
   font-size: 11px;
@@ -910,24 +954,30 @@
 /* Call stats row */
 .callStatsRow {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  flex-wrap: wrap;
 }
 .callStat {
   flex: 1;
   text-align: center;
   padding: 12px 8px;
+  min-width: 0;
 }
 .callStatVal {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 800;
   color: var(--text);
   margin-bottom: 3px;
+  overflow-wrap: anywhere;
+  justify-content: center;
 }
 .callStatLabel {
   display: block;
@@ -953,9 +1003,12 @@
   border: 1px solid var(--border);
   border-left: 4px solid var(--orange);
   border-radius: 10px;
+  flex-wrap: wrap;
 }
 .bookingCardIcon {
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 .bookingCardInfo {
@@ -967,9 +1020,7 @@
   font-weight: 700;
   color: var(--text);
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .bookingCardStatus {
   font-size: 10px;
@@ -1020,20 +1071,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
   border: 2px solid var(--border);
   background: var(--bg-card);
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  color: var(--text-muted);
 }
 .dotDone {
   border-color: var(--orange);
   background: var(--orange-dim);
+  color: var(--orange);
 }
 .dotNeg {
   border-color: var(--red);
   background: var(--red-dim);
+  color: var(--red);
 }
 .dotPending {
   opacity: 0.4;
@@ -1054,18 +1107,21 @@
 
 .timelineInfo {
   padding: 7px 0 24px 12px;
+  min-width: 0;
 }
 .timelineLabel {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
   display: block;
+  overflow-wrap: anywhere;
 }
 .timelineTime {
   font-size: 11px;
   color: var(--text-muted);
   display: block;
   margin-top: 2px;
+  overflow-wrap: anywhere;
 }
 .timelineDone .timelineLabel {
   color: var(--text);
@@ -1074,62 +1130,34 @@
   color: var(--red);
 }
 
-/* Call ID row */
-.callIdRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
+/* Identifiers grid */
+.idGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.idCell {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 9px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
-.callIdLabel {
-  font-size: 10px;
-  font-weight: 700;
+.idCellLabel {
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  flex-shrink: 0;
-}
-.callIdVal {
-  font-size: 11px;
-  font-family: monospace;
-  color: var(--text-dim);
-  word-break: break-all;
-}
-
-/* Participant pair (detail) */
-.participantPair {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.participant {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.participantInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.participantName {
-  font-size: 13px;
   font-weight: 700;
+}
+.idCellVal {
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text);
-}
-.participantRole {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-.participantArrow {
-  font-size: 18px;
+  overflow-wrap: anywhere;
 }
 
 /* Close button */
@@ -1180,21 +1208,6 @@
     transform: translateY(0);
   }
 }
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @keyframes shimmer {
   0% {
     background-position: -400px 0;
@@ -1222,18 +1235,23 @@
   }
 }
 
-/* ─── Tablet (640px+) ─────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 640px and up ── */
 @media (min-width: 640px) {
   .page {
     padding: 24px 20px 60px;
   }
   .statsGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .toolBar {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
   .searchBar {
     width: 300px;
@@ -1247,21 +1265,421 @@
     border-radius: 20px;
     max-width: 560px;
   }
+  .tableRow {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 2.4fr) minmax(0, 1.5fr) minmax(0, 1fr)
+      minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 0.7fr);
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+  }
 }
 
-/* ─── Desktop (900px+) ────────────────────────────────────────────────────── */
+/* ── 900px and up ── */
 @media (min-width: 900px) {
   .page {
     padding: 28px 0 60px;
   }
   .tableHead {
     display: grid;
-    grid-template-columns: 2.4fr 1.5fr 1fr 0.8fr 1fr 0.7fr;
+    grid-template-columns:
+      minmax(0, 2.4fr) minmax(0, 1.5fr) minmax(0, 1fr)
+      minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 0.7fr);
     padding: 9px 18px;
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
     border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    font-weight: 700;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+/* ── 540px and below ── */
+@media (max-width: 540px) {
+  .page {
+    padding: 16px 12px 48px;
+    gap: 12px;
+  }
+  .pageTitle {
+    font-size: 1.05rem;
+  }
+  .pageTitle > svg {
+    width: 15px;
+    height: 15px;
+  }
+  .pageSubtitle {
+    font-size: 12px;
+  }
+  .countPill {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+  .livePill {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+  .readOnlyTag {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  .statsGrid {
+    gap: 6px;
+  }
+  .statCard {
+    padding: 11px 12px;
+    border-radius: 10px;
+  }
+  .statIcon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 9px;
+  }
+
+  .statusChip {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+  .statusChip svg {
+    width: 10px;
+    height: 10px;
+  }
+  .statusChipCount {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .filterTab {
+    padding: 5px 12px;
+    font-size: 10px;
+  }
+  .tabCount {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+  .searchBar {
+    padding: 8px 12px;
+  }
+  .searchInput {
+    font-size: 13px;
+  }
+
+  .tableRow {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .tdInitiatorName {
+    font-size: 12.5px;
+  }
+  .tdReceiverName,
+  .tdBookingTitle,
+  .durationVal,
+  .tdDateMain {
+    font-size: 11.5px;
+  }
+  .tdDateSub {
+    font-size: 9.5px;
+  }
+  .badge {
+    font-size: 9px;
+    padding: 2px 7px;
+  }
+  .badge svg {
+    width: 9px;
+    height: 9px;
+  }
+  .viewBtn {
+    padding: 4px 10px;
+    font-size: 10.5px;
+  }
+
+  .modalBody {
+    padding: 16px;
+    gap: 12px;
+  }
+  .modalHeader {
+    padding: 14px 16px;
+  }
+  .modalTitle {
+    font-size: 15px;
+  }
+  .participantsHero {
+    padding: 16px 12px;
+  }
+  .heroDivider {
+    padding: 0 8px;
+  }
+  .heroName {
+    font-size: 13px;
+  }
+  .heroRole {
+    font-size: 9px;
+  }
+  .callStatVal {
+    font-size: 12.5px;
+  }
+  .callStatLabel {
+    font-size: 8.5px;
+  }
+  .bookingCard {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .bookingCardTitle {
+    font-size: 12.5px;
+  }
+  .idGrid {
+    grid-template-columns: 1fr;
+  }
+  .idCell {
+    padding: 8px 10px;
+  }
+  .idCellVal {
+    font-size: 11.5px;
+  }
+  .copyPill {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .copyPillBtn svg {
+    width: 10px;
+    height: 10px;
+  }
+  .timelineLabel {
+    font-size: 12.5px;
+  }
+  .timelineTime {
+    font-size: 10.5px;
+  }
+
+  .activeBanner {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .activeBannerText {
+    font-size: 12px;
+  }
+  .activeBannerBtn {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+}
+
+/* ── 420px and below ── */
+@media (max-width: 420px) {
+  .page {
+    padding: 14px 10px 44px;
+    gap: 10px;
+  }
+  .pageTitle {
+    font-size: 0.95rem;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .statCard {
+    padding: 9px 10px;
+    gap: 3px;
+  }
+  .statValue {
+    font-size: 15px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 8.5px;
+  }
+
+  .tableRow {
+    padding: 9px 10px;
+    gap: 5px;
+  }
+  .tdInitiatorName {
+    font-size: 12px;
+  }
+  .tdReceiverName,
+  .tdBookingTitle,
+  .durationVal,
+  .tdDateMain {
+    font-size: 11px;
+  }
+
+  .modalBody {
+    padding: 14px;
+    gap: 10px;
+  }
+  .modalHeader {
+    padding: 12px 14px;
+  }
+  .modalTitle {
+    font-size: 14px;
+  }
+  .participantsHero {
+    padding: 14px 10px;
+    gap: 8px;
+  }
+  .heroName {
+    font-size: 12.5px;
+  }
+  .callStat {
+    padding: 10px 6px;
+  }
+  .callStatVal {
+    font-size: 12px;
+  }
+  .bookingCard {
+    padding: 9px 10px;
+  }
+  .idCell {
+    padding: 7px 9px;
+  }
+  .idCellVal {
+    font-size: 11px;
+  }
+
+  .pager {
+    gap: 10px;
+  }
+  .pageBtn {
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+  .pageInfo {
+    font-size: 11px;
+  }
+}
+
+/* ── 340px and below ── */
+@media (max-width: 340px) {
+  .page {
+    padding: 12px 8px 40px;
+    gap: 8px;
+  }
+  .pageTitle {
+    font-size: 0.9rem;
+  }
+  .countPill {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+  .livePill {
+    font-size: 9.5px;
+    padding: 2px 6px;
+  }
+
+  .statsGrid {
+    gap: 4px;
+  }
+  .statCard {
+    padding: 8px;
+  }
+  .statValue {
+    font-size: 14px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 8px;
+  }
+  .statIcon svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .tableRow {
+    padding: 8px 9px;
+    gap: 4px;
+  }
+  .tdInitiatorName {
+    font-size: 11.5px;
+  }
+  .tdReceiverName,
+  .tdBookingTitle,
+  .durationVal,
+  .tdDateMain {
+    font-size: 10.5px;
+  }
+  .tdDateSub {
+    font-size: 9px;
+  }
+  .badge {
+    font-size: 8.5px;
+    padding: 2px 6px;
+  }
+
+  .modalBody {
+    padding: 12px;
+    gap: 8px;
+  }
+  .modalHeader {
+    padding: 10px 12px;
+  }
+  .modalTitle {
+    font-size: 13px;
+  }
+  .heroName {
+    font-size: 11.5px;
+  }
+  .heroDivider {
+    padding: 0 4px;
+  }
+  .callStatVal {
+    font-size: 11px;
+  }
+  .callStatLabel {
+    font-size: 8px;
+  }
+  .bookingCardTitle {
+    font-size: 11.5px;
+  }
+  .bookingCardId {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  .idCell {
+    padding: 6px 8px;
+  }
+  .idCellLabel {
+    font-size: 8px;
+  }
+  .idCellVal {
+    font-size: 10.5px;
+  }
+  .copyPill {
+    font-size: 8.5px;
+    padding: 1px 4px;
+  }
+  .copyPillBtn svg {
+    width: 9px;
+    height: 9px;
+  }
+  .timelineLabel {
+    font-size: 11.5px;
+  }
+  .timelineTime {
+    font-size: 10px;
+  }
+
+  .pageBtn {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+  .pageInfo {
+    font-size: 10px;
   }
 }
