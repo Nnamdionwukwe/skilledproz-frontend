@@ -1,6 +1,6 @@
 // src/pages/admin/AdminSurveys.jsx
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
@@ -20,16 +20,12 @@ import {
   FiDownload,
   FiUser,
   FiMail,
-  FiMapPin,
-  FiPhone as FiPhoneIcon,
-  FiStar,
-  FiMessageSquare,
   FiTag,
   FiArrowLeft,
   FiArrowRight,
 } from "react-icons/fi";
 
-import { FaStar, FaRegStar } from "react-icons/fa";
+import { FaStar } from "react-icons/fa";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -435,6 +431,10 @@ export default function AdminSurveys() {
   const [statusModal, setStatusModal] = useState(null);
   const [toast, setToast] = useState(null);
 
+  // Debounce timers and one-shot guards
+  const searchTimer = useRef(null);
+  const statsFetchedRef = useRef(false);
+
   function showToast(msg, type = "success") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -448,15 +448,21 @@ export default function AdminSurveys() {
     setSearchParams(p);
   }
 
-  // ── Fetch Stats ──
+  // ── Fetch Stats (once on mount, then only on explicit refresh) ──
   const fetchStats = useCallback(() => {
     api
       .get("/survey/admin/stats")
       .then((r) => setStats(r.data.data))
-      .catch(() => {});
+      .catch((err) => {
+        if (err?.response?.status === 429) {
+          showToast("Too many requests — please wait a moment.", "error");
+        }
+      });
   }, []);
 
   useEffect(() => {
+    if (statsFetchedRef.current) return;
+    statsFetchedRef.current = true;
     fetchStats();
   }, [fetchStats]);
 
@@ -476,13 +482,28 @@ export default function AdminSurveys() {
         setTotal(d.pagination?.total || 0);
         setPages(d.pagination?.pages || 1);
       })
-      .catch(() => showToast("Failed to load responses", "error"))
+      .catch((err) => {
+        if (err?.response?.status === 429) {
+          showToast("Too many requests — please wait a moment.", "error");
+        } else {
+          showToast("Failed to load responses", "error");
+        }
+      })
       .finally(() => setLoading(false));
   }, [search, page, status, role]);
 
   useEffect(() => {
     fetchResponses();
   }, [fetchResponses]);
+
+  // ── Debounced search input ──
+  function handleSearchChange(e) {
+    const value = e.target.value;
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setParam("search", value);
+    }, 400);
+  }
 
   // ── Export CSV ──
   async function handleExportCSV() {
@@ -576,8 +597,8 @@ export default function AdminSurveys() {
             <input
               className={styles.searchInput}
               placeholder="Search by name, email, or phone…"
-              value={search}
-              onChange={(e) => setParam("search", e.target.value)}
+              defaultValue={search}
+              onChange={handleSearchChange}
             />
             {search && (
               <button
