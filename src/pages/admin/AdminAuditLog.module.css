@@ -1,23 +1,35 @@
 /* AdminAuditLog.module.css
    Aesthetic: Terminal / forensic — monospace accents, tight grids,
-   clinical precision. Think security operations center meets editorial.
-   Dark background, high-contrast type, colour only for severity signals.
+   clinical precision. Dark background, high-contrast type, colour only
+   for severity signals.
+
+   Structure:
+     1. Page shell & header
+     2. View toggle
+     3. Stats view (KPIs, panels, charts, bars, admins, activity feed)
+     4. Log view (filters, table, pagination)
+     5. Badges, avatars, pills
+     6. Detail drawer
+     7. Purge modal
+     8. Keyframes
+     9. Responsive tiers (900 · 768 · 640 · 540 · 420 · 340)
 */
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   1. PAGE SHELL & HEADER
+   ───────────────────────────────────────────────────────────── */
 .page {
   padding: 20px 16px 64px;
   max-width: 1300px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-sizing: border-box;
   animation: fadeUp 0.3s ease both;
 }
 
-/* ── Page header ─────────────────────────────────────────────────────────── */
 .pageHeader {
   display: flex;
   align-items: flex-start;
@@ -55,6 +67,7 @@
   color: var(--text-dim);
   margin: 4px 0 0;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .countPill {
   font-size: 11px;
@@ -99,7 +112,9 @@
   background: var(--red-dim);
 }
 
-/* ── View toggle ─────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   2. VIEW TOGGLE
+   ───────────────────────────────────────────────────────────── */
 .viewToggle {
   display: flex;
   gap: 5px;
@@ -141,12 +156,13 @@
   border: 1px solid var(--border);
 }
 
-/* ── Stats view ──────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   3. STATS VIEW
+   ───────────────────────────────────────────────────────────── */
 .statsView {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  animation: fadeUp 0.25s ease both;
 }
 
 .statsGrid {
@@ -224,14 +240,14 @@
   color: var(--text-muted);
 }
 
-/* ── Two-col stats layout ────────────────────────────────────────────────── */
+/* Two-col layout inside stats view */
 .statsTwoCol {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
 }
 
-/* ── Panel ───────────────────────────────────────────────────────────────── */
+/* Panel */
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -255,7 +271,69 @@
   gap: 6px;
 }
 
-/* ── Severity bars ───────────────────────────────────────────────────────── */
+/* ── Daily activity chart ──────────────────────────────────── */
+.chartWrap {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.chartTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chartBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 4px;
+}
+.chartBarCol {
+  flex: 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.chartBarInner {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: 3px 3px 0 0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.chartBarFill {
+  width: 100%;
+  background: var(--orange);
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s ease;
+  min-height: 2px;
+}
+.chartBarDate {
+  font-size: 8px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+/* ── Severity bars ─────────────────────────────────────────── */
 .severityBars {
   display: flex;
   flex-direction: column;
@@ -299,7 +377,7 @@
   min-width: 2px;
 }
 
-/* ── Stat bars (used by `StatBars`) ─────────────────────────────────────── */
+/* ── By-target bars (StatBars) ─────────────────────────────── */
 .statBars {
   display: flex;
   flex-direction: column;
@@ -342,7 +420,7 @@
   white-space: nowrap;
 }
 
-/* ── Top actions ─────────────────────────────────────────────────────────── */
+/* ── Top actions ───────────────────────────────────────────── */
 .topActions {
   display: flex;
   flex-direction: column;
@@ -350,7 +428,7 @@
 }
 .topActionRow {
   display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) minmax(60px, 1.5fr) auto;
+  grid-template-columns: 12px minmax(0, 1fr) minmax(60px, 2fr) auto;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -383,20 +461,136 @@
   color: var(--text);
   font-family: monospace;
   flex-shrink: 0;
-  white-space: nowrap;
   text-align: right;
+  white-space: nowrap;
 }
 
-/* ── Severity dot ─────────────────────────────────────────────────────────── */
-.severityDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+/* ── Most active admins list ───────────────────────────────── */
+.adminList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.adminRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.adminRow:last-child {
+  border-bottom: none;
+}
+.adminRank {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-family: monospace;
   flex-shrink: 0;
-  display: inline-block;
+  width: 24px;
+}
+.adminInfo {
+  flex: 1;
+  min-width: 0;
+}
+.adminName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.adminEmail {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.adminCount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.adminCountVal {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--orange);
+  font-family: var(--font-display);
+}
+.adminCountLabel {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-/* ── Filters ─────────────────────────────────────────────────────────────── */
+/* ── Recent activity feed ──────────────────────────────────── */
+.activityFeed {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.feedTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.feedItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  animation: fadeUp 0.3s ease both;
+  min-width: 0;
+}
+.feedItem:last-child {
+  border-bottom: none;
+}
+.feedBody {
+  flex: 1;
+  min-width: 0;
+}
+.feedAction {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feedAdmin {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feedTime {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. LOG VIEW (filters, table, pagination)
+   ───────────────────────────────────────────────────────────── */
 .filtersWrap {
   display: flex;
   flex-direction: column;
@@ -443,7 +637,6 @@
   padding: 2px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   flex-shrink: 0;
 }
 .searchClear:hover {
@@ -452,17 +645,17 @@
 
 .filterRow {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   align-items: center;
 }
 .select {
-  padding: 7px 12px;
+  padding: 7px 10px;
   border-radius: 9px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text);
-  font-size: 11.5px;
+  font-size: 11px;
   font-family: var(--font-body);
   outline: none;
   cursor: pointer;
@@ -485,7 +678,7 @@
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-dim);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   font-family: var(--font-body);
@@ -502,7 +695,7 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
   background: var(--red-dim);
   color: var(--red);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   font-family: var(--font-body);
@@ -520,7 +713,7 @@
   font-family: monospace;
 }
 
-/* ── Table ───────────────────────────────────────────────────────────────── */
+/* ── Table ─────────────────────────────────────────────────── */
 .tableWrap {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -536,7 +729,6 @@
   flex-direction: column;
   min-width: 0;
 }
-
 .tableRow {
   display: flex;
   flex-direction: column;
@@ -580,6 +772,7 @@
 }
 .tdAdminInfo {
   min-width: 0;
+  flex: 1;
 }
 .tdAdminName {
   font-size: 12px;
@@ -636,7 +829,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Severity / Result / Time cells */
+/* Severity / Result / Time */
 .tdSeverity,
 .tdResult {
   display: flex;
@@ -660,110 +853,16 @@
   white-space: nowrap;
 }
 
-/* ── Badges ──────────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-.badge_green {
-  background: var(--green-dim);
-  color: var(--green);
-}
-.badge_red {
-  background: var(--red-dim);
-  color: var(--red);
-}
-.badge_yellow {
-  background: rgba(234, 179, 8, 0.12);
-  color: #eab308;
-}
-.badge_blue {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
-}
-.badge_dim {
-  background: var(--bg-card);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-}
-
-/* ── Avatar ──────────────────────────────────────────────────────────────── */
-.avatar {
-  width: 32px;
-  height: 32px;
+/* Severity dot */
+.severityDot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--orange-dim);
-  border: 1px solid rgba(249, 115, 22, 0.2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--orange);
-  overflow: hidden;
   flex-shrink: 0;
-}
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.avatarLg {
-  width: 42px;
-  height: 42px;
-  font-size: 14px;
+  display: inline-block;
 }
 
-/* ── Copy pill ───────────────────────────────────────────────────────────── */
-.copyPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 10px;
-  font-family: monospace;
-  color: var(--text-dim);
-  max-width: 100%;
-  min-width: 0;
-  width: fit-content;
-}
-.copyPillText {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.copyPillBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 0;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.copyPillBtn:hover {
-  color: var(--orange);
-}
-.dimText {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* ── Empty ───────────────────────────────────────────────────────────────── */
+/* ── Empty state ───────────────────────────────────────────── */
 .empty {
   display: flex;
   flex-direction: column;
@@ -811,7 +910,7 @@
   color: var(--orange);
 }
 
-/* ── Skeleton ────────────────────────────────────────────────────────────── */
+/* ── Skeletons ─────────────────────────────────────────────── */
 .skRow {
   height: 58px;
   border-bottom: 1px solid var(--border);
@@ -852,7 +951,7 @@
   animation: shimmer 1.4s infinite;
 }
 
-/* ── Pagination ──────────────────────────────────────────────────────────── */
+/* ── Pagination ────────────────────────────────────────────── */
 .pager {
   display: flex;
   align-items: center;
@@ -891,7 +990,113 @@
   white-space: nowrap;
 }
 
-/* ── Backdrop ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   5. BADGES · AVATAR
+   ───────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.badge_green {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.badge_red {
+  background: var(--red-dim);
+  color: var(--red);
+}
+.badge_yellow {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+}
+.badge_blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+.badge_dim {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatarLg {
+  width: 42px;
+  height: 42px;
+  font-size: 14px;
+}
+
+/* Copy pill */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+  width: fit-content;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+.dimText {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6. DETAIL DRAWER
+   ───────────────────────────────────────────────────────────── */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -905,8 +1110,6 @@
   animation: fadeIn 0.2s ease;
   padding: 0;
 }
-
-/* ── Detail drawer ───────────────────────────────────────────────────────── */
 .drawer {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -970,7 +1173,6 @@
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-muted);
-  font-size: 14px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1110,7 +1312,7 @@
   letter-spacing: 0.04em;
 }
 
-/* Description / Meta boxes */
+/* Description / Metadata boxes */
 .descBox {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1137,7 +1339,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Diff */
+/* Before / After diff */
 .diffWrap {
   display: grid;
   grid-template-columns: 1fr;
@@ -1166,7 +1368,7 @@
   font-family: monospace;
   color: var(--text-dim);
   overflow: auto;
-  max-height: 200px;
+  max-height: 240px;
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
@@ -1211,7 +1413,9 @@
   line-height: 1.5;
 }
 
-/* ── Confirm / Purge modal ───────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   7. PURGE MODAL
+   ───────────────────────────────────────────────────────────── */
 .confirmModal {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -1232,7 +1436,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #eab308;
+  color: var(--red);
 }
 .confirmTitle {
   font-size: 17px;
@@ -1249,14 +1453,64 @@
   max-width: 280px;
   overflow-wrap: anywhere;
 }
+.inlineError {
+  font-size: 12px;
+  color: var(--red);
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.purgeInput {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.purgeLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.purgeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.purgeDaysInput {
+  flex: 1;
+  padding: 9px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: monospace;
+  outline: none;
+  transition: border-color 0.15s;
+  text-align: center;
+  min-width: 0;
+}
+.purgeDaysInput:focus {
+  border-color: var(--orange);
+}
+.purgeDaysUnit {
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 .confirmActions {
   display: flex;
   gap: 10px;
   width: 100%;
   margin-top: 6px;
+  flex-wrap: wrap;
 }
 .btnGhost {
   flex: 1;
+  min-width: 100px;
   padding: 11px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -1276,8 +1530,45 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.btnRed {
+  flex: 1;
+  min-width: 100px;
+  padding: 11px;
+  border: none;
+  border-radius: 10px;
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+.btnRed:hover:not(:disabled) {
+  opacity: 0.88;
+}
+.btnRed:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
-/* ── Keyframes ───────────────────────────────────────────────────────────── */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  display: inline-block;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   8. KEYFRAMES
+   ───────────────────────────────────────────────────────────── */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -1324,15 +1615,20 @@
     background-position: 400px 0;
   }
 }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────────────────────
+   9. RESPONSIVE
+   ───────────────────────────────────────────────────────────── */
 
-/* ── 640px and up ── */
-@media (min-width: 640px) {
+/* ── 900px and up — desktop table ──────────────────────────── */
+@media (min-width: 900px) {
   .page {
-    padding: 24px 20px 64px;
+    padding: 28px 0 64px;
   }
   .statsGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1340,8 +1636,29 @@
   .statsTwoCol {
     grid-template-columns: 1fr 1fr;
   }
-  .diffWrap {
-    grid-template-columns: 1fr 1fr;
+  .tableRow {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.8fr)
+      minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 0.8fr);
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+  }
+  .tableHead {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.8fr)
+      minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 0.8fr);
+    gap: 10px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: var(--bg-card);
   }
   .backdrop {
     align-items: center;
@@ -1355,43 +1672,35 @@
   .drawerHandle {
     display: none;
   }
-  .tableRow {
-    display: grid;
-    grid-template-columns:
-      minmax(0, 0.7fr) minmax(0, 1.5fr) minmax(0, 1.8fr)
-      minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 0.8fr);
-    align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
-  }
-}
-
-/* ── 900px and up ── */
-@media (min-width: 900px) {
-  .page {
-    padding: 28px 0 64px;
-  }
-  .tableHead {
-    display: grid;
-    grid-template-columns:
-      minmax(0, 0.7fr) minmax(0, 1.5fr) minmax(0, 1.8fr)
-      minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 0.8fr);
-    gap: 10px;
-    padding: 10px 18px;
-    border-bottom: 1px solid var(--border);
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-    background: var(--bg-card);
+  .diffWrap {
+    grid-template-columns: 1fr 1fr;
   }
   .detailGrid {
     grid-template-columns: repeat(3, 1fr);
   }
+  .topActionLabel {
+    width: auto;
+  }
 }
 
-/* ── 540px and below ── */
+/* ── 768px and up — tablet landscape ───────────────────────── */
+@media (min-width: 768px) {
+  .page {
+    padding: 24px 20px 60px;
+  }
+  .statsGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── 640px and up ──────────────────────────────────────────── */
+@media (min-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── 540px and below ───────────────────────────────────────── */
 @media (max-width: 540px) {
   .page {
     padding: 16px 12px 48px;
@@ -1408,7 +1717,7 @@
     font-size: 12px;
   }
   .countPill {
-    font-size: 11px;
+    font-size: 10px;
     padding: 2px 8px;
   }
   .headerActions {
@@ -1445,8 +1754,7 @@
   .statValue {
     font-size: 16px;
   }
-  .statLabel,
-  .statSub {
+  .statLabel {
     font-size: 9px;
   }
 
@@ -1455,6 +1763,15 @@
   }
   .panelTitle {
     font-size: 11px;
+  }
+  .chartWrap {
+    padding: 12px;
+  }
+  .chartTitle {
+    font-size: 11px;
+  }
+  .chartBars {
+    height: 80px;
   }
 
   .statBarRow {
@@ -1536,9 +1853,12 @@
   .confirmModal {
     padding: 22px 18px;
   }
+  .confirmTitle {
+    font-size: 15px;
+  }
 }
 
-/* ── 420px and below ── */
+/* ── 420px and below ───────────────────────────────────────── */
 @media (max-width: 420px) {
   .page {
     padding: 14px 10px 44px;
@@ -1568,10 +1888,9 @@
     border-radius: 10px;
   }
   .statValue {
-    font-size: 14px;
+    font-size: 15px;
   }
-  .statLabel,
-  .statSub {
+  .statLabel {
     font-size: 8.5px;
   }
 
@@ -1620,13 +1939,33 @@
     width: 9px;
     height: 9px;
   }
+  .diffWrap {
+    grid-template-columns: 1fr;
+  }
   .diffPre {
     font-size: 10px;
     padding: 8px 10px;
   }
+
+  .feedItem {
+    gap: 8px;
+  }
+  .feedAction {
+    font-size: 11.5px;
+  }
+  .feedAdmin {
+    font-size: 10.5px;
+  }
+
+  .adminName {
+    font-size: 12.5px;
+  }
+  .adminEmail {
+    font-size: 10.5px;
+  }
 }
 
-/* ── 340px and below ── */
+/* ── 340px and below ───────────────────────────────────────── */
 @media (max-width: 340px) {
   .page {
     padding: 12px 8px 40px;
@@ -1649,8 +1988,7 @@
   .statValue {
     font-size: 13px;
   }
-  .statLabel,
-  .statSub {
+  .statLabel {
     font-size: 8px;
   }
 
@@ -1705,5 +2043,12 @@
   }
   .pageInfo {
     font-size: 11px;
+  }
+
+  .chartBarCol {
+    flex: 0 0 14px;
+  }
+  .chartBarDate {
+    font-size: 7px;
   }
 }

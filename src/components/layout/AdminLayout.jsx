@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -130,12 +130,33 @@ export default function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState(null);
 
+  // Refs used to auto-scroll the sidebar so the active item is always visible.
+  const navRef = useRef(null);
+  const activeRef = useRef(null);
+
   useEffect(() => {
     api
       .get("/admin/stats")
       .then((r) => setStats(r.data.data?.overview))
       .catch(() => {});
   }, []);
+
+  // Scroll the active nav item into view whenever the route changes.
+  useEffect(() => {
+    if (!activeRef.current || !navRef.current) return;
+    // Small delay lets the sidebar finish painting (especially on mobile open).
+    const t = setTimeout(() => {
+      try {
+        activeRef.current.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
+      } catch {
+        /* older browsers — no-op */
+      }
+    }, 50);
+    return () => clearTimeout(t);
+  }, [location.pathname, open]);
 
   const initials = user
     ? `${user.firstName?.[0]}${user.lastName?.[0]}`.toUpperCase()
@@ -192,17 +213,19 @@ export default function AdminLayout({ children }) {
           )}
         </div>
 
-        <nav className={styles.nav}>
+        <nav className={styles.nav} ref={navRef}>
           {NAV.map((group) => (
             <div key={group.group} className={styles.navGroup}>
               <div className={styles.navGroupLabel}>{group.group}</div>
               {group.items.map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.path;
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`${styles.navItem} ${location.pathname === item.path ? styles.navItemActive : ""}`}
+                    ref={isActive ? activeRef : undefined}
+                    className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                     onClick={() => setOpen(false)}
                   >
                     <span className={styles.navIcon}>

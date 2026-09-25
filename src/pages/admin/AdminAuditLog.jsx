@@ -1,18 +1,18 @@
 // src/pages/admin/AdminAuditLog.jsx
 // Full admin audit log dashboard.
 //
-// Endpoints (mounted at /api/admin/logs/*):
-//   GET /admin/logs                          list (paginated, filterable)
-//   GET /admin/logs/:id                      single log
-//   GET /admin/logs/stats/summary            stats summary
-//   GET /admin/logs/admin/:adminId           logs by a specific admin
-//   GET /admin/logs/target/:targetType/:targetId
-//   GET /admin/logs/export                   JSON export (we convert to CSV)
+// Endpoints (mounted at /api/audit/*):
+//   GET    /audit                         list (paginated, filterable, incl. severity)
+//   GET    /audit/stats?days=30           stats (bySeverity, byAction, dailyActivity, topAdmins, recentActivity)
+//   GET    /audit/me                      current admin's own trail
+//   GET    /audit/admins                  all admins with audit entries
+//   GET    /audit/target/:type/:id        all logs affecting one record
+//   GET    /audit/:id                     single log + live target state
+//   GET    /audit/export                  CSV download (server-built)
+//   DELETE /audit/purge                   purge old SUCCESS entries
 //
-// NOTE: The backend has NO purge endpoint. The purge modal is kept but
-// disabled with a clear explanation — remove it entirely if you prefer.
-//
-// Emojis removed. Every field the backend sends is rendered. Fully responsive.
+// Every field the backend sends is rendered. Lucide icons throughout.
+// Fully responsive. Uses platform AlertModal + ConfirmationModal.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -34,24 +34,22 @@ import {
   Copy,
   Check,
   Activity,
-  Terminal,
   Clock,
   RefreshCw,
   Inbox,
+  Calendar,
 } from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import AlertModal from "../../components/ui/AlertModal";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import api from "../../lib/api";
 import s from "./AdminAuditLog.module.css";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 //
-// The backend does NOT send a `severity` field. We derive it from
-// action + result:
-//   - FAILED result → "critical"
-//   - action contains "BAN" | "DELETE" | "PURGE" | "REFUND" | "REVERS" → "warning"
-//   - RESULT === "SUCCESS" and admin-targeted write → "success"
-//   - everything else → "info"
+// The backend already sends `severity` (via enrichLog) and `actionLabel`
+// on every log row. We only keep a metadata map so the UI has labels and
+// colours for each severity value.
 //
 const SEVERITY_META = {
   critical: {
@@ -139,90 +137,31 @@ async function copyText(text) {
     return false;
   }
 }
-// Humanise an ACTION enum: USER_BANNED → "User Banned"
-function humanizeAction(action) {
-  if (!action) return "—";
-  return action
+// The backend sends `log.ref` (e.g. "#ABC12345"); fall back to a local one.
+function shortRef(log) {
+  if (!log) return "—";
+  if (log.ref) return log.ref;
+  if (log.id) return `#${log.id.slice(-8).toUpperCase()}`;
+  return "—";
+}
+// Prefer backend-computed label; fall back to humanising the action key.
+function actionLabelOf(log) {
+  if (!log) return "—";
+  if (log.actionLabel) return log.actionLabel;
+  if (!log.action) return "—";
+  return log.action
     .split("_")
     .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
     .join(" ");
 }
-// Derive a severity from the raw action + result. See note above.
-function deriveSeverity(log) {
+function severityOf(log) {
+  if (!log) return "info";
+  if (log.severity) return log.severity;
   if (log.result === "FAILED" || log.errorMessage) return "critical";
-  const a = (log.action || "").toUpperCase();
-  if (
-    a.includes("BAN") ||
-    a.includes("DELETE") ||
-    a.includes("PURGE") ||
-    a.includes("REFUND") ||
-    a.includes("REVERS") ||
-    a.includes("RESOLVE") ||
-    a.includes("REJECT")
-  )
-    return "warning";
-  if (log.result === "SUCCESS") return "success";
   return "info";
 }
-// Build a short, display-friendly reference from the UUID
-function shortRef(id) {
-  if (!id) return "—";
-  return `AL-${id.slice(-8).toUpperCase()}`;
-}
-// Convert an array of logs to CSV and trigger a browser download
-function downloadCsv(logs) {
-  const cols = [
-    "id",
-    "createdAt",
-    "adminId",
-    "adminEmail",
-    "action",
-    "targetType",
-    "targetId",
-    "result",
-    "description",
-    "errorMessage",
-    "ipAddress",
-    "userAgent",
-  ];
-  const esc = (v) => {
-    if (v == null) return "";
-    const s = String(v).replace(/"/g, '""');
-    return /[",\n]/.test(s) ? `"${s}"` : s;
-  };
-  const rows = [cols.join(",")];
-  for (const l of logs) {
-    rows.push(
-      [
-        l.id,
-        l.createdAt,
-        l.adminId,
-        l.admin?.email,
-        l.action,
-        l.targetType,
-        l.targetId,
-        l.result,
-        l.description,
-        l.errorMessage,
-        l.ipAddress,
-        l.userAgent,
-      ]
-        .map(esc)
-        .join(","),
-    );
-  }
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// ─── Atoms ────────────────────────────────────────────────────────────────────
 function Avatar({ user, size = "sm" }) {
   return (
     <div className={`${s.avatar} ${size === "lg" ? s.avatarLg : ""}`}>
@@ -235,7 +174,6 @@ function Avatar({ user, size = "sm" }) {
   );
 }
 
-// ─── Copy Pill ────────────────────────────────────────────────────────────────
 function CopyPill({ text, label }) {
   const [ok, setOk] = useState(false);
   if (!text) return <span className={s.dimText}>—</span>;
@@ -260,7 +198,6 @@ function CopyPill({ text, label }) {
   );
 }
 
-// ─── Severity Dot / Badge ─────────────────────────────────────────────────────
 function SeverityDot({ severity }) {
   const m = SEVERITY_META[severity] ?? SEVERITY_META.info;
   return (
@@ -288,7 +225,6 @@ function ResultBadge({ result }) {
   return <span className={`${s.badge} ${s[`badge_${m.cls}`]}`}>{m.label}</span>;
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon: Icon, label, value, sub, accent, delay = 0 }) {
   return (
     <div
@@ -303,7 +239,6 @@ function StatCard({ icon: Icon, label, value, sub, accent, delay = 0 }) {
   );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonRows({ n = LIMIT }) {
   return (
     <>
@@ -314,7 +249,6 @@ function SkeletonRows({ n = LIMIT }) {
   );
 }
 
-// ─── Stat sub-components ──────────────────────────────────────────────────────
 function StatBars({ items, max }) {
   if (!items?.length) return null;
   const top = max ?? items[0].count ?? 1;
@@ -341,10 +275,61 @@ function StatBars({ items, max }) {
   );
 }
 
+// Daily activity bar chart (30 days by default)
+function DailyChart({ data }) {
+  if (!data?.length) return null;
+  const max = Math.max(...data.map((d) => d.total), 1);
+  // Show the last 14 bars on mobile, all on desktop. Let CSS handle the rest
+  // by just rendering all and letting the parent scroll horizontally.
+  return (
+    <div className={s.chartWrap}>
+      <p className={s.chartTitle}>
+        <Calendar size={12} /> Daily activity (last {data.length} days)
+      </p>
+      <div className={s.chartBars}>
+        {data.map((d) => (
+          <div
+            key={d.date}
+            className={s.chartBarCol}
+            title={`${d.date}: ${d.total} (${d.success} success, ${d.failed} failed)`}
+          >
+            <div className={s.chartBarInner}>
+              <div
+                className={s.chartBarFill}
+                style={{ height: `${Math.round((d.total / max) * 100)}%` }}
+              />
+            </div>
+            <span className={s.chartBarDate}>{d.date.slice(5)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Detail Drawer ────────────────────────────────────────────────────────────
-function DetailDrawer({ log, onClose }) {
-  const sev = SEVERITY_META[deriveSeverity(log)] ?? SEVERITY_META.info;
-  const SeveIcon = sev.Icon;
+function DetailDrawer({ logId, onClose }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!logId) return;
+    setLoading(true);
+    setError("");
+    api
+      .get(`/audit/${logId}`)
+      .then((r) => setData(r.data.data))
+      .catch(() => setError("Failed to load log detail."))
+      .finally(() => setLoading(false));
+  }, [logId]);
+
+  const log = data?.log;
+  const targetCurrent = data?.targetCurrent;
+  const sev = log
+    ? (SEVERITY_META[severityOf(log)] ?? SEVERITY_META.info)
+    : null;
+  const SeveIcon = sev?.Icon;
 
   return (
     <div className={s.backdrop} onClick={onClose}>
@@ -353,10 +338,14 @@ function DetailDrawer({ log, onClose }) {
         <div className={s.drawerHeader}>
           <div>
             <p className={s.drawerEyebrow}>Audit Entry</p>
-            <h3 className={s.drawerTitle}>{shortRef(log.id)}</h3>
-            <div className={s.drawerIds}>
-              <CopyPill text={log.id} label={`id ${log.id.slice(0, 12)}…`} />
-            </div>
+            <h3 className={s.drawerTitle}>
+              {log ? shortRef(log) : loading ? "Loading…" : "—"}
+            </h3>
+            {log?.id && (
+              <div className={s.drawerIds}>
+                <CopyPill text={log.id} label={`id ${log.id.slice(0, 12)}…`} />
+              </div>
+            )}
           </div>
           <button
             className={s.drawerClose}
@@ -366,132 +355,168 @@ function DetailDrawer({ log, onClose }) {
             <X size={16} />
           </button>
         </div>
-        <div className={s.drawerBody}>
-          {/* Severity hero */}
-          <div
-            className={s.drawerHero}
-            style={{
-              borderColor: sev.dot + "44",
-              background: sev.dot + "0d",
-            }}
-          >
-            <span
-              className={s.drawerHeroIcon}
-              style={{ background: sev.dot + "22", color: sev.dot }}
-            >
-              <SeveIcon size={16} />
-            </span>
-            <div className={s.drawerHeroText}>
-              <p className={s.drawerHeroAction}>{humanizeAction(log.action)}</p>
-              <p className={s.drawerHeroSev} style={{ color: sev.dot }}>
-                {sev.label}
-              </p>
-            </div>
-            <ResultBadge result={log.result} />
+
+        {loading ? (
+          <div className={s.drawerBody}>
+            <div className={s.skPanel} />
+            <div className={s.skTier} />
+            <div className={s.skTier} />
           </div>
-
-          {/* Admin */}
-          <div className={s.drawerSection}>
-            <p className={s.drawerSectionTitle}>Performed by</p>
-            <div className={s.drawerAdminCard}>
-              <Avatar user={log.admin} size="lg" />
-              <div className={s.drawerAdminInfo}>
-                <p className={s.drawerAdminName}>
-                  {log.admin?.firstName || "—"} {log.admin?.lastName || ""}
-                </p>
-                {log.admin?.email && (
-                  <p className={s.drawerAdminEmail}>{log.admin.email}</p>
-                )}
-                <div className={s.drawerIds}>
-                  {log.adminId && (
-                    <CopyPill
-                      text={log.adminId}
-                      label={`admin ${log.adminId.slice(0, 10)}…`}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Detail grid */}
-          <div className={s.detailGrid}>
-            <Cell label="Action" value={log.action} mono />
-            <Cell label="Target Type" value={log.targetType} />
-            <Cell
-              label="Target ID"
-              value={
-                log.targetId ? (
-                  <CopyPill
-                    text={log.targetId}
-                    label={log.targetId.slice(-12).toUpperCase()}
-                  />
-                ) : (
-                  "—"
-                )
-              }
-            />
-            <Cell label="Result" value={<ResultBadge result={log.result} />} />
-            <Cell label="Date" value={fmtDate(log.createdAt)} />
-            <Cell label="Time" value={fmtTime(log.createdAt)} />
-            <Cell label="IP Address" value={log.ipAddress || "—"} mono />
-            <Cell
-              label="User Agent"
-              value={log.userAgent ? log.userAgent.slice(0, 60) + "…" : "—"}
-              mono
-            />
-          </div>
-
-          {/* Description */}
-          {log.description && (
-            <div className={s.descBox}>
-              <p className={s.descLabel}>Description</p>
-              <p className={s.descText}>{log.description}</p>
-            </div>
-          )}
-
-          {/* Before / After diff */}
-          {(log.before || log.after) && (
-            <div className={s.diffWrap}>
-              {log.before && (
-                <div className={s.diffPane}>
-                  <p className={s.diffPaneLabel}>Before</p>
-                  <pre className={`${s.diffPre} ${s.diffBefore}`}>
-                    {JSON.stringify(log.before, null, 2)}
-                  </pre>
-                </div>
-              )}
-              {log.after && (
-                <div className={s.diffPane}>
-                  <p className={s.diffPaneLabel}>After</p>
-                  <pre className={`${s.diffPre} ${s.diffAfter}`}>
-                    {JSON.stringify(log.after, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Error */}
-          {log.errorMessage && (
+        ) : error ? (
+          <div className={s.drawerBody}>
             <div className={s.errorBox}>
               <p className={s.errorBoxLabel}>
                 <AlertTriangle size={12} /> Error
               </p>
-              <p className={s.errorBoxText}>{log.errorMessage}</p>
+              <p className={s.errorBoxText}>{error}</p>
             </div>
-          )}
+          </div>
+        ) : log ? (
+          <div className={s.drawerBody}>
+            {/* Severity hero */}
+            <div
+              className={s.drawerHero}
+              style={{
+                borderColor: sev.dot + "44",
+                background: sev.dot + "0d",
+              }}
+            >
+              <span
+                className={s.drawerHeroIcon}
+                style={{ background: sev.dot + "22", color: sev.dot }}
+              >
+                {SeveIcon ? <SeveIcon size={16} /> : null}
+              </span>
+              <div className={s.drawerHeroText}>
+                <p className={s.drawerHeroAction}>{actionLabelOf(log)}</p>
+                <p className={s.drawerHeroSev} style={{ color: sev.dot }}>
+                  {sev.label}
+                </p>
+              </div>
+              <ResultBadge result={log.result} />
+            </div>
 
-          {/* Meta */}
-          {log.meta && Object.keys(log.meta).length > 0 && (
-            <div className={s.descBox}>
-              <p className={s.descLabel}>Metadata</p>
-              <pre className={s.diffPre}>
-                {JSON.stringify(log.meta, null, 2)}
-              </pre>
+            {/* Admin */}
+            <div className={s.drawerSection}>
+              <p className={s.drawerSectionTitle}>Performed by</p>
+              <div className={s.drawerAdminCard}>
+                <Avatar user={log.admin} size="lg" />
+                <div className={s.drawerAdminInfo}>
+                  <p className={s.drawerAdminName}>
+                    {log.admin?.firstName || "—"} {log.admin?.lastName || ""}
+                  </p>
+                  {log.admin?.email && (
+                    <p className={s.drawerAdminEmail}>{log.admin.email}</p>
+                  )}
+                  <div className={s.drawerIds}>
+                    {log.adminId && (
+                      <CopyPill
+                        text={log.adminId}
+                        label={`admin ${log.adminId.slice(0, 10)}…`}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Detail grid */}
+            <div className={s.detailGrid}>
+              <Cell label="Action" value={log.action} mono />
+              <Cell label="Action Label" value={actionLabelOf(log)} />
+              <Cell label="Target Type" value={log.targetType} />
+              <Cell
+                label="Target ID"
+                value={
+                  log.targetId ? (
+                    <CopyPill
+                      text={log.targetId}
+                      label={log.targetId.slice(-12).toUpperCase()}
+                    />
+                  ) : (
+                    "—"
+                  )
+                }
+              />
+              <Cell
+                label="Result"
+                value={<ResultBadge result={log.result} />}
+              />
+              <Cell
+                label="Severity"
+                value={<SeverityBadge severity={severityOf(log)} />}
+              />
+              <Cell label="Date" value={fmtDate(log.createdAt)} />
+              <Cell label="Time" value={fmtTime(log.createdAt)} />
+              <Cell label="IP Address" value={log.ipAddress || "—"} mono />
+              <Cell
+                label="User Agent"
+                value={log.userAgent ? log.userAgent.slice(0, 60) + "…" : "—"}
+                mono
+              />
+            </div>
+
+            {/* Description */}
+            {log.description && (
+              <div className={s.descBox}>
+                <p className={s.descLabel}>Description</p>
+                <p className={s.descText}>{log.description}</p>
+              </div>
+            )}
+
+            {/* Before / After diff */}
+            {(log.before || log.after) && (
+              <div className={s.diffWrap}>
+                {log.before && (
+                  <div className={s.diffPane}>
+                    <p className={s.diffPaneLabel}>Before</p>
+                    <pre className={`${s.diffPre} ${s.diffBefore}`}>
+                      {JSON.stringify(log.before, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                {log.after && (
+                  <div className={s.diffPane}>
+                    <p className={s.diffPaneLabel}>After</p>
+                    <pre className={`${s.diffPre} ${s.diffAfter}`}>
+                      {JSON.stringify(log.after, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Live target state (from /audit/:id — `targetCurrent`) */}
+            {targetCurrent && (
+              <div className={s.descBox}>
+                <p className={s.descLabel}>Current state of target</p>
+                <pre className={s.diffPre}>
+                  {JSON.stringify(targetCurrent, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {/* Error */}
+            {log.errorMessage && (
+              <div className={s.errorBox}>
+                <p className={s.errorBoxLabel}>
+                  <AlertTriangle size={12} /> Error
+                </p>
+                <p className={s.errorBoxText}>{log.errorMessage}</p>
+              </div>
+            )}
+
+            {/* Meta */}
+            {log.meta && Object.keys(log.meta).length > 0 && (
+              <div className={s.descBox}>
+                <p className={s.descLabel}>Metadata</p>
+                <pre className={s.diffPre}>
+                  {JSON.stringify(log.meta, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -508,22 +533,76 @@ function Cell({ label, value, mono }) {
   );
 }
 
-// ─── Purge Modal (disabled — backend has no purge endpoint) ──────────────────
-function PurgeModal({ onClose }) {
+// ─── Purge Modal (real — backend does support it) ───────────────────────────
+function PurgeModal({ onClose, onDone, showToast }) {
+  const [days, setDays] = useState(90);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handlePurge() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await api.delete("/audit/purge", {
+        data: { olderThanDays: days },
+      });
+      const count = res.data.data?.purgedCount ?? 0;
+      showToast(
+        "success",
+        `Purged ${count} entries older than ${days} days. FAILED entries were preserved.`,
+      );
+      onDone();
+      onClose();
+    } catch (e) {
+      setError(e.response?.data?.message || "Purge failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.confirmModal} onClick={(e) => e.stopPropagation()}>
         <div className={s.confirmIcon}>
-          <AlertTriangle size={26} />
+          <Trash2 size={26} />
         </div>
-        <h3 className={s.confirmTitle}>Purge Unavailable</h3>
+        <h3 className={s.confirmTitle}>Purge Old Entries</h3>
         <p className={s.confirmSub}>
-          The backend does not currently expose a purge endpoint. Audit entries
-          are retained indefinitely for compliance.
+          Permanently deletes <strong>SUCCESS</strong> entries older than the
+          selected number of days. FAILED entries are always preserved.
         </p>
+
+        <div className={s.purgeInput}>
+          <label className={s.purgeLabel}>Delete entries older than</label>
+          <div className={s.purgeRow}>
+            <input
+              type="number"
+              min={30}
+              max={365}
+              value={days}
+              onChange={(e) =>
+                setDays(Math.max(30, parseInt(e.target.value) || 30))
+              }
+              className={s.purgeDaysInput}
+            />
+            <span className={s.purgeDaysUnit}>days</span>
+          </div>
+        </div>
+
+        {error && <p className={s.inlineError}>{error}</p>}
+
         <div className={s.confirmActions}>
-          <button className={s.btnGhost} onClick={onClose}>
-            Close
+          <button className={s.btnGhost} onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button className={s.btnRed} onClick={handlePurge} disabled={busy}>
+            {busy ? (
+              <span className={s.spinner} />
+            ) : (
+              <>
+                <Trash2 size={13} /> Purge now
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -533,16 +612,16 @@ function PurgeModal({ onClose }) {
 
 // ─── Log Row ──────────────────────────────────────────────────────────────────
 function LogRow({ log, index, onView }) {
-  const severity = deriveSeverity(log);
+  const severity = severityOf(log);
   return (
     <div
       className={s.tableRow}
       style={{ animationDelay: `${index * 0.022}s` }}
-      onClick={() => onView(log)}
+      onClick={() => onView(log.id)}
     >
       <div className={s.tdRef}>
         <SeverityDot severity={severity} />
-        <span className={s.refCode}>{shortRef(log.id)}</span>
+        <span className={s.refCode}>{shortRef(log)}</span>
       </div>
       <div className={s.tdAdmin}>
         <Avatar user={log.admin} />
@@ -554,7 +633,7 @@ function LogRow({ log, index, onView }) {
         </div>
       </div>
       <div className={s.tdAction}>
-        <span className={s.actionLabel}>{humanizeAction(log.action)}</span>
+        <span className={s.actionLabel}>{actionLabelOf(log)}</span>
         <span className={s.actionRaw}>{log.action}</span>
       </div>
       <div className={s.tdTarget}>
@@ -590,71 +669,30 @@ export default function AdminAuditLog() {
   const [total, setTotal] = useState(0);
   const [notify, setNotify] = useState(null);
   const [view, setView] = useState("logs"); // "logs" | "stats"
-  const [detailTarget, setDetailTarget] = useState(null);
+  const [detailId, setDetailId] = useState(null);
   const [showPurge, setShowPurge] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
   const [filterTarget, setFilterTarget] = useState("");
+  const [filterSeverity, setFilterSeverity] = useState("");
   const [filterResult, setFilterResult] = useState("");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
 
   const searchTimer = useRef(null);
 
-  function showToast(msg, type = "success") {
-    setNotify({ type, text: msg });
+  function showToast(type, text) {
+    setNotify({ type, text });
   }
 
-  // ── Load stats once ────────────────────────────────────────────────────────
+  // ── Load stats ─────────────────────────────────────────────────────────────
   const loadStats = useCallback(() => {
     setStatsLoading(true);
     api
-      .get("/admin/logs/stats/summary")
-      .then((r) => {
-        const d = r.data.data || {};
-        // Backend shape: { total, success, failed, byAction: [{action,count}], byTarget: [...] }
-        // We normalise into the shape the UI needs.
-        const successRate =
-          d.total > 0 ? Math.round((d.success / d.total) * 100) : 0;
-        const bySeverity = {
-          critical: d.failed || 0,
-          warning: 0,
-          success: d.success || 0,
-          info: Math.max(
-            0,
-            (d.total || 0) - (d.success || 0) - (d.failed || 0),
-          ),
-        };
-        // Top actions with derived severity + friendly label
-        const byAction = (d.byAction || []).map((a) => {
-          const severity = deriveSeverity({
-            action: a.action,
-            result: "SUCCESS",
-          });
-          return {
-            action: a.action,
-            label: humanizeAction(a.action),
-            severity,
-            count: a.count,
-            color: (SEVERITY_META[severity] || SEVERITY_META.info).dot,
-          };
-        });
-        const byTarget = (d.byTarget || []).map((t) => ({
-          targetType: t.targetType,
-          count: t.count,
-        }));
-        setStats({
-          total: d.total || 0,
-          success: d.success || 0,
-          failed: d.failed || 0,
-          successRate,
-          bySeverity,
-          byAction,
-          byTarget,
-        });
-      })
-      .catch(() => showToast("Failed to load audit stats.", "error"))
+      .get("/audit/stats", { params: { days: 30 } })
+      .then((r) => setStats(r.data.data))
+      .catch(() => showToast("error", "Failed to load audit stats."))
       .finally(() => setStatsLoading(false));
   }, []);
 
@@ -670,28 +708,29 @@ export default function AdminAuditLog() {
         const params = { page: pg, limit: LIMIT };
         if (search.trim()) params.search = search.trim();
         if (filterTarget) params.targetType = filterTarget;
+        if (filterSeverity) params.severity = filterSeverity;
         if (filterResult) params.result = filterResult;
-        if (filterFrom) params.fromDate = filterFrom;
-        if (filterTo) params.toDate = filterTo;
+        if (filterFrom) params.from = filterFrom;
+        if (filterTo) params.to = filterTo;
 
-        const res = await api.get("/admin/logs", { params });
+        const res = await api.get("/audit", { params });
         const d = res.data.data;
         setLogs(d.logs || []);
         setTotal(d.total || 0);
         setPages(d.pages || 1);
         setPage(pg);
       } catch {
-        showToast("Failed to load audit logs.", "error");
+        showToast("error", "Failed to load audit logs.");
       } finally {
         setLoading(false);
       }
     },
-    [search, filterTarget, filterResult, filterFrom, filterTo],
+    [search, filterTarget, filterSeverity, filterResult, filterFrom, filterTo],
   );
 
   useEffect(() => {
     loadLogs(1);
-  }, [filterTarget, filterResult, filterFrom, filterTo]);
+  }, [filterTarget, filterSeverity, filterResult, filterFrom, filterTo]);
 
   function handleSearchChange(e) {
     setSearch(e.target.value);
@@ -702,35 +741,56 @@ export default function AdminAuditLog() {
   function clearFilters() {
     setSearch("");
     setFilterTarget("");
+    setFilterSeverity("");
     setFilterResult("");
     setFilterFrom("");
     setFilterTo("");
   }
 
-  async function handleExport() {
-    try {
-      const params = {};
-      if (filterTarget) params.targetType = filterTarget;
-      if (filterResult) params.result = filterResult;
-      if (filterFrom) params.fromDate = filterFrom;
-      if (filterTo) params.toDate = filterTo;
-      const res = await api.get("/admin/logs/export", { params });
-      const list = res.data.data?.logs || [];
-      if (list.length === 0) {
-        showToast("Nothing to export with the current filters.", "error");
-        return;
-      }
-      downloadCsv(list);
-      showToast(
-        `Exported ${list.length} entr${list.length === 1 ? "y" : "ies"}.`,
-      );
-    } catch (e) {
-      showToast(e.response?.data?.message || "Export failed.", "error");
-    }
+  function handleExport() {
+    // The backend streams a CSV file directly. Trigger a plain browser download
+    // and include the same filters the user has applied.
+    const params = new URLSearchParams();
+    if (filterTarget) params.set("targetType", filterTarget);
+    if (filterResult) params.set("result", filterResult);
+    if (filterFrom) params.set("from", filterFrom);
+    if (filterTo) params.set("to", filterTo);
+    params.set("limit", "5000");
+
+    const base = (api.defaults?.baseURL || "/api").replace(/\/$/, "");
+    const token =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("token") ||
+          window.localStorage.getItem("accessToken")
+        : null;
+
+    // We must use fetch to attach the bearer token — window.open can't.
+    fetch(`${base}/audit/export?${params.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Export failed");
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("success", "Export downloaded.");
+      })
+      .catch((e) => showToast("error", e.message || "Export failed."));
   }
 
   const hasFilters =
-    search || filterTarget || filterResult || filterFrom || filterTo;
+    search ||
+    filterTarget ||
+    filterSeverity ||
+    filterResult ||
+    filterFrom ||
+    filterTo;
 
   return (
     <AdminLayout>
@@ -755,11 +815,7 @@ export default function AdminAuditLog() {
             <button className={s.exportBtn} onClick={handleExport}>
               <Download size={13} /> Export CSV
             </button>
-            <button
-              className={s.purgeBtn}
-              onClick={() => setShowPurge(true)}
-              title="Purge endpoint unavailable"
-            >
+            <button className={s.purgeBtn} onClick={() => setShowPurge(true)}>
               <Trash2 size={13} /> Purge Old
             </button>
           </div>
@@ -786,11 +842,10 @@ export default function AdminAuditLog() {
         ══════════════════════════════════════════ */}
         {view === "stats" && (
           <div className={s.statsView}>
-            {/* Overview cards */}
             <div className={s.statsGrid}>
               <StatCard
                 icon={ScrollText}
-                label="Total Actions"
+                label="Total Actions (30d)"
                 value={stats?.total?.toLocaleString()}
                 accent="orange"
                 delay={0}
@@ -817,6 +872,13 @@ export default function AdminAuditLog() {
                 delay={0.15}
               />
             </div>
+
+            {/* Daily chart */}
+            {statsLoading ? (
+              <div className={s.skPanel} />
+            ) : (
+              <DailyChart data={stats?.dailyActivity || []} />
+            )}
 
             <div className={s.statsTwoCol}>
               {/* Severity breakdown */}
@@ -857,7 +919,7 @@ export default function AdminAuditLog() {
                 )}
               </div>
 
-              {/* Top targets */}
+              {/* By target type */}
               <div className={s.panel}>
                 <p className={s.panelTitle}>
                   <Users size={13} /> By Target Type
@@ -866,11 +928,13 @@ export default function AdminAuditLog() {
                   <div className={s.skTier} />
                 ) : (
                   <StatBars
-                    items={(stats?.byTarget || []).map((t) => ({
-                      label: t.targetType,
-                      count: t.count,
-                      color: "var(--orange)",
-                    }))}
+                    items={Object.entries(stats?.byTargetType || {}).map(
+                      ([label, count]) => ({
+                        label,
+                        count,
+                        color: "var(--orange)",
+                      }),
+                    )}
                   />
                 )}
               </div>
@@ -908,6 +972,55 @@ export default function AdminAuditLog() {
                 </div>
               </div>
             )}
+
+            {/* Top admins */}
+            {!statsLoading && stats?.topAdmins?.length > 0 && (
+              <div className={s.panel}>
+                <p className={s.panelTitle}>
+                  <Users size={13} /> Most Active Admins
+                </p>
+                <div className={s.adminList}>
+                  {stats.topAdmins.map((a, i) => (
+                    <div key={a.id || i} className={s.adminRow}>
+                      <span className={s.adminRank}>#{i + 1}</span>
+                      <Avatar user={a} />
+                      <div className={s.adminInfo}>
+                        <p className={s.adminName}>
+                          {a.firstName} {a.lastName}
+                        </p>
+                        <p className={s.adminEmail}>{a.email}</p>
+                      </div>
+                      <div className={s.adminCount}>
+                        <span className={s.adminCountVal}>{a.actionCount}</span>
+                        <span className={s.adminCountLabel}>actions</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent activity feed */}
+            {!statsLoading && stats?.recentActivity?.length > 0 && (
+              <div className={s.activityFeed}>
+                <p className={s.feedTitle}>
+                  <Activity size={12} /> Recent Activity
+                </p>
+                {stats.recentActivity.map((log) => (
+                  <div key={log.id} className={s.feedItem}>
+                    <SeverityDot severity={severityOf(log)} />
+                    <Avatar user={log.admin} />
+                    <div className={s.feedBody}>
+                      <span className={s.feedAction}>{actionLabelOf(log)}</span>
+                      <span className={s.feedAdmin}>
+                        {log.admin?.firstName} {log.admin?.lastName}
+                      </span>
+                    </div>
+                    <span className={s.feedTime}>{timeAgo(log.createdAt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -918,14 +1031,13 @@ export default function AdminAuditLog() {
           <>
             {/* Filters */}
             <div className={s.filtersWrap}>
-              {/* Search */}
               <div className={s.searchBar}>
                 <span className={s.searchIcon}>
                   <Search size={13} />
                 </span>
                 <input
                   className={s.searchInput}
-                  placeholder="Search description or error message…"
+                  placeholder="Search description, admin name or email…"
                   value={search}
                   onChange={handleSearchChange}
                 />
@@ -943,12 +1055,12 @@ export default function AdminAuditLog() {
                 )}
               </div>
 
-              {/* Filter row */}
               <div className={s.filterRow}>
                 <select
                   className={s.select}
                   value={filterTarget}
                   onChange={(e) => setFilterTarget(e.target.value)}
+                  aria-label="Target type"
                 >
                   <option value="">All Targets</option>
                   {TARGET_TYPES.map((t) => (
@@ -960,8 +1072,23 @@ export default function AdminAuditLog() {
 
                 <select
                   className={s.select}
+                  value={filterSeverity}
+                  onChange={(e) => setFilterSeverity(e.target.value)}
+                  aria-label="Severity"
+                >
+                  <option value="">All Severities</option>
+                  {Object.entries(SEVERITY_META).map(([k, m]) => (
+                    <option key={k} value={k}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className={s.select}
                   value={filterResult}
                   onChange={(e) => setFilterResult(e.target.value)}
+                  aria-label="Result"
                 >
                   <option value="">All Results</option>
                   <option value="SUCCESS">Success</option>
@@ -1000,7 +1127,6 @@ export default function AdminAuditLog() {
               </div>
             </div>
 
-            {/* Result count */}
             {!loading && (
               <p className={s.resultCount}>
                 {total.toLocaleString()} {total === 1 ? "entry" : "entries"}
@@ -1008,7 +1134,6 @@ export default function AdminAuditLog() {
               </p>
             )}
 
-            {/* Table */}
             <div className={s.tableWrap}>
               <div className={s.tableHead}>
                 <span>Ref</span>
@@ -1046,14 +1171,13 @@ export default function AdminAuditLog() {
                       key={log.id}
                       log={log}
                       index={i}
-                      onView={setDetailTarget}
+                      onView={setDetailId}
                     />
                   ))
                 )}
               </div>
             </div>
 
-            {/* Pagination */}
             {pages > 1 && (
               <div className={s.pager}>
                 <button
@@ -1080,15 +1204,21 @@ export default function AdminAuditLog() {
       </div>
 
       {/* Detail drawer */}
-      {detailTarget && (
-        <DetailDrawer
-          log={detailTarget}
-          onClose={() => setDetailTarget(null)}
-        />
+      {detailId && (
+        <DetailDrawer logId={detailId} onClose={() => setDetailId(null)} />
       )}
 
-      {/* Purge modal — backend has no purge endpoint */}
-      {showPurge && <PurgeModal onClose={() => setShowPurge(false)} />}
+      {/* Purge modal (real endpoint) */}
+      {showPurge && (
+        <PurgeModal
+          onClose={() => setShowPurge(false)}
+          onDone={() => {
+            loadLogs(1);
+            loadStats();
+          }}
+          showToast={showToast}
+        />
+      )}
 
       {/* Platform AlertModal */}
       <AlertModal

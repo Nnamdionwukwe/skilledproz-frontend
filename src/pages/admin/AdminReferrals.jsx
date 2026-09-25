@@ -11,7 +11,7 @@
 //   PATCH /referral/admin/:userId/wallet    { amount, description, type, userId }
 //
 // Every field the backend sends is rendered. Lucide icons throughout.
-// Fully responsive. Uses platform AlertModal.
+// Fully responsive, with a mobile card layout for tables.
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -38,8 +38,6 @@ import {
   Users,
   UserCircle,
   Layers,
-  Mail,
-  Eye,
   SlidersHorizontal,
   Loader2,
 } from "lucide-react";
@@ -48,7 +46,7 @@ import AlertModal from "../../components/ui/AlertModal";
 import api from "../../lib/api";
 import styles from "./AdminReferrals.module.css";
 
-// ── Tier badge classes ────────────────────────────────────────────────────────
+// ── Tier / status class maps ──────────────────────────────────────────────────
 const TIER_CLASS = {
   bronze: styles.tierBronze,
   silver: styles.tierSilver,
@@ -94,15 +92,6 @@ function fmtDateTime(d) {
   });
 }
 
-function timeAgo(d) {
-  if (!d) return "—";
-  const m = Math.floor((Date.now() - new Date(d)) / 60000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m}m ago`;
-  if (m < 1440) return `${Math.floor(m / 60)}h ago`;
-  return `${Math.floor(m / 1440)}d ago`;
-}
-
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(String(text));
@@ -112,8 +101,7 @@ async function copyText(text) {
   }
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
+// ── Atoms ─────────────────────────────────────────────────────────────────────
 function Spinner() {
   return <span className={styles.spinner} />;
 }
@@ -605,7 +593,7 @@ export default function AdminReferrals() {
       <div className={styles.page}>
         {/* ── Page header ──────────────────────────────────────────────────── */}
         <div className={styles.pageHeader}>
-          <div>
+          <div className={styles.pageHeaderText}>
             <p className={styles.eyebrow}>Admin Panel</p>
             <h1 className={styles.pageTitle}>
               <Link2 size={22} /> Referral Programme
@@ -639,7 +627,7 @@ export default function AdminReferrals() {
           ))}
         </div>
 
-        {/* ══ OVERVIEW TAB ══════════════════════════════════════════════════════ */}
+        {/* ══ OVERVIEW TAB ══ */}
         {tab === "overview" && (
           <div className={styles.tabContent}>
             {statsLoading ? (
@@ -648,7 +636,7 @@ export default function AdminReferrals() {
               </div>
             ) : stats ? (
               <>
-                {/* ── KPI cards ── */}
+                {/* KPI cards */}
                 <div className={styles.statsGrid}>
                   <StatCard
                     icon={Link2}
@@ -685,7 +673,7 @@ export default function AdminReferrals() {
                   />
                 </div>
 
-                {/* ── Status breakdown ── */}
+                {/* Status breakdown */}
                 <div className={styles.section}>
                   <h2 className={styles.sectionTitle}>
                     <ClipboardList size={12} /> Referrals by Status
@@ -708,7 +696,7 @@ export default function AdminReferrals() {
                   </div>
                 </div>
 
-                {/* ── Top referrers ── */}
+                {/* Top referrers */}
                 {stats.topReferrers?.length > 0 && (
                   <div className={styles.section}>
                     <h2 className={styles.sectionTitle}>
@@ -727,12 +715,12 @@ export default function AdminReferrals() {
                         <tbody>
                           {stats.topReferrers.map((u) => (
                             <tr key={u.id}>
-                              <td>
+                              <td data-label="User">
                                 <div className={styles.userCell}>
                                   <Avatar
                                     name={`${u.firstName} ${u.lastName}`}
                                   />
-                                  <div>
+                                  <div className={styles.userCellText}>
                                     <p className={styles.userName}>
                                       {u.firstName} {u.lastName}
                                     </p>
@@ -743,15 +731,19 @@ export default function AdminReferrals() {
                                   </div>
                                 </div>
                               </td>
-                              <td>
+                              <td data-label="Tier">
                                 <span
-                                  className={`${styles.tierBadge} ${TIER_CLASS[u.referralTier?.toLowerCase?.()]}`}
+                                  className={`${styles.tierBadge} ${TIER_CLASS[u.referralTier?.toLowerCase?.()] || ""}`}
                                 >
                                   {u.referralTier}
                                 </span>
                               </td>
-                              <td>{u.successfulReferrals}</td>
-                              <td>{fmtCurrency(u.walletLifetimeTotal)}</td>
+                              <td data-label="Successful">
+                                {u.successfulReferrals}
+                              </td>
+                              <td data-label="Lifetime">
+                                {fmtCurrency(u.walletLifetimeTotal)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -760,7 +752,7 @@ export default function AdminReferrals() {
                   </div>
                 )}
 
-                {/* ── Recent conversions ── */}
+                {/* Recent conversions */}
                 {stats.recentConversions?.length > 0 && (
                   <div className={styles.section}>
                     <h2 className={styles.sectionTitle}>
@@ -779,16 +771,20 @@ export default function AdminReferrals() {
                         <tbody>
                           {stats.recentConversions.map((r) => (
                             <tr key={r.id}>
-                              <td>
+                              <td data-label="Referrer">
                                 {r.referrer?.firstName} {r.referrer?.lastName}
                               </td>
-                              <td>{r.referred?.firstName}</td>
-                              <td>
+                              <td data-label="Referred">
+                                {r.referred?.firstName}
+                              </td>
+                              <td data-label="Role">
                                 <span className={styles.rolePill}>
                                   {r.referred?.role}
                                 </span>
                               </td>
-                              <td>{fmtDate(r.convertedAt)}</td>
+                              <td data-label="Converted">
+                                {fmtDate(r.convertedAt)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -797,7 +793,7 @@ export default function AdminReferrals() {
                   </div>
                 )}
 
-                {/* ── Tier table ── */}
+                {/* Tier table */}
                 <div className={styles.section}>
                   <h2 className={styles.sectionTitle}>
                     <Layers size={12} /> Tier Configuration
@@ -816,16 +812,16 @@ export default function AdminReferrals() {
                         {Object.entries(stats.tierBreakdown || {}).map(
                           ([key, label]) => (
                             <tr key={key}>
-                              <td>
+                              <td data-label="Tier">
                                 <span
-                                  className={`${styles.tierBadge} ${TIER_CLASS[key.toLowerCase()]}`}
+                                  className={`${styles.tierBadge} ${TIER_CLASS[key.toLowerCase()] || ""}`}
                                 >
                                   {label}
                                 </span>
                               </td>
-                              <td>—</td>
-                              <td>—</td>
-                              <td>—</td>
+                              <td data-label="Min Referrals">—</td>
+                              <td data-label="Worker Bonus">—</td>
+                              <td data-label="Hirer Bonus">—</td>
                             </tr>
                           ),
                         )}
@@ -840,10 +836,10 @@ export default function AdminReferrals() {
           </div>
         )}
 
-        {/* ══ REFERRALS TAB ═════════════════════════════════════════════════════ */}
+        {/* ══ REFERRALS TAB ══ */}
         {tab === "referrals" && (
           <div className={styles.tabContent}>
-            {/* ── Queue stats ── */}
+            {/* Queue stats */}
             {listStats && (
               <div className={styles.queueStats}>
                 {Object.entries(listStats).map(([status, data]) => (
@@ -858,7 +854,7 @@ export default function AdminReferrals() {
               </div>
             )}
 
-            {/* ── Filters ── */}
+            {/* Filters */}
             <div className={styles.filterRow}>
               <div className={styles.searchWrap}>
                 <Search size={13} />
@@ -951,15 +947,15 @@ export default function AdminReferrals() {
                         ].includes(r.status);
                         return (
                           <tr key={r.id}>
-                            <td>
+                            <td data-label="Code">
                               <CopyPill text={r.code} />
                             </td>
-                            <td>
+                            <td data-label="Referrer">
                               <div className={styles.userCell}>
                                 <Avatar
                                   name={`${r.referrer?.firstName} ${r.referrer?.lastName}`}
                                 />
-                                <div>
+                                <div className={styles.userCellText}>
                                   <p className={styles.userName}>
                                     {r.referrer?.firstName}{" "}
                                     {r.referrer?.lastName}
@@ -970,8 +966,8 @@ export default function AdminReferrals() {
                                 </div>
                               </div>
                             </td>
-                            <td>
-                              <div>
+                            <td data-label="Referred">
+                              <div className={styles.userCellText}>
                                 <p className={styles.userName}>
                                   {r.referred?.firstName} {r.referred?.lastName}
                                 </p>
@@ -980,7 +976,7 @@ export default function AdminReferrals() {
                                 </p>
                               </div>
                             </td>
-                            <td>
+                            <td data-label="Role">
                               <span className={styles.rolePill}>
                                 {r.referred?.role === "WORKER" ? (
                                   <>
@@ -993,24 +989,27 @@ export default function AdminReferrals() {
                                 )}
                               </span>
                             </td>
-                            <td>
+                            <td data-label="Status">
                               <span
                                 className={`${styles.statusBadge} ${STATUS_CLASS[r.status] || ""}`}
                               >
                                 {r.status}
                               </span>
                             </td>
-                            <td className={styles.bonusCell}>
+                            <td data-label="Bonus" className={styles.bonusCell}>
                               {fmtCurrency(r.referrerBonus)}
                             </td>
-                            <td>{fmtDate(r.referred?.createdAt)}</td>
+                            <td data-label="Joined">
+                              {fmtDate(r.referred?.createdAt)}
+                            </td>
                             <td
+                              data-label="Expires"
                               className={isExpired ? styles.expired : ""}
                               title={fmtDateTime(r.expiresAt)}
                             >
                               {fmtDate(r.expiresAt)}
                             </td>
-                            <td>
+                            <td data-label="Actions">
                               <div className={styles.actionGroup}>
                                 {!isLocked && (
                                   <button
@@ -1059,7 +1058,7 @@ export default function AdminReferrals() {
                   </table>
                 </div>
 
-                {/* ── Pagination ── */}
+                {/* Pagination */}
                 {pages > 1 && (
                   <div className={styles.pagination}>
                     <button
@@ -1086,7 +1085,7 @@ export default function AdminReferrals() {
           </div>
         )}
 
-        {/* ══ LEADERBOARD TAB ═══════════════════════════════════════════════════ */}
+        {/* ══ LEADERBOARD TAB ══ */}
         {tab === "leaderboard" && (
           <div className={styles.tabContent}>
             {lbLoading ? (
@@ -1101,9 +1100,9 @@ export default function AdminReferrals() {
             ) : (
               <>
                 <div className={styles.leaderboard}>
-                  {leaderboard.map((u) => (
+                  {leaderboard.map((u, i) => (
                     <div
-                      key={`${u.rank}-${u.name}`}
+                      key={u.id || `${u.rank}-${i}`}
                       className={`${styles.lbRow} ${u.isMe ? styles.lbRowMe : ""}`}
                     >
                       <span
@@ -1118,7 +1117,7 @@ export default function AdminReferrals() {
                           {u.isMe && <span className={styles.mePill}>You</span>}
                         </p>
                         <span
-                          className={`${styles.tierBadge} ${TIER_CLASS[u.badge]}`}
+                          className={`${styles.tierBadge} ${TIER_CLASS[u.badge] || ""}`}
                         >
                           {u.tier}
                         </span>
@@ -1153,16 +1152,22 @@ export default function AdminReferrals() {
                         <tbody>
                           {lbTiers.map((t) => (
                             <tr key={t.key}>
-                              <td>
+                              <td data-label="Tier">
                                 <span
-                                  className={`${styles.tierBadge} ${TIER_CLASS[t.badge]}`}
+                                  className={`${styles.tierBadge} ${TIER_CLASS[t.badge] || ""}`}
                                 >
                                   {t.label}
                                 </span>
                               </td>
-                              <td>{t.minReferrals}</td>
-                              <td>{fmtCurrency(t.workerBonus)}</td>
-                              <td>{fmtCurrency(t.hirerBonus)}</td>
+                              <td data-label="Min Referrals">
+                                {t.minReferrals}
+                              </td>
+                              <td data-label="Worker Bonus">
+                                {fmtCurrency(t.workerBonus)}
+                              </td>
+                              <td data-label="Hirer Bonus">
+                                {fmtCurrency(t.hirerBonus)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1175,7 +1180,7 @@ export default function AdminReferrals() {
           </div>
         )}
 
-        {/* ── Modals ──────────────────────────────────────────────────────────── */}
+        {/* Modals */}
         {showAdjust && (
           <AdjustWalletModal
             onClose={() => setShowAdjust(false)}
@@ -1202,7 +1207,7 @@ export default function AdminReferrals() {
           />
         )}
 
-        {/* ── Platform AlertModal ── */}
+        {/* Platform AlertModal */}
         <AlertModal
           isOpen={!!notify}
           onClose={() => setNotify(null)}

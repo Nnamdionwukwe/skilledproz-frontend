@@ -1,4 +1,8 @@
-/* AdminReferrals.module.css — full responsive rewrite */
+/* AdminReferrals.module.css — full rewrite.
+   Fix: flex-column text wrapping.
+   Fix: table → card layout under 640px.
+   Full responsiveness 320px → 1440px+.
+*/
 
 /* ── Page layout ─────────────────────────────────────────────────────────── */
 .page {
@@ -19,6 +23,10 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+.pageHeaderText {
+  flex: 1;
+  min-width: 0;
 }
 .eyebrow {
   font-size: 10px;
@@ -41,6 +49,9 @@
   gap: 10px;
   flex-wrap: wrap;
   min-width: 0;
+}
+.pageTitle > svg {
+  flex-shrink: 0;
 }
 .pageSubtitle {
   font-size: 13px;
@@ -154,7 +165,7 @@
   margin: 0;
 }
 
-/* ── Generic section ─────────────────────────────────────────────────────── */
+/* ── Section ─────────────────────────────────────────────────────────────── */
 .section {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -196,13 +207,23 @@
   flex-shrink: 0;
   background: var(--text-muted);
 }
-.statusDot.statusPending,
-.statusDot.statusQualified,
-.statusDot.statusConverted,
-.statusDot.statusRewarded,
-.statusDot.statusExpired,
+.statusDot.statusPending {
+  background: #fbbf24;
+}
+.statusDot.statusQualified {
+  background: #818cf8;
+}
+.statusDot.statusConverted {
+  background: #22d3ee;
+}
+.statusDot.statusRewarded {
+  background: var(--green);
+}
+.statusDot.statusExpired {
+  background: var(--text-muted);
+}
 .statusDot.statusFlagged {
-  /* visual dot colour comes from the shared status classes below via specificity */
+  background: var(--red);
 }
 .statusLabel {
   font-weight: 600;
@@ -217,7 +238,7 @@
   padding: 1px 7px;
 }
 
-/* ── Table ───────────────────────────────────────────────────────────────── */
+/* ── TABLE ───────────────────────────────────────────────────────────────── */
 .tableWrap {
   overflow-x: auto;
   border-radius: 12px;
@@ -229,7 +250,7 @@
   border-collapse: collapse;
   font-size: 13px;
   color: var(--text);
-  min-width: 620px;
+  min-width: 780px;
 }
 .table thead tr {
   background: var(--bg-card);
@@ -258,28 +279,43 @@
 .table td {
   padding: 10px 12px;
   vertical-align: middle;
+  min-width: 0;
 }
 
-/* ── User cell ───────────────────────────────────────────────────────────── */
+/* ── User cell — the source of the flex-column bug ──────────────────────── */
 .userCell {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
+/* The text wrapper next to the avatar MUST grow, not shrink to min-content. */
+.userCellText {
+  flex: 1;
+  min-width: 0;
+}
+/* Names/emails in table cells ellipsis rather than wrap vertically. */
 .userName {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
   line-height: 1.3;
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .userEmail {
   font-size: 11px;
   color: var(--text-muted);
   margin: 2px 0 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Any <td> that contains a .userCellText directly also needs min-width: 0 */
+.table td > .userCellText {
+  min-width: 0;
 }
 
 /* ── Avatar ──────────────────────────────────────────────────────────────── */
@@ -343,7 +379,6 @@
   color: var(--red);
 }
 
-/* Tier badge */
 .tierBadge {
   display: inline-block;
   padding: 3px 9px;
@@ -373,7 +408,6 @@
   border: 1px solid rgba(129, 140, 248, 0.3);
 }
 
-/* Role pill */
 .rolePill {
   display: inline-flex;
   align-items: center;
@@ -390,7 +424,6 @@
   white-space: nowrap;
 }
 
-/* Referral code */
 .code {
   font-family: monospace;
   font-size: 12px;
@@ -400,19 +433,19 @@
   padding: 3px 8px;
   color: var(--text-dim);
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
-/* Bonus cell */
 .bonusCell {
   font-weight: 700;
   color: var(--green);
   white-space: nowrap;
 }
 
-/* Expired date */
 .expired {
   color: var(--red);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ── Row actions ─────────────────────────────────────────────────────────── */
@@ -420,12 +453,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: nowrap;
 }
 .actionBtn {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -436,6 +469,8 @@
   color: var(--text-dim);
   background: var(--bg-card);
   border: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 0;
 }
 .actionBtn:hover:not(:disabled) {
   opacity: 0.85;
@@ -458,7 +493,6 @@
 .actionBtnGray {
   color: var(--text-muted);
 }
-
 .spinning {
   animation: spin 0.8s linear infinite;
 }
@@ -514,7 +548,6 @@
 .searchClear:hover {
   color: var(--text);
 }
-
 .select {
   height: 38px;
   padding: 0 12px;
@@ -531,7 +564,6 @@
 .select:focus {
   border-color: var(--orange);
 }
-
 .resultsCount {
   font-size: 12px;
   color: var(--text-muted);
@@ -679,6 +711,7 @@
   color: #0f0f1a;
   border-radius: 10px;
   letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 .lbStats {
   text-align: right;
@@ -781,6 +814,7 @@
   max-width: 100%;
   min-width: 0;
   width: fit-content;
+  white-space: nowrap;
 }
 .copyPillText {
   overflow: hidden;
@@ -954,7 +988,7 @@
   gap: 10px;
 }
 
-/* ── Form controls (used inside modals) ─────────────────────────────────── */
+/* ── Form controls (inside modals) ──────────────────────────────────────── */
 .label {
   font-size: 11px;
   font-weight: 600;
@@ -1063,6 +1097,90 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE CARD LAYOUT — table becomes stacked cards under 640px
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .tableWrap {
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .table {
+    min-width: 0;
+    display: block;
+    border-collapse: separate;
+  }
+  .table thead {
+    display: none;
+  }
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .table tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .table tbody tr:hover {
+    background: var(--bg-panel);
+  }
+  .table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0;
+    min-width: 0;
+  }
+  .table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  /* Inside cards, we can drop the ellipsis and use wrap + word-break instead */
+  .userName,
+  .userEmail,
+  .table td > .userCellText > .userName,
+  .table td > .userCellText > .userEmail {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: right;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .userCell {
+    flex: 1;
+    justify-content: flex-end;
+    text-align: right;
+  }
+  .userCellText {
+    flex: 1;
+    min-width: 0;
+  }
+  .table td > .userCellText {
+    text-align: right;
+  }
+  .actionGroup {
+    justify-content: flex-end;
+  }
+  .bonusCell,
+  .expired {
+    text-align: right;
+  }
+}
+
 /* ── 540px and below ── */
 @media (max-width: 540px) {
   .page {
@@ -1121,18 +1239,9 @@
     justify-content: center;
   }
 
-  .table {
-    font-size: 12px;
-  }
   .table th,
   .table td {
     padding: 8px 10px;
-  }
-  .userName {
-    font-size: 12px;
-  }
-  .userEmail {
-    font-size: 10.5px;
   }
 
   .lbRow {
@@ -1207,18 +1316,9 @@
     font-size: 11px;
   }
 
-  .table {
-    font-size: 11.5px;
-  }
   .table th,
   .table td {
     padding: 7px 9px;
-  }
-  .userName {
-    font-size: 11.5px;
-  }
-  .userEmail {
-    font-size: 10px;
   }
 
   .statusBadge,
@@ -1284,15 +1384,6 @@
   .table th,
   .table td {
     padding: 6px 8px;
-  }
-  .table {
-    min-width: 560px;
-  }
-  .userName {
-    font-size: 11px;
-  }
-  .userEmail {
-    font-size: 9.5px;
   }
 
   .copyPill {

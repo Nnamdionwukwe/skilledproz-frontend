@@ -2160,3 +2160,76 @@
     font-size: 10px;
   }
 }
+/* ── Additions used by AdminSettings.jsx ── */
+
+/* Action item — flex container so ArrowRight/spinner sit on the right */
+.actionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.actionItem:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.actionInfo {
+  flex: 1;
+  min-width: 0;
+}
+.actionLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 2px;
+  overflow-wrap: anywhere;
+}
+.actionDesc {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.actionArrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.actionIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Config row — icon wrapper so Lucide icons align with the value */
+.configIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Settings link — inline icon + text */
+.settingsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Admin role badge — inline icon + text */
+.adminRoleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
