@@ -1,9 +1,33 @@
 // src/pages/messages/AdminMessages.jsx
 // Full admin conversation oversight — read-only.
-// Fixes: image messages styled + clickable lightbox, thread fills full screen.
+// Uses Lucide icons throughout. Fully responsive. Platform AlertModal for toasts.
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  MessageCircle,
+  Send,
+  Calendar,
+  BarChart3,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronUp,
+  Lock,
+  Copy,
+  Check,
+  Image as ImageIcon,
+  FileText,
+  ExternalLink,
+  Inbox,
+  AlertTriangle,
+  CheckCircle,
+  Users,
+  Mail,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
+import AlertModal from "../../components/ui/AlertModal";
 import api from "../../lib/api";
 import s from "./AdminMessages.module.css";
 
@@ -50,6 +74,17 @@ function fmtDateFull(d) {
   });
 }
 
+function fmtDateTime(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function initials(u) {
   return (
     `${u?.firstName?.[0] ?? ""}${u?.lastName?.[0] ?? ""}`.toUpperCase() || "?"
@@ -75,18 +110,25 @@ function isSameDay(a, b) {
   );
 }
 
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Detect whether a string looks like an image URL
 function isImageUrl(str) {
   if (!str || typeof str !== "string") return false;
   const trimmed = str.trim();
-  // Direct image extension
   if (
     /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|avif|bmp|svg)(\?.*)?$/i.test(
       trimmed,
     )
   )
     return true;
-  // Common CDN patterns that serve images
   if (
     /^https?:\/\/.*(cloudinary\.com|cloudfront\.net|amazonaws\.com|supabase\.co|firebase\w*\.app|imgix\.net|imagekit\.io|res\.cloudinary\.com)\/.+/i.test(
       trimmed,
@@ -97,9 +139,18 @@ function isImageUrl(str) {
   return false;
 }
 
-// Parse a message object into { type, text, imageUrls }
+// Detect whether a URL is a non-image file
+function isFileUrl(str) {
+  if (!str || typeof str !== "string") return false;
+  const trimmed = str.trim();
+  if (isImageUrl(trimmed)) return false;
+  return /^https?:\/\/.+\.(pdf|docx?|xlsx?|pptx?|zip|rar|txt|csv|mp4|mov|webm|mp3|wav|ogg)(\?.*)?$/i.test(
+    trimmed,
+  );
+}
+
+// Parse a message object into { type, text, imageUrls, fileUrls }
 function parseContent(msg) {
-  // Explicit image fields from the backend
   const explicitImages = [
     ...(Array.isArray(msg.images) ? msg.images : []),
     ...(Array.isArray(msg.imageUrls) ? msg.imageUrls : []),
@@ -107,21 +158,32 @@ function parseContent(msg) {
       ? msg.attachments.map((a) => a?.url ?? a)
       : []),
     ...(msg.imageUrl ? [msg.imageUrl] : []),
+    // fileUrl from backend — may be an image OR a file
+    ...(msg.fileUrl ? [msg.fileUrl] : []),
   ].filter((u) => typeof u === "string" && u.length > 0);
+
+  const imageOnly = explicitImages.filter(isImageUrl);
+  const fileOnly = explicitImages.filter((u) => !isImageUrl(u) && isFileUrl(u));
+  const otherUrls = explicitImages.filter(
+    (u) => !isImageUrl(u) && !isFileUrl(u),
+  );
 
   const raw = msg.content ?? "";
 
   // If the entire content is an image URL and no explicit images
-  if (!explicitImages.length && isImageUrl(raw.trim())) {
-    return { type: "image", text: "", imageUrls: [raw.trim()] };
+  if (!imageOnly.length && !fileOnly.length && isImageUrl(raw.trim())) {
+    return { type: "image", text: "", imageUrls: [raw.trim()], fileUrls: [] };
   }
 
-  // If there are explicit image fields
-  if (explicitImages.length > 0) {
+  // Strip "[Image]" / "[File]" placeholders from text
+  const cleanedText = raw.replace(/^\[(Image|File|Video)\]\s*/i, "").trim();
+
+  if (imageOnly.length > 0 || fileOnly.length > 0) {
     return {
-      type: raw.trim() ? "mixed" : "image",
-      text: raw.trim(),
-      imageUrls: explicitImages,
+      type: cleanedText ? "mixed" : imageOnly.length ? "image" : "file",
+      text: cleanedText,
+      imageUrls: imageOnly,
+      fileUrls: [...fileOnly, ...otherUrls],
     };
   }
 
@@ -135,10 +197,39 @@ function parseContent(msg) {
       type: textLines.length > 0 ? "mixed" : "image",
       text: textLines.join("\n").trim(),
       imageUrls: imgLines.map((l) => l.trim()),
+      fileUrls: [],
     };
   }
 
-  return { type: "text", text: raw, imageUrls: [] };
+  return { type: "text", text: raw, imageUrls: [], fileUrls: [] };
+}
+
+// ─── Copy Pill ────────────────────────────────────────────────────────────────
+function CopyPill({ text, label, light = false }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return null;
+  return (
+    <span
+      className={`${s.copyPill} ${light ? s.copyPillLight : ""}`}
+      title={String(text)}
+    >
+      <span className={s.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={s.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        aria-label="Copy"
+      >
+        {ok ? <Check size={10} /> : <Copy size={10} />}
+      </button>
+    </span>
+  );
 }
 
 // ─── Lightbox ─────────────────────────────────────────────────────────────────
@@ -157,8 +248,8 @@ function Lightbox({ src, onClose }) {
 
   return (
     <div className={s.lightbox} onClick={onClose}>
-      <button className={s.lightboxClose} onClick={onClose} title="Close (Esc)">
-        ✕
+      <button className={s.lightboxClose} onClick={onClose} aria-label="Close">
+        <X size={18} />
       </button>
       <div className={s.lightboxImgWrap} onClick={(e) => e.stopPropagation()}>
         <img src={src} alt="Full size attachment" className={s.lightboxImg} />
@@ -195,6 +286,24 @@ function MsgImages({ urls, onImageClick }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// ─── File link ────────────────────────────────────────────────────────────────
+function MsgFile({ url }) {
+  const name = url.split("/").pop()?.split("?")[0] ?? "Attachment";
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className={s.msgFile}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <FileText size={14} />
+      <span className={s.msgFileName}>{name}</span>
+      <ExternalLink size={11} />
+    </a>
   );
 }
 
@@ -245,13 +354,13 @@ function RoleBadge({ role }) {
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, accent, delay }) {
+function StatCard({ icon: Icon, label, value, sub, accent, delay }) {
   return (
     <div
       className={`${s.statCard} ${accent ? s[`accent_${accent}`] : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <span className={s.statIcon}>{icon}</span>
+      <span className={s.statIcon}>{Icon ? <Icon size={16} /> : null}</span>
       <div className={s.statValue}>{value ?? "—"}</div>
       <div className={s.statLabel}>{label}</div>
       {sub && <div className={s.statSub}>{sub}</div>}
@@ -303,7 +412,12 @@ function MessageBubble({ msg, participants, showDate, prevMsg, onImageClick }) {
   const showSender = !prevMsg || prevMsg.senderId !== msg.senderId || showDate;
   const parsed = parseContent(msg);
   const hasImg = parsed.imageUrls.length > 0;
+  const hasFile = parsed.fileUrls.length > 0;
   const hasText = parsed.text.length > 0;
+
+  // Determine receiver name (only show when there are >2 participants or admin wants clarity)
+  const receiver = participants.find((u) => u.id === msg.receiverId);
+  const showReceiver = receiver && participants.length <= 3;
 
   return (
     <>
@@ -311,7 +425,6 @@ function MessageBubble({ msg, participants, showDate, prevMsg, onImageClick }) {
       <div
         className={`${s.bubbleWrap} ${isLeft ? s.bubbleWrapLeft : s.bubbleWrapRight}`}
       >
-        {/* Avatar slot */}
         <div className={s.bubbleAvatar}>
           {showSender ? (
             <Avatar user={sender} size="xs" index={isLeft ? 1 : 0} />
@@ -328,6 +441,12 @@ function MessageBubble({ msg, participants, showDate, prevMsg, onImageClick }) {
               className={`${s.bubbleSender} ${isLeft ? s.bubbleSenderLeft : s.bubbleSenderRight}`}
             >
               {sender?.firstName} {sender?.lastName}
+              {sender?.role && (
+                <span className={s.bubbleSenderRole}>
+                  {" · "}
+                  {ROLE_META[sender.role]?.label ?? sender.role}
+                </span>
+              )}
             </span>
           )}
 
@@ -340,22 +459,54 @@ function MessageBubble({ msg, participants, showDate, prevMsg, onImageClick }) {
             </div>
           )}
 
+          {/* Files */}
+          {hasFile && (
+            <div
+              className={`${s.bubbleFiles} ${isLeft ? s.bubbleFilesLeft : s.bubbleFilesRight}`}
+            >
+              {parsed.fileUrls.map((url, i) => (
+                <MsgFile key={i} url={url} />
+              ))}
+            </div>
+          )}
+
           {/* Text */}
           {hasText && (
             <div
               className={`${s.bubble} ${isLeft ? s.bubbleLeft : s.bubbleRight}`}
             >
               <p className={s.bubbleText}>{parsed.text}</p>
-              <span className={s.bubbleTime}>{fmtTime(msg.createdAt)}</span>
+              <span className={s.bubbleTime} title={fmtDateTime(msg.createdAt)}>
+                {fmtTime(msg.createdAt)}
+                {!isLeft && (
+                  <span
+                    className={s.readTick}
+                    title={msg.isRead ? "Read" : "Unread"}
+                  >
+                    {msg.isRead ? <Eye size={9} /> : <EyeOff size={9} />}
+                  </span>
+                )}
+              </span>
             </div>
           )}
 
-          {/* Time under image-only messages */}
-          {hasImg && !hasText && (
+          {/* Meta for image/file-only messages */}
+          {(hasImg || hasFile) && !hasText && (
             <span
               className={`${s.bubbleTimeOnly} ${isLeft ? s.bubbleTimeLeft : s.bubbleTimeRight}`}
+              title={fmtDateTime(msg.createdAt)}
             >
               {fmtTime(msg.createdAt)}
+              {!isLeft && (
+                <span className={s.readTick}>
+                  {msg.isRead ? <Eye size={9} /> : <EyeOff size={9} />}
+                </span>
+              )}
+              {showReceiver && receiver && (
+                <span className={s.bubbleTo}>
+                  {" · "}→ {receiver.firstName}
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -369,13 +520,16 @@ function ConvRow({ conv, active, onClick, searchQuery }) {
   const participants = getParticipants(conv);
   const lastMsg = conv.messages?.[0];
   const msgCount = conv._count?.messages ?? 0;
+  const unread = conv.unreadCount ?? 0;
   const names = participants
     .map((u) => `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim())
     .join(" & ");
   const lastContent = lastMsg?.content ?? "";
   const previewText = isImageUrl(lastContent.trim())
-    ? "📷 Image"
-    : truncate(lastContent);
+    ? "Photo"
+    : isFileUrl(lastContent.trim())
+      ? "File"
+      : truncate(lastContent);
 
   function hl(str) {
     if (!searchQuery || !str) return str;
@@ -399,17 +553,37 @@ function ConvRow({ conv, active, onClick, searchQuery }) {
     <button
       className={`${s.convRow} ${active ? s.convRowActive : ""}`}
       onClick={onClick}
+      title={`id ${conv.id}`}
     >
       <AvatarStack participants={participants} />
       <div className={s.convInfo}>
         <div className={s.convTopRow}>
           <span className={s.convNames}>{hl(names)}</span>
-          <span className={s.convTime}>{fmtDate(conv.updatedAt)}</span>
+          <span className={s.convTime} title={fmtDateTime(conv.updatedAt)}>
+            {fmtDate(conv.updatedAt)}
+          </span>
         </div>
         <div className={s.convBottomRow}>
-          <span className={s.convPreview}>{hl(previewText)}</span>
+          <span className={s.convPreview}>
+            {lastMsg && isImageUrl(lastContent.trim()) && (
+              <ImageIcon size={10} className={s.convPreviewIcon} />
+            )}
+            {lastMsg && isFileUrl(lastContent.trim()) && (
+              <FileText size={10} className={s.convPreviewIcon} />
+            )}
+            {hl(previewText)}
+          </span>
           <div className={s.convMeta}>
-            {conv.bookingId && <span>📅</span>}
+            {conv.bookingId && (
+              <span className={s.convBooking} title="Linked booking">
+                <Calendar size={10} />
+              </span>
+            )}
+            {unread > 0 && (
+              <span className={s.convUnread} title={`${unread} unread`}>
+                {unread}
+              </span>
+            )}
             <span className={s.convCount}>{msgCount}</span>
           </div>
         </div>
@@ -424,8 +598,8 @@ function ThreadHeader({ conv, onBack }) {
   const msgCount = conv._count?.messages ?? 0;
   return (
     <div className={s.threadHeader}>
-      <button className={s.backBtn} onClick={onBack}>
-        ←
+      <button className={s.backBtn} onClick={onBack} aria-label="Back">
+        <ChevronLeft size={16} />
       </button>
       <div className={s.threadParticipants}>
         {participants.map((u, i) => (
@@ -435,13 +609,27 @@ function ThreadHeader({ conv, onBack }) {
               <span className={s.threadParticipantName}>
                 {u?.firstName} {u?.lastName}
               </span>
-              <RoleBadge role={u?.role} />
+              <div className={s.threadParticipantRow}>
+                {u?.role && <RoleBadge role={u.role} />}
+                {u?.email && (
+                  <span className={s.threadParticipantEmail} title={u.email}>
+                    <Mail size={9} /> {u.email}
+                  </span>
+                )}
+              </div>
+              {u?.id && (
+                <CopyPill text={u.id} label={`id ${u.id.slice(0, 8)}…`} light />
+              )}
             </div>
           </div>
         ))}
       </div>
       <div className={s.threadHeaderRight}>
-        {conv.bookingId && <span className={s.bookingTag}>📅 Booking</span>}
+        {conv.bookingId && (
+          <span className={s.bookingTag} title={conv.bookingId}>
+            <Calendar size={11} /> Booking
+          </span>
+        )}
         <span className={s.threadCount}>{msgCount} msgs</span>
       </div>
     </div>
@@ -452,7 +640,9 @@ function ThreadHeader({ conv, onBack }) {
 function EmptyThread() {
   return (
     <div className={s.emptyThread}>
-      <span className={s.emptyThreadIcon}>💬</span>
+      <span className={s.emptyThreadIcon}>
+        <MessageCircle size={48} />
+      </span>
       <p className={s.emptyThreadTitle}>Select a conversation</p>
       <p className={s.emptyThreadSub}>
         Choose from the list to read the thread
@@ -479,7 +669,7 @@ export default function AdminMessages() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [mobileView, setMobileView] = useState("list");
-  const [toast, setToast] = useState(null);
+  const [notify, setNotify] = useState(null);
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const threadEndRef = useRef(null);
@@ -489,11 +679,16 @@ export default function AdminMessages() {
     0,
   );
   const withBooking = convs.filter((c) => !!c.bookingId).length;
+  const totalUnread = convs.reduce((s, c) => s + (c.unreadCount ?? 0), 0);
   const avgMsgCount = convs.length
     ? Math.round(
         convs.reduce((s, c) => s + (c._count?.messages ?? 0), 0) / convs.length,
       )
     : 0;
+
+  function showToast(type, msg) {
+    setNotify({ type, text: msg });
+  }
 
   // ── Load conversations ────────────────────────────────────────────────────────
   const loadConvs = useCallback(async (pg = 1) => {
@@ -518,7 +713,7 @@ export default function AdminMessages() {
 
   useEffect(() => {
     loadConvs(1);
-  }, []);
+  }, [loadConvs]);
 
   // ── Load thread ───────────────────────────────────────────────────────────────
   const loadMessages = useCallback(async (convId, pg = 1, append = false) => {
@@ -571,39 +766,22 @@ export default function AdminMessages() {
       )
     : convs;
 
-  function showToast(type, msg) {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
-  }
-
   const activeParticipants = activeConv ? getParticipants(activeConv) : [];
 
   return (
     <AdminLayout>
-      {/* Lightbox — rendered outside the page flow, covers everything */}
       {lightboxSrc && (
         <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
       )}
 
       <div className={s.page}>
-        {/* Toast */}
-        {toast && (
-          <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
-            <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
-            </span>
-            <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
-            </button>
-          </div>
-        )}
-
         {/* ── Top section (doesn't grow) ── */}
         <div className={s.topSection}>
           <div className={s.pageHeader}>
             <div>
               <p className={s.eyebrow}>Platform</p>
               <h1 className={s.pageTitle}>
+                <MessageCircle size={18} />
                 Messages
                 {convTotal > 0 && (
                   <span className={s.countPill}>{convTotal}</span>
@@ -614,14 +792,14 @@ export default function AdminMessages() {
               </p>
             </div>
             <div className={s.readOnlyBanner}>
-              <span className={s.readOnlyDot} />
+              <Lock size={11} />
               <span className={s.readOnlyText}>Read-only</span>
             </div>
           </div>
 
           <div className={s.statsGrid}>
             <StatCard
-              icon="💬"
+              icon={MessageCircle}
               label="Conversations"
               value={convTotal}
               sub="All platform"
@@ -629,7 +807,7 @@ export default function AdminMessages() {
               delay={0}
             />
             <StatCard
-              icon="📨"
+              icon={Send}
               label="Messages"
               value={totalMessages}
               sub="This page total"
@@ -637,7 +815,7 @@ export default function AdminMessages() {
               delay={0.05}
             />
             <StatCard
-              icon="📅"
+              icon={Calendar}
               label="With Booking"
               value={withBooking}
               sub="Linked to a booking"
@@ -645,7 +823,7 @@ export default function AdminMessages() {
               delay={0.1}
             />
             <StatCard
-              icon="📊"
+              icon={BarChart3}
               label="Avg. Messages"
               value={avgMsgCount}
               sub="Per conversation"
@@ -660,7 +838,7 @@ export default function AdminMessages() {
               className={`${s.mobileTab} ${mobileView === "list" ? s.mobileTabActive : ""}`}
               onClick={() => setMobileView("list")}
             >
-              📋 Conversations
+              <Users size={12} /> Conversations
               {convTotal > 0 && (
                 <span className={s.mobileTabCount}>{convTotal}</span>
               )}
@@ -670,7 +848,7 @@ export default function AdminMessages() {
               onClick={() => setMobileView("thread")}
               disabled={!activeConv}
             >
-              💬 Thread
+              <MessageCircle size={12} /> Thread
               {activeConv && (
                 <span className={s.mobileTabCount}>{msgTotal}</span>
               )}
@@ -678,14 +856,16 @@ export default function AdminMessages() {
           </div>
         </div>
 
-        {/* ── Split pane — fills remaining height ── */}
+        {/* ── Split pane ── */}
         <div className={s.splitPane}>
           {/* LEFT — conversation list */}
           <div
             className={`${s.convPane} ${mobileView === "thread" ? s.convPaneHidden : ""}`}
           >
             <div className={s.convSearch}>
-              <span className={s.searchIcon}>🔍</span>
+              <span className={s.searchIcon}>
+                <Search size={13} />
+              </span>
               <input
                 className={s.searchInput}
                 placeholder="Search by name or email…"
@@ -693,8 +873,12 @@ export default function AdminMessages() {
                 onChange={(e) => setSearch(e.target.value)}
               />
               {search && (
-                <button className={s.searchClear} onClick={() => setSearch("")}>
-                  ✕
+                <button
+                  className={s.searchClear}
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                >
+                  <X size={12} />
                 </button>
               )}
             </div>
@@ -704,7 +888,7 @@ export default function AdminMessages() {
                 <ConvSkeletons />
               ) : filteredConvs.length === 0 ? (
                 <div className={s.convEmpty}>
-                  <span>💭</span>
+                  <Inbox size={32} />
                   <p>
                     {search ? "No matches found." : "No conversations yet."}
                   </p>
@@ -748,7 +932,6 @@ export default function AdminMessages() {
                 />
 
                 <div className={s.threadBody}>
-                  {/* Load earlier */}
                   {msgPage < msgPages && !loadingMore && (
                     <div className={s.loadEarlierWrap}>
                       <button
@@ -757,7 +940,7 @@ export default function AdminMessages() {
                           loadMessages(activeConv.id, msgPage + 1, true)
                         }
                       >
-                        ↑ Load earlier messages
+                        <ChevronUp size={12} /> Load earlier messages
                       </button>
                     </div>
                   )}
@@ -771,7 +954,7 @@ export default function AdminMessages() {
                     <MsgSkeletons />
                   ) : messages.length === 0 ? (
                     <div className={s.noMsgs}>
-                      <span>📭</span>
+                      <Inbox size={32} />
                       <p>No messages in this conversation.</p>
                     </div>
                   ) : (
@@ -795,10 +978,11 @@ export default function AdminMessages() {
                 </div>
 
                 <div className={s.threadFooter}>
-                  <span>🔒</span>
+                  <Lock size={11} />
                   <span className={s.threadFooterText}>
                     Admin read-only · {msgTotal} message
                     {msgTotal !== 1 ? "s" : ""}
+                    {totalUnread > 0 && ` · ${totalUnread} unread on page`}
                   </span>
                 </div>
               </>
@@ -806,6 +990,30 @@ export default function AdminMessages() {
           </div>
         </div>
       </div>
+
+      {/* Platform AlertModal */}
+      <AlertModal
+        isOpen={!!notify}
+        onClose={() => setNotify(null)}
+        title={notify?.type === "error" ? "Something went wrong" : "Done"}
+        subtitle={
+          notify?.type === "error"
+            ? "The action could not be completed."
+            : "The action was completed successfully."
+        }
+        alerts={
+          notify
+            ? [
+                {
+                  icon: notify.type === "error" ? AlertTriangle : CheckCircle,
+                  label: notify.type === "error" ? "Error" : "Success",
+                  description: notify.text,
+                  variant: notify.type === "error" ? "red" : "green",
+                },
+              ]
+            : []
+        }
+      />
     </AdminLayout>
   );
 }

@@ -9,6 +9,8 @@
   flex-direction: column;
   gap: 18px;
   animation: fadeUp 0.35s ease both;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pageHeader {
@@ -36,6 +38,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .countPill {
   font-size: 12px;
@@ -93,6 +96,7 @@
   align-items: center;
   gap: 4px;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 .btnGreen:hover:not(:disabled) {
   background: var(--green);
@@ -115,8 +119,11 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .btnRed:hover:not(:disabled) {
   background: var(--red);
@@ -140,6 +147,7 @@
   justify-content: center;
   color: var(--text-dim);
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 .iconBtn:hover {
   border-color: var(--orange);
@@ -165,6 +173,12 @@
   font-size: 13px;
   font-weight: 600;
   animation: fadeUp 0.2s ease both;
+  flex-wrap: wrap;
+}
+.alertText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .alert_error {
   background: var(--red-dim);
@@ -184,6 +198,8 @@
   cursor: pointer;
   opacity: 0.7;
   line-height: 1;
+  flex-shrink: 0;
+  padding: 0 4px;
 }
 
 /* ── Filter bar ──────────────────────────────────────────────── */
@@ -238,6 +254,7 @@
   font-family: var(--font-body);
   outline: none;
   cursor: pointer;
+  max-width: 100%;
 }
 .providerSelect option {
   background: #0c0c18;
@@ -264,6 +281,7 @@
 }
 .searchInput {
   flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   outline: none;
@@ -291,6 +309,7 @@
   gap: 4px;
   animation: fadeUp 0.4s ease both;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .statCard:hover {
   border-color: var(--border-hover);
@@ -326,6 +345,7 @@
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 .statLabel {
   font-size: 10px;
@@ -360,6 +380,7 @@
   gap: 10px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 .panelTitle {
   font-family: var(--font-display);
@@ -388,6 +409,7 @@
   height: 140px;
   overflow-x: auto;
   scrollbar-width: thin;
+  padding-bottom: 4px;
 }
 .barGroup {
   display: flex;
@@ -395,6 +417,7 @@
   align-items: center;
   gap: 4px;
   min-width: 36px;
+  flex-shrink: 0;
 }
 .barWrap {
   display: flex;
@@ -439,6 +462,7 @@
   border-radius: 8px;
   animation: fadeUp 0.35s ease both;
   transition: border-color 0.15s;
+  flex-wrap: wrap;
 }
 .catRow:hover {
   border-color: var(--border-hover);
@@ -448,6 +472,7 @@
   color: var(--text-muted);
   font-weight: 700;
   width: 20px;
+  flex-shrink: 0;
 }
 .catInfo {
   display: flex;
@@ -510,6 +535,7 @@
   gap: 6px;
   animation: fadeUp 0.4s ease both;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .catCard:hover {
   border-color: var(--border-hover);
@@ -530,16 +556,19 @@
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 .catCardSlug {
   font-size: 10px;
   color: var(--text-muted);
   font-family: monospace;
+  overflow-wrap: anywhere;
 }
 .catCardDesc {
   font-size: 11px;
   color: var(--text-dim);
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 .catCardStats {
   display: flex;
@@ -547,6 +576,7 @@
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 2px;
+  flex-wrap: wrap;
 }
 
 /* ── Generic list ────────────────────────────────────────────── */
@@ -567,6 +597,7 @@
   border-bottom: 1px solid var(--border);
   animation: fadeUp 0.35s ease both;
   transition: background 0.15s;
+  flex-wrap: wrap;
 }
 .listRow:last-child {
   border-bottom: none;
@@ -597,6 +628,7 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 .listMeta {
   font-size: 11px;
@@ -639,7 +671,7 @@
 }
 .tableHead {
   display: none;
-} /* hidden on mobile */
+}
 .tableBody {
   display: flex;
   flex-direction: column;
@@ -745,6 +777,7 @@
   border-bottom: 1px solid var(--border);
   animation: fadeUp 0.35s ease both;
   background: var(--bg-panel);
+  flex-wrap: wrap;
 }
 .reviewRow:last-child {
   border-bottom: none;
@@ -752,12 +785,14 @@
 .reviewLeft {
   flex: 1;
   min-width: 0;
+  width: 100%;
 }
 .stars {
   display: flex;
   align-items: center;
   gap: 2px;
   margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 .starOn {
   color: #fbbf24;
@@ -780,6 +815,7 @@
   margin-bottom: 6px;
   border-left: 2px solid var(--orange);
   padding-left: 10px;
+  overflow-wrap: anywhere;
 }
 .reviewMeta {
   display: flex;
@@ -848,6 +884,7 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 .adminAvatarLg {
   width: 56px;
@@ -875,11 +912,13 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 .adminEmailLg {
   font-size: 12px;
   color: var(--text-dim);
   margin-bottom: 6px;
+  overflow-wrap: anywhere;
 }
 .adminRoleBadge {
   font-size: 10px;
@@ -906,6 +945,7 @@
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 .configRow:last-child {
   border-bottom: none;
@@ -1015,6 +1055,7 @@
   top: 0;
   background: var(--bg-panel);
   z-index: 1;
+  gap: 10px;
 }
 .modalTitle {
   font-family: var(--font-display);
@@ -1022,6 +1063,8 @@
   font-weight: 800;
   color: var(--text);
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .modalClose {
   background: var(--bg-card);
@@ -1036,10 +1079,17 @@
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 .modalClose:hover {
   color: var(--text);
   border-color: var(--border-hover);
+}
+.modalBody {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .modalForm {
   padding: 18px 20px;
@@ -1073,6 +1123,7 @@
   font-family: var(--font-body);
   transition: border-color 0.15s;
   width: 100%;
+  box-sizing: border-box;
 }
 .input:focus,
 .textarea:focus {
@@ -1164,6 +1215,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
+  flex-wrap: wrap;
 }
 .pageBtn {
   padding: 7px 16px;
@@ -1176,6 +1228,7 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .pageBtn:hover:not(:disabled) {
   border-color: var(--orange);
@@ -1272,6 +1325,339 @@
   }
 }
 
+/* ── Review row clickable ── */
+.reviewRowClickable {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.reviewRowClickable:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Review parties row ── */
+.reviewParties {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+.reviewPartyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px 2px 2px;
+  max-width: 100%;
+}
+.reviewPartyName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reviewArrow {
+  color: var(--text-muted);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Stars row helper ── */
+.starsRow {
+  display: inline-flex;
+  gap: 1px;
+}
+
+/* ── Booking block under a review row ── */
+.reviewBooking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+.reviewBookingLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.reviewBookingTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* ── IDs + timestamp row ── */
+.reviewIdsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.reviewDotSep {
+  opacity: 0.4;
+}
+.reviewDateFull {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Copy pill ── */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+
+/* ── Avatar (used inside review rows) ── */
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatarLg {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+.avatarXs {
+  width: 24px;
+  height: 24px;
+  font-size: 9px;
+}
+
+/* ── Detail modal additions ── */
+.modalLg {
+  max-width: 640px;
+  width: 100%;
+}
+
+.ratingHero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+.ratingHeroNum {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--orange);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.ratingHeroInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.ratingHeroLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.reviewCommentBlock {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.reviewCommentLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 6px;
+}
+.reviewCommentText {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.7;
+  font-style: italic;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin: 12px 0 6px;
+}
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.detailCell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.detailLabel {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.detailVal {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.userBlock {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+.userBlockInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.userBlockName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.userBlockMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.userBlockIds {
+  margin-top: 4px;
+}
+
+.detailSkeleton {
+  height: 72px;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.03) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.btnGhost {
+  padding: 11px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+.btnGhost:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+
 /* ── Tablet (640px+) ─────────────────────────────────────────── */
 @media (min-width: 640px) {
   .page {
@@ -1300,6 +1686,16 @@
     border-radius: 20px;
     max-width: 520px;
   }
+  .modalLg {
+    max-width: 640px;
+  }
+  .searchBar {
+    width: 280px;
+    flex-shrink: 0;
+  }
+  .filterRow {
+    flex-wrap: nowrap;
+  }
 }
 
 /* ── Desktop (900px+) ────────────────────────────────────────── */
@@ -1325,5 +1721,442 @@
   }
   .settingsGrid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── 540px and below (large phones) ── */
+@media (max-width: 540px) {
+  .page {
+    padding: 16px 12px 48px;
+    gap: 14px;
+  }
+  .pageTitle {
+    font-size: 1.125rem;
+  }
+  .countPill {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+
+  .statsGrid {
+    gap: 8px;
+  }
+  .statCard {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .statValue {
+    font-size: 20px;
+  }
+  .statLabel {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+  .statSub {
+    font-size: 9px;
+  }
+
+  .filterTab {
+    padding: 5px 12px;
+    font-size: 10px;
+  }
+  .searchBar {
+    padding: 8px 12px;
+  }
+  .searchInput {
+    font-size: 13px;
+  }
+
+  .listRow {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .listName {
+    font-size: 13px;
+  }
+  .listMeta,
+  .listSub {
+    font-size: 10px;
+  }
+
+  .reviewRow {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .stars {
+    gap: 1px;
+    margin-bottom: 4px;
+  }
+  .starOn,
+  .starOff {
+    font-size: 13px;
+  }
+  .ratingNum {
+    font-size: 10px;
+    margin-left: 4px;
+  }
+  .reviewComment {
+    font-size: 12.5px;
+    padding-left: 8px;
+    margin-bottom: 4px;
+  }
+  .reviewPartyName {
+    font-size: 11px;
+  }
+  .reviewPartyChip {
+    padding: 2px 8px 2px 2px;
+  }
+  .reviewArrow {
+    font-size: 12px;
+  }
+  .reviewBookingLabel {
+    font-size: 9px;
+  }
+  .reviewBookingTitle {
+    font-size: 11px;
+  }
+  .reviewDateFull {
+    font-size: 10px;
+  }
+  .reviewDate {
+    font-size: 9px;
+  }
+  .btnRed {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+
+  .modalBody {
+    padding: 16px;
+    gap: 12px;
+  }
+  .modalHeader {
+    padding: 14px 16px;
+  }
+  .modalTitle {
+    font-size: 15px;
+  }
+  .ratingHero {
+    padding: 14px;
+    gap: 12px;
+  }
+  .ratingHeroNum {
+    font-size: 32px;
+  }
+  .ratingHeroLabel {
+    font-size: 10px;
+  }
+  .reviewCommentBlock {
+    padding: 10px 12px;
+  }
+  .reviewCommentText {
+    font-size: 12.5px;
+  }
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+  .detailCell {
+    padding: 8px 10px;
+  }
+  .detailLabel {
+    font-size: 8.5px;
+  }
+  .detailVal {
+    font-size: 12px;
+  }
+  .userBlock {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .userBlockName {
+    font-size: 13px;
+  }
+  .userBlockMeta {
+    font-size: 11px;
+  }
+
+  .copyPill {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .copyPillBtn {
+    font-size: 11px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+  .btnGhost,
+  .btnRed {
+    width: 100%;
+    justify-content: center;
+    padding: 11px;
+    font-size: 13px;
+  }
+
+  .pager {
+    gap: 10px;
+  }
+  .pageBtn {
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+  .pageInfo {
+    font-size: 11px;
+  }
+}
+
+/* ── 420px and below (small phones) ── */
+@media (max-width: 420px) {
+  .page {
+    padding: 14px 10px 44px;
+    gap: 12px;
+  }
+  .pageTitle {
+    font-size: 1.05rem;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .statCard {
+    padding: 10px;
+    border-radius: 10px;
+  }
+  .statValue {
+    font-size: 18px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 8.5px;
+  }
+
+  .listRow {
+    padding: 9px 10px;
+    gap: 6px;
+  }
+  .listName {
+    font-size: 12px;
+  }
+
+  .reviewRow {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .starOn,
+  .starOff {
+    font-size: 12px;
+  }
+  .reviewComment {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .reviewPartyChip {
+    padding: 1px 7px 1px 1px;
+    gap: 4px;
+  }
+  .reviewPartyName {
+    font-size: 10.5px;
+  }
+  .reviewIdsRow {
+    gap: 4px;
+  }
+  .copyPill {
+    font-size: 8.5px;
+    padding: 1px 4px;
+  }
+  .copyPillBtn {
+    font-size: 10px;
+  }
+
+  .modalBody {
+    padding: 14px;
+    gap: 10px;
+  }
+  .modalHeader {
+    padding: 12px 14px;
+  }
+  .modalTitle {
+    font-size: 14px;
+  }
+  .ratingHero {
+    padding: 12px;
+    gap: 10px;
+  }
+  .ratingHeroNum {
+    font-size: 28px;
+  }
+  .userBlock {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+  .userBlockName {
+    font-size: 12.5px;
+  }
+  .userBlockMeta {
+    font-size: 10.5px;
+  }
+  .avatarLg {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+  }
+
+  .btnGhost,
+  .btnRed {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .pager {
+    gap: 8px;
+  }
+  .pageBtn {
+    padding: 5px 12px;
+    font-size: 10.5px;
+  }
+  .pageInfo {
+    font-size: 10.5px;
+  }
+}
+
+/* ── 340px and below (smallest usable phones) ── */
+@media (max-width: 340px) {
+  .page {
+    padding: 12px 8px 40px;
+    gap: 10px;
+  }
+  .pageTitle {
+    font-size: 1rem;
+  }
+  .countPill {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  .statsGrid {
+    gap: 4px;
+  }
+  .statCard {
+    padding: 8px;
+    border-radius: 8px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 8px;
+  }
+
+  .listRow {
+    padding: 8px 9px;
+  }
+  .listName {
+    font-size: 11.5px;
+  }
+
+  .reviewRow {
+    padding: 9px 10px;
+    gap: 6px;
+  }
+  .starOn,
+  .starOff {
+    font-size: 11px;
+  }
+  .ratingNum {
+    font-size: 9px;
+  }
+  .reviewComment {
+    font-size: 11.5px;
+    padding-left: 6px;
+  }
+  .reviewPartyName {
+    font-size: 10px;
+  }
+  .reviewPartyChip {
+    padding: 1px 6px 1px 1px;
+  }
+
+  .modalBody {
+    padding: 12px;
+    gap: 8px;
+  }
+  .modalHeader {
+    padding: 10px 12px;
+  }
+  .modalTitle {
+    font-size: 13px;
+  }
+  .ratingHero {
+    padding: 10px;
+    gap: 8px;
+  }
+  .ratingHeroNum {
+    font-size: 24px;
+  }
+  .ratingHeroLabel {
+    font-size: 9px;
+  }
+  .reviewCommentText {
+    font-size: 12px;
+  }
+  .detailCell {
+    padding: 7px 9px;
+  }
+  .detailLabel {
+    font-size: 8px;
+  }
+  .detailVal {
+    font-size: 11.5px;
+  }
+  .userBlock {
+    padding: 8px 9px;
+    gap: 6px;
+  }
+  .userBlockName {
+    font-size: 12px;
+  }
+  .userBlockMeta {
+    font-size: 10px;
+  }
+  .avatarLg {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  .avatarXs {
+    width: 22px;
+    height: 22px;
+    font-size: 8px;
+  }
+
+  .copyPill {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  .btnGhost,
+  .btnRed {
+    padding: 9px;
+    font-size: 11.5px;
+  }
+
+  .pageBtn {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+  .pageInfo {
+    font-size: 10px;
   }
 }

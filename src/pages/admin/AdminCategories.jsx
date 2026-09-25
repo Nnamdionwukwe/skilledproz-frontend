@@ -1,6 +1,44 @@
+// src/pages/admin/AdminCategories.jsx
+// Full admin categories management.
+//
+// Endpoints:
+//   GET    /admin/categories?search=&page=&limit=      (paginated, richer than public)
+//   POST   /admin/categories                            { name, slug, description, icon, parentId }
+//   PATCH  /admin/categories/:categoryId                { name, slug, description, icon, parentId }
+//   DELETE /admin/categories/:categoryId
+//
+// Every field the backend sends is rendered:
+//   id, name, slug, description, icon, parentId, isUserSubmitted, submittedBy,
+//   createdAt, updatedAt, parent { id, name, icon, slug }, children[],
+//   _count { workers, bookings, jobPosts }
+//
+// Emojis removed. Fully responsive. Uses platform AlertModal + ConfirmationModal.
+
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import {
+  Tag,
+  Hammer,
+  ClipboardList,
+  FileText,
+  Search,
+  X,
+  Pencil,
+  Trash2,
+  Plus,
+  Moon,
+  FolderTree,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Check,
+  AlertTriangle,
+  CheckCircle,
+  Inbox,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
+import AlertModal from "../../components/ui/AlertModal";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import api from "../../lib/api";
 import styles from "./AdminCategories.module.css";
 
@@ -13,88 +51,88 @@ function autoSlug(name) {
     .replace(/^-|-$/g, "");
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-function Toast({ toast }) {
-  if (!toast) return null;
+function fmtDateTime(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function timeAgo(d) {
+  if (!d) return "";
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 30) return `${days}d ago`;
+  return fmtDate(d);
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Atoms ────────────────────────────────────────────────────────────────────
+
+function Spinner() {
+  return <span className={styles.spinner} />;
+}
+
+function CopyPill({ text, label }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return <span className={styles.dimText}>—</span>;
   return (
-    <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-      {toast.msg}
-    </div>
+    <span className={styles.copyPill} title={String(text)}>
+      <span className={styles.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={styles.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        aria-label="Copy"
+      >
+        {ok ? <Check size={11} /> : <Copy size={11} />}
+      </button>
+    </span>
   );
 }
 
-// ─── Stat Chip ────────────────────────────────────────────────────────────────
-
-function StatChip({ icon, label, value, accent }) {
+function StatChip({ icon: Icon, label, value, accent }) {
   return (
     <div
       className={`${styles.statChip} ${accent ? styles[`chipAccent_${accent}`] : ""}`}
     >
-      <span className={styles.chipIcon}>{icon}</span>
-      <div>
+      <span className={styles.chipIcon}>
+        {Icon ? <Icon size={16} /> : null}
+      </span>
+      <div className={styles.chipBody}>
         <div className={styles.chipVal}>{value ?? "—"}</div>
         <div className={styles.chipLabel}>{label}</div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
-
-function DeleteModal({ category, onConfirm, onClose, loading }) {
-  return (
-    <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <p className={styles.modalTitle} style={{ color: "var(--red)" }}>
-            Delete Category
-          </p>
-          <button className={styles.modalClose} onClick={onClose}>
-            ×
-          </button>
-        </div>
-        <div className={styles.modalBody}>
-          <div className={styles.deletePreview}>
-            <span className={styles.deleteIcon}>{category.icon || "🔧"}</span>
-            <div>
-              <p className={styles.deleteName}>{category.name}</p>
-              <p className={styles.deleteSlug}>{category.slug}</p>
-            </div>
-          </div>
-          <p className={styles.deleteWarning}>
-            This will permanently delete <strong>{category.name}</strong>.
-            {(category._count?.workers > 0 ||
-              category._count?.bookings > 0) && (
-              <span className={styles.deleteConflict}>
-                {" "}
-                ⚠️ Cannot delete — {category._count?.workers || 0} workers and{" "}
-                {category._count?.bookings || 0} bookings are linked to this
-                category.
-              </span>
-            )}
-          </p>
-          <div className={styles.modalActions}>
-            <button
-              className={styles.modalCancel}
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              className={styles.modalDelete}
-              onClick={onConfirm}
-              disabled={
-                loading ||
-                category._count?.workers > 0 ||
-                category._count?.bookings > 0
-              }
-            >
-              {loading ? <span className={styles.spinner} /> : "Delete"}
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -134,11 +172,9 @@ function CategoryFormModal({ editing, allCategories, onClose, onSaved }) {
       };
 
       if (editing) {
-        // PATCH — not PUT — /admin/categories/:categoryId
         await api.patch(`/admin/categories/${editing.id}`, payload);
         onSaved(`"${form.name}" updated`);
       } else {
-        // POST /admin/categories
         await api.post("/admin/categories", payload);
         onSaved(`"${form.name}" created`);
       }
@@ -157,23 +193,29 @@ function CategoryFormModal({ editing, allCategories, onClose, onSaved }) {
           <p className={styles.modalTitle}>
             {editing ? "Edit Category" : "New Category"}
           </p>
-          <button className={styles.modalClose} onClick={onClose}>
-            ×
+          <button
+            className={styles.modalClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={15} />
           </button>
         </div>
 
         <form className={styles.modalForm} onSubmit={handleSubmit}>
           {/* Icon + Name on same row */}
           <div className={styles.iconNameRow}>
-            <div className={styles.iconPreview}>{form.icon || "🔧"}</div>
-            <div className={styles.formField} style={{ flex: 1 }}>
-              <label className={styles.formLabel}>Icon (emoji)</label>
+            <div className={styles.iconPreview}>
+              {form.icon || <Tag size={18} />}
+            </div>
+            <div className={`${styles.formField} ${styles.flexOne}`}>
+              <label className={styles.formLabel}>Icon</label>
               <input
                 className={styles.input}
                 value={form.icon}
                 onChange={(e) => setField("icon", e.target.value)}
-                placeholder="🔧"
-                maxLength={4}
+                placeholder="Optional icon"
+                maxLength={8}
               />
             </div>
           </div>
@@ -206,7 +248,7 @@ function CategoryFormModal({ editing, allCategories, onClose, onSaved }) {
             </div>
           </div>
 
-          {/* parentId — new field wiring the Category.parentId relation */}
+          {/* parentId — wires the Category.parentId relation */}
           <div className={styles.formField}>
             <label className={styles.formLabel}>
               Parent Category (optional)
@@ -237,7 +279,54 @@ function CategoryFormModal({ editing, allCategories, onClose, onSaved }) {
             />
           </div>
 
-          {error && <div className={styles.inlineError}>⚠️ {error}</div>}
+          {editing && (
+            <div className={styles.metaGrid}>
+              <div className={styles.metaCell}>
+                <span className={styles.metaLabel}>ID</span>
+                <CopyPill
+                  text={editing.id}
+                  label={editing.id.slice(0, 12) + "…"}
+                />
+              </div>
+              {editing.createdAt && (
+                <div className={styles.metaCell}>
+                  <span className={styles.metaLabel}>Created</span>
+                  <span className={styles.metaVal}>
+                    {fmtDateTime(editing.createdAt)}
+                  </span>
+                </div>
+              )}
+              {editing.updatedAt && (
+                <div className={styles.metaCell}>
+                  <span className={styles.metaLabel}>Updated</span>
+                  <span className={styles.metaVal}>
+                    {fmtDateTime(editing.updatedAt)}
+                  </span>
+                </div>
+              )}
+              <div className={styles.metaCell}>
+                <span className={styles.metaLabel}>Source</span>
+                <span className={styles.metaVal}>
+                  {editing.isUserSubmitted ? "User submitted" : "Seeded"}
+                </span>
+              </div>
+              {editing.submittedBy && (
+                <div className={styles.metaCell}>
+                  <span className={styles.metaLabel}>Submitted by</span>
+                  <CopyPill
+                    text={editing.submittedBy}
+                    label={editing.submittedBy.slice(0, 12) + "…"}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className={styles.inlineError}>
+              <AlertTriangle size={13} /> {error}
+            </div>
+          )}
 
           <button
             type="submit"
@@ -246,7 +335,7 @@ function CategoryFormModal({ editing, allCategories, onClose, onSaved }) {
           >
             {submitting ? (
               <>
-                <span className={styles.spinner} /> Saving…
+                <Spinner /> Saving…
               </>
             ) : editing ? (
               "Save Changes"
@@ -271,38 +360,53 @@ function CategoryCard({ cat, maxBookings, onEdit, onDelete, i }) {
         )
       : 0;
 
+  const isEdited =
+    cat.updatedAt && cat.createdAt && cat.updatedAt !== cat.createdAt;
+
   return (
     <div className={styles.catCard} style={{ animationDelay: `${i * 30}ms` }}>
       <div className={styles.catCardTop}>
         <div className={styles.catCardIconWrap}>
-          <span className={styles.catCardIcon}>{cat.icon || "🔧"}</span>
+          <span className={styles.catCardIcon}>
+            {cat.icon || <Tag size={20} />}
+          </span>
         </div>
         <div className={styles.catCardActions}>
           <button
             className={styles.iconBtn}
             onClick={() => onEdit(cat)}
             title="Edit"
+            aria-label="Edit"
           >
-            ✎
+            <Pencil size={13} />
           </button>
           <button
             className={styles.iconBtnRed}
             onClick={() => onDelete(cat)}
             title="Delete"
+            aria-label="Delete"
           >
-            ✕
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
 
       <div className={styles.catCardBody}>
-        <p className={styles.catCardName}>{cat.name}</p>
+        <div className={styles.catCardNameRow}>
+          <p className={styles.catCardName}>{cat.name}</p>
+          {cat.isUserSubmitted && (
+            <span className={styles.userSubmittedTag}>User</span>
+          )}
+        </div>
+
         {cat.parent && (
           <p className={styles.catCardParent}>
-            ↳ {cat.parent.icon || ""} {cat.parent.name}
+            <FolderTree size={11} /> {cat.parent.icon || ""} {cat.parent.name}
           </p>
         )}
+
         <p className={styles.catCardSlug}>/{cat.slug}</p>
+
         {cat.description && (
           <p className={styles.catCardDesc}>
             {cat.description.length > 72
@@ -310,6 +414,28 @@ function CategoryCard({ cat, maxBookings, onEdit, onDelete, i }) {
               : cat.description}
           </p>
         )}
+
+        {/* Children chips */}
+        {Array.isArray(cat.children) && cat.children.length > 0 && (
+          <div className={styles.childRow}>
+            {cat.children.slice(0, 3).map((ch) => (
+              <span key={ch.id} className={styles.childChip}>
+                {ch.icon ? `${ch.icon} ` : ""}
+                {ch.name}
+              </span>
+            ))}
+            {cat.children.length > 3 && (
+              <span className={styles.childChipDim}>
+                +{cat.children.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Identifiers */}
+        <div className={styles.catCardIds}>
+          <CopyPill text={cat.id} label={`id ${cat.id.slice(0, 8)}…`} />
+        </div>
       </div>
 
       {/* Usage bar */}
@@ -324,14 +450,24 @@ function CategoryCard({ cat, maxBookings, onEdit, onDelete, i }) {
       {/* Stats row */}
       <div className={styles.catCardStats}>
         <span className={styles.statPill}>
-          🔨 {cat._count?.workers || 0} workers
+          <Hammer size={11} /> {cat._count?.workers || 0} workers
         </span>
         <span className={styles.statPill}>
-          📋 {cat._count?.bookings || 0} jobs
+          <ClipboardList size={11} /> {cat._count?.bookings || 0} jobs
         </span>
-        {(cat._count?.jobPosts ?? 0) > 0 && (
-          <span className={styles.statPillDim}>
-            📝 {cat._count.jobPosts} posts
+        <span className={styles.statPillDim}>
+          <FileText size={11} /> {cat._count?.jobPosts || 0} posts
+        </span>
+      </div>
+
+      {/* Timestamps */}
+      <div className={styles.catCardTimes}>
+        <span className={styles.catCardTime}>
+          {timeAgo(cat.createdAt)} · {fmtDate(cat.createdAt)}
+        </span>
+        {isEdited && (
+          <span className={styles.catCardTime}>
+            edited {timeAgo(cat.updatedAt)}
           </span>
         )}
       </div>
@@ -364,11 +500,10 @@ export default function AdminCategories() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const [toast, setToast] = useState(null);
+  const [notify, setNotify] = useState(null); // { type: "error" | "success", text }
 
   function showToast(msg, type = "success") {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+    setNotify({ type, text: msg });
   }
 
   function setParam(k, v) {
@@ -379,7 +514,7 @@ export default function AdminCategories() {
     setSearchParams(p);
   }
 
-  // ── Fetch — GET /admin/categories (not the public endpoint) ───────────────
+  // ── Fetch — GET /admin/categories ─────────────────────────────────────────
 
   const fetchCategories = useCallback(() => {
     setLoading(true);
@@ -418,15 +553,15 @@ export default function AdminCategories() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
     setDeleting(true);
     try {
-      await api.delete(`/admin/categories/${deleteTarget.id}`);
-      showToast(`"${deleteTarget.name}" deleted`);
-      setDeleteTarget(null);
+      await api.delete(`/admin/categories/${target.id}`);
+      showToast(`"${target.name}" deleted`, "success");
       fetchCategories();
     } catch (e) {
       showToast(e.response?.data?.message || "Failed to delete", "error");
-      setDeleteTarget(null);
     } finally {
       setDeleting(false);
     }
@@ -455,8 +590,6 @@ export default function AdminCategories() {
   return (
     <AdminLayout>
       <div className={styles.page}>
-        <Toast toast={toast} />
-
         {/* ── Header ── */}
         <div className={styles.pageHeader}>
           <div>
@@ -473,27 +606,27 @@ export default function AdminCategories() {
               setFormOpen(true);
             }}
           >
-            + New Category
+            <Plus size={13} /> New Category
           </button>
         </div>
 
         {/* ── Stats Bar ── */}
         <div className={styles.statsBar}>
-          <StatChip icon="🏷️" label="Total" value={total} />
+          <StatChip icon={Tag} label="Total" value={total} />
           <StatChip
-            icon="🔨"
+            icon={Hammer}
             label="Workers"
             value={totalWorkers.toLocaleString()}
             accent="orange"
           />
           <StatChip
-            icon="📋"
+            icon={ClipboardList}
             label="Bookings"
             value={totalBookings.toLocaleString()}
             accent="green"
           />
           <StatChip
-            icon="💤"
+            icon={Moon}
             label="Unused"
             value={unusedCount}
             accent={unusedCount > 0 ? "red" : undefined}
@@ -503,7 +636,9 @@ export default function AdminCategories() {
         {/* ── Search + Sort ── */}
         <div className={styles.controlBar}>
           <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>🔍</span>
+            <span className={styles.searchIcon}>
+              <Search size={13} />
+            </span>
             <input
               className={styles.searchInput}
               placeholder="Search name or slug…"
@@ -514,8 +649,9 @@ export default function AdminCategories() {
               <button
                 className={styles.clearBtn}
                 onClick={() => setParam("search", "")}
+                aria-label="Clear search"
               >
-                ×
+                <X size={13} />
               </button>
             )}
           </div>
@@ -542,8 +678,10 @@ export default function AdminCategories() {
           </div>
         ) : categories.length === 0 ? (
           <div className={styles.empty}>
-            <span>🏷️</span>
-            <p>
+            <span className={styles.emptyIcon}>
+              <Inbox size={40} />
+            </span>
+            <p className={styles.emptyTitle}>
               {search
                 ? `No categories matching "${search}"`
                 : "No categories yet"}
@@ -556,7 +694,7 @@ export default function AdminCategories() {
                   setFormOpen(true);
                 }}
               >
-                + Create First Category
+                <Plus size={13} /> Create First Category
               </button>
             )}
           </div>
@@ -586,7 +724,7 @@ export default function AdminCategories() {
               disabled={page === 1}
               onClick={() => setParam("page", String(page - 1))}
             >
-              ← Prev
+              <ChevronLeft size={13} /> Prev
             </button>
             <span className={styles.pageInfo}>
               Page {page} of {pages}
@@ -596,7 +734,7 @@ export default function AdminCategories() {
               disabled={page === pages}
               onClick={() => setParam("page", String(page + 1))}
             >
-              Next →
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}
@@ -608,21 +746,56 @@ export default function AdminCategories() {
             allCategories={categories}
             onClose={() => setFormOpen(false)}
             onSaved={(msg) => {
-              showToast(msg);
+              showToast(msg, "success");
               fetchCategories();
             }}
           />
         )}
 
-        {/* ── Delete Confirm Modal ── */}
-        {deleteTarget && (
-          <DeleteModal
-            category={deleteTarget}
-            loading={deleting}
-            onConfirm={handleDelete}
-            onClose={() => setDeleteTarget(null)}
-          />
-        )}
+        {/* ── Platform confirmation modal ── */}
+        <ConfirmationModal
+          isOpen={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDelete}
+          title="Delete this category?"
+          message={
+            deleteTarget
+              ? `"${deleteTarget.name}" will be permanently removed. ${
+                  (deleteTarget._count?.workers || 0) > 0 ||
+                  (deleteTarget._count?.bookings || 0) > 0
+                    ? `This category is linked to ${deleteTarget._count?.workers || 0} worker(s) and ${deleteTarget._count?.bookings || 0} booking(s), and cannot be deleted.`
+                    : "This action cannot be undone."
+                }`
+              : ""
+          }
+          confirmLabel="Delete Category"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+        />
+
+        {/* ── Platform alert modal ── */}
+        <AlertModal
+          isOpen={!!notify}
+          onClose={() => setNotify(null)}
+          title={notify?.type === "error" ? "Something went wrong" : "Done"}
+          subtitle={
+            notify?.type === "error"
+              ? "The action could not be completed."
+              : "The action was completed successfully."
+          }
+          alerts={
+            notify
+              ? [
+                  {
+                    icon: notify.type === "error" ? AlertTriangle : CheckCircle,
+                    label: notify.type === "error" ? "Error" : "Success",
+                    description: notify.text,
+                    variant: notify.type === "error" ? "red" : "green",
+                  },
+                ]
+              : []
+          }
+        />
       </div>
     </AdminLayout>
   );

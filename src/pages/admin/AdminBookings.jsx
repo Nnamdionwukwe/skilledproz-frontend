@@ -1,6 +1,62 @@
+// src/pages/admin/AdminBookings.jsx
+// Full admin bookings management.
+//
+// Endpoints:
+//   GET   /admin/bookings?status=&search=&from=&to=&page=&limit=
+//   GET   /admin/bookings/:bookingId
+//   PATCH /admin/bookings/:bookingId/status      { status, notes }
+//   POST  /admin/payments/:bookingId/release
+//   POST  /admin/payments/:bookingId/refund
+//   GET   /admin/stats                            (stats bar)
+//
+// Every field the backend sends is rendered. Lucide icons throughout.
+// Uses platform AlertModal + ConfirmationModal.
+
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import {
+  ClipboardList,
+  Zap,
+  CheckCircle,
+  XCircle,
+  Scale,
+  Sparkles,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
+  AlertTriangle,
+  RefreshCw,
+  Wallet,
+  RotateCcw,
+  User,
+  Hammer,
+  MapPin,
+  Calendar,
+  Clock,
+  FileText,
+  MessageCircle,
+  Shield,
+  PhoneCall,
+  Building2,
+  Bitcoin,
+  Landmark,
+  CreditCard,
+  Inbox,
+  Pencil,
+  Hash,
+  Repeat,
+  Ban,
+  PlayCircle,
+  TrendingUp,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
+import AlertModal from "../../components/ui/AlertModal";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import api from "../../lib/api";
 import styles from "./AdminBookings.module.css";
 
@@ -33,6 +89,15 @@ const PAYMENT_META = {
   FAILED: { label: "Failed", cls: "red" },
 };
 
+const VALID_STATUSES = [
+  "PENDING",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "DISPUTED",
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDate(d) {
@@ -43,6 +108,16 @@ function fmtDate(d) {
     year: "numeric",
   });
 }
+function fmtDateTime(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 function fmtTime(d) {
   if (!d) return "";
   return new Date(d).toLocaleTimeString("en-GB", {
@@ -51,8 +126,8 @@ function fmtTime(d) {
   });
 }
 function fmtAmt(amount, currency = "₦") {
-  if (!amount && amount !== 0) return "—";
-  return `${currency} ${Number(amount).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  if (amount === null || amount === undefined) return "—";
+  return `${currency} ${Number(amount).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 function timeAgo(d) {
   if (!d) return "—";
@@ -63,14 +138,48 @@ function timeAgo(d) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function initials(u) {
+  return (
+    `${u?.firstName?.[0] ?? ""}${u?.lastName?.[0] ?? ""}`.toUpperCase() || "?"
+  );
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 
-function Toast({ toast }) {
-  if (!toast) return null;
+function Spinner() {
+  return <span className={styles.spinner} />;
+}
+
+function CopyPill({ text, label }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return <span className={styles.dimText}>—</span>;
   return (
-    <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-      {toast.msg}
-    </div>
+    <span className={styles.copyPill} title={String(text)}>
+      <span className={styles.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={styles.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        aria-label="Copy"
+      >
+        {ok ? <Check size={11} /> : <Copy size={11} />}
+      </button>
+    </span>
   );
 }
 
@@ -93,28 +202,37 @@ function PayBadge({ status }) {
   );
 }
 
-function Avatar({ user, size = 30 }) {
+function Avatar({ user, size = 28 }) {
   return (
     <div className={styles.avatar} style={{ width: size, height: size }}>
       {user?.avatar ? (
         <img src={user.avatar} alt="" />
       ) : (
-        `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`
+        <span style={{ fontSize: size * 0.4 }}>{initials(user)}</span>
       )}
     </div>
   );
 }
 
-// ─── Status Override Modal ────────────────────────────────────────────────────
+function StatChip({ icon: Icon, label, value, accent }) {
+  return (
+    <div
+      className={`${styles.statChip} ${accent ? styles[`chipAccent_${accent}`] : ""}`}
+    >
+      <span className={styles.chipIcon}>
+        {Icon ? <Icon size={16} /> : null}
+      </span>
+      <div className={styles.chipBody}>
+        <div className={styles.chipVal}>
+          {value?.toLocaleString?.() ?? value ?? "—"}
+        </div>
+        <div className={styles.chipLabel}>{label}</div>
+      </div>
+    </div>
+  );
+}
 
-const VALID_STATUSES = [
-  "PENDING",
-  "ACCEPTED",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "CANCELLED",
-  "DISPUTED",
-];
+// ─── Status Override Modal ────────────────────────────────────────────────────
 
 function StatusModal({ booking, onConfirm, onClose, loading }) {
   const [status, setStatus] = useState(booking.status);
@@ -124,9 +242,15 @@ function StatusModal({ booking, onConfirm, onClose, loading }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <p className={styles.modalTitle}>Override Booking Status</p>
-          <button className={styles.modalClose} onClick={onClose}>
-            ×
+          <p className={styles.modalTitle}>
+            <RefreshCw size={14} /> Override Booking Status
+          </p>
+          <button
+            className={styles.modalClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={15} />
           </button>
         </div>
         <div className={styles.modalBody}>
@@ -137,7 +261,8 @@ function StatusModal({ booking, onConfirm, onClose, loading }) {
             {VALID_STATUSES.map((s) => (
               <button
                 key={s}
-                className={`${styles.statusOption} ${status === s ? styles.statusOptionActive : ""} ${styles[`statusOpt_${STATUS_META[s]?.cls}`]}`}
+                type="button"
+                className={`${styles.statusOption} ${status === s ? styles.statusOptionActive : ""}`}
                 onClick={() => setStatus(s)}
               >
                 {STATUS_META[s]?.label || s}
@@ -164,7 +289,7 @@ function StatusModal({ booking, onConfirm, onClose, loading }) {
               onClick={() => onConfirm(status, notes)}
               disabled={loading || status === booking.status}
             >
-              {loading ? <span className={styles.spinner} /> : "Apply Override"}
+              {loading ? <Spinner /> : "Apply Override"}
             </button>
           </div>
         </div>
@@ -175,7 +300,7 @@ function StatusModal({ booking, onConfirm, onClose, loading }) {
 
 // ─── Payment Action Modal ─────────────────────────────────────────────────────
 
-function PaymentModal({ bookingId, action, onConfirm, onClose, loading }) {
+function PaymentModal({ action, onConfirm, onClose, loading }) {
   const [notes, setNotes] = useState("");
   const isRelease = action === "release";
   return (
@@ -186,10 +311,22 @@ function PaymentModal({ bookingId, action, onConfirm, onClose, loading }) {
             className={styles.modalTitle}
             style={{ color: isRelease ? "var(--green)" : "var(--blue)" }}
           >
-            {isRelease ? "💰 Release Payment to Worker" : "💸 Refund Hirer"}
+            {isRelease ? (
+              <>
+                <Wallet size={14} /> Release Payment to Worker
+              </>
+            ) : (
+              <>
+                <RotateCcw size={14} /> Refund Hirer
+              </>
+            )}
           </p>
-          <button className={styles.modalClose} onClick={onClose}>
-            ×
+          <button
+            className={styles.modalClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={15} />
           </button>
         </div>
         <div className={styles.modalBody}>
@@ -219,11 +356,11 @@ function PaymentModal({ bookingId, action, onConfirm, onClose, loading }) {
               disabled={loading}
             >
               {loading ? (
-                <span className={styles.spinner} />
+                <Spinner />
               ) : isRelease ? (
-                "✅ Confirm Release"
+                "Confirm Release"
               ) : (
-                "💸 Confirm Refund"
+                "Confirm Refund"
               )}
             </button>
           </div>
@@ -233,15 +370,39 @@ function PaymentModal({ bookingId, action, onConfirm, onClose, loading }) {
   );
 }
 
+// ─── Detail Field ─────────────────────────────────────────────────────────────
+
+function Field({ label, value, icon: Icon }) {
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <div className={styles.field}>
+      <span className={styles.fieldLabel}>
+        {Icon ? <Icon size={10} /> : null} {label}
+      </span>
+      <span className={styles.fieldVal}>{value}</span>
+    </div>
+  );
+}
+
+function PayRow({ label, value }) {
+  return (
+    <div className={styles.payRow}>
+      <span className={styles.payLabel}>{label}</span>
+      <span className={styles.payValue}>{value ?? "—"}</span>
+    </div>
+  );
+}
+
 // ─── Booking Detail Panel ─────────────────────────────────────────────────────
 
 function BookingDetailPanel({ bookingId, onStatusOverride, onPaymentAction }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSnapshot, setShowSnapshot] = useState(false);
+  const [showConversation, setShowConversation] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    // GET /admin/bookings/:bookingId — getAdminBookingDetail
     api
       .get(`/admin/bookings/${bookingId}`)
       .then((r) => setDetail(r.data.data?.booking))
@@ -267,74 +428,325 @@ function BookingDetailPanel({ bookingId, onStatusOverride, onPaymentAction }) {
     );
   }
 
-  const pmt = detail.payment;
+  const pmt = detail.payments?.[0] || detail.payment;
   const msgs = detail.conversation?.messages || [];
+  const reviews = detail.reviews || [];
+  const emergency = detail.emergencyContact
+    ? (() => {
+        try {
+          return JSON.parse(detail.emergencyContact);
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   return (
     <div className={styles.detailPanel}>
       {/* Parties */}
       <div className={styles.detailRow}>
-        {/* Hirer */}
         <div className={styles.partyCard}>
-          <p className={styles.partyRole}>🧑 Hirer</p>
+          <p className={styles.partyRole}>
+            <User size={11} /> Hirer
+          </p>
           <div className={styles.partyUser}>
             <Avatar user={detail.hirer} size={32} />
-            <div>
+            <div className={styles.partyInfo}>
               <p className={styles.partyName}>
                 {detail.hirer?.firstName} {detail.hirer?.lastName}
               </p>
-              <p className={styles.partyEmail}>{detail.hirer?.email}</p>
+              <p className={styles.partyEmail}>{detail.hirer?.email || "—"}</p>
               {detail.hirer?.phone && (
-                <p className={styles.partyPhone}>{detail.hirer.phone}</p>
+                <p className={styles.partyPhone}>
+                  <PhoneCall size={10} /> {detail.hirer.phone}
+                </p>
               )}
+              <CopyPill
+                text={detail.hirer?.id}
+                label={`id ${detail.hirer?.id?.slice(0, 8)}…`}
+              />
             </div>
           </div>
         </div>
 
-        <div className={styles.vsChip}>→</div>
+        <div className={styles.vsChip}>
+          <ChevronRight size={14} />
+        </div>
 
-        {/* Worker */}
         <div className={styles.partyCard}>
-          <p className={styles.partyRole}>🔨 Worker</p>
+          <p className={styles.partyRole}>
+            <Hammer size={11} /> Worker
+          </p>
           <div className={styles.partyUser}>
             <Avatar user={detail.worker} size={32} />
-            <div>
+            <div className={styles.partyInfo}>
               <p className={styles.partyName}>
                 {detail.worker?.firstName} {detail.worker?.lastName}
               </p>
-              <p className={styles.partyEmail}>{detail.worker?.email}</p>
+              <p className={styles.partyEmail}>{detail.worker?.email || "—"}</p>
               {detail.worker?.phone && (
-                <p className={styles.partyPhone}>{detail.worker.phone}</p>
+                <p className={styles.partyPhone}>
+                  <PhoneCall size={10} /> {detail.worker.phone}
+                </p>
               )}
+              <CopyPill
+                text={detail.worker?.id}
+                label={`id ${detail.worker?.id?.slice(0, 8)}…`}
+              />
             </div>
           </div>
         </div>
       </div>
 
+      {/* Identifiers */}
+      <div className={styles.idsGrid}>
+        <Field
+          label="Booking ID"
+          icon={Hash}
+          value={
+            <CopyPill text={detail.id} label={detail.id.slice(0, 12) + "…"} />
+          }
+        />
+        {detail.jobPostId && (
+          <Field
+            label="Job Post ID"
+            icon={FileText}
+            value={
+              <CopyPill
+                text={detail.jobPostId}
+                label={detail.jobPostId.slice(0, 12) + "…"}
+              />
+            }
+          />
+        )}
+        {detail.categoryId && (
+          <Field
+            label="Category ID"
+            icon={Hash}
+            value={
+              <CopyPill
+                text={detail.categoryId}
+                label={detail.categoryId.slice(0, 12) + "…"}
+              />
+            }
+          />
+        )}
+        {detail.source && (
+          <Field label="Source" icon={Repeat} value={detail.source} />
+        )}
+        {detail.selectedRateOption && (
+          <Field
+            label="Rate Option"
+            icon={TrendingUp}
+            value={detail.selectedRateOption}
+          />
+        )}
+      </div>
+
       {/* Booking meta */}
       <div className={styles.metaGrid}>
-        <MetaField label="Category" value={detail.category?.name || "—"} />
-        <MetaField
+        <Field label="Category" value={detail.category?.name || "—"} />
+        <Field
           label="Agreed Rate"
           value={fmtAmt(detail.agreedRate, detail.currency || "₦")}
         />
-        <MetaField
+        <Field
           label="Scheduled"
+          icon={Calendar}
           value={
             detail.scheduledAt
               ? `${fmtDate(detail.scheduledAt)} ${fmtTime(detail.scheduledAt)}`
               : "—"
           }
         />
-        <MetaField label="Created" value={fmtDate(detail.createdAt)} />
-        <MetaField label="Address" value={detail.address || "—"} />
-        <MetaField label="Job Type" value={detail.jobType || "—"} />
+        <Field label="Created" value={fmtDateTime(detail.createdAt)} />
+        {detail.updatedAt && detail.updatedAt !== detail.createdAt && (
+          <Field label="Updated" value={fmtDateTime(detail.updatedAt)} />
+        )}
+        <Field label="Address" icon={MapPin} value={detail.address} />
+        {detail.latitude != null && detail.longitude != null && (
+          <Field
+            label="Coordinates"
+            icon={MapPin}
+            value={`${detail.latitude}, ${detail.longitude}`}
+          />
+        )}
+        <Field label="Job Type" value={detail.jobType} />
+        <Field label="Location Type" value={detail.locationType} />
+        {detail.estimatedUnit && (
+          <Field label="Estimated Unit" value={detail.estimatedUnit} />
+        )}
+        {detail.estimatedValue && (
+          <Field label="Estimated Value" value={detail.estimatedValue} />
+        )}
+        {detail.estimatedHours != null && (
+          <Field label="Estimated Hours" value={detail.estimatedHours} />
+        )}
+        {detail.quantity != null && detail.quantity !== 1 && (
+          <Field label="Quantity" value={detail.quantity} />
+        )}
+        {detail.customLabel && (
+          <Field label="Custom Label" value={detail.customLabel} />
+        )}
+        {detail.durationType && (
+          <Field label="Duration Type" value={detail.durationType} />
+        )}
+        {detail.durationValue && (
+          <Field label="Duration Value" value={detail.durationValue} />
+        )}
       </div>
+
+      {/* Description / notes / requirements */}
+      {detail.description && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <FileText size={12} /> Description
+          </p>
+          <p className={styles.textBody}>{detail.description}</p>
+        </div>
+      )}
+
+      {detail.requirements && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <FileText size={12} /> Requirements
+          </p>
+          <p className={styles.textBody}>{detail.requirements}</p>
+        </div>
+      )}
+
+      {detail.responsibilities && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <FileText size={12} /> Responsibilities
+          </p>
+          <p className={styles.textBody}>{detail.responsibilities}</p>
+        </div>
+      )}
+
+      {detail.notes && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <FileText size={12} /> Notes
+          </p>
+          <p className={styles.textBody}>{detail.notes}</p>
+        </div>
+      )}
+
+      {detail.cancelReason && (
+        <div className={`${styles.textBlock} ${styles.dangerBlock}`}>
+          <p className={styles.blockTitle}>
+            <Ban size={12} /> Cancellation Reason
+          </p>
+          <p className={styles.textBody}>{detail.cancelReason}</p>
+        </div>
+      )}
+
+      {/* Negotiation block */}
+      {(detail.isNegotiated || detail.negotiationNote) && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <Pencil size={12} /> Negotiation
+          </p>
+          <div className={styles.metaGrid}>
+            <Field
+              label="Negotiated"
+              value={detail.isNegotiated ? "Yes" : "No"}
+            />
+            {detail.negotiatedRate != null && (
+              <Field
+                label="Negotiated Rate"
+                value={fmtAmt(detail.negotiatedRate, detail.currency)}
+              />
+            )}
+          </div>
+          {detail.negotiationNote && (
+            <p className={styles.textBody}>{detail.negotiationNote}</p>
+          )}
+        </div>
+      )}
+
+      {/* Timeline (check-in / check-out / completed / SOS) */}
+      {(detail.checkInAt ||
+        detail.checkOutAt ||
+        detail.completedAt ||
+        detail.sosActivatedAt) && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <Clock size={12} /> Timeline
+          </p>
+          <div className={styles.metaGrid}>
+            {detail.checkInAt && (
+              <Field label="Checked In" value={fmtDateTime(detail.checkInAt)} />
+            )}
+            {detail.checkInLat != null && detail.checkInLng != null && (
+              <Field
+                label="Check-in GPS"
+                value={`${detail.checkInLat}, ${detail.checkInLng}`}
+              />
+            )}
+            {detail.checkOutAt && (
+              <Field
+                label="Checked Out"
+                value={fmtDateTime(detail.checkOutAt)}
+              />
+            )}
+            {detail.checkOutLat != null && detail.checkOutLng != null && (
+              <Field
+                label="Check-out GPS"
+                value={`${detail.checkOutLat}, ${detail.checkOutLng}`}
+              />
+            )}
+            {detail.completedAt && (
+              <Field
+                label="Completed"
+                value={fmtDateTime(detail.completedAt)}
+              />
+            )}
+            {detail.sosActivatedAt && (
+              <Field
+                label="SOS Activated"
+                value={fmtDateTime(detail.sosActivatedAt)}
+              />
+            )}
+            {detail.sosResolvedAt && (
+              <Field
+                label="SOS Resolved"
+                value={fmtDateTime(detail.sosResolvedAt)}
+              />
+            )}
+            {detail.sosLatitude != null && detail.sosLongitude != null && (
+              <Field
+                label="SOS GPS"
+                value={`${detail.sosLatitude}, ${detail.sosLongitude}`}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Emergency contact */}
+      {emergency && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <Shield size={12} /> Emergency Contact
+          </p>
+          <div className={styles.metaGrid}>
+            <Field label="Name" value={emergency.name} />
+            <Field label="Phone" value={emergency.phone} />
+            {emergency.relationship && (
+              <Field label="Relationship" value={emergency.relationship} />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Payment breakdown */}
       {pmt && (
         <div className={styles.payBlock}>
-          <p className={styles.blockTitle}>Payment</p>
+          <p className={styles.blockTitle}>
+            <Wallet size={12} /> Payment
+          </p>
           <div className={styles.payGrid}>
             <PayRow
               label="Total Amount"
@@ -348,39 +760,176 @@ function BookingDetailPanel({ bookingId, onStatusOverride, onPaymentAction }) {
               label="Platform Fee"
               value={fmtAmt(pmt.platformFee, pmt.currency)}
             />
-            <PayRow label="Provider" value={pmt.provider || "—"} />
+            {pmt.referralDeduct != null && pmt.referralDeduct > 0 && (
+              <PayRow
+                label="Referral Deduction"
+                value={fmtAmt(pmt.referralDeduct, pmt.currency)}
+              />
+            )}
+            <PayRow
+              label="Provider"
+              value={
+                <span className={styles.providerInline}>
+                  {pmt.provider === "bank_transfer" && (
+                    <>
+                      <Landmark size={11} /> Bank transfer
+                    </>
+                  )}
+                  {pmt.provider === "crypto" && (
+                    <>
+                      <Bitcoin size={11} /> Crypto
+                    </>
+                  )}
+                  {pmt.provider &&
+                    !["bank_transfer", "crypto"].includes(pmt.provider) && (
+                      <>
+                        <CreditCard size={11} /> {pmt.provider}
+                      </>
+                    )}
+                  {!pmt.provider && "—"}
+                </span>
+              }
+            />
             <PayRow label="Status" value={<PayBadge status={pmt.status} />} />
+            {pmt.providerRef && (
+              <PayRow label="Reference" value={pmt.providerRef} />
+            )}
+            {pmt.bankName && <PayRow label="Bank" value={pmt.bankName} />}
+            {pmt.accountName && (
+              <PayRow label="Account Name" value={pmt.accountName} />
+            )}
+            {pmt.bankTransferProof && (
+              <PayRow
+                label="Transfer Proof"
+                value={
+                  <a
+                    href={pmt.bankTransferProof}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.link}
+                  >
+                    View receipt
+                  </a>
+                }
+              />
+            )}
+            {pmt.cryptoNetwork && (
+              <PayRow label="Crypto Network" value={pmt.cryptoNetwork} />
+            )}
+            {pmt.cryptoTxHash && (
+              <PayRow label="Crypto TX" value={pmt.cryptoTxHash} />
+            )}
+            {pmt.cryptoWallet && (
+              <PayRow label="Crypto Wallet" value={pmt.cryptoWallet} />
+            )}
+            {pmt.cryptoCurrency && (
+              <PayRow label="Crypto Currency" value={pmt.cryptoCurrency} />
+            )}
+            {pmt.cryptoAmount && (
+              <PayRow label="Crypto Amount" value={pmt.cryptoAmount} />
+            )}
             {pmt.refundedAt && (
-              <PayRow label="Refunded At" value={fmtDate(pmt.refundedAt)} />
+              <PayRow label="Refunded At" value={fmtDateTime(pmt.refundedAt)} />
             )}
             {pmt.escrowReleasedAt && (
               <PayRow
                 label="Released At"
-                value={fmtDate(pmt.escrowReleasedAt)}
+                value={fmtDateTime(pmt.escrowReleasedAt)}
               />
             )}
+            {pmt.notes && <PayRow label="Payment Notes" value={pmt.notes} />}
           </div>
         </div>
       )}
 
-      {/* Recent messages */}
-      {msgs.length > 0 && (
-        <div className={styles.msgsBlock}>
-          <p className={styles.blockTitle}>Recent Messages ({msgs.length})</p>
-          <div className={styles.msgList}>
-            {msgs.slice(-4).map((m, i) => (
-              <div key={i} className={styles.msgRow}>
-                <span className={styles.msgSender}>
-                  {m.sender?.firstName ?? "?"}
-                </span>
-                <span className={styles.msgText}>
-                  {m.content?.slice(0, 100)}
-                  {m.content?.length > 100 ? "…" : ""}
-                </span>
-                <span className={styles.msgTime}>{timeAgo(m.createdAt)}</span>
+      {/* Reviews */}
+      {reviews.length > 0 && (
+        <div className={styles.textBlock}>
+          <p className={styles.blockTitle}>
+            <Sparkles size={12} /> Reviews ({reviews.length})
+          </p>
+          <div className={styles.reviewList}>
+            {reviews.map((rv) => (
+              <div key={rv.id} className={styles.reviewRow}>
+                <div className={styles.reviewHead}>
+                  <span className={styles.reviewGiver}>
+                    {rv.giver?.firstName} {rv.giver?.lastName}
+                  </span>
+                  <span className={styles.reviewStars}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <span
+                        key={s}
+                        className={
+                          s <= rv.rating ? styles.starOn : styles.starOff
+                        }
+                      >
+                        ★
+                      </span>
+                    ))}
+                    <span className={styles.reviewRating}>{rv.rating}/5</span>
+                  </span>
+                </div>
+                {rv.comment && (
+                  <p className={styles.reviewComment}>"{rv.comment}"</p>
+                )}
+                {rv.createdAt && (
+                  <p className={styles.reviewDate}>
+                    {fmtDateTime(rv.createdAt)}
+                  </p>
+                )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Job rate snapshot */}
+      {detail.jobRateSnapshot && (
+        <div className={styles.textBlock}>
+          <button
+            type="button"
+            className={styles.snapshotToggle}
+            onClick={() => setShowSnapshot((v) => !v)}
+          >
+            {showSnapshot ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            Job rate snapshot
+          </button>
+          {showSnapshot && (
+            <pre className={styles.snapshotPre}>
+              {JSON.stringify(detail.jobRateSnapshot, null, 2)}
+            </pre>
+          )}
+        </div>
+      )}
+
+      {/* Conversation */}
+      {msgs.length > 0 && (
+        <div className={styles.textBlock}>
+          <button
+            type="button"
+            className={styles.snapshotToggle}
+            onClick={() => setShowConversation((v) => !v)}
+          >
+            {showConversation ? (
+              <ChevronUp size={12} />
+            ) : (
+              <ChevronDown size={12} />
+            )}
+            <MessageCircle size={12} /> Recent messages ({msgs.length})
+          </button>
+          {showConversation && (
+            <div className={styles.msgList}>
+              {msgs.slice(-6).map((m, i) => (
+                <div key={i} className={styles.msgRow}>
+                  <span className={styles.msgSender}>
+                    {m.sender?.firstName ?? "?"}
+                  </span>
+                  <span className={styles.msgText}>{m.content}</span>
+                  <span className={styles.msgTime}>{timeAgo(m.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -390,7 +939,7 @@ function BookingDetailPanel({ bookingId, onStatusOverride, onPaymentAction }) {
           className={styles.actionOverride}
           onClick={() => onStatusOverride(detail)}
         >
-          🔄 Override Status
+          <RefreshCw size={13} /> Override Status
         </button>
         {pmt?.status === "HELD" && (
           <>
@@ -398,35 +947,17 @@ function BookingDetailPanel({ bookingId, onStatusOverride, onPaymentAction }) {
               className={styles.actionRelease}
               onClick={() => onPaymentAction(detail.id, "release")}
             >
-              ✅ Release Payment
+              <CheckCircle size={13} /> Release Payment
             </button>
             <button
               className={styles.actionRefund}
               onClick={() => onPaymentAction(detail.id, "refund")}
             >
-              💸 Refund Hirer
+              <RotateCcw size={13} /> Refund Hirer
             </button>
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-function MetaField({ label, value }) {
-  return (
-    <div className={styles.metaField}>
-      <span className={styles.metaLabel}>{label}</span>
-      <span className={styles.metaValue}>{value}</span>
-    </div>
-  );
-}
-
-function PayRow({ label, value }) {
-  return (
-    <div className={styles.payRow}>
-      <span className={styles.payLabel}>{label}</span>
-      <span className={styles.payValue}>{value}</span>
     </div>
   );
 }
@@ -447,18 +978,15 @@ export default function AdminBookings() {
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
-  const [expanded, setExpanded] = useState(null); // bookingId
+  const [expanded, setExpanded] = useState(null);
 
-  // Modals
-  const [statusModal, setStatusModal] = useState(null); // booking object
-  const [payModal, setPayModal] = useState(null); // { bookingId, action }
+  const [statusModal, setStatusModal] = useState(null);
+  const [payModal, setPayModal] = useState(null);
   const [acting, setActing] = useState(false);
-
-  const [toast, setToast] = useState(null);
+  const [notify, setNotify] = useState(null);
 
   function showToast(msg, type = "success") {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+    setNotify({ type, text: msg });
   }
 
   function setParam(k, v) {
@@ -469,7 +997,7 @@ export default function AdminBookings() {
     setSearchParams(p);
   }
 
-  // ── Fetch bookings — GET /admin/bookings ──────────────────────────────────
+  // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const fetchBookings = useCallback(() => {
     setLoading(true);
@@ -495,7 +1023,6 @@ export default function AdminBookings() {
     fetchBookings();
   }, [fetchBookings]);
 
-  // Fetch overview stats for the stats bar
   useEffect(() => {
     api
       .get("/admin/stats")
@@ -503,7 +1030,7 @@ export default function AdminBookings() {
       .catch(console.error);
   }, []);
 
-  // ── Status override — PATCH /admin/bookings/:bookingId/status ─────────────
+  // ── Status override ───────────────────────────────────────────────────────
 
   async function handleStatusOverride(status, notes) {
     if (!statusModal) return;
@@ -527,27 +1054,22 @@ export default function AdminBookings() {
     }
   }
 
-  // ── Payment actions — POST /admin/payments/:bookingId/release|refund ──────
+  // ── Payment action ────────────────────────────────────────────────────────
 
   async function handlePaymentAction(notes) {
     if (!payModal) return;
     const { bookingId, action } = payModal;
     setActing(true);
     try {
-      // POST /admin/payments/:bookingId/release  OR  POST /admin/payments/:bookingId/refund
       if (action === "release") {
-        await api.post(`/admin/payments/${bookingId}/release`);
+        await api.post(`/admin/payments/${bookingId}/release`, { notes });
       } else if (action === "refund") {
-        await api.post(`/admin/payments/${bookingId}/refund`);
-      } else if (action === "verify") {
-        await api.patch(`/admin/payments/${bookingId}/verify`);
-      } else if (action === "reject-manual") {
-        await api.patch(`/admin/payments/${bookingId}/reject-manual`);
+        await api.post(`/admin/payments/${bookingId}/refund`, { notes });
       }
       showToast(
         action === "release"
-          ? "Payment released to worker ✅"
-          : "Refund issued to hirer 💸",
+          ? "Payment released to worker"
+          : "Refund issued to hirer",
       );
       setPayModal(null);
       setExpanded(null);
@@ -564,13 +1086,12 @@ export default function AdminBookings() {
   return (
     <AdminLayout>
       <div className={styles.page}>
-        <Toast toast={toast} />
-
         {/* ── Header ── */}
         <div className={styles.pageHeader}>
           <div>
             <p className={styles.eyebrow}>Platform</p>
             <h1 className={styles.pageTitle}>
+              <ClipboardList size={20} />
               All Bookings
               {total > 0 && (
                 <span className={styles.countPill}>
@@ -581,35 +1102,39 @@ export default function AdminBookings() {
           </div>
         </div>
 
-        {/* ── Stats Bar (from /admin/stats overview) ── */}
+        {/* ── Stats Bar ── */}
         {overview && (
           <div className={styles.statsBar}>
-            <StatChip icon="📋" label="Total" value={overview.totalBookings} />
             <StatChip
-              icon="⚡"
+              icon={ClipboardList}
+              label="Total"
+              value={overview.totalBookings}
+            />
+            <StatChip
+              icon={Zap}
               label="Active"
               value={overview.activeBookings}
               accent="orange"
             />
             <StatChip
-              icon="✅"
+              icon={CheckCircle}
               label="Completed"
               value={overview.completedBookings}
               accent="green"
             />
             <StatChip
-              icon="❌"
+              icon={XCircle}
               label="Cancelled"
               value={overview.cancelledBookings}
             />
             <StatChip
-              icon="⚖️"
+              icon={Scale}
               label="Disputed"
               value={overview.disputedBookings}
               accent={overview.disputedBookings > 0 ? "red" : undefined}
             />
             <StatChip
-              icon="🆕"
+              icon={Sparkles}
               label="Today"
               value={overview.newBookingsToday}
             />
@@ -619,7 +1144,9 @@ export default function AdminBookings() {
         {/* ── Search + Date Range ── */}
         <div className={styles.controlBar}>
           <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>🔍</span>
+            <span className={styles.searchIcon}>
+              <Search size={13} />
+            </span>
             <input
               className={styles.searchInput}
               placeholder="Search title, hirer or worker name…"
@@ -630,8 +1157,9 @@ export default function AdminBookings() {
               <button
                 className={styles.clearBtn}
                 onClick={() => setParam("search", "")}
+                aria-label="Clear search"
               >
-                ×
+                <X size={13} />
               </button>
             )}
           </div>
@@ -653,10 +1181,13 @@ export default function AdminBookings() {
             />
             {(from || to) && (
               <button
-                className={styles.clearBtn}
+                className={styles.clearRangeBtn}
                 onClick={() => {
-                  setParam("from", "");
-                  setParam("to", "");
+                  const p = new URLSearchParams(searchParams);
+                  p.delete("from");
+                  p.delete("to");
+                  p.set("page", "1");
+                  setSearchParams(p);
                 }}
               >
                 Clear
@@ -665,7 +1196,7 @@ export default function AdminBookings() {
           </div>
         </div>
 
-        {/* ── Status Filter Tabs ── */}
+        {/* ── Status Tabs ── */}
         <div className={styles.filterBar}>
           {STATUSES.map((s) => (
             <button
@@ -706,8 +1237,10 @@ export default function AdminBookings() {
               ))
             ) : bookings.length === 0 ? (
               <div className={styles.empty}>
-                <span>📋</span>
-                <p>No bookings found</p>
+                <span className={styles.emptyIcon}>
+                  <Inbox size={36} />
+                </span>
+                <p className={styles.emptyTitle}>No bookings found</p>
               </div>
             ) : (
               bookings.map((b, i) => (
@@ -716,7 +1249,6 @@ export default function AdminBookings() {
                   className={styles.rowWrap}
                   style={{ animationDelay: `${i * 28}ms` }}
                 >
-                  {/* ── Table Row ── */}
                   <div
                     className={`${styles.tableRow} ${expanded === b.id ? styles.tableRowOpen : ""}`}
                     onClick={() => setExpanded(expanded === b.id ? null : b.id)}
@@ -724,13 +1256,13 @@ export default function AdminBookings() {
                     <div className={styles.tdTitle}>{b.title || "—"}</div>
                     <div className={styles.tdUser}>
                       <Avatar user={b.hirer} size={20} />
-                      <span>
+                      <span className={styles.tdUserName}>
                         {b.hirer?.firstName} {b.hirer?.lastName}
                       </span>
                     </div>
                     <div className={styles.tdUser}>
                       <Avatar user={b.worker} size={20} />
-                      <span>
+                      <span className={styles.tdUserName}>
                         {b.worker?.firstName} {b.worker?.lastName}
                       </span>
                     </div>
@@ -744,10 +1276,9 @@ export default function AdminBookings() {
                       {fmtAmt(b.agreedRate, b.currency || "₦")}
                     </div>
                     <StatusBadge status={b.status} />
-                    <PayBadge status={b.payment?.status} />
+                    <PayBadge status={b.payments?.[0]?.status} />
                   </div>
 
-                  {/* ── Expanded Detail Panel ── */}
                   {expanded === b.id && (
                     <BookingDetailPanel
                       bookingId={b.id}
@@ -771,7 +1302,7 @@ export default function AdminBookings() {
               disabled={page === 1}
               onClick={() => setParam("page", String(page - 1))}
             >
-              ← Prev
+              <ChevronLeft size={13} /> Prev
             </button>
             <span className={styles.pageInfo}>
               Page {page} of {pages} · {total.toLocaleString()} total
@@ -781,7 +1312,7 @@ export default function AdminBookings() {
               disabled={page === pages}
               onClick={() => setParam("page", String(page + 1))}
             >
-              Next →
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}
@@ -797,28 +1328,36 @@ export default function AdminBookings() {
         )}
         {payModal && (
           <PaymentModal
-            bookingId={payModal.bookingId}
             action={payModal.action}
             loading={acting}
             onConfirm={handlePaymentAction}
             onClose={() => setPayModal(null)}
           />
         )}
+
+        <AlertModal
+          isOpen={!!notify}
+          onClose={() => setNotify(null)}
+          title={notify?.type === "error" ? "Something went wrong" : "Done"}
+          subtitle={
+            notify?.type === "error"
+              ? "The action could not be completed."
+              : "The action was completed successfully."
+          }
+          alerts={
+            notify
+              ? [
+                  {
+                    icon: notify.type === "error" ? AlertTriangle : CheckCircle,
+                    label: notify.type === "error" ? "Error" : "Success",
+                    description: notify.text,
+                    variant: notify.type === "error" ? "red" : "green",
+                  },
+                ]
+              : []
+          }
+        />
       </div>
     </AdminLayout>
-  );
-}
-
-function StatChip({ icon, label, value, accent }) {
-  return (
-    <div
-      className={`${styles.statChip} ${accent ? styles[`chipAccent_${accent}`] : ""}`}
-    >
-      <span className={styles.chipIcon}>{icon}</span>
-      <div>
-        <div className={styles.chipVal}>{value?.toLocaleString() ?? "—"}</div>
-        <div className={styles.chipLabel}>{label}</div>
-      </div>
-    </div>
   );
 }

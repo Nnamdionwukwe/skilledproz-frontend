@@ -1,15 +1,11 @@
-/* AdminMessages.module.css — fixed layout + image support + lightbox */
+/* AdminMessages.module.css — full responsive rewrite */
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PAGE SHELL
-   Strategy: page is a flex column. topSection is flex-shrink: 0.
-   splitPane is flex: 1 and min-height: 0 so it fills leftover vertical space.
-   We drive overall height off the viewport — adjusted for the AdminLayout nav.
 ───────────────────────────────────────────────────────────────────────────── */
 .page {
   display: flex;
   flex-direction: column;
-  /* Fills the content area the AdminLayout leaves for us */
   height: calc(100vh - 60px);
   max-height: calc(100vh - 60px);
   overflow: hidden;
@@ -17,57 +13,16 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
   animation: fadeUp 0.3s ease both;
 }
 
-/* Everything above the split pane — never grows */
 .topSection {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px 16px 0;
-}
-
-/* ─── Toast ───────────────────────────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 18px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  animation: slideDown 0.2s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-.toast_success {
-  background: var(--green-dim);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: var(--green);
-}
-.toast_error {
-  background: var(--red-dim);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--red);
-}
-.toastClose {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 15px;
-  cursor: pointer;
-  opacity: 0.7;
-  padding: 0;
-}
-.toastClose:hover {
-  opacity: 1;
 }
 
 /* ─── Header ──────────────────────────────────────────────────────────────── */
@@ -96,6 +51,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.15;
+  min-width: 0;
 }
 .pageSubtitle {
   font-size: 12px;
@@ -111,6 +69,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 2px 9px;
+  flex-shrink: 0;
 }
 .readOnlyBanner {
   display: flex;
@@ -121,12 +80,8 @@
   border: 1px solid rgba(129, 140, 248, 0.2);
   border-radius: 20px;
   align-self: flex-start;
-}
-.readOnlyDot {
-  width: 6px;
-  height: 6px;
-  background: #818cf8;
-  border-radius: 50%;
+  color: #818cf8;
+  flex-shrink: 0;
 }
 .readOnlyText {
   font-size: 11px;
@@ -137,7 +92,7 @@
 /* ─── Stats ───────────────────────────────────────────────────────────────── */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .statCard {
@@ -149,37 +104,46 @@
   flex-direction: column;
   gap: 2px;
   animation: fadeUp 0.4s ease both;
+  min-width: 0;
+  overflow: hidden;
 }
 .accent_orange {
   border-color: rgba(249, 115, 22, 0.25);
   background: var(--orange-dim);
 }
-.accent_orange .statValue {
+.accent_orange .statValue,
+.accent_orange .statIcon {
   color: var(--orange);
 }
 .accent_indigo {
   border-color: rgba(129, 140, 248, 0.25);
   background: rgba(129, 140, 248, 0.07);
 }
-.accent_indigo .statValue {
+.accent_indigo .statValue,
+.accent_indigo .statIcon {
   color: #818cf8;
 }
 .accent_green {
   border-color: rgba(34, 197, 94, 0.2);
   background: var(--green-dim);
 }
-.accent_green .statValue {
+.accent_green .statValue,
+.accent_green .statIcon {
   color: var(--green);
 }
 .accent_yellow {
   border-color: rgba(234, 179, 8, 0.25);
   background: rgba(234, 179, 8, 0.07);
 }
-.accent_yellow .statValue {
+.accent_yellow .statValue,
+.accent_yellow .statIcon {
   color: #eab308;
 }
 .statIcon {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  margin-bottom: 2px;
 }
 .statValue {
   font-family: var(--font-display);
@@ -188,6 +152,7 @@
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 .statLabel {
   font-size: 9px;
@@ -251,17 +216,18 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   SPLIT PANE — takes all remaining vertical space
+   SPLIT PANE
 ───────────────────────────────────────────────────────────────────────────── */
 .splitPane {
-  flex: 1; /* grow to fill remaining height */
-  min-height: 0; /* critical — allows flex child to shrink below content */
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: row;
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
   margin: 0 16px 16px;
+  min-width: 0;
 }
 
 /* ─── LEFT — conversation list ────────────────────────────────────────────── */
@@ -273,12 +239,12 @@
   background: var(--bg-panel);
   border-right: 1px solid var(--border);
   overflow: hidden;
+  min-width: 0;
 }
 .convPaneHidden {
   display: none;
 }
 
-/* Search bar */
 .convSearch {
   display: flex;
   align-items: center;
@@ -288,12 +254,14 @@
   flex-shrink: 0;
 }
 .searchIcon {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
   color: var(--text-muted);
   flex-shrink: 0;
 }
 .searchInput {
   flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   outline: none;
@@ -308,14 +276,16 @@
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 12px;
   cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 .searchClear:hover {
   color: var(--text);
 }
 
-/* Scrollable conversation list */
 .convList {
   flex: 1;
   overflow-y: auto;
@@ -345,6 +315,8 @@
   font-family: var(--font-body);
   text-align: left;
   transition: background 0.12s;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .convRow:last-child {
   border-bottom: none;
@@ -367,6 +339,7 @@
   justify-content: space-between;
   gap: 6px;
   margin-bottom: 3px;
+  min-width: 0;
 }
 .convNames {
   font-size: 13px;
@@ -375,6 +348,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 .convRowActive .convNames {
   color: var(--orange);
@@ -390,6 +364,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  min-width: 0;
 }
 .convPreview {
   font-size: 11px;
@@ -397,12 +372,35 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.convPreviewIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 .convMeta {
   display: flex;
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+}
+.convBooking {
+  display: inline-flex;
+  align-items: center;
+  color: var(--orange);
+}
+.convUnread {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  background: #818cf8;
+  border-radius: 10px;
+  padding: 1px 6px;
+  min-width: 16px;
+  text-align: center;
 }
 .convCount {
   font-size: 10px;
@@ -422,6 +420,7 @@
   background: rgba(249, 115, 22, 0.2);
   color: var(--orange);
   border-radius: 2px;
+  padding: 0 1px;
 }
 
 /* Empty conv pane */
@@ -435,8 +434,7 @@
   color: var(--text-muted);
   text-align: center;
 }
-.convEmpty span {
-  font-size: 28px;
+.convEmpty svg {
   opacity: 0.4;
 }
 .convEmpty p {
@@ -468,7 +466,6 @@
 }
 
 /* ─── RIGHT — thread pane ─────────────────────────────────────────────────── */
-/* REPLACE .threadPane base rule */
 .threadPane {
   flex: 1;
   min-width: 0;
@@ -492,11 +489,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 18px;
+  padding: 12px 16px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   flex-wrap: wrap;
+  min-width: 0;
 }
 .backBtn {
   width: 32px;
@@ -505,7 +503,6 @@
   border-radius: 8px;
   background: var(--bg-card);
   color: var(--text-dim);
-  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -522,21 +519,42 @@
   gap: 12px;
   flex: 1;
   flex-wrap: wrap;
+  min-width: 0;
 }
 .threadParticipant {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  min-width: 0;
 }
 .threadParticipantMeta {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 .threadParticipantName {
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
+  overflow-wrap: anywhere;
+}
+.threadParticipantRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.threadParticipantEmail {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
 }
 .threadHeaderRight {
   display: flex;
@@ -544,6 +562,7 @@
   gap: 8px;
   margin-left: auto;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .bookingTag {
   font-size: 11px;
@@ -553,6 +572,9 @@
   border: 1px solid rgba(249, 115, 22, 0.2);
   border-radius: 20px;
   padding: 2px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .threadCount {
   font-size: 11px;
@@ -593,8 +615,8 @@
   text-align: center;
 }
 .emptyThreadIcon {
-  font-size: 52px;
-  opacity: 0.2;
+  color: var(--text-muted);
+  opacity: 0.25;
 }
 .emptyThreadTitle {
   font-size: 17px;
@@ -619,8 +641,7 @@
   font-size: 13px;
   text-align: center;
 }
-.noMsgs span {
-  font-size: 32px;
+.noMsgs svg {
   opacity: 0.4;
 }
 .noMsgs p {
@@ -637,11 +658,14 @@
   padding: 9px 16px;
   border-top: 1px solid var(--border);
   background: rgba(129, 140, 248, 0.04);
+  color: #818cf8;
 }
 .threadFooterText {
   font-size: 11px;
   color: #818cf8;
   font-weight: 600;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 /* Date divider */
@@ -684,6 +708,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .loadEarlierBtn:hover {
   border-color: var(--orange);
@@ -704,6 +731,7 @@
   gap: 6px;
   max-width: 78%;
   margin-bottom: 3px;
+  min-width: 0;
 }
 .bubbleWrapLeft {
   align-self: flex-start;
@@ -741,12 +769,17 @@
   font-weight: 700;
   color: var(--text-muted);
   padding: 0 10px;
+  overflow-wrap: anywhere;
 }
 .bubbleSenderLeft {
   text-align: left;
 }
 .bubbleSenderRight {
   text-align: right;
+}
+.bubbleSenderRole {
+  font-weight: 600;
+  opacity: 0.75;
 }
 
 /* Text bubble */
@@ -772,12 +805,21 @@
   margin: 0 0 4px;
   word-break: break-word;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .bubbleTime {
   font-size: 9px;
   color: var(--text-muted);
-  display: block;
-  text-align: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  width: 100%;
+}
+.readTick {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
 }
 
 /* Time shown below image-only messages */
@@ -785,13 +827,21 @@
   font-size: 9px;
   color: var(--text-muted);
   padding: 1px 4px;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 .bubbleTimeLeft {
   text-align: left;
+  justify-content: flex-start;
 }
 .bubbleTimeRight {
   text-align: right;
+  justify-content: flex-end;
+}
+.bubbleTo {
+  opacity: 0.75;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -889,8 +939,48 @@
   pointer-events: none;
 }
 
+/* ─── File messages ──────────────────────────────────────────────────────── */
+.bubbleFiles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 260px;
+}
+.bubbleFilesLeft {
+  align-self: flex-start;
+}
+.bubbleFilesRight {
+  align-self: flex-end;
+}
+.msgFile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s;
+  max-width: 100%;
+}
+.msgFile:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.msgFileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
-   LIGHTBOX — covers the entire screen, above everything
+   LIGHTBOX
 ───────────────────────────────────────────────────────────────────────────── */
 .lightbox {
   position: fixed;
@@ -915,7 +1005,6 @@
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  font-size: 17px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1049,6 +1138,48 @@
   border: 1px solid var(--border);
 }
 
+/* ─── Copy pill ──────────────────────────────────────────────────────────── */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+}
+.copyPillLight {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+  color: var(--text-muted);
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+
 /* ─── Skeletons ───────────────────────────────────────────────────────────── */
 .skConvRow {
   height: 62px;
@@ -1127,16 +1258,6 @@
     transform: scale(1);
   }
 }
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1151,7 +1272,11 @@
   }
 }
 
-/* ─── Tablet (640px+) ─────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 640px and up ── */
 @media (min-width: 640px) {
   .topSection {
     padding: 16px 20px 0;
@@ -1160,11 +1285,11 @@
     margin: 0 20px 16px;
   }
   .statsGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .mobileTabs {
     display: none;
-  } /* always show both panes side-by-side */
+  }
   .convPane {
     display: flex !important;
     width: 300px;
@@ -1191,10 +1316,10 @@
   }
   .backBtn {
     display: none;
-  } /* no back button when both panes visible */
+  }
 }
 
-/* ─── Desktop (900px+) ────────────────────────────────────────────────────── */
+/* ── 900px and up ── */
 @media (min-width: 900px) {
   .topSection {
     padding: 20px 0 0;
@@ -1211,10 +1336,325 @@
   }
 }
 
-/* ─── Large desktop (1200px+) ─────────────────────────────────────────────── */
+/* ── 1200px and up ── */
 @media (min-width: 1200px) {
   .convPane {
     width: 380px;
     max-width: 420px;
+  }
+}
+
+/* ── 540px and below ── */
+@media (max-width: 540px) {
+  .topSection {
+    padding: 14px 12px 0;
+    gap: 10px;
+  }
+  .splitPane {
+    margin: 0 12px 12px;
+    border-radius: 12px;
+  }
+  .pageTitle {
+    font-size: 1rem;
+  }
+  .pageTitle > svg {
+    width: 15px;
+    height: 15px;
+  }
+  .pageSubtitle {
+    font-size: 11.5px;
+  }
+  .countPill {
+    font-size: 10.5px;
+    padding: 2px 8px;
+  }
+  .readOnlyBanner {
+    padding: 5px 10px;
+  }
+  .readOnlyText {
+    font-size: 10px;
+  }
+
+  .statsGrid {
+    gap: 6px;
+  }
+  .statCard {
+    padding: 9px 10px;
+    border-radius: 9px;
+  }
+  .statIcon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .statValue {
+    font-size: 15px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 8.5px;
+  }
+
+  .mobileTab {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+  .mobileTab svg {
+    width: 11px;
+    height: 11px;
+  }
+  .mobileTabCount {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .convRow {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .convNames {
+    font-size: 12.5px;
+  }
+  .convTime,
+  .convPreview {
+    font-size: 10.5px;
+  }
+  .convCount,
+  .convUnread {
+    font-size: 9.5px;
+    padding: 1px 5px;
+  }
+
+  .threadHeader {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .threadParticipantName {
+    font-size: 12px;
+  }
+  .threadParticipantEmail {
+    font-size: 10px;
+    max-width: 140px;
+  }
+  .threadCount,
+  .bookingTag {
+    font-size: 10px;
+  }
+
+  .threadBody {
+    padding: 12px 14px;
+  }
+  .bubbleWrap {
+    max-width: 85%;
+  }
+  .bubbleText {
+    font-size: 13px;
+  }
+  .bubbleSender {
+    font-size: 9.5px;
+  }
+
+  .bubbleImgs {
+    width: 180px;
+    max-width: 180px;
+  }
+  .msgImgSingle {
+    width: 180px;
+    height: 170px;
+  }
+  .msgImgGrid {
+    width: 180px;
+  }
+  .msgImgCell {
+    width: 89px;
+    height: 89px;
+  }
+
+  .msgFile {
+    font-size: 11.5px;
+    padding: 8px 10px;
+  }
+}
+
+/* ── 420px and below ── */
+@media (max-width: 420px) {
+  .topSection {
+    padding: 12px 10px 0;
+  }
+  .splitPane {
+    margin: 0 10px 10px;
+  }
+  .pageTitle {
+    font-size: 0.95rem;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .statCard {
+    padding: 8px 9px;
+  }
+  .statValue {
+    font-size: 14px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 8px;
+  }
+
+  .convRow {
+    padding: 9px 10px;
+    gap: 6px;
+  }
+  .convNames {
+    font-size: 12px;
+  }
+  .convTime,
+  .convPreview {
+    font-size: 10px;
+  }
+
+  .threadHeader {
+    padding: 9px 10px;
+    gap: 6px;
+  }
+  .threadParticipantName {
+    font-size: 11.5px;
+  }
+  .threadParticipantEmail {
+    max-width: 110px;
+    font-size: 9.5px;
+  }
+
+  .threadBody {
+    padding: 10px 12px;
+  }
+  .bubbleWrap {
+    max-width: 92%;
+  }
+  .bubbleText {
+    font-size: 12.5px;
+  }
+  .bubble {
+    padding: 8px 11px;
+  }
+
+  .bubbleImgs {
+    width: 150px;
+    max-width: 150px;
+  }
+  .msgImgSingle {
+    width: 150px;
+    height: 140px;
+  }
+  .msgImgGrid {
+    width: 150px;
+  }
+  .msgImgCell {
+    width: 74px;
+    height: 74px;
+  }
+
+  .msgFile {
+    font-size: 11px;
+  }
+
+  .lightboxClose {
+    width: 36px;
+    height: 36px;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+/* ── 340px and below ── */
+@media (max-width: 340px) {
+  .topSection {
+    padding: 10px 8px 0;
+    gap: 8px;
+  }
+  .splitPane {
+    margin: 0 8px 8px;
+  }
+  .pageTitle {
+    font-size: 0.9rem;
+  }
+  .pageTitle > svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .statsGrid {
+    gap: 4px;
+  }
+  .statCard {
+    padding: 7px 8px;
+  }
+  .statValue {
+    font-size: 13px;
+  }
+  .statLabel,
+  .statSub {
+    font-size: 7.5px;
+  }
+
+  .convRow {
+    padding: 8px 9px;
+  }
+  .convNames {
+    font-size: 11.5px;
+  }
+  .convTime,
+  .convPreview {
+    font-size: 9.5px;
+  }
+
+  .threadHeader {
+    padding: 8px 9px;
+  }
+  .threadParticipantName {
+    font-size: 11px;
+  }
+  .threadParticipantEmail {
+    max-width: 90px;
+    font-size: 9px;
+  }
+
+  .threadBody {
+    padding: 8px 10px;
+  }
+  .bubbleWrap {
+    max-width: 95%;
+  }
+  .bubbleText {
+    font-size: 12px;
+  }
+  .bubble {
+    padding: 7px 10px;
+  }
+
+  .bubbleImgs {
+    width: 130px;
+    max-width: 130px;
+  }
+  .msgImgSingle {
+    width: 130px;
+    height: 120px;
+  }
+  .msgImgGrid {
+    width: 130px;
+  }
+  .msgImgCell {
+    width: 64px;
+    height: 64px;
+  }
+
+  .msgFile {
+    font-size: 10.5px;
+    padding: 6px 8px;
   }
 }

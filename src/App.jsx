@@ -440,14 +440,14 @@ export default function App() {
             </RequireAdmin>
           }
         />
-        <Route
+        {/* <Route
           path="/admin/Posts"
           element={
             <RequireAdmin>
               <AdminPosts />
             </RequireAdmin>
           }
-        />
+        /> */}
         <Route
           path="/admin/reviews"
           element={
