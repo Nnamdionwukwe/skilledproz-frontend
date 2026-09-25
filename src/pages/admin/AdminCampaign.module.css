@@ -1,11 +1,15 @@
+/* AdminCampaign.module.css — full responsive rewrite */
+
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 .page {
   padding: 24px 16px 60px;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  box-sizing: border-box;
   animation: fadeUp 0.35s ease both;
 }
 
@@ -27,11 +31,17 @@
 }
 .pageTitle {
   font-family: var(--font-display);
-  font-size: clamp(22px, 5vw, 28px);
+  font-size: clamp(20px, 5vw, 28px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: -0.03em;
   margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  line-height: 1.15;
+  min-width: 0;
 }
 .pageSubtitle {
   font-size: 13px;
@@ -87,7 +97,7 @@
 /* ── Stats Bar ── */
 .statsBar {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 .statCard {
@@ -99,60 +109,71 @@
   flex-direction: column;
   gap: 4px;
   animation: fadeUp 0.4s ease both;
+  min-width: 0;
+  overflow: hidden;
 }
 .accent_orange {
   background: var(--orange-dim);
   border-color: rgba(249, 115, 22, 0.3);
 }
-.accent_orange .statVal {
+.accent_orange .statVal,
+.accent_orange .statIcon {
   color: var(--orange);
 }
 .accent_green {
   background: var(--green-dim);
   border-color: rgba(34, 197, 94, 0.25);
 }
-.accent_green .statVal {
+.accent_green .statVal,
+.accent_green .statIcon {
   color: var(--green);
 }
 .accent_yellow {
   background: rgba(234, 179, 8, 0.08);
   border-color: rgba(234, 179, 8, 0.25);
 }
-.accent_yellow .statVal {
+.accent_yellow .statVal,
+.accent_yellow .statIcon {
   color: #eab308;
 }
 .accent_blue {
   background: rgba(59, 130, 246, 0.08);
   border-color: rgba(59, 130, 246, 0.2);
 }
-.accent_blue .statVal {
+.accent_blue .statVal,
+.accent_blue .statIcon {
   color: #3b82f6;
 }
 .accent_red {
   background: var(--red-dim);
   border-color: rgba(239, 68, 68, 0.2);
 }
-.accent_red .statVal {
+.accent_red .statVal,
+.accent_red .statIcon {
   color: var(--red);
 }
 .accent_indigo {
   background: rgba(129, 140, 248, 0.08);
   border-color: rgba(129, 140, 248, 0.2);
 }
-.accent_indigo .statVal {
+.accent_indigo .statVal,
+.accent_indigo .statIcon {
   color: #818cf8;
 }
 .statIcon {
-  font-size: 18px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
 }
 .statVal {
   font-family: var(--font-display);
-  font-size: clamp(18px, 3.5vw, 24px);
+  font-size: clamp(16px, 3.5vw, 24px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: -0.02em;
   line-height: 1;
+  margin: 2px 0;
+  overflow-wrap: anywhere;
 }
 .statLabel {
   font-size: 10px;
@@ -182,6 +203,9 @@
 }
 .tab {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 13px 16px;
   background: none;
   border: none;
@@ -213,7 +237,7 @@
 /* ── Overview: Status Breakdown ── */
 .statusBreakdown {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 .statusBox {
@@ -222,21 +246,38 @@
   border-radius: 12px;
   padding: 14px;
   text-align: center;
+  min-width: 0;
 }
 .statusBoxVal {
   font-family: var(--font-display);
-  font-size: clamp(20px, 4vw, 28px);
+  font-size: clamp(18px, 4vw, 26px);
   font-weight: 900;
   color: var(--text);
   margin: 0 0 4px;
   letter-spacing: -0.02em;
 }
 .statusBoxLabel {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.07em;
+  overflow-wrap: anywhere;
+}
+.accent_yellow .statusBoxVal {
+  color: #eab308;
+}
+.accent_orange .statusBoxVal {
+  color: var(--orange);
+}
+.accent_green .statusBoxVal {
+  color: var(--green);
+}
+.accent_blue .statusBoxVal {
+  color: #3b82f6;
+}
+.accent_red .statusBoxVal {
+  color: var(--red);
 }
 
 /* ── Pending Alert ── */
@@ -251,7 +292,8 @@
   flex-wrap: wrap;
 }
 .pendingAlertIcon {
-  font-size: 24px;
+  display: inline-flex;
+  color: #eab308;
   flex-shrink: 0;
 }
 .pendingAlertTitle {
@@ -259,11 +301,13 @@
   font-weight: 700;
   color: var(--text);
   margin: 0 0 3px;
+  overflow-wrap: anywhere;
 }
 .pendingAlertSub {
   font-size: 12px;
   color: var(--text-dim);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .pendingAlertBtn {
   margin-left: auto;
@@ -295,10 +339,13 @@
   font-weight: 700;
   color: var(--text);
   margin: 0 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .configGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 .configItem {
@@ -312,11 +359,13 @@
   border-radius: 10px;
   font-size: 12px;
   color: var(--text-dim);
+  overflow-wrap: anywhere;
 }
 .configItem strong {
   color: var(--text);
   font-weight: 700;
   font-size: 13px;
+  text-align: right;
 }
 
 /* ── Panel ── */
@@ -332,12 +381,17 @@
   justify-content: space-between;
   padding: 13px 16px;
   border-bottom: 1px solid var(--border);
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .panelTitle {
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .panelViewAll {
   font-size: 12px;
@@ -367,38 +421,43 @@
   padding: 9px 8px;
   border-radius: 10px;
   transition: background 0.12s;
+  flex-wrap: wrap;
 }
 .topEarnerRow:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 .topEarnerRank {
-  font-size: 18px;
-  min-width: 30px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-muted);
+  min-width: 22px;
   text-align: center;
   flex-shrink: 0;
 }
 .topEarnerInfo {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .topEarnerName {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .topEarnerAmt {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--green);
   margin: 0;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-/* ── Mini Withdrawal Rows (overview) ── */
+/* ── Mini Withdrawal Rows ── */
 .miniWdRow {
   display: flex;
   align-items: center;
@@ -406,6 +465,7 @@
   padding: 9px 8px;
   border-radius: 10px;
   transition: background 0.12s;
+  flex-wrap: wrap;
 }
 .miniWdRow:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -419,14 +479,13 @@
   font-weight: 700;
   color: var(--text);
   margin: 0 0 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .miniWdBank {
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .miniWdAmt {
   font-size: 14px;
@@ -434,11 +493,13 @@
   color: var(--orange);
   margin: 0;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 .miniWdAge {
   font-size: 10px;
   color: var(--text-muted);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ── Filter Bar ── */
@@ -496,25 +557,49 @@
   gap: 8px;
   margin-left: auto;
   flex-wrap: wrap;
+  align-items: center;
 }
-.searchInput {
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  color: var(--text);
-  font-size: 13px;
   padding: 0 12px;
   height: 38px;
-  outline: none;
-  font-family: var(--font-body);
-  transition: border-color 0.15s;
   width: 220px;
+  transition: border-color 0.15s;
+  color: var(--text-muted);
 }
-.searchInput:focus {
+.searchWrap:focus-within {
   border-color: var(--orange);
+}
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-body);
 }
 .searchInput::placeholder {
   color: var(--text-muted);
+}
+.searchClear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.searchClear:hover {
+  color: var(--text);
 }
 .dateInput {
   background: var(--bg-card);
@@ -533,7 +618,7 @@
   border-color: var(--orange);
 }
 
-/* ── Submissions List ── */
+/* ── Submissions ── */
 .submissionsList {
   display: flex;
   flex-direction: column;
@@ -549,6 +634,7 @@
   gap: 14px;
   animation: fadeUp 0.3s ease both;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .submissionCard:hover {
   border-color: var(--border-hover);
@@ -565,6 +651,9 @@
 .subCard_REJECTED {
   border-left: 3px solid var(--red);
 }
+.subCard_REVIEWING {
+  border-left: 3px solid var(--orange);
+}
 
 .subCardTop {
   display: flex;
@@ -574,46 +663,64 @@
 }
 .subCardReferrer {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   flex: 1;
   min-width: 180px;
+}
+.subCardReferrerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .subCardName {
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
-  margin: 0 0 2px;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 .subCardEmail {
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .subCardMeta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 .subCardDate {
   font-size: 12px;
   color: var(--text-dim);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .subCardCounts {
   display: flex;
   gap: 8px;
   font-size: 12px;
   color: var(--text-dim);
+  flex-wrap: wrap;
 }
 .countGreen {
   color: var(--green);
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .countRed {
   color: var(--red);
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .subCardRight {
   display: flex;
@@ -626,12 +733,14 @@
   font-size: 12px;
   color: var(--text-muted);
   margin: 0;
+  white-space: nowrap;
 }
 .subCardNet {
   font-size: 14px;
   font-weight: 800;
   color: var(--green);
   margin: 0;
+  white-space: nowrap;
 }
 
 /* ── Sub mini-referral list ── */
@@ -639,7 +748,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 4px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 .subMiniRef {
@@ -649,6 +758,7 @@
   padding: 6px 8px;
   border-radius: 10px;
   transition: background 0.12s;
+  min-width: 0;
 }
 .subMiniRef:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -662,10 +772,18 @@
   font-weight: 600;
   color: var(--text);
   margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+.subMiniRefReward {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green);
+  margin: 4px 0 0;
 }
 .subMiniTasks {
   display: flex;
   gap: 4px;
+  flex-wrap: wrap;
 }
 .miniPip {
   width: 18px;
@@ -676,8 +794,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
   color: var(--text-muted);
 }
 .miniPipDone {
@@ -697,6 +813,10 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 12px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  overflow-wrap: anywhere;
 }
 .reviewBtn {
   padding: 10px 20px;
@@ -712,6 +832,9 @@
   transition:
     opacity 0.15s,
     transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .reviewBtn:hover {
   opacity: 0.88;
@@ -721,6 +844,10 @@
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 /* ── Withdrawal Cards ── */
@@ -739,6 +866,7 @@
   align-items: flex-start;
   flex-wrap: wrap;
   animation: fadeUp 0.3s ease both;
+  min-width: 0;
 }
 .wdCard_PENDING {
   border-left: 3px solid #eab308;
@@ -765,11 +893,13 @@
   font-weight: 700;
   color: var(--text);
   margin: 0 0 2px;
+  overflow-wrap: anywhere;
 }
 .wdCardEmail {
   font-size: 11px;
   color: var(--text-muted);
   margin: 0 0 6px;
+  overflow-wrap: anywhere;
 }
 .wdBankRow {
   display: flex;
@@ -778,16 +908,19 @@
   flex-wrap: wrap;
 }
 .wdBankIcon {
-  font-size: 13px;
+  display: inline-flex;
+  color: var(--text-muted);
 }
 .wdBankText {
   font-size: 12px;
   color: var(--text-dim);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 .wdAccName {
   font-size: 12px;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 .wdDot {
   color: var(--text-muted);
@@ -797,6 +930,12 @@
   font-size: 11px;
   color: var(--text-muted);
   margin: 6px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.wdIdRow {
+  margin-top: 6px;
 }
 .wdCardRight {
   display: flex;
@@ -811,13 +950,18 @@
   font-weight: 900;
   color: var(--orange);
   margin: 0;
+  white-space: nowrap;
 }
 .wdNote {
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
-  max-width: 200px;
+  max-width: 260px;
   text-align: right;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  overflow-wrap: anywhere;
 }
 .wdActions {
   display: flex;
@@ -834,6 +978,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .wdApproveBtn:hover {
   background: var(--green);
@@ -851,6 +998,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .wdRejectBtn:hover {
   background: var(--red);
@@ -861,6 +1011,9 @@
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* ── Badges ── */
@@ -908,7 +1061,7 @@
 .avatar {
   border-radius: 50%;
   overflow: hidden;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
@@ -939,6 +1092,9 @@
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .rolePillW {
   background: var(--orange-dim);
@@ -949,30 +1105,45 @@
   color: #818cf8;
 }
 
-/* ── Toast ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  padding: 11px 20px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
+/* ── Copy pill ── */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+  width: fit-content;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  animation: slideUp 0.2s ease;
 }
-.toast_success {
-  background: var(--green-dim);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: var(--green);
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.toast_error {
-  background: var(--red-dim);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--red);
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+.dimText {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 /* ── Drawer Backdrop ── */
@@ -985,18 +1156,20 @@
   justify-content: center;
   z-index: 200;
   animation: fadeIn 0.18s ease;
+  padding: 0;
 }
 .drawer {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-width: 740px;
+  max-width: 100%;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: slideUp 0.25s ease;
+  box-sizing: border-box;
 }
 
 /* Drawer Header */
@@ -1007,6 +1180,7 @@
   padding: 18px 20px 14px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  gap: 10px;
 }
 .drawerHeaderLeft {
   flex: 1;
@@ -1027,11 +1201,19 @@
   color: var(--text);
   margin: 0 0 4px;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 .drawerSubtitle {
   font-size: 12px;
   color: var(--text-dim);
   margin: 0;
+  overflow-wrap: anywhere;
+}
+.drawerSubIds {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .drawerClose {
   width: 32px;
@@ -1040,14 +1222,12 @@
   border-radius: 50%;
   background: var(--bg-card);
   color: var(--text-dim);
-  font-size: 20px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
   flex-shrink: 0;
-  line-height: 1;
 }
 .drawerClose:hover {
   border-color: var(--red);
@@ -1076,6 +1256,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .approveAllBtn:hover {
   background: var(--green);
@@ -1093,6 +1276,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .rejectAllBtn:hover {
   background: var(--red);
@@ -1104,16 +1290,23 @@
   align-items: center;
   gap: 10px;
   margin-left: auto;
+  flex-wrap: wrap;
 }
 .runningApprove {
   font-size: 13px;
   font-weight: 800;
   color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .runningReject {
   font-size: 13px;
   font-weight: 800;
   color: var(--red);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .runningPending {
   font-size: 13px;
@@ -1124,6 +1317,7 @@
   font-size: 13px;
   font-weight: 800;
   color: var(--orange);
+  white-space: nowrap;
 }
 
 /* Drawer Referrals scrollable */
@@ -1156,6 +1350,7 @@
   gap: 10px;
   animation: fadeUp 0.3s ease both;
   transition: border-color 0.15s;
+  min-width: 0;
 }
 .reviewCardApproved {
   border-color: rgba(34, 197, 94, 0.5);
@@ -1170,6 +1365,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .reviewCardInfo {
   flex: 1;
@@ -1180,6 +1376,7 @@
   font-weight: 700;
   color: var(--text);
   margin: 0 0 4px;
+  overflow-wrap: anywhere;
 }
 .reviewCardMeta {
   display: flex;
@@ -1187,6 +1384,7 @@
   gap: 6px;
   font-size: 11px;
   color: var(--text-muted);
+  flex-wrap: wrap;
 }
 .metaDot {
   color: var(--border);
@@ -1201,6 +1399,7 @@
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .approveBtn {
   padding: 6px 14px;
@@ -1213,6 +1412,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .approveBtn:hover {
   border-color: var(--green);
@@ -1234,6 +1436,9 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .rejectBtn:hover {
   border-color: var(--red);
@@ -1261,17 +1466,16 @@
   color: var(--text-muted);
 }
 .taskPip {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   border: 1px solid var(--border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  font-weight: 800;
   position: relative;
   cursor: default;
+  color: var(--text-muted);
 }
 .taskPipDone {
   color: #fff;
@@ -1285,20 +1489,26 @@
   position: absolute;
   top: -3px;
   right: -3px;
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
   background: var(--orange);
   border-radius: 50%;
-  pointer-events: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
-.screenshotLink {
-  font-size: 13px;
-  text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.15s;
+.screenshotBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.15s;
 }
-.screenshotLink:hover {
-  opacity: 1;
+.screenshotBtn:hover {
+  color: var(--orange);
 }
 
 /* Note Input */
@@ -1317,6 +1527,7 @@
   font-family: var(--font-body);
   resize: vertical;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 .noteInput:focus {
   border-color: var(--orange);
@@ -1329,6 +1540,7 @@
   font-size: 10px;
   color: var(--text-muted);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Drawer Footer */
@@ -1356,6 +1568,13 @@
   align-items: center;
   font-size: 13px;
   color: var(--text-dim);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.footerSummaryRow > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .footerGreen {
   font-weight: 800;
@@ -1393,6 +1612,7 @@
   font-family: var(--font-body);
   resize: none;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 .adminNoteInput:focus {
   border-color: var(--orange);
@@ -1409,13 +1629,18 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 10px;
   padding: 9px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .drawerActions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .drawerCancel {
   flex: 1;
+  min-width: 100px;
   height: 46px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1433,6 +1658,7 @@
 }
 .drawerSubmit {
   flex: 2;
+  min-width: 140px;
   height: 46px;
   background: var(--orange);
   color: #000;
@@ -1473,6 +1699,7 @@
   overflow: hidden;
   animation: slideUp 0.22s ease;
   align-self: center;
+  box-sizing: border-box;
 }
 .modalHeader {
   display: flex;
@@ -1480,6 +1707,7 @@
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
+  gap: 10px;
 }
 .modalTitle {
   font-family: var(--font-display);
@@ -1501,8 +1729,12 @@
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   font-size: 13px;
+  color: var(--text);
+}
+.wdPreviewUser {
+  font-weight: 700;
   color: var(--text);
 }
 .wdPreviewAmt {
@@ -1514,6 +1746,13 @@
 .wdPreviewBank {
   font-size: 12px;
   color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+.wdPreviewIds {
+  margin-top: 6px;
 }
 .formField {
   display: flex;
@@ -1535,6 +1774,7 @@
   justify-content: center;
   gap: 12px;
   padding-top: 8px;
+  flex-wrap: wrap;
 }
 .pageBtn {
   padding: 7px 16px;
@@ -1547,6 +1787,10 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 .pageBtn:hover:not(:disabled) {
   border-color: var(--orange);
@@ -1565,8 +1809,14 @@
 .skRow {
   height: 80px;
   border-radius: 14px;
-  background: var(--bg-card);
-  animation: pulse 1.4s ease infinite;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.03) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
 }
 
 /* ── Empty State ── */
@@ -1580,9 +1830,8 @@
   color: var(--text-muted);
   font-size: 13px;
 }
-.emptyState span {
-  font-size: 36px;
-  opacity: 0.3;
+.emptyState svg {
+  opacity: 0.35;
 }
 .emptyState p {
   margin: 0;
@@ -1597,6 +1846,137 @@
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+}
+
+/* ── Evidence / Screenshot Lightbox ── */
+.evidenceBackdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.96);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.18s ease;
+}
+.evidenceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.evidenceHeaderLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+.evidenceHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.evidenceOpenBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.evidenceOpenBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.evidenceClose {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.evidenceClose:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.evidenceBody {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: auto;
+  min-height: 0;
+}
+.evidenceImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.9);
+}
+.evidenceNonImage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  color: #fff;
+  padding: 30px;
+  max-width: 520px;
+}
+.evidenceNonImage svg {
+  opacity: 0.5;
+}
+.evidenceNonImageText {
+  font-size: 14px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+.evidenceOpenBtnLg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--orange);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+.evidenceOpenBtnLg:hover {
+  opacity: 0.9;
+}
+.evidenceUrlText {
+  font-size: 11px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.5);
+  word-break: break-all;
+  margin: 0;
+  max-width: 100%;
 }
 
 /* ── Animations ── */
@@ -1633,55 +2013,451 @@
     transform: rotate(360deg);
   }
 }
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
   }
-  50% {
-    opacity: 0.45;
+  100% {
+    background-position: 400px 0;
   }
 }
 
-/* ── Responsive ── */
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 640px and up ── */
 @media (min-width: 640px) {
+  .page {
+    padding: 24px 20px 60px;
+  }
   .statsBar {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .statusBreakdown {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .configGrid {
     grid-template-columns: repeat(3, 1fr);
   }
   .drawerBackdrop {
     align-items: center;
+    padding: 16px;
   }
   .drawer {
     border-radius: 20px;
     max-height: 88vh;
+    max-width: 740px;
   }
 }
-@media (max-width: 480px) {
+
+/* ── 900px and up ── */
+@media (min-width: 900px) {
+  .page {
+    padding: 28px 0 60px;
+  }
   .statsBar {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+/* ── 540px and below ── */
+@media (max-width: 540px) {
+  .page {
+    padding: 16px 12px 48px;
+    gap: 14px;
+  }
+  .pageTitle {
+    font-size: 1.1rem;
+  }
+  .pageTitle > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .pageSubtitle {
+    font-size: 12px;
+  }
+  .alertPill,
+  .alertPillGreen {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .statsBar {
+    gap: 6px;
+  }
+  .statCard {
+    padding: 11px 12px;
+    border-radius: 12px;
+  }
+  .statIcon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .statVal {
+    font-size: 15px;
+  }
+  .statLabel {
+    font-size: 9px;
+  }
+
+  .tabBar {
+    padding: 0 2px;
+  }
+  .tab {
+    padding: 11px 12px;
+    font-size: 12px;
+  }
+
+  .tabContent {
+    padding: 14px;
+    gap: 12px;
   }
   .statusBreakdown {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
   }
-  .configGrid {
-    grid-template-columns: 1fr;
+  .statusBox {
+    padding: 10px;
+  }
+  .statusBoxVal {
+    font-size: 18px;
+  }
+  .statusBoxLabel {
+    font-size: 9px;
+  }
+
+  .configItem {
+    font-size: 11.5px;
+    padding: 8px 10px;
+  }
+
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
   .filterRight {
+    margin-left: 0;
+    width: 100%;
+  }
+  .searchWrap,
+  .dateInput {
     width: 100%;
   }
   .searchInput {
-    width: 100%;
+    font-size: 12.5px;
+  }
+
+  .submissionCard {
+    padding: 12px;
+    gap: 10px;
   }
   .subCardTop {
-    flex-direction: column;
+    gap: 10px;
   }
   .subCardRight {
     align-items: flex-start;
+  }
+  .subCardName {
+    font-size: 13px;
+  }
+  .subCardEmail {
+    font-size: 10.5px;
+  }
+  .subMiniRef {
+    padding: 6px;
+  }
+  .subMiniRefName {
+    font-size: 12px;
+  }
+  .reviewBtn {
+    padding: 9px 16px;
+    font-size: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wdCard {
+    padding: 12px;
+  }
+  .wdCardRight {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .wdAmt {
+    font-size: 18px;
+  }
+  .wdActions {
+    width: 100%;
+  }
+  .wdApproveBtn,
+  .wdRejectBtn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .drawerHeader {
+    padding: 14px 16px 10px;
+  }
+  .drawerQuickActions {
+    padding: 10px 16px;
+  }
+  .drawerReferrals {
+    padding: 12px 16px;
+  }
+  .drawerFooter {
+    padding: 12px 16px;
+  }
+  .drawerActions {
+    flex-direction: column-reverse;
+  }
+  .drawerCancel,
+  .drawerSubmit {
+    width: 100%;
+    flex: none;
+    height: 44px;
+    font-size: 13px;
+  }
+
+  .reviewCard {
+    padding: 12px;
+    gap: 8px;
+  }
+  .reviewCardTop {
+    gap: 8px;
+  }
+  .decisionBtns {
+    width: 100%;
+  }
+  .approveBtn,
+  .rejectBtn {
+    flex: 1;
+    justify-content: center;
+  }
+  .taskFlagLabel {
+    display: none;
+  }
+
+  .modalForm,
+  .modalHeader {
+    padding: 14px 16px;
+  }
+
+  .pagination {
+    gap: 8px;
+  }
+  .pageBtn {
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+  .pageInfo {
+    font-size: 11px;
+  }
+
+  .evidenceHeader {
+    padding: 12px 14px;
+  }
+  .evidenceBody {
+    padding: 12px;
+  }
+}
+
+/* ── 420px and below ── */
+@media (max-width: 420px) {
+  .page {
+    padding: 14px 10px 44px;
+    gap: 12px;
+  }
+  .pageTitle {
+    font-size: 1rem;
+  }
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+
+  .statsBar {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .statCard {
+    padding: 10px;
+    border-radius: 10px;
+  }
+  .statVal {
+    font-size: 14px;
+  }
+  .statLabel {
+    font-size: 8.5px;
+  }
+
+  .tabContent {
+    padding: 12px;
+  }
+  .statusBreakdown {
+    gap: 5px;
+  }
+  .statusBox {
+    padding: 9px;
+  }
+  .statusBoxVal {
+    font-size: 16px;
+  }
+
+  .submissionCard {
+    padding: 11px;
+  }
+  .subCardName {
+    font-size: 12.5px;
+  }
+  .subMiniRefName {
+    font-size: 11.5px;
+  }
+  .miniPip {
+    width: 16px;
+    height: 16px;
+  }
+  .miniPip svg {
+    width: 8px;
+    height: 8px;
+  }
+
+  .wdAmt {
+    font-size: 16px;
+  }
+  .wdBankText,
+  .wdAccName {
+    font-size: 11px;
+  }
+
+  .drawerTitle {
+    font-size: 16px;
+  }
+  .drawerSubtitle {
+    font-size: 11.5px;
+  }
+  .reviewCardName {
+    font-size: 13px;
+  }
+  .taskPip {
+    width: 20px;
+    height: 20px;
+  }
+
+  .copyPill {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .copyPillBtn svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  .wdPreviewAmt {
+    font-size: 18px;
+  }
+  .wdPreviewBank {
+    font-size: 11px;
+  }
+}
+
+/* ── 340px and below ── */
+@media (max-width: 340px) {
+  .page {
+    padding: 12px 8px 40px;
+    gap: 10px;
+  }
+  .pageTitle {
+    font-size: 0.95rem;
+  }
+
+  .statsBar {
+    gap: 4px;
+  }
+  .statCard {
+    padding: 8px;
+  }
+  .statVal {
+    font-size: 13px;
+  }
+  .statLabel {
+    font-size: 8px;
+  }
+
+  .tab {
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+
+  .submissionCard {
+    padding: 10px;
+  }
+  .subCardName {
+    font-size: 12px;
+  }
+  .subMiniRef {
+    padding: 5px;
+  }
+  .subMiniRefName {
+    font-size: 11px;
+  }
+  .miniPip {
+    width: 14px;
+    height: 14px;
+  }
+  .miniPip svg {
+    width: 7px;
+    height: 7px;
+  }
+
+  .wdCard {
+    padding: 10px;
+  }
+  .wdCardName {
+    font-size: 12.5px;
+  }
+  .wdAmt {
+    font-size: 15px;
+  }
+  .wdActions {
+    flex-direction: column;
+  }
+  .wdApproveBtn,
+  .wdRejectBtn {
+    width: 100%;
+  }
+
+  .drawerHeader,
+  .drawerQuickActions,
+  .drawerReferrals,
+  .drawerFooter {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .decisionBtns {
+    flex-direction: column;
+  }
+  .approveBtn,
+  .rejectBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .copyPill {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  .copyPillBtn svg {
+    width: 8px;
+    height: 8px;
+  }
+
+  .pageBtn {
+    padding: 5px 10px;
+    font-size: 10.5px;
+  }
+  .pageInfo {
+    font-size: 10.5px;
   }
 }

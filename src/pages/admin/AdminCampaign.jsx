@@ -1,12 +1,61 @@
 // src/pages/admin/AdminCampaign.jsx
+// Full admin campaign management.
+//
+// Endpoints:
+//   GET   /campaign/admin/stats
+//   GET   /campaign/admin/submissions?status=&search=&date=&page=&limit=
+//   PATCH /campaign/admin/submissions/:id/review     { decisions, adminNote }
+//   GET   /campaign/admin/withdrawals?status=&page=&limit=
+//   PATCH /campaign/admin/withdrawals/:id/approve
+//   PATCH /campaign/admin/withdrawals/:id/reject     { reason }
+//
+// Every field the backend sends is rendered. Lucide icons throughout.
+// Fully responsive. Uses platform AlertModal.
+
 import { useState, useEffect, useCallback } from "react";
+import {
+  Megaphone,
+  ClipboardList,
+  CheckCircle,
+  Wallet,
+  Clock,
+  PiggyBank,
+  Layers,
+  Smartphone,
+  UserCircle,
+  Users,
+  Camera,
+  Music2,
+  Copy,
+  Check,
+  X,
+  Search,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Paperclip,
+  ZoomIn,
+  Paperclip as PaperclipIcon,
+  AlertTriangle,
+  Trophy,
+  Banknote,
+  Landmark,
+  FileText,
+  Inbox,
+  Receipt,
+  BadgeCheck,
+  XCircle as XCircleIcon,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
+import AlertModal from "../../components/ui/AlertModal";
 import api from "../../lib/api";
 import styles from "./AdminCampaign.module.css";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtAmt = (n) =>
   `₦${Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
 const fmtDate = (d) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
@@ -15,6 +64,18 @@ const fmtDate = (d) =>
         year: "numeric",
       })
     : "—";
+
+const fmtDateTime = (d) =>
+  d
+    ? new Date(d).toLocaleString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
 const timeAgo = (d) => {
   if (!d) return "—";
   const m = Math.floor((Date.now() - new Date(d)) / 60000);
@@ -24,40 +85,63 @@ const timeAgo = (d) => {
   return `${Math.floor(m / 1440)}d ago`;
 };
 
-// ─── Task metadata ─────────────────────────────────────────────────────────────
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isImageUrl(str) {
+  if (!str || typeof str !== "string") return false;
+  const t = str.trim();
+  if (/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|avif|bmp|svg)(\?.*)?$/i.test(t))
+    return true;
+  if (
+    /^https?:\/\/.*(cloudinary\.com|cloudfront\.net|amazonaws\.com|supabase\.co|firebase\w*\.app|imgix\.net|imagekit\.io|res\.cloudinary\.com)\/.+/i.test(
+      t,
+    )
+  )
+    return true;
+  return false;
+}
+
+// ─── Task metadata (Lucide icons) ─────────────────────────────────────────────
 const TASKS = [
   {
     key: "hasDownloadedApp",
     label: "Download",
-    icon: "📱",
+    Icon: Smartphone,
     proofKey: null,
     color: "#60a5fa",
   },
   {
     key: "hasSetupProfile",
     label: "Profile",
-    icon: "👤",
+    Icon: UserCircle,
     proofKey: null,
     color: "#a78bfa",
   },
   {
     key: "hasFollowedFb",
     label: "Facebook",
-    icon: "👥",
+    Icon: Users,
     proofKey: "fbScreenshotUrl",
     color: "#3b82f6",
   },
   {
     key: "hasFollowedIg",
     label: "Instagram",
-    icon: "📸",
+    Icon: Camera,
     proofKey: "igScreenshotUrl",
     color: "#ec4899",
   },
   {
     key: "hasFollowedTt",
     label: "TikTok",
-    icon: "🎵",
+    Icon: Music2,
     proofKey: "ttScreenshotUrl",
     color: "#94a3b8",
   },
@@ -76,20 +160,43 @@ const WD_STATUS = {
   REJECTED: { label: "Rejected", cls: "red" },
 };
 const REF_STATUS = {
+  PENDING: { label: "Pending", cls: "dim" },
+  TASKS_DONE: { label: "Tasks Done", cls: "blue" },
   SUBMITTED: { label: "Submitted", cls: "indigo" },
   APPROVED: { label: "Approved", cls: "green" },
   REJECTED: { label: "Rejected", cls: "red" },
 };
 
 // ─── Atoms ────────────────────────────────────────────────────────────────────
-function Toast({ toast }) {
-  if (!toast) return null;
+
+function Spinner() {
+  return <span className={styles.spinner} />;
+}
+
+function CopyPill({ text, label }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return <span className={styles.dimText}>—</span>;
   return (
-    <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-      {toast.msg}
-    </div>
+    <span className={styles.copyPill} title={String(text)}>
+      <span className={styles.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={styles.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        aria-label="Copy"
+      >
+        {ok ? <Check size={10} /> : <Copy size={10} />}
+      </button>
+    </span>
   );
 }
+
 function Badge({ status, meta }) {
   const m = (meta || {})[status] || { label: status, cls: "dim" };
   return (
@@ -98,6 +205,7 @@ function Badge({ status, meta }) {
     </span>
   );
 }
+
 function Avatar({ name, avatar, size = "sm" }) {
   const initials =
     name
@@ -112,24 +220,102 @@ function Avatar({ name, avatar, size = "sm" }) {
     </div>
   );
 }
-function TaskPip({ done, label, icon, color, proofUrl }) {
+
+function TaskPip({ done, label, Icon, color, proofUrl, onViewProof }) {
   return (
     <span
       className={`${styles.taskPip} ${done ? styles.taskPipDone : styles.taskPipMiss}`}
       style={done ? { background: color, borderColor: color } : {}}
       title={label + (proofUrl ? " (screenshot available)" : "")}
     >
-      {done ? "✓" : "✗"}
-      {proofUrl && done && <span className={styles.proofDot} />}
+      {Icon ? <Icon size={11} /> : null}
+      {proofUrl && done && (
+        <button
+          type="button"
+          className={styles.proofDot}
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewProof?.(proofUrl);
+          }}
+          title="View screenshot"
+          aria-label="View screenshot"
+        />
+      )}
     </span>
   );
 }
 
+// ─── Evidence / Screenshot Lightbox ───────────────────────────────────────────
+function ScreenshotLightbox({ url, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  const isImg = isImageUrl(url);
+  return (
+    <div className={styles.evidenceBackdrop} onClick={onClose}>
+      <div className={styles.evidenceHeader}>
+        <span className={styles.evidenceHeaderLabel}>
+          <PaperclipIcon size={13} /> Screenshot
+        </span>
+        <div className={styles.evidenceHeaderActions}>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.evidenceOpenBtn}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink size={12} /> Open in new tab
+          </a>
+          <button
+            className={styles.evidenceClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+      <div className={styles.evidenceBody} onClick={(e) => e.stopPropagation()}>
+        {isImg ? (
+          <img src={url} alt="Screenshot" className={styles.evidenceImg} />
+        ) : (
+          <div className={styles.evidenceNonImage}>
+            <FileText size={40} />
+            <p className={styles.evidenceNonImageText}>
+              This proof is a file, not an image.
+            </p>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.evidenceOpenBtnLg}
+            >
+              <ExternalLink size={13} /> Open file
+            </a>
+            <p className={styles.evidenceUrlText} title={url}>
+              {url}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// REVIEW DRAWER — full submission review panel
+// REVIEW DRAWER
 // ─────────────────────────────────────────────────────────────────────────────
 function ReviewDrawer({ submission, onClose, onDone, showToast }) {
-  // decisions: { [referralId]: { approved: bool | null, note: string } }
   const [decisions, setDecisions] = useState(() => {
     const d = {};
     (submission.referrals || []).forEach((r) => {
@@ -140,6 +326,7 @@ function ReviewDrawer({ submission, onClose, onDone, showToast }) {
   const [adminNote, setAdminNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [proofUrl, setProofUrl] = useState(null);
 
   function setDecision(refId, approved) {
     setDecisions((prev) => ({
@@ -166,7 +353,6 @@ function ReviewDrawer({ submission, onClose, onDone, showToast }) {
     setDecisions(d);
   }
 
-  // Running totals
   const approved = Object.values(decisions).filter(
     (d) => d.approved === true,
   ).length;
@@ -206,210 +392,271 @@ function ReviewDrawer({ submission, onClose, onDone, showToast }) {
   const refs = submission.referrals || [];
 
   return (
-    <div className={styles.drawerBackdrop} onClick={onClose}>
-      <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className={styles.drawerHeader}>
-          <div className={styles.drawerHeaderLeft}>
-            <p className={styles.drawerEyebrow}>Reviewing Submission</p>
-            <p className={styles.drawerTitle}>{submission.submissionDate}</p>
-            <p className={styles.drawerSubtitle}>
-              Referred by{" "}
-              <strong>
-                {submission.referrer?.firstName} {submission.referrer?.lastName}
-              </strong>
-              &nbsp;·&nbsp;{submission.totalSubmitted} referral
-              {submission.totalSubmitted !== 1 ? "s" : ""}
-              &nbsp;·&nbsp;Gross {fmtAmt(submission.grossAmount)}
-            </p>
-          </div>
-          <button className={styles.drawerClose} onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        {/* Quick actions */}
-        <div className={styles.drawerQuickActions}>
-          <button className={styles.approveAllBtn} onClick={approveAll}>
-            ✅ Approve All
-          </button>
-          <button className={styles.rejectAllBtn} onClick={rejectAll}>
-            ❌ Reject All
-          </button>
-          <div className={styles.drawerRunning}>
-            <span className={styles.runningApprove}>✓ {approved}</span>
-            <span className={styles.runningReject}>✗ {rejected}</span>
-            {pending > 0 && (
-              <span className={styles.runningPending}>? {pending}</span>
-            )}
-            <span className={styles.runningAmt}>{fmtAmt(netAmt)}</span>
-          </div>
-        </div>
-
-        {/* Referral list */}
-        <div className={styles.drawerReferrals}>
-          {refs.map((r, i) => {
-            const dec = decisions[r.id] || { approved: null, note: "" };
-            const tasksDone = TASKS.filter((t) => r[t.key]).length;
-            const hasProof = TASKS.some((t) => t.proofKey && r[t.proofKey]);
-            return (
-              <div
-                key={r.id}
-                className={`${styles.reviewCard}
-                  ${dec.approved === true ? styles.reviewCardApproved : ""}
-                  ${dec.approved === false ? styles.reviewCardRejected : ""}`}
-                style={{ animationDelay: `${i * 30}ms` }}
-              >
-                {/* Top row */}
-                <div className={styles.reviewCardTop}>
-                  <Avatar
-                    name={r.referred?.firstName + " " + r.referred?.lastName}
-                    avatar={r.referred?.avatar}
+    <>
+      <div className={styles.drawerBackdrop} onClick={onClose}>
+        <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerHeaderLeft}>
+              <p className={styles.drawerEyebrow}>Reviewing Submission</p>
+              <p className={styles.drawerTitle}>{submission.submissionDate}</p>
+              <p className={styles.drawerSubtitle}>
+                Referred by{" "}
+                <strong>
+                  {submission.referrer?.firstName}{" "}
+                  {submission.referrer?.lastName}
+                </strong>
+                &nbsp;·&nbsp;{submission.totalSubmitted} referral
+                {submission.totalSubmitted !== 1 ? "s" : ""}
+                &nbsp;·&nbsp;Gross {fmtAmt(submission.grossAmount)}
+              </p>
+              {submission.id && (
+                <div className={styles.drawerSubIds}>
+                  <CopyPill
+                    text={submission.id}
+                    label={`submission ${submission.id.slice(0, 10)}…`}
                   />
-                  <div className={styles.reviewCardInfo}>
-                    <p className={styles.reviewCardName}>
-                      {r.referred?.firstName} {r.referred?.lastName}
-                    </p>
-                    <div className={styles.reviewCardMeta}>
-                      <span
-                        className={`${styles.rolePill} ${r.referred?.role === "WORKER" ? styles.rolePillW : styles.rolePillH}`}
-                      >
-                        {r.referred?.role === "WORKER" ? "🔨" : "🧑"}{" "}
-                        {r.referred?.role}
-                      </span>
-                      <span className={styles.metaDot}>·</span>
-                      <span className={styles.tasksScore}>
-                        {tasksDone}/5 tasks
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Decision buttons */}
-                  <div className={styles.decisionBtns}>
-                    <button
-                      className={`${styles.approveBtn} ${dec.approved === true ? styles.approveBtnActive : ""}`}
-                      onClick={() => setDecision(r.id, true)}
-                    >
-                      ✓ Approve
-                    </button>
-                    <button
-                      className={`${styles.rejectBtn} ${dec.approved === false ? styles.rejectBtnActive : ""}`}
-                      onClick={() => setDecision(r.id, false)}
-                    >
-                      ✗ Reject
-                    </button>
-                  </div>
                 </div>
+              )}
+            </div>
+            <button
+              className={styles.drawerClose}
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
 
-                {/* Task flags */}
-                <div className={styles.taskFlagsRow}>
-                  {TASKS.map((t) => (
-                    <div key={t.key} className={styles.taskFlag}>
-                      <TaskPip
-                        done={!!r[t.key]}
-                        label={t.label}
-                        icon={t.icon}
-                        color={t.color}
-                        proofUrl={t.proofKey ? r[t.proofKey] : null}
-                      />
-                      <span className={styles.taskFlagLabel}>{t.label}</span>
-                      {t.proofKey && r[t.proofKey] && (
-                        <a
-                          href={r[t.proofKey]}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={styles.screenshotLink}
-                          title="View screenshot"
-                        >
-                          📎
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
+          {/* Quick actions */}
+          <div className={styles.drawerQuickActions}>
+            <button className={styles.approveAllBtn} onClick={approveAll}>
+              <CheckCircle size={13} /> Approve All
+            </button>
+            <button className={styles.rejectAllBtn} onClick={rejectAll}>
+              <XCircleIcon size={13} /> Reject All
+            </button>
+            <div className={styles.drawerRunning}>
+              <span className={styles.runningApprove}>
+                <Check size={11} /> {approved}
+              </span>
+              <span className={styles.runningReject}>
+                <X size={11} /> {rejected}
+              </span>
+              {pending > 0 && (
+                <span className={styles.runningPending}>? {pending}</span>
+              )}
+              <span className={styles.runningAmt}>{fmtAmt(netAmt)}</span>
+            </div>
+          </div>
 
-                {/* Note input (only visible when rejected) */}
-                {dec.approved === false && (
-                  <div className={styles.noteRow}>
-                    <input
-                      className={styles.noteInput}
-                      placeholder="Reason for rejection (optional)…"
-                      value={dec.note}
-                      onChange={(e) => setNote(r.id, e.target.value)}
+          {/* Referral list */}
+          <div className={styles.drawerReferrals}>
+            {refs.map((r, i) => {
+              const dec = decisions[r.id] || { approved: null, note: "" };
+              const tasksDone = TASKS.filter((t) => r[t.key]).length;
+              return (
+                <div
+                  key={r.id}
+                  className={`${styles.reviewCard}
+                    ${dec.approved === true ? styles.reviewCardApproved : ""}
+                    ${dec.approved === false ? styles.reviewCardRejected : ""}`}
+                  style={{ animationDelay: `${i * 30}ms` }}
+                >
+                  {/* Top row */}
+                  <div className={styles.reviewCardTop}>
+                    <Avatar
+                      name={r.referred?.firstName + " " + r.referred?.lastName}
+                      avatar={r.referred?.avatar}
                     />
+                    <div className={styles.reviewCardInfo}>
+                      <p className={styles.reviewCardName}>
+                        {r.referred?.firstName} {r.referred?.lastName}
+                      </p>
+                      <div className={styles.reviewCardMeta}>
+                        <span
+                          className={`${styles.rolePill} ${r.referred?.role === "WORKER" ? styles.rolePillW : styles.rolePillH}`}
+                        >
+                          {r.referred?.role === "WORKER" ? (
+                            <>
+                              <Users size={10} /> WORKER
+                            </>
+                          ) : (
+                            <>
+                              <UserCircle size={10} /> HIRER
+                            </>
+                          )}
+                        </span>
+                        <span className={styles.metaDot}>·</span>
+                        <span className={styles.tasksScore}>
+                          {tasksDone}/5 tasks
+                        </span>
+                        {r.id && (
+                          <>
+                            <span className={styles.metaDot}>·</span>
+                            <CopyPill
+                              text={r.id}
+                              label={`ref ${r.id.slice(0, 8)}…`}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Decision buttons */}
+                    <div className={styles.decisionBtns}>
+                      <button
+                        type="button"
+                        className={`${styles.approveBtn} ${dec.approved === true ? styles.approveBtnActive : ""}`}
+                        onClick={() => setDecision(r.id, true)}
+                      >
+                        <Check size={12} /> Approve
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.rejectBtn} ${dec.approved === false ? styles.rejectBtnActive : ""}`}
+                        onClick={() => setDecision(r.id, false)}
+                      >
+                        <X size={12} /> Reject
+                      </button>
+                    </div>
                   </div>
-                )}
 
-                {/* Joined date */}
-                <p className={styles.reviewCardJoined}>
-                  Joined {timeAgo(r.referred?.createdAt || r.createdAt)}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+                  {/* Task flags */}
+                  <div className={styles.taskFlagsRow}>
+                    {TASKS.map((t) => {
+                      const proofUrl = t.proofKey ? r[t.proofKey] : null;
+                      return (
+                        <div key={t.key} className={styles.taskFlag}>
+                          <TaskPip
+                            done={!!r[t.key]}
+                            label={t.label}
+                            Icon={t.Icon}
+                            color={t.color}
+                            proofUrl={proofUrl}
+                            onViewProof={setProofUrl}
+                          />
+                          <span className={styles.taskFlagLabel}>
+                            {t.label}
+                          </span>
+                          {proofUrl && (
+                            <button
+                              type="button"
+                              className={styles.screenshotBtn}
+                              onClick={() => setProofUrl(proofUrl)}
+                              title="View screenshot"
+                              aria-label="View screenshot"
+                            >
+                              <Paperclip size={11} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
 
-        {/* Footer */}
-        <div className={styles.drawerFooter}>
-          <div className={styles.footerSummary}>
-            <div className={styles.footerSummaryRow}>
-              <span>✅ Approved</span>
-              <span className={styles.footerGreen}>
-                {approved} × ₦100 = {fmtAmt(netAmt)}
-              </span>
-            </div>
-            <div className={styles.footerSummaryRow}>
-              <span>❌ Rejected</span>
-              <span className={styles.footerRed}>
-                {rejected} referral{rejected !== 1 ? "s" : ""} — no credit
-              </span>
-            </div>
-            {pending > 0 && (
+                  {/* Note (only when rejected) */}
+                  {dec.approved === false && (
+                    <div className={styles.noteRow}>
+                      <input
+                        className={styles.noteInput}
+                        placeholder="Reason for rejection (optional)…"
+                        value={dec.note}
+                        onChange={(e) => setNote(r.id, e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Joined date */}
+                  <p className={styles.reviewCardJoined}>
+                    Joined {timeAgo(r.referred?.createdAt || r.createdAt)}
+                    {r.referred?.createdAt && (
+                      <> · {fmtDateTime(r.referred.createdAt)}</>
+                    )}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div className={styles.drawerFooter}>
+            <div className={styles.footerSummary}>
               <div className={styles.footerSummaryRow}>
-                <span>⏳ Undecided</span>
-                <span className={styles.footerOrange}>{pending} remaining</span>
+                <span>
+                  <CheckCircle size={12} /> Approved
+                </span>
+                <span className={styles.footerGreen}>
+                  {approved} × ₦100 = {fmtAmt(netAmt)}
+                </span>
+              </div>
+              <div className={styles.footerSummaryRow}>
+                <span>
+                  <XCircleIcon size={12} /> Rejected
+                </span>
+                <span className={styles.footerRed}>
+                  {rejected} referral{rejected !== 1 ? "s" : ""} — no credit
+                </span>
+              </div>
+              {pending > 0 && (
+                <div className={styles.footerSummaryRow}>
+                  <span>
+                    <Clock size={12} /> Undecided
+                  </span>
+                  <span className={styles.footerOrange}>
+                    {pending} remaining
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.adminNoteField}>
+              <label className={styles.adminNoteLabel}>
+                Overall note (optional)
+              </label>
+              <textarea
+                className={styles.adminNoteInput}
+                placeholder="Add a note visible to the referrer…"
+                rows={2}
+                value={adminNote}
+                onChange={(e) => setAdminNote(e.target.value)}
+              />
+            </div>
+
+            {error && (
+              <div className={styles.drawerError}>
+                <AlertTriangle size={13} /> {error}
               </div>
             )}
-          </div>
 
-          <div className={styles.adminNoteField}>
-            <label className={styles.adminNoteLabel}>
-              Overall note (optional)
-            </label>
-            <textarea
-              className={styles.adminNoteInput}
-              placeholder="Add a note visible to the referrer…"
-              rows={2}
-              value={adminNote}
-              onChange={(e) => setAdminNote(e.target.value)}
-            />
-          </div>
-
-          {error && <div className={styles.drawerError}>⚠️ {error}</div>}
-
-          <div className={styles.drawerActions}>
-            <button className={styles.drawerCancel} onClick={onClose}>
-              Cancel
-            </button>
-            <button
-              className={styles.drawerSubmit}
-              onClick={handleSubmit}
-              disabled={saving || !allSet}
-            >
-              {saving ? (
-                <>
-                  <span className={styles.spinner} /> Submitting…
-                </>
-              ) : !allSet ? (
-                `Decide ${pending} more`
-              ) : (
-                `Submit Review · ${fmtAmt(netAmt)} to credit`
-              )}
-            </button>
+            <div className={styles.drawerActions}>
+              <button className={styles.drawerCancel} onClick={onClose}>
+                Cancel
+              </button>
+              <button
+                className={styles.drawerSubmit}
+                onClick={handleSubmit}
+                disabled={saving || !allSet}
+              >
+                {saving ? (
+                  <>
+                    <Spinner /> Submitting…
+                  </>
+                ) : !allSet ? (
+                  `Decide ${pending} more`
+                ) : (
+                  `Submit Review · ${fmtAmt(netAmt)} to credit`
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {proofUrl && (
+        <ScreenshotLightbox url={proofUrl} onClose={() => setProofUrl(null)} />
+      )}
+    </>
   );
 }
 
@@ -441,19 +688,32 @@ function RejectWdModal({ wd, onClose, onDone }) {
       <div className={styles.smallModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <p className={styles.modalTitle}>Reject Withdrawal</p>
-          <button className={styles.drawerClose} onClick={onClose}>
-            ×
+          <button
+            className={styles.drawerClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={16} />
           </button>
         </div>
         <form onSubmit={submit} className={styles.modalForm}>
           <div className={styles.wdPreview}>
-            <span>
+            <span className={styles.wdPreviewUser}>
               {wd.user?.firstName} {wd.user?.lastName}
             </span>
             <span className={styles.wdPreviewAmt}>{fmtAmt(wd.amount)}</span>
             <span className={styles.wdPreviewBank}>
-              {wd.bankName} · {wd.accountNumber}
+              <Landmark size={11} /> {wd.bankName} · {wd.accountNumber}
             </span>
+            <span className={styles.wdPreviewBank}>
+              <UserCircle size={11} /> {wd.accountName}
+            </span>
+            <div className={styles.wdPreviewIds}>
+              <CopyPill
+                text={wd.id}
+                label={`withdrawal ${wd.id.slice(0, 10)}…`}
+              />
+            </div>
           </div>
           <div className={styles.formField}>
             <label className={styles.formLabel}>Reason (shown to user)</label>
@@ -465,7 +725,11 @@ function RejectWdModal({ wd, onClose, onDone }) {
               onChange={(e) => setReason(e.target.value)}
             />
           </div>
-          {error && <div className={styles.drawerError}>{error}</div>}
+          {error && (
+            <div className={styles.drawerError}>
+              <AlertTriangle size={13} /> {error}
+            </div>
+          )}
           <div className={styles.drawerActions}>
             <button
               type="button"
@@ -481,7 +745,7 @@ function RejectWdModal({ wd, onClose, onDone }) {
             >
               {loading ? (
                 <>
-                  <span className={styles.spinner} /> Rejecting…
+                  <Spinner /> Rejecting…
                 </>
               ) : (
                 "Reject & Refund Balance"
@@ -515,11 +779,10 @@ export default function AdminCampaign() {
   const [wdLoading, setWdLoading] = useState(false);
   const [reviewing, setReviewing] = useState(null);
   const [rejectingWd, setRejectingWd] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [notify, setNotify] = useState(null);
 
   function showToast(msg, type = "success") {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+    setNotify({ type, text: msg });
   }
 
   // ── Load stats ─────────────────────────────────────────────────────────────
@@ -599,13 +862,13 @@ export default function AdminCampaign() {
   return (
     <AdminLayout>
       <div className={styles.page}>
-        <Toast toast={toast} />
-
         {/* ── Header ── */}
         <div className={styles.pageHeader}>
           <div>
             <p className={styles.eyebrow}>Admin · Daily Referral Campaign</p>
-            <h1 className={styles.pageTitle}>Campaign Control</h1>
+            <h1 className={styles.pageTitle}>
+              <Megaphone size={20} /> Campaign Control
+            </h1>
             <p className={styles.pageSubtitle}>
               Review daily submissions, approve payouts, and manage withdrawals.
             </p>
@@ -619,7 +882,7 @@ export default function AdminCampaign() {
                   setSubFilter("PENDING");
                 }}
               >
-                📋 {pendingSubCount} pending review
+                <ClipboardList size={12} /> {pendingSubCount} pending review
                 {pendingSubCount !== 1 ? "s" : ""}
               </button>
             )}
@@ -628,7 +891,7 @@ export default function AdminCampaign() {
                 className={styles.alertPillGreen}
                 onClick={() => setTab("withdrawals")}
               >
-                💸 {pendingWdCount} pending withdrawal
+                <Banknote size={12} /> {pendingWdCount} pending withdrawal
                 {pendingWdCount !== 1 ? "s" : ""}
               </button>
             )}
@@ -639,34 +902,39 @@ export default function AdminCampaign() {
         <div className={styles.statsBar}>
           {[
             {
-              icon: "📋",
+              Icon: ClipboardList,
               label: "Total Submissions",
               val: stats?.overview?.totalSubmissions,
             },
             {
-              icon: "✅",
+              Icon: CheckCircle,
               label: "Total Approved",
               val: stats?.overview?.totalReferralsApproved,
             },
             {
-              icon: "💰",
+              Icon: Wallet,
               label: "Total Paid Out",
               val: fmtAmt(stats?.overview?.totalPaidOut),
               accent: "orange",
             },
             {
-              icon: "👛",
+              Icon: PiggyBank,
               label: "In Wallets",
               val: fmtAmt(stats?.overview?.totalCampaignWallets),
             },
             {
-              icon: "⏳",
+              Icon: Layers,
+              label: "Total Earned",
+              val: fmtAmt(stats?.overview?.totalCampaignEarned),
+            },
+            {
+              Icon: Clock,
               label: "Pending Reviews",
               val: pendingSubCount,
               accent: pendingSubCount > 0 ? "yellow" : "",
             },
             {
-              icon: "💸",
+              Icon: Banknote,
               label: "Pending Payouts",
               val: pendingWdCount,
               accent: pendingWdCount > 0 ? "green" : "",
@@ -677,7 +945,9 @@ export default function AdminCampaign() {
               className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              <span className={styles.statIcon}>{s.icon}</span>
+              <span className={styles.statIcon}>
+                <s.Icon size={16} />
+              </span>
               <p className={styles.statVal}>{loading ? "—" : (s.val ?? "0")}</p>
               <p className={styles.statLabel}>{s.label}</p>
             </div>
@@ -688,14 +958,16 @@ export default function AdminCampaign() {
         <div className={styles.tabsWrap}>
           <div className={styles.tabBar}>
             {[
-              { key: "overview", label: "📊 Overview" },
+              { key: "overview", label: "Overview", Icon: Layers },
               {
                 key: "submissions",
-                label: `📋 Submissions${pendingSubCount > 0 ? ` (${pendingSubCount})` : ""}`,
+                label: `Submissions${pendingSubCount > 0 ? ` (${pendingSubCount})` : ""}`,
+                Icon: ClipboardList,
               },
               {
                 key: "withdrawals",
-                label: `💸 Withdrawals${pendingWdCount > 0 ? ` (${pendingWdCount})` : ""}`,
+                label: `Withdrawals${pendingWdCount > 0 ? ` (${pendingWdCount})` : ""}`,
+                Icon: Banknote,
               },
             ].map((t) => (
               <button
@@ -703,7 +975,7 @@ export default function AdminCampaign() {
                 className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
                 onClick={() => setTab(t.key)}
               >
-                {t.label}
+                <t.Icon size={13} /> {t.label}
               </button>
             ))}
           </div>
@@ -729,7 +1001,9 @@ export default function AdminCampaign() {
               {/* Pending submissions alert */}
               {pendingSubCount > 0 && (
                 <div className={styles.pendingAlert}>
-                  <span className={styles.pendingAlertIcon}>⚠️</span>
+                  <span className={styles.pendingAlertIcon}>
+                    <AlertTriangle size={22} />
+                  </span>
                   <div>
                     <p className={styles.pendingAlertTitle}>
                       {pendingSubCount} submission
@@ -747,14 +1021,16 @@ export default function AdminCampaign() {
                       setSubFilter("PENDING");
                     }}
                   >
-                    Review Now →
+                    Review Now
                   </button>
                 </div>
               )}
 
               {/* Reward config */}
               <div className={styles.configCard}>
-                <p className={styles.configTitle}>💡 Campaign Configuration</p>
+                <p className={styles.configTitle}>
+                  <AlertTriangle size={13} /> Campaign Configuration
+                </p>
                 <div className={styles.configGrid}>
                   <div className={styles.configItem}>
                     <span>Reward per referral</span>
@@ -778,7 +1054,7 @@ export default function AdminCampaign() {
                   </div>
                   <div className={styles.configItem}>
                     <span>Admin final say</span>
-                    <strong>✅ Yes</strong>
+                    <strong>Yes</strong>
                   </div>
                 </div>
               </div>
@@ -787,19 +1063,21 @@ export default function AdminCampaign() {
               {stats?.topReferrers?.length > 0 && (
                 <div className={styles.panel}>
                   <div className={styles.panelHeader}>
-                    <p className={styles.panelTitle}>🏆 Top Campaign Earners</p>
+                    <p className={styles.panelTitle}>
+                      <Trophy size={13} /> Top Campaign Earners
+                    </p>
                   </div>
                   <div className={styles.panelBody}>
                     {stats.topReferrers.map((u, i) => (
                       <div key={u.id} className={styles.topEarnerRow}>
                         <span className={styles.topEarnerRank}>
                           {i === 0
-                            ? "🥇"
+                            ? "1"
                             : i === 1
-                              ? "🥈"
+                              ? "2"
                               : i === 2
-                                ? "🥉"
-                                : `#${i + 1}`}
+                                ? "3"
+                                : `${i + 1}`}
                         </span>
                         <Avatar
                           name={`${u.firstName} ${u.lastName}`}
@@ -809,6 +1087,12 @@ export default function AdminCampaign() {
                           <p className={styles.topEarnerName}>
                             {u.firstName} {u.lastName}
                           </p>
+                          {u.id && (
+                            <CopyPill
+                              text={u.id}
+                              label={`id ${u.id.slice(0, 8)}…`}
+                            />
+                          )}
                         </div>
                         <p className={styles.topEarnerAmt}>
                           {fmtAmt(u.campaignWalletLifetimeTotal)}
@@ -823,12 +1107,14 @@ export default function AdminCampaign() {
               {stats?.pendingWithdrawals?.length > 0 && (
                 <div className={styles.panel}>
                   <div className={styles.panelHeader}>
-                    <p className={styles.panelTitle}>💸 Pending Withdrawals</p>
+                    <p className={styles.panelTitle}>
+                      <Banknote size={13} /> Pending Withdrawals
+                    </p>
                     <button
                       className={styles.panelViewAll}
                       onClick={() => setTab("withdrawals")}
                     >
-                      View all →
+                      View all
                     </button>
                   </div>
                   <div className={styles.panelBody}>
@@ -885,15 +1171,30 @@ export default function AdminCampaign() {
                   )}
                 </div>
                 <div className={styles.filterRight}>
-                  <input
-                    className={styles.searchInput}
-                    placeholder="Search by name or email…"
-                    value={subSearch}
-                    onChange={(e) => {
-                      setSubSearch(e.target.value);
-                      setSubPage(1);
-                    }}
-                  />
+                  <div className={styles.searchWrap}>
+                    <Search size={13} />
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Search by name or email…"
+                      value={subSearch}
+                      onChange={(e) => {
+                        setSubSearch(e.target.value);
+                        setSubPage(1);
+                      }}
+                    />
+                    {subSearch && (
+                      <button
+                        className={styles.searchClear}
+                        onClick={() => {
+                          setSubSearch("");
+                          setSubPage(1);
+                        }}
+                        aria-label="Clear search"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                   <input
                     className={styles.dateInput}
                     type="date"
@@ -918,7 +1219,7 @@ export default function AdminCampaign() {
                 ))
               ) : submissions.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <span>📭</span>
+                  <Inbox size={32} />
                   <p>No submissions found</p>
                 </div>
               ) : (
@@ -938,7 +1239,7 @@ export default function AdminCampaign() {
                               avatar={sub.referrer?.avatar}
                               size="md"
                             />
-                            <div>
+                            <div className={styles.subCardReferrerText}>
                               <p className={styles.subCardName}>
                                 {sub.referrer?.firstName}{" "}
                                 {sub.referrer?.lastName}
@@ -946,13 +1247,19 @@ export default function AdminCampaign() {
                               <p className={styles.subCardEmail}>
                                 {sub.referrer?.email}
                               </p>
+                              {sub.referrer?.id && (
+                                <CopyPill
+                                  text={sub.referrer.id}
+                                  label={`id ${sub.referrer.id.slice(0, 8)}…`}
+                                />
+                              )}
                             </div>
                           </div>
 
                           {/* Meta */}
                           <div className={styles.subCardMeta}>
                             <p className={styles.subCardDate}>
-                              📅 {sub.submissionDate}
+                              <Calendar size={11} /> {sub.submissionDate}
                             </p>
                             <div className={styles.subCardCounts}>
                               <span>
@@ -960,15 +1267,21 @@ export default function AdminCampaign() {
                               </span>
                               {sub.totalApproved > 0 && (
                                 <span className={styles.countGreen}>
-                                  ✓ {sub.totalApproved}
+                                  <Check size={10} /> {sub.totalApproved}
                                 </span>
                               )}
                               {sub.totalRejected > 0 && (
                                 <span className={styles.countRed}>
-                                  ✗ {sub.totalRejected}
+                                  <X size={10} /> {sub.totalRejected}
                                 </span>
                               )}
                             </div>
+                            {sub.id && (
+                              <CopyPill
+                                text={sub.id}
+                                label={`sub ${sub.id.slice(0, 8)}…`}
+                              />
+                            )}
                           </div>
 
                           {/* Amount + status */}
@@ -1002,19 +1315,29 @@ export default function AdminCampaign() {
                                   {r.referred?.firstName} {r.referred?.lastName}
                                 </p>
                                 <div className={styles.subMiniTasks}>
-                                  {TASKS.map((t) => (
-                                    <span
-                                      key={t.key}
-                                      className={`${styles.miniPip} ${r[t.key] ? styles.miniPipDone : ""}`}
-                                      style={
-                                        r[t.key] ? { background: t.color } : {}
-                                      }
-                                      title={t.label}
-                                    >
-                                      {r[t.key] ? "✓" : "·"}
-                                    </span>
-                                  ))}
+                                  {TASKS.map((t) => {
+                                    const Icon = t.Icon;
+                                    return (
+                                      <span
+                                        key={t.key}
+                                        className={`${styles.miniPip} ${r[t.key] ? styles.miniPipDone : ""}`}
+                                        style={
+                                          r[t.key]
+                                            ? { background: t.color }
+                                            : {}
+                                        }
+                                        title={t.label}
+                                      >
+                                        <Icon size={9} />
+                                      </span>
+                                    );
+                                  })}
                                 </div>
+                                {r.rewardAmount && (
+                                  <p className={styles.subMiniRefReward}>
+                                    {fmtAmt(r.rewardAmount)}
+                                  </p>
+                                )}
                               </div>
                               {["APPROVED", "REJECTED"].includes(r.status) && (
                                 <Badge status={r.status} meta={REF_STATUS} />
@@ -1031,7 +1354,7 @@ export default function AdminCampaign() {
                         {/* Admin note */}
                         {sub.adminNote && (
                           <div className={styles.subAdminNote}>
-                            📝 {sub.adminNote}
+                            <Receipt size={11} /> {sub.adminNote}
                           </div>
                         )}
 
@@ -1041,14 +1364,33 @@ export default function AdminCampaign() {
                             className={styles.reviewBtn}
                             onClick={() => setReviewing(sub)}
                           >
-                            🔍 Review Submission
+                            <Search size={13} /> Review Submission
                           </button>
                         )}
                         {sub.status !== "PENDING" && (
                           <p className={styles.subReviewedAt}>
-                            Reviewed {fmtDate(sub.reviewedAt)}
-                            {sub.creditedAt &&
-                              ` · Credited ${fmtDate(sub.creditedAt)}`}
+                            {sub.reviewedAt && (
+                              <>
+                                <BadgeCheck size={11} /> Reviewed{" "}
+                                {fmtDateTime(sub.reviewedAt)}
+                              </>
+                            )}
+                            {sub.creditedAt && (
+                              <>
+                                {" · "}
+                                <Wallet size={11} /> Credited{" "}
+                                {fmtDateTime(sub.creditedAt)}
+                              </>
+                            )}
+                            {sub.reviewedById && (
+                              <>
+                                {" · "}
+                                <CopyPill
+                                  text={sub.reviewedById}
+                                  label={`rev ${sub.reviewedById.slice(0, 8)}…`}
+                                />
+                              </>
+                            )}
                           </p>
                         )}
                       </div>
@@ -1063,7 +1405,7 @@ export default function AdminCampaign() {
                         onClick={() => setSubPage((p) => Math.max(1, p - 1))}
                         disabled={subPage === 1}
                       >
-                        ← Prev
+                        <ChevronLeft size={13} /> Prev
                       </button>
                       <span className={styles.pageInfo}>
                         Page {subPage} of {Math.ceil(subTotal / 20)}
@@ -1073,7 +1415,7 @@ export default function AdminCampaign() {
                         onClick={() => setSubPage((p) => p + 1)}
                         disabled={subPage >= Math.ceil(subTotal / 20)}
                       >
-                        Next →
+                        Next <ChevronRight size={13} />
                       </button>
                     </div>
                   )}
@@ -1117,7 +1459,7 @@ export default function AdminCampaign() {
                 ))
               ) : withdrawals.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <span>💸</span>
+                  <Banknote size={32} />
                   <p>No withdrawals found</p>
                 </div>
               ) : (
@@ -1143,7 +1485,9 @@ export default function AdminCampaign() {
                               {wd.user?.email}
                             </p>
                             <div className={styles.wdBankRow}>
-                              <span className={styles.wdBankIcon}>🏦</span>
+                              <span className={styles.wdBankIcon}>
+                                <Landmark size={11} />
+                              </span>
                               <span className={styles.wdBankText}>
                                 {wd.bankName}
                               </span>
@@ -1157,8 +1501,17 @@ export default function AdminCampaign() {
                               </span>
                             </div>
                             <p className={styles.wdDate}>
-                              Requested {timeAgo(wd.createdAt)}
+                              <Clock size={11} /> Requested{" "}
+                              {timeAgo(wd.createdAt)}
                             </p>
+                            {wd.id && (
+                              <div className={styles.wdIdRow}>
+                                <CopyPill
+                                  text={wd.id}
+                                  label={`id ${wd.id.slice(0, 10)}…`}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className={styles.wdCardRight}>
@@ -1166,8 +1519,7 @@ export default function AdminCampaign() {
                           <Badge status={wd.status} meta={WD_STATUS} />
                           {wd.adminNote && (
                             <p className={styles.wdNote} title={wd.adminNote}>
-                              📝 {wd.adminNote.slice(0, 40)}
-                              {wd.adminNote.length > 40 ? "…" : ""}
+                              <Receipt size={11} /> {wd.adminNote}
                             </p>
                           )}
                           {wd.status === "PENDING" && (
@@ -1176,22 +1528,29 @@ export default function AdminCampaign() {
                                 className={styles.wdApproveBtn}
                                 onClick={() => approveWithdrawal(wd)}
                               >
-                                ✓ Approve
+                                <Check size={12} /> Approve
                               </button>
                               <button
                                 className={styles.wdRejectBtn}
                                 onClick={() => setRejectingWd(wd)}
                               >
-                                ✗ Reject
+                                <X size={12} /> Reject
                               </button>
                             </div>
                           )}
                           {wd.processedAt && (
                             <p className={styles.wdProcessed}>
-                              {wd.status === "APPROVED"
-                                ? "Approved"
-                                : "Rejected"}{" "}
-                              {fmtDate(wd.processedAt)}
+                              {wd.status === "APPROVED" ? (
+                                <>
+                                  <CheckCircle size={11} /> Approved{" "}
+                                  {fmtDateTime(wd.processedAt)}
+                                </>
+                              ) : (
+                                <>
+                                  <XCircleIcon size={11} /> Rejected{" "}
+                                  {fmtDateTime(wd.processedAt)}
+                                </>
+                              )}
                             </p>
                           )}
                         </div>
@@ -1206,7 +1565,7 @@ export default function AdminCampaign() {
                         onClick={() => setWdPage((p) => Math.max(1, p - 1))}
                         disabled={wdPage === 1}
                       >
-                        ← Prev
+                        <ChevronLeft size={13} /> Prev
                       </button>
                       <span className={styles.pageInfo}>
                         Page {wdPage} of {Math.ceil(wdTotal / 20)}
@@ -1216,7 +1575,7 @@ export default function AdminCampaign() {
                         onClick={() => setWdPage((p) => p + 1)}
                         disabled={wdPage >= Math.ceil(wdTotal / 20)}
                       >
-                        Next →
+                        Next <ChevronRight size={13} />
                       </button>
                     </div>
                   )}
@@ -1255,6 +1614,30 @@ export default function AdminCampaign() {
           }}
         />
       )}
+
+      {/* ── Platform AlertModal ── */}
+      <AlertModal
+        isOpen={!!notify}
+        onClose={() => setNotify(null)}
+        title={notify?.type === "error" ? "Something went wrong" : "Done"}
+        subtitle={
+          notify?.type === "error"
+            ? "The action could not be completed."
+            : "The action was completed successfully."
+        }
+        alerts={
+          notify
+            ? [
+                {
+                  icon: notify.type === "error" ? AlertTriangle : CheckCircle,
+                  label: notify.type === "error" ? "Error" : "Success",
+                  description: notify.text,
+                  variant: notify.type === "error" ? "red" : "green",
+                },
+              ]
+            : []
+        }
+      />
     </AdminLayout>
   );
 }
