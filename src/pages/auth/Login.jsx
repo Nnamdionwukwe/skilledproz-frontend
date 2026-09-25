@@ -72,7 +72,7 @@ export default function Login() {
       const role = loggedInUser.role;
       const dest =
         role === "ADMIN"
-          ? "/admin/dashboard"
+          ? "/admin"
           : role === "WORKER"
             ? "/dashboard/worker"
             : "/dashboard/hirer";
@@ -129,7 +129,7 @@ export default function Login() {
     const role = result.user.role;
     const dest =
       role === "ADMIN"
-        ? "/admin/dashboard"
+        ? "/admin"
         : role === "WORKER"
           ? "/dashboard/worker"
           : "/dashboard/hirer";

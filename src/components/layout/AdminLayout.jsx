@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
 import styles from "./AdminLayout.module.css";
+import ConfirmationModal from "../ui/ConfirmationModal";
 
 // Feather Icons (Fi)
 import {
@@ -129,6 +130,7 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   // Refs used to auto-scroll the sidebar so the active item is always visible.
   const navRef = useRef(null);
@@ -253,10 +255,8 @@ export default function AdminLayout({ children }) {
           </div>
           <button
             className={styles.logoutBtn}
-            onClick={async () => {
-              await logout();
-              navigate("/login");
-            }}
+            onClick={() => setConfirmLogout(true)}
+            aria-label="Log out"
           >
             <FiLogOut size={18} />
           </button>
@@ -285,6 +285,22 @@ export default function AdminLayout({ children }) {
         </header>
         <main className={styles.content}>{children}</main>
       </div>
+
+      {/* ── Logout confirmation ── */}
+      <ConfirmationModal
+        isOpen={confirmLogout}
+        onClose={() => setConfirmLogout(false)}
+        onConfirm={async () => {
+          setConfirmLogout(false);
+          await logout();
+          navigate("/login");
+        }}
+        title="Log out of the admin console?"
+        message="You will be signed out of your admin session and returned to the login page."
+        confirmLabel="Log out"
+        cancelLabel="Stay signed in"
+        confirmVariant="danger"
+      />
     </div>
   );
 }
