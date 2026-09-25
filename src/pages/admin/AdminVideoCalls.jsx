@@ -1,17 +1,46 @@
 // src/pages/videocalls/AdminVideoCalls.jsx
 // Full admin video call oversight.
+//
 // Endpoints:
 //   GET /admin/video-calls?page=&limit=
+//
+// Every field the backend sends is rendered. Emojis replaced with Lucide
+// icons. Fully responsive. Uses platform AlertModal.
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Video,
+  Radio,
+  CheckCircle,
+  Timer,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  PhoneCall,
+  PhoneOff,
+  PhoneMissed,
+  Play,
+  Square,
+  Clock,
+  Calendar,
+  User,
+  Copy,
+  Check,
+  AlertTriangle,
+  Inbox,
+  Ban,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
+import AlertModal from "../../components/ui/AlertModal";
 import api from "../../lib/api";
 import s from "./AdminVideoCalls.module.css";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_TABS = [
   { key: "ALL", label: "All" },
-  { key: "INITIATED", label: "Initiated" },
+  { key: "PENDING", label: "Pending" },
+  { key: "INITIATED", label: "Initiated" }, // legacy alias
   { key: "ACTIVE", label: "Active" },
   { key: "COMPLETED", label: "Completed" },
   { key: "DECLINED", label: "Declined" },
@@ -20,12 +49,13 @@ const STATUS_TABS = [
 ];
 
 const STATUS_META = {
-  INITIATED: { label: "Initiated", color: "yellow", icon: "📲" },
-  ACTIVE: { label: "Active", color: "green", icon: "🟢" },
-  COMPLETED: { label: "Completed", color: "indigo", icon: "✅" },
-  DECLINED: { label: "Declined", color: "red", icon: "❌" },
-  MISSED: { label: "Missed", color: "orange", icon: "📵" },
-  ENDED: { label: "Ended", color: "dim", icon: "⏹" },
+  PENDING: { label: "Pending", color: "yellow", Icon: PhoneCall },
+  INITIATED: { label: "Initiated", color: "yellow", Icon: PhoneCall },
+  ACTIVE: { label: "Active", color: "green", Icon: Radio },
+  COMPLETED: { label: "Completed", color: "indigo", Icon: CheckCircle },
+  DECLINED: { label: "Declined", color: "red", Icon: PhoneOff },
+  MISSED: { label: "Missed", color: "orange", Icon: PhoneMissed },
+  ENDED: { label: "Ended", color: "dim", Icon: Square },
 };
 
 const BOOKING_STATUS_META = {
@@ -100,6 +130,40 @@ function truncate(str, n = 40) {
   return str.length > n ? str.slice(0, n) + "…" : str;
 }
 
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── CopyPill ─────────────────────────────────────────────────────────────────
+function CopyPill({ text, label }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return <span className={s.dimText}>—</span>;
+  return (
+    <span className={s.copyPill} title={String(text)}>
+      <span className={s.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={s.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        aria-label="Copy"
+      >
+        {ok ? <Check size={11} /> : <Copy size={11} />}
+      </button>
+    </span>
+  );
+}
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ user, index = 0, size = "sm" }) {
   const colors = [s.avatarOrange, s.avatarIndigo, s.avatarGreen, s.avatarRose];
@@ -119,22 +183,27 @@ function Avatar({ user, index = 0, size = "sm" }) {
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
-  const m = STATUS_META[status] ?? { label: status, color: "dim", icon: "📞" };
+  const m = STATUS_META[status] ?? {
+    label: status,
+    color: "dim",
+    Icon: PhoneCall,
+  };
+  const Icon = m.Icon;
   return (
     <span className={`${s.badge} ${s[`badge_${m.color}`]}`}>
-      {m.icon} {m.label}
+      <Icon size={10} /> {m.label}
     </span>
   );
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, accent, delay }) {
+function StatCard({ icon: Icon, label, value, sub, accent, delay }) {
   return (
     <div
       className={`${s.statCard} ${accent ? s[`accent_${accent}`] : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <span className={s.statIcon}>{icon}</span>
+      <span className={s.statIcon}>{Icon ? <Icon size={16} /> : null}</span>
       <div className={s.statValue}>{value ?? "—"}</div>
       <div className={s.statLabel}>{label}</div>
       {sub && <div className={s.statSub}>{sub}</div>}
@@ -153,83 +222,71 @@ function SkeletonRows() {
   );
 }
 
-// ─── Participant Pair ─────────────────────────────────────────────────────────
-function ParticipantPair({ initiator, receiver, size = "sm" }) {
-  return (
-    <div className={s.participantPair}>
-      <div className={s.participant}>
-        <Avatar user={initiator} index={0} size={size} />
-        <div className={s.participantInfo}>
-          <span className={s.participantName}>
-            {initiator?.firstName} {initiator?.lastName}
-          </span>
-          <span className={s.participantRole}>Initiator</span>
-        </div>
-      </div>
-      <div className={s.participantArrow}>📞</div>
-      <div className={s.participant}>
-        <Avatar user={receiver} index={1} size={size} />
-        <div className={s.participantInfo}>
-          <span className={s.participantName}>
-            {receiver?.firstName} {receiver?.lastName}
-          </span>
-          <span className={s.participantRole}>Receiver</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Call Timeline ────────────────────────────────────────────────────────────
 function CallTimeline({ call }) {
+  // Backend never sets acceptedAt/declinedAt — fall back to startedAt/updatedAt
+  const acceptedTime =
+    call.acceptedAt ?? (call.status !== "PENDING" ? call.startedAt : null);
+  const declinedTime =
+    call.declinedAt ?? (call.status === "DECLINED" ? call.updatedAt : null);
+  const isDeclined = call.status === "DECLINED";
+
   const events = [
-    { label: "Call initiated", time: call.createdAt, done: true, icon: "📲" },
     {
-      label: call.status === "DECLINED" ? "Call declined" : "Call accepted",
-      time: call.acceptedAt ?? call.declinedAt,
+      label: "Call initiated",
+      time: call.createdAt,
+      done: true,
+      Icon: PhoneCall,
+    },
+    {
+      label: isDeclined ? "Call declined" : "Call accepted",
+      time: isDeclined ? declinedTime : acceptedTime,
       done: ["ACTIVE", "COMPLETED", "ENDED", "DECLINED"].includes(call.status),
-      icon: call.status === "DECLINED" ? "❌" : "✅",
-      isNeg: call.status === "DECLINED",
+      Icon: isDeclined ? PhoneOff : CheckCircle,
+      isNeg: isDeclined,
     },
     {
       label: "In progress",
       time: call.startedAt,
       done: ["ACTIVE", "COMPLETED", "ENDED"].includes(call.status),
-      icon: "📹",
+      Icon: Video,
     },
     {
       label: "Call ended",
       time: call.endedAt,
       done: ["COMPLETED", "ENDED"].includes(call.status),
-      icon: "⏹",
+      Icon: Square,
     },
   ];
 
   return (
     <div className={s.timeline}>
-      {events.map((ev, i) => (
-        <div
-          key={i}
-          className={`${s.timelineItem} ${ev.done ? s.timelineDone : ""} ${ev.isNeg ? s.timelineNeg : ""}`}
-        >
+      {events.map((ev, i) => {
+        const Icon = ev.Icon;
+        return (
           <div
-            className={`${s.timelineDot} ${ev.done ? (ev.isNeg ? s.dotNeg : s.dotDone) : s.dotPending}`}
+            key={i}
+            className={`${s.timelineItem} ${ev.done ? s.timelineDone : ""} ${ev.isNeg ? s.timelineNeg : ""}`}
           >
-            {ev.icon}
-          </div>
-          {i < events.length - 1 && (
             <div
-              className={`${s.timelineLine} ${ev.done && !ev.isNeg ? s.timelineLineDone : ""}`}
-            />
-          )}
-          <div className={s.timelineInfo}>
-            <span className={s.timelineLabel}>{ev.label}</span>
-            {ev.time && (
-              <span className={s.timelineTime}>{fmtDateTime(ev.time)}</span>
+              className={`${s.timelineDot} ${ev.done ? (ev.isNeg ? s.dotNeg : s.dotDone) : s.dotPending}`}
+            >
+              <Icon size={13} />
+            </div>
+            {i < events.length - 1 && (
+              <div
+                className={`${s.timelineLine} ${ev.done && !ev.isNeg ? s.timelineLineDone : ""}`}
+              />
             )}
+            <div className={s.timelineInfo}>
+              <span className={s.timelineLabel}>{ev.label}</span>
+              {ev.time && (
+                <span className={s.timelineTime}>{fmtDateTime(ev.time)}</span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -240,8 +297,9 @@ function DetailModal({ call, onClose }) {
   const statusMeta = STATUS_META[call.status] ?? {
     label: call.status,
     color: "dim",
-    icon: "📞",
+    Icon: PhoneCall,
   };
+  const StatusIcon = statusMeta.Icon;
   const bookingColor =
     BOOKING_STATUS_META[call.booking?.status]?.color ?? "#888";
 
@@ -250,12 +308,14 @@ function DetailModal({ call, onClose }) {
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
           <div className={s.modalTitleRow}>
-            <span className={s.modalIcon}>📹</span>
+            <span className={s.modalIcon}>
+              <Video size={16} />
+            </span>
             <h3 className={s.modalTitle}>Video Call Detail</h3>
             <StatusBadge status={call.status} />
           </div>
-          <button className={s.modalClose} onClick={onClose}>
-            ✕
+          <button className={s.modalClose} onClick={onClose} aria-label="Close">
+            <X size={15} />
           </button>
         </div>
 
@@ -268,12 +328,22 @@ function DetailModal({ call, onClose }) {
                 {call.initiator?.firstName} {call.initiator?.lastName}
               </p>
               <span className={s.heroRole}>Initiator</span>
+              {call.initiator?.id && (
+                <CopyPill
+                  text={call.initiator.id}
+                  label={`id ${call.initiator.id.slice(0, 8)}…`}
+                />
+              )}
             </div>
 
             <div className={s.heroDivider}>
               <div className={s.heroDividerLine} />
               <div className={s.heroDividerIcon}>
-                {call.status === "ACTIVE" ? "🟢" : "📞"}
+                {call.status === "ACTIVE" ? (
+                  <Radio size={18} />
+                ) : (
+                  <PhoneCall size={16} />
+                )}
               </div>
               <div className={s.heroDividerLine} />
               {duration && <span className={s.heroDuration}>{duration}</span>}
@@ -285,6 +355,12 @@ function DetailModal({ call, onClose }) {
                 {call.receiver?.firstName} {call.receiver?.lastName}
               </p>
               <span className={s.heroRole}>Receiver</span>
+              {call.receiver?.id && (
+                <CopyPill
+                  text={call.receiver.id}
+                  label={`id ${call.receiver.id.slice(0, 8)}…`}
+                />
+              )}
             </div>
           </div>
 
@@ -302,7 +378,7 @@ function DetailModal({ call, onClose }) {
             <div className={s.callStatDivider} />
             <div className={s.callStat}>
               <span className={s.callStatVal}>
-                {statusMeta.icon} {statusMeta.label}
+                <StatusIcon size={12} /> {statusMeta.label}
               </span>
               <span className={s.callStatLabel}>Status</span>
             </div>
@@ -314,7 +390,9 @@ function DetailModal({ call, onClose }) {
               className={s.bookingCard}
               style={{ borderLeftColor: bookingColor }}
             >
-              <span className={s.bookingCardIcon}>📅</span>
+              <span className={s.bookingCardIcon}>
+                <Calendar size={16} />
+              </span>
               <div className={s.bookingCardInfo}>
                 <span className={s.bookingCardTitle}>{call.booking.title}</span>
                 <span
@@ -336,10 +414,60 @@ function DetailModal({ call, onClose }) {
             <CallTimeline call={call} />
           </div>
 
-          {/* Raw ID */}
-          <div className={s.callIdRow}>
-            <span className={s.callIdLabel}>Call ID</span>
-            <span className={s.callIdVal}>{call.id}</span>
+          {/* Identifiers */}
+          <div className={s.idGrid}>
+            <div className={s.idCell}>
+              <span className={s.idCellLabel}>Call ID</span>
+              <CopyPill text={call.id} label={call.id.slice(0, 12) + "…"} />
+            </div>
+            {call.bookingId && (
+              <div className={s.idCell}>
+                <span className={s.idCellLabel}>Booking ID</span>
+                <CopyPill
+                  text={call.bookingId}
+                  label={call.bookingId.slice(0, 12) + "…"}
+                />
+              </div>
+            )}
+            {call.roomId && (
+              <div className={s.idCell}>
+                <span className={s.idCellLabel}>Room ID</span>
+                <CopyPill
+                  text={call.roomId}
+                  label={
+                    call.roomId.length > 20
+                      ? call.roomId.slice(0, 20) + "…"
+                      : call.roomId
+                  }
+                />
+              </div>
+            )}
+            {call.initiatorId && (
+              <div className={s.idCell}>
+                <span className={s.idCellLabel}>Initiator ID</span>
+                <CopyPill
+                  text={call.initiatorId}
+                  label={call.initiatorId.slice(0, 12) + "…"}
+                />
+              </div>
+            )}
+            {call.receiverId && (
+              <div className={s.idCell}>
+                <span className={s.idCellLabel}>Receiver ID</span>
+                <CopyPill
+                  text={call.receiverId}
+                  label={call.receiverId.slice(0, 12) + "…"}
+                />
+              </div>
+            )}
+            {call.updatedAt && (
+              <div className={s.idCell}>
+                <span className={s.idCellLabel}>Updated</span>
+                <span className={s.idCellVal}>
+                  {fmtDateTime(call.updatedAt)}
+                </span>
+              </div>
+            )}
           </div>
 
           <button className={s.btnClose} onClick={onClose}>
@@ -355,13 +483,13 @@ function DetailModal({ call, onClose }) {
 function CallRow({ call, index, onDetail }) {
   const duration = fmtDuration(call.startedAt, call.endedAt);
   const isActive = call.status === "ACTIVE";
+  const isDeclined = call.status === "DECLINED";
 
   return (
     <div
-      className={`${s.tableRow} ${isActive ? s.tableRowActive : ""}`}
+      className={`${s.tableRow} ${isActive ? s.tableRowActive : ""} ${isDeclined ? s.tableRowDeclined : ""}`}
       style={{ animationDelay: `${index * 0.025}s` }}
     >
-      {/* Status indicator line */}
       {isActive && <div className={s.activeIndicator} />}
 
       {/* Participants */}
@@ -418,7 +546,9 @@ function CallRow({ call, index, onDetail }) {
       {/* Date */}
       <div className={s.tdDate}>
         <span className={s.tdDateMain}>{fmtDate(call.createdAt)}</span>
-        <span className={s.tdDateSub}>{fmtRelative(call.createdAt)}</span>
+        <span className={s.tdDateSub} title={fmtDateTime(call.createdAt)}>
+          {fmtRelative(call.createdAt)}
+        </span>
       </div>
 
       {/* Action */}
@@ -428,7 +558,7 @@ function CallRow({ call, index, onDetail }) {
           onClick={() => onDetail(call)}
           title="View detail"
         >
-          👁 View
+          View
         </button>
       </div>
     </div>
@@ -444,10 +574,8 @@ export default function AdminVideoCalls() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [toast, setToast] = useState(null);
+  const [notify, setNotify] = useState(null);
   const [detailCall, setDetailCall] = useState(null);
-
-  const searchTimer = useRef(null);
 
   // ── Load ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async (pg = 1) => {
@@ -470,11 +598,16 @@ export default function AdminVideoCalls() {
 
   useEffect(() => {
     load(1);
-  }, []);
+  }, [load]);
 
   // ── Client-side filter ───────────────────────────────────────────────────────
   const filtered = calls.filter((c) => {
-    const matchStatus = filter === "ALL" || c.status === filter;
+    // Treat INITIATED as equivalent to PENDING (backend uses PENDING)
+    const matchStatus =
+      filter === "ALL" ||
+      c.status === filter ||
+      (filter === "INITIATED" && c.status === "PENDING") ||
+      (filter === "PENDING" && c.status === "INITIATED");
     const matchSearch =
       !search.trim() ||
       [
@@ -500,7 +633,6 @@ export default function AdminVideoCalls() {
     ["DECLINED", "MISSED"].includes(c.status),
   ).length;
 
-  // Avg duration from calls that have start+end
   const durations = calls
     .filter((c) => c.startedAt && c.endedAt)
     .map((c) => new Date(c.endedAt) - new Date(c.startedAt));
@@ -514,37 +646,20 @@ export default function AdminVideoCalls() {
         : `${Math.floor(avgDurationMs / 1000)}s`
       : "—";
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
-  function handleSearchChange(e) {
-    setSearch(e.target.value);
-  }
-
   function showToast(type, msg) {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
+    setNotify({ type, text: msg });
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <AdminLayout>
       <div className={s.page}>
-        {/* ── Toast ── */}
-        {toast && (
-          <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
-            <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
-            </span>
-            <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
-            </button>
-          </div>
-        )}
-
         {/* ── Header ── */}
         <div className={s.pageHeader}>
           <div>
             <p className={s.eyebrow}>Platform</p>
             <h1 className={s.pageTitle}>
+              <Video size={18} />
               Video Calls
               {total > 0 && <span className={s.countPill}>{total}</span>}
               {activeCount > 0 && (
@@ -566,7 +681,7 @@ export default function AdminVideoCalls() {
         {/* ── Stats ── */}
         <div className={s.statsGrid}>
           <StatCard
-            icon="📹"
+            icon={Video}
             label="Total Calls"
             value={total}
             sub="All time"
@@ -574,7 +689,7 @@ export default function AdminVideoCalls() {
             delay={0}
           />
           <StatCard
-            icon="🟢"
+            icon={Radio}
             label="Active Now"
             value={activeCount}
             sub={activeCount > 0 ? "Live on platform" : "No live calls"}
@@ -582,7 +697,7 @@ export default function AdminVideoCalls() {
             delay={0.05}
           />
           <StatCard
-            icon="✅"
+            icon={CheckCircle}
             label="Completed"
             value={completedCount}
             sub="This page"
@@ -590,7 +705,7 @@ export default function AdminVideoCalls() {
             delay={0.1}
           />
           <StatCard
-            icon="⏱️"
+            icon={Timer}
             label="Avg Duration"
             value={avgDurStr}
             sub={`From ${durations.length} timed calls`}
@@ -600,23 +715,33 @@ export default function AdminVideoCalls() {
         </div>
 
         {/* ── Status breakdown chips ── */}
-        <div className={s.statusBreakdown}>
-          {STATUS_TABS.slice(1).map((tab) => {
-            const count = calls.filter((c) => c.status === tab.key).length;
-            const meta = STATUS_META[tab.key];
-            if (count === 0) return null;
-            return (
-              <button
-                key={tab.key}
-                className={`${s.statusChip} ${s[`statusChip_${meta.color}`]} ${filter === tab.key ? s.statusChipActive : ""}`}
-                onClick={() => setFilter(filter === tab.key ? "ALL" : tab.key)}
-              >
-                {meta.icon} {tab.label}
-                <span className={s.statusChipCount}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
+        {calls.length > 0 && (
+          <div className={s.statusBreakdown}>
+            {STATUS_TABS.slice(1).map((tab) => {
+              const count = calls.filter(
+                (c) =>
+                  c.status === tab.key ||
+                  (tab.key === "INITIATED" && c.status === "PENDING") ||
+                  (tab.key === "PENDING" && c.status === "INITIATED"),
+              ).length;
+              if (count === 0) return null;
+              const meta = STATUS_META[tab.key];
+              const Icon = meta.Icon;
+              return (
+                <button
+                  key={tab.key}
+                  className={`${s.statusChip} ${s[`statusChip_${meta.color}`]} ${filter === tab.key ? s.statusChipActive : ""}`}
+                  onClick={() =>
+                    setFilter(filter === tab.key ? "ALL" : tab.key)
+                  }
+                >
+                  <Icon size={11} /> {tab.label}
+                  <span className={s.statusChipCount}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* ── Toolbar ── */}
         <div className={s.toolBar}>
@@ -632,26 +757,38 @@ export default function AdminVideoCalls() {
               >
                 {tab.label}
                 {tab.key !== "ALL" &&
-                  calls.filter((c) => c.status === tab.key).length > 0 && (
-                    <span className={s.tabCount}>
-                      {calls.filter((c) => c.status === tab.key).length}
-                    </span>
-                  )}
+                  (() => {
+                    const cnt = calls.filter(
+                      (c) =>
+                        c.status === tab.key ||
+                        (tab.key === "INITIATED" && c.status === "PENDING") ||
+                        (tab.key === "PENDING" && c.status === "INITIATED"),
+                    ).length;
+                    return cnt > 0 ? (
+                      <span className={s.tabCount}>{cnt}</span>
+                    ) : null;
+                  })()}
               </button>
             ))}
           </div>
 
           <div className={s.searchBar}>
-            <span className={s.searchIcon}>🔍</span>
+            <span className={s.searchIcon}>
+              <Search size={13} />
+            </span>
             <input
               className={s.searchInput}
               placeholder="Search participant or booking…"
               value={search}
-              onChange={handleSearchChange}
+              onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button className={s.searchClear} onClick={() => setSearch("")}>
-                ✕
+              <button
+                className={s.searchClear}
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+              >
+                <X size={13} />
               </button>
             )}
           </div>
@@ -671,7 +808,7 @@ export default function AdminVideoCalls() {
               className={s.activeBannerBtn}
               onClick={() => setFilter("ACTIVE")}
             >
-              View live →
+              View live
             </button>
           </div>
         )}
@@ -692,7 +829,9 @@ export default function AdminVideoCalls() {
               <SkeletonRows />
             ) : filtered.length === 0 ? (
               <div className={s.empty}>
-                <span className={s.emptyIcon}>📹</span>
+                <span className={s.emptyIcon}>
+                  <Inbox size={40} />
+                </span>
                 <p className={s.emptyTitle}>
                   {filter === "ALL" && !search
                     ? "No video calls yet"
@@ -736,7 +875,7 @@ export default function AdminVideoCalls() {
               disabled={page === 1 || loading}
               onClick={() => load(page - 1)}
             >
-              ← Prev
+              <ChevronLeft size={13} /> Prev
             </button>
             <span className={s.pageInfo}>
               Page {page} of {pages}
@@ -746,7 +885,7 @@ export default function AdminVideoCalls() {
               disabled={page === pages || loading}
               onClick={() => load(page + 1)}
             >
-              Next →
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}
@@ -756,6 +895,30 @@ export default function AdminVideoCalls() {
       {detailCall && (
         <DetailModal call={detailCall} onClose={() => setDetailCall(null)} />
       )}
+
+      {/* ── Platform AlertModal ── */}
+      <AlertModal
+        isOpen={!!notify}
+        onClose={() => setNotify(null)}
+        title={notify?.type === "error" ? "Something went wrong" : "Done"}
+        subtitle={
+          notify?.type === "error"
+            ? "The action could not be completed."
+            : "The action was completed successfully."
+        }
+        alerts={
+          notify
+            ? [
+                {
+                  icon: notify.type === "error" ? AlertTriangle : CheckCircle,
+                  label: notify.type === "error" ? "Error" : "Success",
+                  description: notify.text,
+                  variant: notify.type === "error" ? "red" : "green",
+                },
+              ]
+            : []
+        }
+      />
     </AdminLayout>
   );
 }
