@@ -1,5 +1,31 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import {
+  CreditCard,
+  Smartphone,
+  Landmark,
+  Bitcoin,
+  Wallet,
+  TrendingUp,
+  FileText,
+  Clock,
+  ClipboardList,
+  CheckCircle2,
+  XCircle,
+  Ban,
+  User,
+  Hammer,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+  Link as LinkIcon,
+  Building2,
+  Hash,
+  Calendar,
+  ExternalLink,
+  Copy,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import styles from "./AdminPayments.module.css";
@@ -22,11 +48,18 @@ const WD_STATUSES = [
   "FAILED",
   "CANCELLED",
 ];
-const PROVIDERS = ["ALL", "stripe", "paystack", "bank_transfer", "crypto"];
+const PROVIDERS = [
+  "ALL",
+  "paystack",
+  "flutterwave",
+  "stripe",
+  "bank_transfer",
+  "crypto",
+];
 
 const PAY_STATUS_META = {
   PENDING: { cls: "yellow", label: "Pending" },
-  HELD: { cls: "indigo", label: "Held" },
+  HELD: { cls: "indigo", label: "Held in escrow" },
   RELEASED: { cls: "green", label: "Released" },
   REFUNDED: { cls: "blue", label: "Refunded" },
   FAILED: { cls: "red", label: "Failed" },
@@ -46,6 +79,13 @@ function fmtAmt(amount, currency) {
   if (!amount && amount !== 0) return "—";
   return `${sym} ${Number(amount).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
+
+function fmtAmtPrecise(amount, currency) {
+  const sym = !currency || currency === "NGN" ? "₦" : currency;
+  if (amount === null || amount === undefined) return "—";
+  return `${sym} ${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function fmtDate(d) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-GB", {
@@ -54,6 +94,18 @@ function fmtDate(d) {
     year: "numeric",
   });
 }
+
+function fmtDateTime(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function timeAgo(d) {
   if (!d) return "—";
   const days = Math.floor((Date.now() - new Date(d)) / 86400000);
@@ -62,13 +114,32 @@ function timeAgo(d) {
   return `${days}d ago`;
 }
 
+// Extract failure reason from a withdrawal `details` object (if any)
+function wdFailureReason(details) {
+  if (!details) return null;
+  if (typeof details === "string") {
+    try {
+      const parsed = JSON.parse(details);
+      return parsed.error || parsed.reason || parsed.adminNotes || null;
+    } catch {
+      return null;
+    }
+  }
+  return details.error || details.reason || details.adminNotes || null;
+}
+
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 
 function Toast({ toast }) {
   if (!toast) return null;
   return (
     <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-      {toast.msg}
+      {toast.type === "success" ? (
+        <CheckCircle2 size={14} />
+      ) : (
+        <XCircle size={14} />
+      )}
+      <span>{toast.msg}</span>
     </div>
   );
 }
@@ -84,25 +155,31 @@ function Badge({ status, meta }) {
 
 function ProviderTag({ provider }) {
   if (!provider) return <span className={styles.providerTag}>—</span>;
-  const icons = {
-    stripe: "💳",
-    paystack: "🟢",
-    bank_transfer: "🏦",
-    crypto: "₿",
+  const map = {
+    stripe: { Icon: CreditCard, label: "stripe" },
+    paystack: { Icon: Smartphone, label: "paystack" },
+    flutterwave: { Icon: TrendingUp, label: "flutterwave" },
+    bank_transfer: { Icon: Landmark, label: "bank transfer" },
+    crypto: { Icon: Bitcoin, label: "crypto" },
   };
+  const entry = map[provider] || { Icon: Wallet, label: provider };
+  const { Icon, label } = entry;
   return (
     <span className={styles.providerTag}>
-      {icons[provider] || "💰"} {provider.replace("_", " ")}
+      <Icon size={12} /> {label}
     </span>
   );
 }
 
 function StatCard({ icon, label, value, sub, accent }) {
+  const Icon = icon;
   return (
     <div
       className={`${styles.statCard} ${accent ? styles[`accent_${accent}`] : ""}`}
     >
-      <span className={styles.statIcon}>{icon}</span>
+      <span className={styles.statIcon}>
+        {Icon ? <Icon size={18} /> : null}
+      </span>
       <div className={styles.statVal}>{value ?? "—"}</div>
       <div className={styles.statLabel}>{label}</div>
       {sub && <div className={styles.statSub}>{sub}</div>}
@@ -110,21 +187,52 @@ function StatCard({ icon, label, value, sub, accent }) {
   );
 }
 
+// ─── Small helpers for the detail panel ───────────────────────────────────────
+
+function MetaField({ label, value }) {
+  return (
+    <div className={styles.metaField}>
+      <span className={styles.metaLabel}>{label}</span>
+      <span className={styles.metaValue}>{value ?? "—"}</span>
+    </div>
+  );
+}
+
+function BreakdownRow({ label, children, mono, fee }) {
+  return (
+    <div className={styles.breakdownRow}>
+      <span>{label}</span>
+      <span
+        className={`${styles.breakdownVal} ${mono ? styles.breakdownMono : ""} ${fee ? styles.breakdownFee : ""}`}
+      >
+        {children ?? "—"}
+      </span>
+    </div>
+  );
+}
+
 // ─── Payment Detail Panel ─────────────────────────────────────────────────────
 
-function PaymentDetailPanel({ paymentId, onRelease, onRefund }) {
+function PaymentDetailPanel({ paymentId, onAction }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(null);
 
   useEffect(() => {
     setLoading(true);
-    // GET /admin/payments/:paymentId — getPaymentDetail
     api
       .get(`/admin/payments/${paymentId}`)
       .then((r) => setDetail(r.data.data?.payment))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [paymentId]);
+
+  function copy(value, key) {
+    if (!value) return;
+    navigator.clipboard.writeText(String(value));
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  }
 
   if (loading) {
     return (
@@ -144,22 +252,32 @@ function PaymentDetailPanel({ paymentId, onRelease, onRefund }) {
   }
 
   const bk = detail.booking;
+  const referralDiscount =
+    detail.referralDiscount ?? detail.referralDeduct ?? 0;
+  const isManual =
+    detail.provider === "bank_transfer" || detail.provider === "crypto";
 
   return (
     <div className={styles.detailPanel}>
-      {/* Parties */}
+      {/* ── Parties ── */}
       {bk && (
         <div className={styles.detailRow}>
           <div className={styles.partyCard}>
-            <p className={styles.partyRole}>🧑 Hirer</p>
+            <p className={styles.partyRole}>
+              <User size={12} /> Hirer
+            </p>
             <p className={styles.partyName}>
               {bk.hirer?.firstName} {bk.hirer?.lastName}
             </p>
             <p className={styles.partyEmail}>{bk.hirer?.email}</p>
           </div>
-          <div className={styles.vsChip}>→</div>
+          <div className={styles.vsChip}>
+            <ChevronRight size={14} />
+          </div>
           <div className={styles.partyCard}>
-            <p className={styles.partyRole}>🔨 Worker</p>
+            <p className={styles.partyRole}>
+              <Hammer size={12} /> Worker
+            </p>
             <p className={styles.partyName}>
               {bk.worker?.firstName} {bk.worker?.lastName}
             </p>
@@ -168,90 +286,367 @@ function PaymentDetailPanel({ paymentId, onRelease, onRefund }) {
         </div>
       )}
 
-      {/* Booking info */}
+      {/* ── Booking info ── */}
       {bk && (
         <div className={styles.metaGrid}>
           <MetaField label="Booking" value={bk.title || "—"} />
           <MetaField label="Category" value={bk.category?.name || "—"} />
-          <MetaField label="Status" value={bk.status} />
+          <MetaField label="Booking status" value={bk.status} />
           <MetaField label="Booked" value={fmtDate(bk.createdAt)} />
         </div>
       )}
 
-      {/* Full payment breakdown */}
+      {/* ── Full payment breakdown ── */}
       <div className={styles.payBreakdown}>
-        <div className={styles.breakdownRow}>
-          <span>Total Amount</span>
-          <span className={styles.breakdownVal}>
-            {fmtAmt(detail.amount, detail.currency)}
-          </span>
-        </div>
-        <div className={styles.breakdownRow}>
-          <span>Worker Payout</span>
-          <span className={styles.breakdownVal}>
-            {fmtAmt(detail.workerPayout, detail.currency)}
-          </span>
-        </div>
-        <div className={styles.breakdownRow}>
-          <span>Platform Fee</span>
-          <span className={`${styles.breakdownVal} ${styles.breakdownFee}`}>
-            {fmtAmt(detail.platformFee, detail.currency)}
-          </span>
-        </div>
-        <div className={styles.breakdownRow}>
-          <span>Provider</span>
+        <BreakdownRow label="Total amount">
+          {fmtAmtPrecise(detail.amount, detail.currency)}
+        </BreakdownRow>
+        <BreakdownRow label="Worker payout">
+          {fmtAmtPrecise(detail.workerPayout, detail.currency)}
+        </BreakdownRow>
+        <BreakdownRow label="Platform fee" fee>
+          {fmtAmtPrecise(detail.platformFee, detail.currency)}
+        </BreakdownRow>
+        {referralDiscount > 0 && (
+          <BreakdownRow label="Referral discount">
+            −{fmtAmtPrecise(referralDiscount, detail.currency)}
+          </BreakdownRow>
+        )}
+        <BreakdownRow label="Provider">
           <ProviderTag provider={detail.provider} />
-        </div>
-        <div className={styles.breakdownRow}>
-          <span>Payment Ref</span>
-          <span className={styles.breakdownMono}>
-            {detail.transactionRef || "—"}
-          </span>
-        </div>
+        </BreakdownRow>
+        <BreakdownRow label="Payment ref" mono>
+          {detail.providerRef ? (
+            <button
+              type="button"
+              className={styles.copyBtn}
+              onClick={() => copy(detail.providerRef, "ref")}
+              title="Copy"
+            >
+              {detail.providerRef.slice(0, 20)}
+              {detail.providerRef.length > 20 ? "…" : ""}
+              {copied === "ref" ? (
+                <CheckCircle2 size={11} />
+              ) : (
+                <Copy size={11} />
+              )}
+            </button>
+          ) : (
+            "—"
+          )}
+        </BreakdownRow>
         {detail.escrowReleasedAt && (
-          <div className={styles.breakdownRow}>
-            <span>Released At</span>
-            <span>{fmtDate(detail.escrowReleasedAt)}</span>
-          </div>
+          <BreakdownRow label="Released at">
+            {fmtDateTime(detail.escrowReleasedAt)}
+          </BreakdownRow>
         )}
         {detail.refundedAt && (
-          <div className={styles.breakdownRow}>
-            <span>Refunded At</span>
-            <span>{fmtDate(detail.refundedAt)}</span>
-          </div>
+          <BreakdownRow label="Refunded at">
+            {fmtDateTime(detail.refundedAt)}
+          </BreakdownRow>
         )}
+        <BreakdownRow label="Created">
+          {fmtDateTime(detail.createdAt)}
+        </BreakdownRow>
       </div>
 
-      {/* Admin actions */}
-      {detail.status === "HELD" && (
-        <div className={styles.detailActions}>
-          <button
-            className={styles.actionRelease}
-            onClick={() =>
-              onRelease(detail.booking?.id || detail.bookingId, detail.id)
-            }
-          >
-            ✅ Release to Worker
-          </button>
-          <button
-            className={styles.actionRefund}
-            onClick={() =>
-              onRefund(detail.booking?.id || detail.bookingId, detail.id)
-            }
-          >
-            💸 Refund Hirer
-          </button>
-        </div>
-      )}
+      {/* ── Bank transfer extra info ── */}
+      {detail.provider === "bank_transfer" &&
+        (detail.bankName || detail.accountName || detail.bankTransferProof) && (
+          <div className={styles.descBox}>
+            <span className={styles.descLabel}>Bank Transfer Details</span>
+            <div className={styles.fieldGridSmall}>
+              {detail.bankName && (
+                <MetaField label="Sender bank" value={detail.bankName} />
+              )}
+              {detail.accountName && (
+                <MetaField label="Sender name" value={detail.accountName} />
+              )}
+              {detail.bankTransferProof && (
+                <div className={styles.metaField}>
+                  <span className={styles.metaLabel}>Proof</span>
+                  <a
+                    href={detail.bankTransferProof}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.proofLink}
+                  >
+                    <ExternalLink size={12} /> View proof
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* ── Crypto extra info ── */}
+      {detail.provider === "crypto" &&
+        (detail.cryptoNetwork ||
+          detail.cryptoWallet ||
+          detail.cryptoTxHash ||
+          detail.cryptoAmount) && (
+          <div className={styles.descBox}>
+            <span className={styles.descLabel}>Crypto Details</span>
+            <div className={styles.fieldGridSmall}>
+              {detail.cryptoCurrency && (
+                <MetaField label="Currency" value={detail.cryptoCurrency} />
+              )}
+              {detail.cryptoNetwork && (
+                <MetaField label="Network" value={detail.cryptoNetwork} />
+              )}
+              {detail.cryptoAmount && (
+                <MetaField label="Amount" value={String(detail.cryptoAmount)} />
+              )}
+              {detail.cryptoWallet && (
+                <div className={styles.metaField}>
+                  <span className={styles.metaLabel}>Wallet</span>
+                  <span
+                    className={`${styles.metaValue} ${styles.breakdownMono}`}
+                    title={detail.cryptoWallet}
+                  >
+                    {detail.cryptoWallet.slice(0, 16)}…
+                  </span>
+                </div>
+              )}
+              {detail.cryptoTxHash && (
+                <div className={styles.metaField}>
+                  <span className={styles.metaLabel}>Tx hash</span>
+                  <button
+                    type="button"
+                    className={styles.copyBtn}
+                    onClick={() => copy(detail.cryptoTxHash, "txhash")}
+                  >
+                    {detail.cryptoTxHash.slice(0, 14)}…
+                    {copied === "txhash" ? (
+                      <CheckCircle2 size={11} />
+                    ) : (
+                      <Copy size={11} />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* ── Admin actions ── */}
+      <div className={styles.detailActions}>
+        {/* Manual payments: PENDING → verify or reject */}
+        {isManual && detail.status === "PENDING" && (
+          <>
+            <button
+              type="button"
+              className={styles.actionRelease}
+              onClick={() =>
+                onAction({
+                  action: "verify",
+                  bookingId: detail.bookingId || detail.booking?.id,
+                })
+              }
+            >
+              <CheckCircle2 size={13} /> Verify Payment
+            </button>
+            <button
+              type="button"
+              className={styles.actionRefund}
+              onClick={() =>
+                onAction({
+                  action: "reject-manual",
+                  bookingId: detail.bookingId || detail.booking?.id,
+                })
+              }
+            >
+              <Ban size={13} /> Reject Payment
+            </button>
+          </>
+        )}
+
+        {/* HELD payments: release or refund */}
+        {detail.status === "HELD" && (
+          <>
+            <button
+              type="button"
+              className={styles.actionRelease}
+              onClick={() =>
+                onAction({
+                  action: "release",
+                  bookingId: detail.bookingId || detail.booking?.id,
+                })
+              }
+            >
+              <CheckCircle2 size={13} /> Release to Worker
+            </button>
+            <button
+              type="button"
+              className={styles.actionRefund}
+              onClick={() =>
+                onAction({
+                  action: "refund",
+                  bookingId: detail.bookingId || detail.booking?.id,
+                })
+              }
+            >
+              <BanknoteIcon /> Refund Hirer
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-function MetaField({ label, value }) {
+// Small helper to keep the JSX compact
+function BanknoteIcon() {
+  return <Wallet size={13} />;
+}
+
+// ─── Withdrawal Detail Panel ──────────────────────────────────────────────────
+
+function WithdrawalDetailPanel({ withdrawal }) {
+  const details = withdrawal.details || withdrawal.meta || {};
+  const d =
+    typeof details === "string"
+      ? (() => {
+          try {
+            return JSON.parse(details);
+          } catch {
+            return {};
+          }
+        })()
+      : details;
+
+  const failureReason = wdFailureReason(withdrawal.details);
+
   return (
-    <div className={styles.metaField}>
-      <span className={styles.metaLabel}>{label}</span>
-      <span className={styles.metaValue}>{value}</span>
+    <div className={styles.detailPanel}>
+      {/* ── Worker ── */}
+      <div className={styles.detailRow}>
+        <div className={styles.partyCard}>
+          <p className={styles.partyRole}>
+            <User size={12} /> Worker
+          </p>
+          <p className={styles.partyName}>
+            {withdrawal.worker?.firstName} {withdrawal.worker?.lastName}
+          </p>
+          <p className={styles.partyEmail}>{withdrawal.worker?.email}</p>
+        </div>
+      </div>
+
+      {/* ── Withdrawal meta ── */}
+      <div className={styles.metaGrid}>
+        <MetaField
+          label="Amount"
+          value={fmtAmtPrecise(withdrawal.amount, withdrawal.currency)}
+        />
+        <MetaField label="Currency" value={withdrawal.currency} />
+        <MetaField
+          label="Method"
+          value={withdrawal.method?.replace("_", " ") || "—"}
+        />
+        <MetaField
+          label="Requested"
+          value={fmtDateTime(withdrawal.createdAt)}
+        />
+        {withdrawal.processedAt && (
+          <MetaField
+            label="Processed"
+            value={fmtDateTime(withdrawal.processedAt)}
+          />
+        )}
+        {withdrawal.completedAt && (
+          <MetaField
+            label="Completed"
+            value={fmtDateTime(withdrawal.completedAt)}
+          />
+        )}
+        <MetaField label="Reference" value={withdrawal.reference || "—"} />
+      </div>
+
+      {/* ── Destination details ── */}
+      <div className={styles.descBox}>
+        <span className={styles.descLabel}>Destination</span>
+        <div className={styles.fieldGridSmall}>
+          {/* Bank transfer */}
+          {withdrawal.method === "bank_transfer" && (
+            <>
+              {d.bankName && <MetaField label="Bank" value={d.bankName} />}
+              {d.accountName && (
+                <MetaField label="Account name" value={d.accountName} />
+              )}
+              {d.accountNumber && (
+                <MetaField label="Account number" value={d.accountNumber} />
+              )}
+              {d.bankCode && <MetaField label="Bank code" value={d.bankCode} />}
+              {d.country && <MetaField label="Country" value={d.country} />}
+            </>
+          )}
+          {/* Mobile money */}
+          {withdrawal.method === "mobile_money" && (
+            <>
+              {d.mobileProvider && (
+                <MetaField label="Provider" value={d.mobileProvider} />
+              )}
+              {d.mobileNumber && (
+                <MetaField label="Number" value={d.mobileNumber} />
+              )}
+              {d.mobileName && <MetaField label="Name" value={d.mobileName} />}
+              {d.country && <MetaField label="Country" value={d.country} />}
+            </>
+          )}
+          {/* Crypto */}
+          {withdrawal.method === "crypto" && (
+            <>
+              {d.cryptoCurrency && (
+                <MetaField label="Currency" value={d.cryptoCurrency} />
+              )}
+              {d.cryptoNetwork && (
+                <MetaField label="Network" value={d.cryptoNetwork} />
+              )}
+              {d.cryptoAddress && (
+                <div className={styles.metaField}>
+                  <span className={styles.metaLabel}>Address</span>
+                  <span
+                    className={`${styles.metaValue} ${styles.breakdownMono}`}
+                    title={d.cryptoAddress}
+                  >
+                    {d.cryptoAddress.slice(0, 18)}…
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {/* Provider metadata from approval */}
+          {d.provider && <MetaField label="Provider" value={d.provider} />}
+          {d.transferId && (
+            <MetaField label="Transfer ID" value={String(d.transferId)} />
+          )}
+          {d.transferCode && (
+            <MetaField label="Transfer code" value={d.transferCode} />
+          )}
+          {d.withdrawalFee !== undefined && (
+            <MetaField
+              label="Withdrawal fee"
+              value={fmtAmtPrecise(d.withdrawalFee, withdrawal.currency)}
+            />
+          )}
+          {d.netPayout !== undefined && (
+            <MetaField
+              label="Net payout"
+              value={fmtAmtPrecise(d.netPayout, withdrawal.currency)}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ── Failure / rejection reason ── */}
+      {failureReason && (
+        <div className={styles.errorBanner}>
+          <AlertTriangle size={14} />
+          <div>
+            <strong>Failure reason:</strong> {failureReason}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -260,27 +655,64 @@ function MetaField({ label, value }) {
 
 function PayActionModal({ action, onConfirm, onClose, loading }) {
   const [notes, setNotes] = useState("");
-  const isRelease = action === "release";
+
+  const config = {
+    release: {
+      Icon: CheckCircle2,
+      title: "Release Payment",
+      color: "var(--green)",
+      sub: "Releases escrow to the worker. Booking will be marked Completed.",
+      confirmLabel: "Confirm Release",
+      cls: "modalRelease",
+    },
+    refund: {
+      Icon: Wallet,
+      title: "Refund Hirer",
+      color: "#60a5fa",
+      sub: "Refunds the hirer. Booking will be marked Cancelled.",
+      confirmLabel: "Confirm Refund",
+      cls: "modalRefund",
+    },
+    verify: {
+      Icon: CheckCircle2,
+      title: "Verify Manual Payment",
+      color: "var(--green)",
+      sub: "Marks the manual bank/crypto payment as verified. Funds move into escrow.",
+      confirmLabel: "Confirm Verify",
+      cls: "modalRelease",
+    },
+    "reject-manual": {
+      Icon: Ban,
+      title: "Reject Manual Payment",
+      color: "var(--red)",
+      sub: "Rejects the manual payment. The hirer will be notified to re-submit.",
+      confirmLabel: "Confirm Reject",
+      cls: "modalDelete",
+    },
+  }[action] || {
+    Icon: AlertTriangle,
+    title: "Confirm",
+    color: "var(--text)",
+    sub: "",
+    confirmLabel: "Confirm",
+    cls: "modalRelease",
+  };
+
+  const { Icon, title, color, sub, confirmLabel, cls } = config;
+
   return (
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <p
-            className={styles.modalTitle}
-            style={{ color: isRelease ? "var(--green)" : "#60a5fa" }}
-          >
-            {isRelease ? "✅ Release Payment" : "💸 Refund Hirer"}
+          <p className={styles.modalTitle} style={{ color }}>
+            <Icon size={14} /> {title}
           </p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <X size={14} />
           </button>
         </div>
         <div className={styles.modalBody}>
-          <p className={styles.modalSub}>
-            {isRelease
-              ? "Releases escrow to the worker. Booking will be marked Completed."
-              : "Refunds the hirer. Booking will be marked Cancelled."}
-          </p>
+          {sub && <p className={styles.modalSub}>{sub}</p>}
           <textarea
             className={styles.textarea}
             placeholder="Audit note (optional)…"
@@ -297,16 +729,16 @@ function PayActionModal({ action, onConfirm, onClose, loading }) {
               Cancel
             </button>
             <button
-              className={isRelease ? styles.modalRelease : styles.modalRefund}
+              className={styles[cls]}
               onClick={() => onConfirm(notes)}
               disabled={loading}
             >
               {loading ? (
                 <span className={styles.spinner} />
-              ) : isRelease ? (
-                "Confirm Release"
               ) : (
-                "Confirm Refund"
+                <>
+                  <Icon size={13} /> {confirmLabel}
+                </>
               )}
             </button>
           </div>
@@ -325,10 +757,10 @@ function RejectModal({ worker, onConfirm, onClose, loading }) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <p className={styles.modalTitle} style={{ color: "var(--red)" }}>
-            Reject Withdrawal
+            <Ban size={14} /> Reject Withdrawal
           </p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <X size={14} />
           </button>
         </div>
         <div className={styles.modalBody}>
@@ -357,7 +789,13 @@ function RejectModal({ worker, onConfirm, onClose, loading }) {
               onClick={() => onConfirm(reason)}
               disabled={loading}
             >
-              {loading ? <span className={styles.spinner} /> : "✕ Reject"}
+              {loading ? (
+                <span className={styles.spinner} />
+              ) : (
+                <>
+                  <XCircle size={13} /> Reject
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -381,7 +819,7 @@ function PaymentsTab({ searchParams, setSearchParams }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
-  const [payModal, setPayModal] = useState(null); // { action, bookingId, paymentId }
+  const [payModal, setPayModal] = useState(null);
   const [acting, setActing] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -406,11 +844,10 @@ function PaymentsTab({ searchParams, setSearchParams }) {
     if (from) params.from = from;
     if (to) params.to = to;
 
-    // GET /admin/payments — getAllPayments
     api
       .get("/admin/payments", { params })
       .then((r) => {
-        const d = r.data.data;
+        const d = r.data.data || {};
         setPayments(d.payments || []);
         setTotal(d.total || 0);
         setPages(d.pages || 1);
@@ -429,7 +866,6 @@ function PaymentsTab({ searchParams, setSearchParams }) {
     const { action, bookingId } = payModal;
     setActing(true);
     try {
-      // POST /admin/payments/:bookingId/release  OR  /refund
       if (action === "release") {
         await api.post(`/admin/payments/${bookingId}/release`);
       } else if (action === "refund") {
@@ -437,11 +873,19 @@ function PaymentsTab({ searchParams, setSearchParams }) {
       } else if (action === "verify") {
         await api.patch(`/admin/payments/${bookingId}/verify`);
       } else if (action === "reject-manual") {
-        await api.patch(`/admin/payments/${bookingId}/reject-manual`);
+        await api.patch(`/admin/payments/${bookingId}/reject-manual`, {
+          reason: notes || "Rejected by admin",
+        });
       }
-      showToast(
-        action === "release" ? "Payment released ✅" : "Refund issued 💸",
-      );
+
+      const messages = {
+        release: "Payment released",
+        refund: "Refund issued",
+        verify: "Payment verified",
+        "reject-manual": "Payment rejected",
+      };
+      showToast(messages[action] || "Action complete");
+
       setPayModal(null);
       setExpanded(null);
       fetchPayments();
@@ -452,39 +896,47 @@ function PaymentsTab({ searchParams, setSearchParams }) {
     }
   }
 
+  // Derive summary stats from the groupBy response
+  const totalGMV =
+    summary?.PENDING?.gmv != null ||
+    summary?.HELD?.gmv != null ||
+    summary?.RELEASED?.gmv != null
+      ? Object.values(summary).reduce((a, s) => a + (s.gmv || 0), 0)
+      : 0;
+  const pendingCount = summary?.PENDING?.count || 0;
+
   return (
     <div className={styles.tabContent}>
       <Toast toast={toast} />
 
-      {/* Summary stats from server aggregate */}
       {summary && (
         <div className={styles.statsBar}>
           <StatCard
-            icon="📈"
+            icon={TrendingUp}
             label="Gross Volume"
-            value={fmtAmt(summary.totalGMV)}
+            value={fmtAmt(totalGMV)}
             accent="orange"
           />
           <StatCard
-            icon="💰"
+            icon={Wallet}
             label="Platform Fees"
-            value={fmtAmt(summary.totalFees)}
+            value={fmtAmt(summary?.RELEASED?.gmv || 0)}
             accent="green"
           />
           <StatCard
-            icon="💸"
-            label="Worker Payouts"
-            value={fmtAmt(summary.totalPayouts)}
+            icon={Clock}
+            label="Pending Verifications"
+            value={pendingCount}
+            accent={pendingCount > 0 ? "amber" : undefined}
           />
           <StatCard
-            icon="📄"
+            icon={FileText}
             label="Transactions"
             value={total?.toLocaleString()}
           />
         </div>
       )}
 
-      {/* Filters: status tabs + provider + date range */}
       <div className={styles.filterRow}>
         <div className={styles.filterBar}>
           {PAY_STATUSES.map((s) => (
@@ -516,7 +968,9 @@ function PaymentsTab({ searchParams, setSearchParams }) {
             onChange={(e) => setParam("from", e.target.value)}
             title="From"
           />
-          <span className={styles.dateSep}>→</span>
+          <span className={styles.dateSep}>
+            <ChevronRight size={12} />
+          </span>
           <input
             type="date"
             className={styles.dateInput}
@@ -532,13 +986,12 @@ function PaymentsTab({ searchParams, setSearchParams }) {
                 setParam("to", "");
               }}
             >
-              Clear
+              <X size={12} /> Clear
             </button>
           )}
         </div>
       </div>
 
-      {/* Table */}
       <div className={styles.tableWrap}>
         <div className={styles.tableHead}>
           <span>Booking</span>
@@ -561,7 +1014,7 @@ function PaymentsTab({ searchParams, setSearchParams }) {
             ))
           ) : payments.length === 0 ? (
             <div className={styles.empty}>
-              <span>💳</span>
+              <CreditCard size={40} />
               <p>No payments found</p>
             </div>
           ) : (
@@ -584,7 +1037,6 @@ function PaymentsTab({ searchParams, setSearchParams }) {
                   <div className={styles.tdMeta}>
                     {p.booking?.worker?.firstName} {p.booking?.worker?.lastName}
                   </div>
-                  {/* Amount uses p.currency, defaulting to ₦ */}
                   <div className={styles.tdBold}>
                     {fmtAmt(p.amount, p.currency)}
                   </div>
@@ -601,12 +1053,7 @@ function PaymentsTab({ searchParams, setSearchParams }) {
                 {expanded === p.id && (
                   <PaymentDetailPanel
                     paymentId={p.id}
-                    onRelease={(bookingId, paymentId) =>
-                      setPayModal({ action: "release", bookingId, paymentId })
-                    }
-                    onRefund={(bookingId, paymentId) =>
-                      setPayModal({ action: "refund", bookingId, paymentId })
-                    }
+                    onAction={(payload) => setPayModal(payload)}
                   />
                 )}
               </div>
@@ -615,7 +1062,6 @@ function PaymentsTab({ searchParams, setSearchParams }) {
         </div>
       </div>
 
-      {/* Pagination */}
       {pages > 1 && (
         <div className={styles.pager}>
           <button
@@ -623,7 +1069,7 @@ function PaymentsTab({ searchParams, setSearchParams }) {
             disabled={page === 1}
             onClick={() => setParam("page", String(page - 1))}
           >
-            ← Prev
+            <ChevronLeft size={13} /> Prev
           </button>
           <span className={styles.pageInfo}>
             Page {page} of {pages} · {total.toLocaleString()} total
@@ -633,12 +1079,11 @@ function PaymentsTab({ searchParams, setSearchParams }) {
             disabled={page === pages}
             onClick={() => setParam("page", String(page + 1))}
           >
-            Next →
+            Next <ChevronRight size={13} />
           </button>
         </div>
       )}
 
-      {/* Payment action modal */}
       {payModal && (
         <PayActionModal
           action={payModal.action}
@@ -663,8 +1108,9 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
   const [pendingTotal, setPendingTotal] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [acting, setActing] = useState(null); // withdrawalId
-  const [rejectTarget, setRejectTarget] = useState(null); // withdrawal object
+  const [expanded, setExpanded] = useState(null);
+  const [acting, setActing] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
   const [toast, setToast] = useState(null);
 
   function showToast(msg, type = "success") {
@@ -685,11 +1131,10 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
     const params = { page, limit: 15 };
     if (status !== "ALL") params.status = status;
 
-    // GET /admin/withdrawals — getAllWithdrawals
     api
       .get("/admin/withdrawals", { params })
       .then((r) => {
-        const d = r.data.data;
+        const d = r.data.data || {};
         setWithdrawals(d.withdrawals || []);
         setTotal(d.total || 0);
         setPages(d.pages || 1);
@@ -704,12 +1149,11 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
     fetchWithdrawals();
   }, [fetchWithdrawals]);
 
-  // PATCH /admin/withdrawals/:id/approve — PENDING → PROCESSING
   async function handleApprove(withdrawalId) {
     setActing(withdrawalId);
     try {
       await api.patch(`/admin/withdrawals/${withdrawalId}/approve`);
-      showToast("Withdrawal approved — processing 🚀");
+      showToast("Withdrawal approved — processing");
       fetchWithdrawals();
     } catch (e) {
       showToast(e?.response?.data?.message || "Approval failed", "error");
@@ -718,7 +1162,6 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
     }
   }
 
-  // PATCH /admin/withdrawals/:id/reject — PENDING → FAILED + notify
   async function handleReject(reason) {
     if (!rejectTarget) return;
     setActing(rejectTarget.id);
@@ -740,28 +1183,26 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
     <div className={styles.tabContent}>
       <Toast toast={toast} />
 
-      {/* Pending queue stats */}
       <div className={styles.statsBar}>
         <StatCard
-          icon="⏳"
+          icon={Clock}
           label="Pending Queue"
           value={pendingCount.toLocaleString()}
           accent={pendingCount > 0 ? "amber" : undefined}
         />
         <StatCard
-          icon="💸"
+          icon={Wallet}
           label="Pending Amount"
           value={fmtAmt(pendingTotal)}
           accent={pendingCount > 0 ? "amber" : undefined}
         />
         <StatCard
-          icon="📋"
+          icon={ClipboardList}
           label="Total Records"
           value={total.toLocaleString()}
         />
       </div>
 
-      {/* Status filter */}
       <div className={styles.filterBar}>
         {WD_STATUSES.map((s) => (
           <button
@@ -774,7 +1215,6 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
         ))}
       </div>
 
-      {/* Table */}
       <div className={styles.tableWrap}>
         <div className={`${styles.tableHead} ${styles.tableHeadWd}`}>
           <span>Worker</span>
@@ -796,75 +1236,89 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
             ))
           ) : withdrawals.length === 0 ? (
             <div className={styles.empty}>
-              <span>💸</span>
+              <Wallet size={40} />
               <p>No withdrawal requests</p>
             </div>
           ) : (
             withdrawals.map((w, i) => (
               <div
                 key={w.id}
-                className={`${styles.tableRow} ${styles.tableRowWd}`}
+                className={styles.rowWrap}
                 style={{ animationDelay: `${i * 28}ms` }}
               >
-                <div className={styles.workerCell}>
-                  <div className={styles.wdAvatar}>
-                    {w.worker?.avatar ? (
-                      <img src={w.worker.avatar} alt="" />
-                    ) : (
-                      `${w.worker?.firstName?.[0] ?? ""}${w.worker?.lastName?.[0] ?? ""}`
+                <div
+                  className={`${styles.tableRow} ${styles.tableRowWd}`}
+                  onClick={() => setExpanded(expanded === w.id ? null : w.id)}
+                >
+                  <div className={styles.workerCell}>
+                    <div className={styles.wdAvatar}>
+                      {w.worker?.avatar ? (
+                        <img src={w.worker.avatar} alt="" />
+                      ) : (
+                        `${w.worker?.firstName?.[0] ?? ""}${w.worker?.lastName?.[0] ?? ""}`
+                      )}
+                    </div>
+                    <div>
+                      <p className={styles.wdName}>
+                        {w.worker?.firstName} {w.worker?.lastName}
+                      </p>
+                      <p className={styles.wdEmail}>{w.worker?.email}</p>
+                    </div>
+                  </div>
+                  <div className={styles.tdBold}>
+                    {fmtAmt(w.amount, w.currency)}
+                  </div>
+                  <div className={styles.tdMeta}>
+                    {w.method?.replace("_", " ") || "—"}
+                  </div>
+                  <div className={`${styles.tdMeta} ${styles.mono}`}>
+                    {w.destination?.slice(0, 18) || "—"}
+                  </div>
+                  <div className={styles.tdMeta}>{timeAgo(w.createdAt)}</div>
+                  <Badge status={w.status} meta={WD_STATUS_META} />
+                  <div className={styles.wdActions}>
+                    {w.status === "PENDING" && (
+                      <>
+                        <button
+                          className={styles.approveBtn}
+                          disabled={acting === w.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApprove(w.id);
+                          }}
+                          title="Approve — move to Processing"
+                        >
+                          {acting === w.id ? (
+                            <span className={styles.spinner} />
+                          ) : (
+                            <>
+                              <CheckCircle2 size={13} /> Approve
+                            </>
+                          )}
+                        </button>
+                        <button
+                          className={styles.rejectBtn}
+                          disabled={acting === w.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRejectTarget(w);
+                          }}
+                          title="Reject with reason"
+                        >
+                          <XCircle size={13} /> Reject
+                        </button>
+                      </>
                     )}
                   </div>
-                  <div>
-                    <p className={styles.wdName}>
-                      {w.worker?.firstName} {w.worker?.lastName}
-                    </p>
-                    <p className={styles.wdEmail}>{w.worker?.email}</p>
-                  </div>
                 </div>
-                <div className={styles.tdBold}>
-                  {fmtAmt(w.amount, w.currency)}
-                </div>
-                <div className={styles.tdMeta}>
-                  {w.method?.replace("_", " ") || "—"}
-                </div>
-                <div className={`${styles.tdMeta} ${styles.mono}`}>
-                  {w.destination?.slice(0, 18) || "—"}
-                </div>
-                <div className={styles.tdMeta}>{timeAgo(w.createdAt)}</div>
-                <Badge status={w.status} meta={WD_STATUS_META} />
-                <div className={styles.wdActions}>
-                  {w.status === "PENDING" && (
-                    <>
-                      <button
-                        className={styles.approveBtn}
-                        disabled={acting === w.id}
-                        onClick={() => handleApprove(w.id)}
-                        title="Approve — move to Processing"
-                      >
-                        {acting === w.id ? (
-                          <span className={styles.spinner} />
-                        ) : (
-                          "✅ Approve"
-                        )}
-                      </button>
-                      <button
-                        className={styles.rejectBtn}
-                        disabled={acting === w.id}
-                        onClick={() => setRejectTarget(w)}
-                        title="Reject with reason"
-                      >
-                        ✕ Reject
-                      </button>
-                    </>
-                  )}
-                </div>
+
+                {expanded === w.id && <WithdrawalDetailPanel withdrawal={w} />}
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* Pagination */}
       {pages > 1 && (
         <div className={styles.pager}>
           <button
@@ -872,7 +1326,7 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
             disabled={page === 1}
             onClick={() => setParam("wpage", String(page - 1))}
           >
-            ← Prev
+            <ChevronLeft size={13} /> Prev
           </button>
           <span className={styles.pageInfo}>
             Page {page} of {pages}
@@ -882,12 +1336,11 @@ function WithdrawalsTab({ searchParams, setSearchParams }) {
             disabled={page === pages}
             onClick={() => setParam("wpage", String(page + 1))}
           >
-            Next →
+            Next <ChevronRight size={13} />
           </button>
         </div>
       )}
 
-      {/* Reject modal */}
       {rejectTarget && (
         <RejectModal
           worker={`${rejectTarget.worker?.firstName ?? ""} ${rejectTarget.worker?.lastName ?? ""}`.trim()}
@@ -909,7 +1362,6 @@ export default function AdminPayments() {
   function setTab(t) {
     const p = new URLSearchParams(searchParams);
     p.set("tab", t);
-    // Reset tab-specific params
     ["pstatus", "provider", "from", "to", "page", "wstatus", "wpage"].forEach(
       (k) => p.delete(k),
     );
@@ -919,7 +1371,6 @@ export default function AdminPayments() {
   return (
     <AdminLayout>
       <div className={styles.page}>
-        {/* ── Header ── */}
         <div className={styles.pageHeader}>
           <div>
             <p className={styles.eyebrow}>Finance</p>
@@ -927,23 +1378,21 @@ export default function AdminPayments() {
           </div>
         </div>
 
-        {/* ── Main Tabs ── */}
         <div className={styles.mainTabs}>
           <button
             className={`${styles.mainTab} ${tab === "payments" ? styles.mainTabActive : ""}`}
             onClick={() => setTab("payments")}
           >
-            💳 Transactions
+            <CreditCard size={14} /> Transactions
           </button>
           <button
             className={`${styles.mainTab} ${tab === "withdrawals" ? styles.mainTabActive : ""}`}
             onClick={() => setTab("withdrawals")}
           >
-            💸 Withdrawals
+            <Wallet size={14} /> Withdrawals
           </button>
         </div>
 
-        {/* ── Tab Content ── */}
         {tab === "payments" ? (
           <PaymentsTab
             searchParams={searchParams}

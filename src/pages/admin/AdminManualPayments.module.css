@@ -1425,3 +1425,290 @@
   color: var(--orange) !important;
   font-weight: 800 !important;
 }
+/* ── Icon-aware tweaks (Lucide replacements) ─────────────────────── */
+
+/* Status badges — add inline-flex so icon + label align */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Referral badge — same */
+.referralBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Ref tag (bank/crypto) — align icons with text */
+.refTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Copy pill — align the copy icon */
+.copyPill {
+  gap: 5px;
+}
+.copyPillBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Proof viewer empty state — icon alignment */
+.proofEmpty {
+  gap: 8px;
+}
+.proofEmpty svg {
+  opacity: 0.4;
+  color: var(--text-muted);
+}
+.proofImgErr svg {
+  opacity: 0.4;
+  color: var(--text-muted);
+}
+
+/* Attempts drawer — header and rows */
+.attemptsDrawerTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.attemptsDrawerClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.attemptProvider {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Section label — inline-flex for icon */
+.sectionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Toast — align icon */
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Alert pill + export button */
+.alertPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Referral banner icon — replace emoji sizing */
+.referralBannerIcon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  color: var(--green);
+  flex-shrink: 0;
+}
+.referralBannerIcon svg {
+  color: inherit;
+}
+
+/* Approve / reject buttons */
+.approveBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.rejectBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Attempts button */
+.attemptsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Page buttons */
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Modal title */
+.modalTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Confirm reject button */
+.confirmRejectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tabs — align icon */
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Empty state icon */
+.empty span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.empty svg {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Stat card icon */
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.accent_yellow .statIcon {
+  color: #eab308;
+}
+.accent_indigo .statIcon {
+  color: #818cf8;
+}
+.accent_orange .statIcon {
+  color: var(--orange);
+}
+.accent_red .statIcon {
+  color: var(--red);
+}
+
+/* Arrow between user chips */
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Chevron */
+.chevron {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Search icon */
+.searchIcon {
+  position: absolute;
+  left: 9px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+/* ── Rejection banner (shown in expanded card when payment was rejected) ── */
+.rejectionBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  border-radius: 10px;
+  color: var(--red);
+}
+.rejectionBanner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--red);
+}
+.rejectionBannerTitle {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  margin: 0 0 3px;
+}
+.rejectionBannerText {
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+  font-weight: 500;
+}
+.rejectionBannerMeta {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin: 5px 0 0;
+}
+
+/* ── Small subtitles inside stat cards (GMV per status) ── */
+.statSub {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* ── Info panel section label with icon ── */
+.sectionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Copy pill (uses .copyPill already, but ensure icon-button alignment) ── */
+.copyPillBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── User chip adjustments for the extra location row ── */
+.userChip {
+  align-items: flex-start;
+}
+.userChipAvatar {
+  margin-top: 2px;
+}
+
+/* ── Attempts row: allow multi-line meta ── */
+.attemptRowLeft {
+  align-items: flex-start;
+}

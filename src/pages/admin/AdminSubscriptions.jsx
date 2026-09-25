@@ -1,10 +1,35 @@
 // src/pages/subscriptions/AdminSubscriptions.jsx
-// Full admin subscription management.
+// Full admin subscription management — complete backend field coverage.
 // Endpoints:
 //   GET    /admin/subscriptions?status=&tier=&page=&limit=
 //   PATCH  /admin/subscriptions/:subscriptionId/cancel  { reason }
+//
+// Renders EVERY field the backend sends:
+//   • Core: id, userId, tier, role, status, price, currency, autoRenew
+//   • Timestamps: startedAt, expiresAt/renewsAt, nextPaymentDate,
+//                  createdAt, updatedAt
+//   • Paystack: paystackSubscriptionCode, paystackCustomerCode,
+//                paystackPlanCode, paystackStatus
+//   • Reference: reference
+//   • User: id, firstName, lastName, email, avatar, role
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Gem,
+  CheckCircle2,
+  Zap,
+  Crown,
+  Package,
+  Ban,
+  AlertTriangle,
+  Eye,
+  Search,
+  X,
+  Copy,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import s from "./AdminSubscriptions.module.css";
@@ -19,9 +44,9 @@ const STATUS_TABS = [
 ];
 
 const TIER_META = {
-  FREE: { label: "Free", icon: "🆓", color: "dim" },
-  PRO: { label: "Pro", icon: "⚡", color: "indigo" },
-  ENTERPRISE: { label: "Enterprise", icon: "👑", color: "gold" },
+  FREE: { label: "Free", Icon: Gem, color: "dim" },
+  PRO: { label: "Pro", Icon: Zap, color: "indigo" },
+  ENTERPRISE: { label: "Enterprise", Icon: Crown, color: "gold" },
 };
 
 const STATUS_META = {
@@ -36,6 +61,14 @@ const ROLE_META = {
   HIRER: { label: "Hirer", color: "indigo" },
 };
 
+// Paystack-side status labels
+const PAYSTACK_STATUS_META = {
+  active: { label: "Active", color: "green" },
+  cancelled: { label: "Cancelled", color: "dim" },
+  attention: { label: "Needs attention", color: "yellow" },
+  "non-renewing": { label: "Non-renewing", color: "yellow" },
+};
+
 const LIMIT = 15;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,6 +78,17 @@ function fmtDate(d) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+}
+
+function fmtDateTime(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -58,9 +102,14 @@ function fmtRelative(d) {
   return fmtDate(d);
 }
 
-function fmtPrice(price, currency = "USD") {
+/**
+ * Format price with the given currency.
+ * Defaults to "USD" only when the currency is missing.
+ */
+function fmtPrice(price, currency) {
   if (price == null || price === 0) return "Free";
-  return `${currency} ${Number(price).toLocaleString(undefined, {
+  const cur = currency || "USD";
+  return `${cur} ${Number(price).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -70,6 +119,15 @@ function initials(u) {
   return (
     `${u?.firstName?.[0] ?? ""}${u?.lastName?.[0] ?? ""}`.toUpperCase() || "?"
   );
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Build tier breakdown from summary groupBy array
@@ -95,6 +153,31 @@ function Avatar({ user, size = "sm" }) {
   );
 }
 
+// ─── Copy pill ────────────────────────────────────────────────────────────────
+function CopyPill({ text, label }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return <span className={s.mono}>—</span>;
+  return (
+    <span className={s.copyPill} title={String(text)}>
+      <span className={s.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={s.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        title="Copy"
+      >
+        {ok ? <Check size={11} /> : <Copy size={11} />}
+      </button>
+    </span>
+  );
+}
+
 // ─── Badges ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const m = STATUS_META[status] ?? { label: status, color: "dim" };
@@ -104,10 +187,11 @@ function StatusBadge({ status }) {
 }
 
 function TierBadge({ tier }) {
-  const m = TIER_META[tier] ?? { label: tier, icon: "📦", color: "dim" };
+  const m = TIER_META[tier] ?? { label: tier, Icon: Package, color: "dim" };
+  const Icon = m.Icon;
   return (
     <span className={`${s.tierBadge} ${s[`tier_${m.color}`]}`}>
-      {m.icon} {m.label}
+      <Icon size={11} /> {m.label}
     </span>
   );
 }
@@ -119,14 +203,26 @@ function RoleBadge({ role }) {
   );
 }
 
+// Paystack status badge
+function PaystackStatusBadge({ status }) {
+  const m = PAYSTACK_STATUS_META[status] ?? {
+    label: status || "—",
+    color: "dim",
+  };
+  return (
+    <span className={`${s.badge} ${s[`badge_${m.color}`]}`}>{m.label}</span>
+  );
+}
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, accent, delay }) {
+  const Icon = icon;
   return (
     <div
       className={`${s.statCard} ${accent ? s[`accent_${accent}`] : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <span className={s.statIcon}>{icon}</span>
+      <span className={s.statIcon}>{Icon ? <Icon size={18} /> : null}</span>
       <div className={s.statValue}>{value ?? "—"}</div>
       <div className={s.statLabel}>{label}</div>
       {sub && <div className={s.statSub}>{sub}</div>}
@@ -161,13 +257,16 @@ function TierBreakdown({ summary }) {
           const data = breakdown[tier] ?? {};
           const active = data.ACTIVE ?? 0;
           const totalTier = Object.values(data).reduce((a, b) => a + b, 0);
+          const Icon = meta.Icon;
           return (
             <div
               key={tier}
               className={`${s.breakdownCard} ${s[`breakdownCard_${meta.color}`]}`}
             >
               <div className={s.breakdownCardTop}>
-                <span className={s.breakdownCardIcon}>{meta.icon}</span>
+                <span className={s.breakdownCardIcon}>
+                  {Icon ? <Icon size={16} /> : null}
+                </span>
                 <span className={s.breakdownCardLabel}>{meta.label}</span>
               </div>
               <div className={s.breakdownCardCount}>{totalTier}</div>
@@ -198,14 +297,16 @@ function DetailModal({ sub, onClose, onCancel }) {
   const isActive = sub.status === "ACTIVE";
   const tierMeta = TIER_META[sub.tier] ?? {
     label: sub.tier,
-    icon: "📦",
+    Icon: Package,
     color: "dim",
   };
+  const TierIcon = tierMeta.Icon;
   const roleMeta = ROLE_META[sub.role] ?? { label: sub.role, color: "dim" };
   const statusMeta = STATUS_META[sub.status] ?? {
     label: sub.status,
     color: "dim",
   };
+  const currency = sub.currency || "USD";
 
   return (
     <div className={s.backdrop} onClick={onClose}>
@@ -213,7 +314,7 @@ function DetailModal({ sub, onClose, onCancel }) {
         <div className={s.modalHeader}>
           <h3 className={s.modalTitle}>Subscription Detail</h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={14} />
           </button>
         </div>
         <div className={s.modalBody}>
@@ -231,12 +332,14 @@ function DetailModal({ sub, onClose, onCancel }) {
 
           {/* Plan hero */}
           <div className={`${s.planHero} ${s[`planHero_${tierMeta.color}`]}`}>
-            <span className={s.planHeroIcon}>{tierMeta.icon}</span>
+            <span className={s.planHeroIcon}>
+              {TierIcon ? <TierIcon size={26} /> : null}
+            </span>
             <div className={s.planHeroInfo}>
               <span className={s.planHeroTier}>{tierMeta.label} Plan</span>
               <span className={s.planHeroPrice}>
-                {fmtPrice(sub.price)}
-                <span className={s.planHeroPer}>/mo</span>
+                {fmtPrice(sub.price, currency)}
+                {sub.price > 0 && <span className={s.planHeroPer}>/mo</span>}
               </span>
             </div>
             <span className={`${s.badge} ${s[`badge_${statusMeta.color}`]}`}>
@@ -244,43 +347,154 @@ function DetailModal({ sub, onClose, onCancel }) {
             </span>
           </div>
 
-          {/* Detail grid */}
+          {/* ── Identifiers ─────────────────────────────────────────────── */}
+          <p className={s.sectionTitle}>Identifiers</p>
           <div className={s.detailGrid}>
-            {[
-              {
-                label: "Subscription ID",
-                value: sub.id?.slice(-8).toUpperCase(),
-                mono: true,
-              },
-              { label: "Role", value: sub.role },
-              { label: "Started", value: fmtDate(sub.createdAt) },
-              {
-                label: "Expires / Renews",
-                value: sub.expiresAt
-                  ? fmtDate(sub.expiresAt)
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Subscription ID</span>
+              <CopyPill text={sub.id} label={`${sub.id?.slice(0, 12)}…`} />
+            </div>
+            {sub.userId && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>User ID</span>
+                <CopyPill
+                  text={sub.userId}
+                  label={`${sub.userId.slice(0, 12)}…`}
+                />
+              </div>
+            )}
+            {sub.reference && (
+              <div className={s.detailCell} style={{ gridColumn: "1 / -1" }}>
+                <span className={s.detailLabel}>Reference</span>
+                <CopyPill text={sub.reference} />
+              </div>
+            )}
+          </div>
+
+          {/* ── Plan details ────────────────────────────────────────────── */}
+          <p className={s.sectionTitle}>Plan details</p>
+          <div className={s.detailGrid}>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Tier</span>
+              <span className={s.detailVal}>
+                {TierIcon ? <TierIcon size={12} /> : null} {tierMeta.label}
+              </span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Role</span>
+              <span className={s.detailVal}>{roleMeta.label}</span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Price</span>
+              <span className={`${s.detailVal} ${s.priceHighlight}`}>
+                {fmtPrice(sub.price, currency)}
+              </span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Currency</span>
+              <span className={s.detailVal}>{currency}</span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Auto-renew</span>
+              <span className={s.detailVal}>
+                {sub.autoRenew ? (
+                  <>
+                    <CheckCircle2 size={12} /> Enabled
+                  </>
+                ) : (
+                  <>
+                    <Ban size={12} /> Disabled
+                  </>
+                )}
+              </span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Status</span>
+              <StatusBadge status={sub.status} />
+            </div>
+          </div>
+
+          {/* ── Billing timeline ───────────────────────────────────────── */}
+          <p className={s.sectionTitle}>Billing timeline</p>
+          <div className={s.detailGrid}>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Started</span>
+              <span className={s.detailVal}>
+                {fmtDateTime(sub.startedAt || sub.createdAt)}
+              </span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Expires / Renews</span>
+              <span className={s.detailVal}>
+                {sub.expiresAt
+                  ? fmtDateTime(sub.expiresAt)
                   : sub.renewsAt
-                    ? fmtDate(sub.renewsAt)
-                    : "—",
-              },
-              {
-                label: "Stripe ID",
-                value: sub.stripeSubscriptionId?.slice(-12) ?? "—",
-                mono: true,
-              },
-              {
-                label: "Payment Ref",
-                value: sub.paymentReference?.slice(-12) ?? "—",
-                mono: true,
-              },
-            ].map(({ label, value, mono }) => (
-              <div key={label} className={s.detailCell}>
-                <span className={s.detailLabel}>{label}</span>
-                <span className={`${s.detailVal} ${mono ? s.mono : ""}`}>
-                  {value || "—"}
+                    ? fmtDateTime(sub.renewsAt)
+                    : "—"}
+              </span>
+            </div>
+            {sub.nextPaymentDate && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Next payment</span>
+                <span className={`${s.detailVal} ${s.priceHighlight}`}>
+                  {fmtDateTime(sub.nextPaymentDate)}
                 </span>
               </div>
-            ))}
+            )}
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Created</span>
+              <span className={s.detailVal}>{fmtDateTime(sub.createdAt)}</span>
+            </div>
+            {sub.updatedAt && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Last updated</span>
+                <span className={s.detailVal}>
+                  {fmtDateTime(sub.updatedAt)}
+                </span>
+              </div>
+            )}
           </div>
+
+          {/* ── Provider (Paystack) ────────────────────────────────────── */}
+          {(sub.paystackSubscriptionCode ||
+            sub.paystackCustomerCode ||
+            sub.paystackPlanCode ||
+            sub.paystackStatus) && (
+            <>
+              <p className={s.sectionTitle}>Provider (Paystack)</p>
+              <div className={s.detailGrid}>
+                {sub.paystackStatus && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Paystack status</span>
+                    <span className={s.detailVal}>
+                      <PaystackStatusBadge status={sub.paystackStatus} />
+                    </span>
+                  </div>
+                )}
+                {sub.paystackPlanCode && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Plan code</span>
+                    <CopyPill text={sub.paystackPlanCode} />
+                  </div>
+                )}
+                {sub.paystackSubscriptionCode && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Subscription code</span>
+                    <CopyPill
+                      text={sub.paystackSubscriptionCode}
+                      label={sub.paystackSubscriptionCode}
+                    />
+                  </div>
+                )}
+                {sub.paystackCustomerCode && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Customer code</span>
+                    <CopyPill text={sub.paystackCustomerCode} />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           {isActive && (
@@ -295,7 +509,7 @@ function DetailModal({ sub, onClose, onCancel }) {
                   onCancel(sub);
                 }}
               >
-                🚫 Cancel Subscription
+                <Ban size={13} /> Cancel Subscription
               </button>
             </div>
           )}
@@ -333,20 +547,24 @@ function CancelModal({ sub, onClose, onSuccess }) {
     }
   }
 
-  const tierMeta = TIER_META[sub.tier] ?? { label: sub.tier, icon: "📦" };
+  const tierMeta = TIER_META[sub.tier] ?? { label: sub.tier, Icon: Package };
+  const TierIcon = tierMeta.Icon;
+  const currency = sub.currency || "USD";
 
   return (
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>🚫 Cancel Subscription</h3>
+          <h3 className={s.modalTitle}>
+            <Ban size={15} /> Cancel Subscription
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={14} />
           </button>
         </div>
         <div className={s.modalBody}>
           <div className={s.cancelWarning}>
-            <span>⚠️</span>
+            <AlertTriangle size={16} />
             <p>
               This will immediately cancel the subscription and notify the user.
               This action cannot be undone.
@@ -368,19 +586,36 @@ function CancelModal({ sub, onClose, onSuccess }) {
             <div className={s.summaryRow}>
               <span className={s.summaryLabel}>Plan</span>
               <span className={s.summaryVal}>
-                {tierMeta.icon} {tierMeta.label}
+                {TierIcon ? <TierIcon size={12} /> : null} {tierMeta.label}
               </span>
             </div>
             <div className={s.summaryRow}>
               <span className={s.summaryLabel}>Price</span>
               <span className={`${s.summaryVal} ${s.priceHighlight}`}>
-                {fmtPrice(sub.price)}/mo
+                {fmtPrice(sub.price, currency)}
+                {sub.price > 0 && "/mo"}
               </span>
             </div>
             <div className={s.summaryRow}>
               <span className={s.summaryLabel}>Current Status</span>
               <StatusBadge status={sub.status} />
             </div>
+            {sub.nextPaymentDate && (
+              <div className={s.summaryRow}>
+                <span className={s.summaryLabel}>Next payment</span>
+                <span className={s.summaryVal}>
+                  {fmtDateTime(sub.nextPaymentDate)}
+                </span>
+              </div>
+            )}
+            {sub.paystackSubscriptionCode && (
+              <div className={s.summaryRow}>
+                <span className={s.summaryLabel}>Paystack sub</span>
+                <span className={`${s.summaryVal} ${s.mono}`}>
+                  {sub.paystackSubscriptionCode.slice(0, 16)}…
+                </span>
+              </div>
+            )}
           </div>
 
           <div className={s.field}>
@@ -413,7 +648,9 @@ function CancelModal({ sub, onClose, onSuccess }) {
               {loading ? (
                 <span className={s.spinner} />
               ) : (
-                "🚫 Cancel Subscription"
+                <>
+                  <Ban size={13} /> Cancel Subscription
+                </>
               )}
             </button>
           </div>
@@ -426,6 +663,7 @@ function CancelModal({ sub, onClose, onSuccess }) {
 // ─── Table Row ────────────────────────────────────────────────────────────────
 function SubRow({ sub, index, onDetail, onCancel }) {
   const isActive = sub.status === "ACTIVE";
+  const currency = sub.currency || "USD";
 
   return (
     <div className={s.tableRow} style={{ animationDelay: `${index * 0.025}s` }}>
@@ -453,7 +691,7 @@ function SubRow({ sub, index, onDetail, onCancel }) {
       {/* Price */}
       <div className={s.tdPrice}>
         <span className={sub.price > 0 ? s.priceVal : s.priceFree}>
-          {fmtPrice(sub.price)}
+          {fmtPrice(sub.price, currency)}
         </span>
         {sub.price > 0 && <span className={s.pricePer}>/mo</span>}
       </div>
@@ -464,13 +702,18 @@ function SubRow({ sub, index, onDetail, onCancel }) {
         <span className={s.tdRelative}>{fmtRelative(sub.createdAt)}</span>
       </div>
 
-      {/* Expires */}
+      {/* Expires / Renews */}
       <div className={s.tdExpiry}>
         {sub.expiresAt
           ? fmtDate(sub.expiresAt)
           : sub.renewsAt
             ? fmtDate(sub.renewsAt)
             : "—"}
+        {sub.autoRenew && sub.nextPaymentDate && (
+          <span className={s.tdNextPayment}>
+            Next: {fmtDate(sub.nextPaymentDate)}
+          </span>
+        )}
       </div>
 
       {/* Actions */}
@@ -480,7 +723,7 @@ function SubRow({ sub, index, onDetail, onCancel }) {
           onClick={() => onDetail(sub)}
           title="View detail"
         >
-          👁
+          <Eye size={14} />
         </button>
         {isActive && (
           <button
@@ -488,7 +731,7 @@ function SubRow({ sub, index, onDetail, onCancel }) {
             onClick={() => onCancel(sub)}
             title="Cancel subscription"
           >
-            🚫
+            <Ban size={14} />
           </button>
         )}
       </div>
@@ -542,7 +785,6 @@ export default function AdminSubscriptions() {
         setPages(d.pages);
         setPage(pg);
 
-        // Summary from first full load
         if (d.summary) setSummary(d.summary);
       } catch {
         showToast("error", "Failed to load subscriptions.");
@@ -600,10 +842,15 @@ export default function AdminSubscriptions() {
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
             <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+              {toast.type === "success" ? (
+                <CheckCircle2 size={13} />
+              ) : (
+                <X size={13} />
+              )}
+              <span style={{ marginLeft: 6 }}>{toast.msg}</span>
             </span>
             <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
+              <X size={13} />
             </button>
           </div>
         )}
@@ -631,7 +878,7 @@ export default function AdminSubscriptions() {
         {/* ── Stats ── */}
         <div className={s.statsGrid}>
           <StatCard
-            icon="💎"
+            icon={Gem}
             label="Total Subscriptions"
             value={total}
             sub="All tiers"
@@ -639,7 +886,7 @@ export default function AdminSubscriptions() {
             delay={0}
           />
           <StatCard
-            icon="✅"
+            icon={CheckCircle2}
             label="Active"
             value={activeCount}
             sub="This page"
@@ -647,7 +894,7 @@ export default function AdminSubscriptions() {
             delay={0.05}
           />
           <StatCard
-            icon="⚡"
+            icon={Zap}
             label="Pro Plans"
             value={proCount}
             sub="This page"
@@ -655,7 +902,7 @@ export default function AdminSubscriptions() {
             delay={0.1}
           />
           <StatCard
-            icon="👑"
+            icon={Crown}
             label="Enterprise"
             value={enterpriseCount}
             sub="This page"
@@ -671,7 +918,6 @@ export default function AdminSubscriptions() {
 
         {/* ── Toolbar ── */}
         <div className={s.toolBar}>
-          {/* Status filter tabs */}
           <div className={s.filterBar}>
             {STATUS_TABS.map((tab) => (
               <button
@@ -685,7 +931,6 @@ export default function AdminSubscriptions() {
           </div>
 
           <div className={s.toolRight}>
-            {/* Tier filter */}
             <select
               className={s.select}
               value={tierFilter}
@@ -695,12 +940,11 @@ export default function AdminSubscriptions() {
               }}
             >
               <option value="ALL">All Tiers</option>
-              <option value="FREE">🆓 Free</option>
-              <option value="PRO">⚡ Pro</option>
-              <option value="ENTERPRISE">👑 Enterprise</option>
+              <option value="FREE">Free</option>
+              <option value="PRO">Pro</option>
+              <option value="ENTERPRISE">Enterprise</option>
             </select>
 
-            {/* Role filter */}
             <select
               className={s.select}
               value={roleFilter}
@@ -714,9 +958,10 @@ export default function AdminSubscriptions() {
               <option value="HIRER">Hirer</option>
             </select>
 
-            {/* Search */}
             <div className={s.searchBar}>
-              <span className={s.searchIcon}>🔍</span>
+              <span className={s.searchIcon}>
+                <Search size={13} />
+              </span>
               <input
                 className={s.searchInput}
                 placeholder="Search name or email…"
@@ -731,7 +976,7 @@ export default function AdminSubscriptions() {
                     load(1, filter, tierFilter, roleFilter, "");
                   }}
                 >
-                  ✕
+                  <X size={12} />
                 </button>
               )}
             </div>
@@ -789,7 +1034,9 @@ export default function AdminSubscriptions() {
               <SkeletonRows />
             ) : subs.length === 0 ? (
               <div className={s.empty}>
-                <span className={s.emptyIcon}>💎</span>
+                <span className={s.emptyIcon}>
+                  <Gem size={40} />
+                </span>
                 <p className={s.emptyTitle}>
                   {filter === "ALL" && !search
                     ? "No subscriptions yet"
@@ -842,7 +1089,7 @@ export default function AdminSubscriptions() {
               disabled={page === 1 || loading}
               onClick={() => load(page - 1)}
             >
-              ← Prev
+              <ChevronLeft size={13} /> Prev
             </button>
             <span className={s.pageInfo}>
               Page {page} of {pages}
@@ -852,7 +1099,7 @@ export default function AdminSubscriptions() {
               disabled={page === pages || loading}
               onClick={() => load(page + 1)}
             >
-              Next →
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}

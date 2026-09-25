@@ -9,10 +9,10 @@
   padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
 }
 
-/* ── Toast ─────────────────────────────────────────────────────────────────── */
-
+/* ── Toast ── */
 .toast {
   position: fixed;
   top: 1.25rem;
@@ -24,7 +24,7 @@
   font-weight: 600;
   animation: slideIn 0.2s ease;
   pointer-events: none;
-  max-width: 320px;
+  max-width: min(320px, calc(100vw - 2rem));
 }
 .toast_success {
   background: var(--green-dim);
@@ -42,14 +42,17 @@
   color: var(--orange);
 }
 
-/* ── Header ────────────────────────────────────────────────────────────────── */
-
+/* ── Header ── */
 .pageHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+.headerText {
+  min-width: 0;
+  flex: 1;
 }
 .eyebrow {
   font-size: 0.625rem;
@@ -69,6 +72,7 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  flex-wrap: wrap;
 }
 .countPill {
   font-size: 0.75rem;
@@ -79,6 +83,11 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 2px 10px;
+}
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .primaryBtn {
@@ -125,18 +134,11 @@
   color: var(--text);
 }
 
-.headerActions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-/* ── Stats Bar ─────────────────────────────────────────────────────────────── */
-
+/* ── Stats Bar ── */
 .statsBar {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
-  flex-wrap: wrap;
 }
 .statChip {
   display: flex;
@@ -146,8 +148,11 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.5rem 0.875rem;
+  min-width: 0;
+}
+.chipBody {
+  min-width: 0;
   flex: 1;
-  min-width: 70px;
 }
 .chipAccent_green {
   border-color: rgba(34, 197, 94, 0.2);
@@ -163,25 +168,12 @@
 .chipAccent_orange .chipVal {
   color: var(--orange);
 }
-.chipAccent_purple {
-  border-color: rgba(139, 92, 246, 0.2);
-  background: rgba(139, 92, 246, 0.08);
-}
-.chipAccent_purple .chipVal {
-  color: #8b5cf6;
-}
-.chipAccent_gray {
-  border-color: rgba(107, 114, 128, 0.2);
-  background: rgba(107, 114, 128, 0.08);
-}
-.chipAccent_gray .chipVal {
-  color: var(--text-muted);
-}
 .chipIcon {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-dim);
+  flex-shrink: 0;
 }
 .chipVal {
   font-family: var(--font-display);
@@ -190,12 +182,18 @@
   color: var(--text);
   letter-spacing: -0.01em;
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chipLabel {
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chipSubtext {
   font-size: 0.55rem;
@@ -203,15 +201,18 @@
   margin-top: 1px;
 }
 
-/* ── Tabs ──────────────────────────────────────────────────────────────────── */
-
+/* ── Tabs ── */
 .tabs {
   display: flex;
   gap: 0.25rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-
+.tabs::-webkit-scrollbar {
+  display: none;
+}
 .tab {
   display: inline-flex;
   align-items: center;
@@ -226,6 +227,8 @@
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .tab:hover {
   background: var(--bg-card);
@@ -236,15 +239,13 @@
   color: var(--orange);
 }
 
-/* ── Control Bar ───────────────────────────────────────────────────────────── */
-
+/* ── Control Bar ── */
 .controlBar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-
 .searchWrap {
   flex: 1;
   min-width: 180px;
@@ -266,6 +267,7 @@
 }
 .searchInput {
   flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   outline: none;
@@ -290,7 +292,6 @@
 .clearBtn:hover {
   color: var(--text);
 }
-
 .filterGroup {
   display: flex;
   gap: 0.375rem;
@@ -317,7 +318,6 @@
 .filterSelect:focus {
   border-color: var(--border-focus);
 }
-
 .totalPill {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -329,20 +329,23 @@
   margin-left: auto;
 }
 
-/* ─── Table Container ──────────────────────────────────────────────────────── */
-
+/* ── Table container ── */
 .tableContainer {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
+  min-width: 0;
 }
 
-/* ─── Transaction Row ──────────────────────────────────────────────────────── */
-
+/* ── Transaction / Withdrawal rows ── */
 .transactionRow,
 .withdrawalRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(160px, 2fr) minmax(
+      120px,
+      1.2fr
+    ) minmax(110px, 1fr) auto;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.25rem;
@@ -358,8 +361,14 @@
   border-bottom: none;
 }
 
-/* ─── User Avatar ──────────────────────────────────────────────────────────── */
+.withdrawalRow {
+  grid-template-columns: minmax(180px, 2fr) minmax(180px, 2fr) minmax(
+      140px,
+      1.2fr
+    ) minmax(120px, 1fr) auto;
+}
 
+/* ── Avatars ── */
 .userAvatar {
   width: 36px;
   height: 36px;
@@ -390,30 +399,32 @@
 .userInfo {
   min-width: 0;
 }
-
 .transactionUser,
 .withdrawalUser {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  min-width: 160px;
+  min-width: 0;
 }
 .userName {
   font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .userEmail {
   font-size: 0.6875rem;
   color: var(--text-muted);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ─── Transaction Info ────────────────────────────────────────────────────── */
-
+/* ── Transaction / Withdrawal info ── */
 .transactionInfo,
 .withdrawalInfo {
-  flex: 1;
   min-width: 0;
 }
 .transactionType {
@@ -426,10 +437,10 @@
   font-size: 0.6875rem;
   color: var(--text-muted);
   font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-/* ─── Withdrawal Info ─────────────────────────────────────────────────────── */
-
 .withdrawalBank {
   font-size: 0.8125rem;
   font-weight: 700;
@@ -438,14 +449,16 @@
 .withdrawalAccount {
   font-size: 0.6875rem;
   color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ─── Amount ───────────────────────────────────────────────────────────────── */
-
+/* ── Amount ── */
 .transactionAmount,
 .withdrawalAmount {
   text-align: right;
-  min-width: 120px;
+  min-width: 0;
 }
 .withdrawalFee {
   font-size: 0.6875rem;
@@ -457,27 +470,24 @@
   color: var(--green);
 }
 
-/* ─── Date ────────────────────────────────────────────────────────────────── */
-
+/* ── Date ── */
 .transactionDate,
 .withdrawalDate {
   font-size: 0.6875rem;
   color: var(--text-muted);
-  min-width: 100px;
+  min-width: 0;
 }
 
-/* ─── Status ───────────────────────────────────────────────────────────────── */
-
+/* ── Status column ── */
 .withdrawalStatus {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  min-width: 100px;
+  min-width: 0;
 }
 
-/* ─── Status Badge ──────────────────────────────────────────────────────────── */
-
+/* ── Status Badge ── */
 .statusBadge {
   font-size: 0.6rem;
   font-weight: 700;
@@ -498,11 +508,7 @@
   color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.2);
 }
-.statusBadge_completed {
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
+.statusBadge_completed,
 .statusBadge_success {
   background: var(--green-dim);
   color: var(--green);
@@ -513,11 +519,7 @@
   color: var(--red);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
-.statusBadge_reversed {
-  background: rgba(107, 114, 128, 0.12);
-  color: var(--text-muted);
-  border: 1px solid rgba(107, 114, 128, 0.2);
-}
+.statusBadge_reversed,
 .statusBadge_cancelled {
   background: rgba(107, 114, 128, 0.12);
   color: var(--text-muted);
@@ -529,14 +531,13 @@
   border: 1px solid rgba(249, 115, 22, 0.2);
 }
 
-/* ─── Buttons ───────────────────────────────────────────────────────────────── */
-
+/* ── Buttons ── */
 .viewBtn {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 6px;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -557,7 +558,6 @@
   gap: 0.375rem;
   flex-shrink: 0;
 }
-
 .approveBtn,
 .rejectBtn {
   padding: 0.375rem 0.75rem;
@@ -589,8 +589,7 @@
   color: #fff;
 }
 
-/* ─── Copy Button ──────────────────────────────────────────────────────────── */
-
+/* ── Copy Button ── */
 .copyBtn {
   display: inline-flex;
   align-items: center;
@@ -606,6 +605,7 @@
   font-family: var(--font-body);
   transition: all 0.15s;
   white-space: nowrap;
+  max-width: 100%;
 }
 .copyBtn:hover {
   border-color: var(--orange);
@@ -614,16 +614,16 @@
 }
 .copyBtn span {
   font-size: 0.65rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ─── Overview ────────────────────────────────────────────────────────────── */
-
+/* ── Overview ── */
 .overviewContent {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-
 .chartPlaceholder {
   display: flex;
   flex-direction: column;
@@ -635,11 +635,11 @@
   border-radius: 12px;
   color: var(--text-muted);
   gap: 0.75rem;
+  text-align: center;
 }
-
 .quickStats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
 }
 .quickStat {
@@ -648,6 +648,7 @@
   border-radius: 10px;
   padding: 1rem;
   text-align: center;
+  min-width: 0;
 }
 .quickStatLabel {
   font-size: 0.625rem;
@@ -662,10 +663,10 @@
   color: var(--text);
   margin-top: 0.25rem;
   display: block;
+  overflow-wrap: anywhere;
 }
 
-/* ─── Approval Breakdown ──────────────────────────────────────────────────── */
-
+/* ── Approval breakdown ── */
 .approvalBreakdown {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -675,13 +676,14 @@
   flex-direction: column;
   gap: 0.5rem;
 }
-
 .breakdownRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   padding: 0.25rem 0;
   font-size: 0.875rem;
+  flex-wrap: wrap;
 }
 .breakdownRow:not(:last-child) {
   border-bottom: 1px solid var(--border);
@@ -698,46 +700,20 @@
   font-weight: 600;
   color: var(--text);
 }
-
 .copyRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 0.5rem;
   border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .copyRow .breakdownLabel {
   font-size: 0.75rem;
 }
 
-/* ─── Loading ───────────────────────────────────────────────────────────────── */
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 3rem;
-  color: var(--text-muted);
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--orange);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.spinning {
-  animation: spin 0.8s linear infinite;
-}
-
-/* ─── Empty State ──────────────────────────────────────────────────────────── */
-
+/* ── Empty state ── */
 .empty {
   display: flex;
   flex-direction: column;
@@ -756,8 +732,7 @@
   margin: 0;
 }
 
-/* ─── Pagination ───────────────────────────────────────────────────────────── */
-
+/* ── Pagination ── */
 .pagination {
   display: flex;
   align-items: center;
@@ -765,8 +740,8 @@
   gap: 0.875rem;
   padding: 1rem;
   border-top: 1px solid var(--border);
+  flex-wrap: wrap;
 }
-
 .pageBtn {
   display: inline-flex;
   align-items: center;
@@ -795,8 +770,7 @@
   color: var(--text-muted);
 }
 
-/* ─── Modal ────────────────────────────────────────────────────────────────── */
-
+/* ── Modal ── */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -809,7 +783,6 @@
   animation: fadeIn 0.15s ease;
   padding: 1rem;
 }
-
 .modal {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -820,11 +793,11 @@
   overflow-y: auto;
   animation: scaleIn 0.18s ease;
 }
-
 .modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 1.125rem 1.375rem;
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -838,6 +811,10 @@
   font-weight: 800;
   color: var(--text);
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .modalClose {
   background: var(--bg-card);
@@ -852,12 +829,12 @@
   cursor: pointer;
   font-family: var(--font-body);
   transition: all 0.12s;
+  flex-shrink: 0;
 }
 .modalClose:hover {
   color: var(--text);
   border-color: var(--border-hover);
 }
-
 .modalBody {
   padding: 1.25rem 1.375rem;
   display: flex;
@@ -865,8 +842,7 @@
   gap: 1rem;
 }
 
-/* ─── Confirm Modal ───────────────────────────────────────────────────────── */
-
+/* ── Confirm modal ── */
 .confirmMessage {
   font-size: 0.9375rem;
   color: var(--text-dim);
@@ -874,13 +850,12 @@
   margin: 0 0 0.5rem;
   text-align: center;
 }
-
 .modalActions {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
-
 .modalCancel {
   padding: 0.5rem 1.25rem;
   background: var(--bg-card);
@@ -901,7 +876,6 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-
 .modalConfirm {
   padding: 0.5rem 1.25rem;
   border: none;
@@ -928,8 +902,7 @@
   color: #000;
 }
 
-/* ─── Message Modal ───────────────────────────────────────────────────────── */
-
+/* ── Message modal ── */
 .messageBody {
   padding: 1.5rem;
   display: flex;
@@ -983,8 +956,7 @@
   opacity: 0.85;
 }
 
-/* ─── Prompt Modal ────────────────────────────────────────────────────────── */
-
+/* ── Prompt modal ── */
 .promptInput {
   width: 100%;
   padding: 0.625rem 0.875rem;
@@ -996,13 +968,13 @@
   font-family: var(--font-body);
   outline: none;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 .promptInput:focus {
   border-color: var(--border-focus);
 }
 
-/* ─── Detail Modal ─────────────────────────────────────────────────────────── */
-
+/* ── Detail modal ── */
 .detailUser {
   display: flex;
   align-items: center;
@@ -1010,11 +982,13 @@
   padding: 1rem;
   background: var(--bg-card);
   border-radius: 10px;
+  min-width: 0;
 }
 .detailName {
   font-size: 0.9375rem;
   font-weight: 700;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 .detailEmail {
   font-size: 0.8125rem;
@@ -1022,8 +996,8 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  overflow-wrap: anywhere;
 }
-
 .detailGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1036,6 +1010,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 .detailLabel {
   font-size: 0.6rem;
@@ -1052,10 +1027,225 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  overflow-wrap: anywhere;
 }
 
-/* ─── Animations ────────────────────────────────────────────────────────────── */
+/* ── New: per-currency breakdown panel ── */
+.breakdownPanel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.breakdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.breakdownTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.breakdownSub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0;
+}
+.breakdownCard {
+  padding: 14px 18px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.breakdownCardTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.breakdownCardCur {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.breakdownCardBalance {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.breakdownCardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+.breakdownCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.breakdownCardLabel {
+  color: var(--text-muted);
+}
+.breakdownCardVal {
+  color: var(--text-dim);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 
+/* ── New: scope notice ── */
+.scopeNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(59, 130, 246, 0.07);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.scopeNotice svg {
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── New: transaction row extras ── */
+.transactionDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+.transactionFee {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.transactionBalanceAfter {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── New: meta pre ── */
+.metaPre {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-dim);
+  overflow-x: auto;
+  max-height: 220px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* ── New: Skeleton blocks ── */
+.skBlock {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+.skIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+.skAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+.skBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+.skRight {
+  margin-left: auto;
+}
+.skCenter {
+  margin-left: auto;
+  margin-right: auto;
+}
+.skChartCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Animations ── */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -1099,130 +1289,214 @@
     transform: rotate(360deg);
   }
 }
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
 
-/* ─── Responsive ────────────────────────────────────────────────────────────── */
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
 
+/* ═══════════════════════════════════════════════════════════════════════
+   RESPONSIVE — every breakpoint, mobile-first safe
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1200px and below — tighten stats bar ── */
+@media (max-width: 1200px) {
+  .statsBar {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+/* ── 1024px — column-based rows on tablets ── */
 @media (max-width: 1024px) {
   .page {
     padding: 1rem;
   }
+
+  .transactionRow,
+  .withdrawalRow {
+    grid-template-columns: minmax(160px, 2fr) minmax(140px, 2fr) minmax(
+        110px,
+        1fr
+      ) auto;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  .transactionDate {
+    display: none;
+  }
+
+  .withdrawalRow {
+    grid-template-columns: minmax(160px, 2fr) minmax(160px, 2fr) minmax(
+        130px,
+        1fr
+      ) auto;
+  }
+  .withdrawalStatus {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+  }
 }
 
+/* ── 900px — stat chips 3 across ── */
+@media (max-width: 900px) {
+  .statsBar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── 768px — mobile landscape ── */
 @media (max-width: 768px) {
   .page {
-    padding: 0.75rem;
-    gap: 0.75rem;
+    padding: 0.875rem;
+    gap: 0.875rem;
   }
 
   .pageHeader {
     flex-direction: column;
     gap: 0.75rem;
+    align-items: stretch;
   }
-
+  .headerText {
+    width: 100%;
+  }
   .headerActions {
     width: 100%;
   }
   .headerActions button {
     flex: 1;
     justify-content: center;
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
   }
 
   .statsBar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
   }
   .statChip {
-    flex: 1;
-    min-width: unset;
     padding: 0.5rem 0.625rem;
+    gap: 0.375rem;
+    border-radius: 9px;
   }
   .chipVal {
     font-size: 0.9375rem;
   }
+  .chipLabel {
+    font-size: 0.5625rem;
+  }
 
   .tabs {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.375rem;
     gap: 0.25rem;
-    padding-bottom: 0.25rem;
   }
   .tab {
-    flex: 1;
-    justify-content: center;
-    padding: 0.375rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
   }
   .tab svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 
   .controlBar {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .searchWrap {
-    min-width: unset;
+    min-width: 0;
     width: 100%;
   }
   .filterGroup {
-    flex-wrap: wrap;
+    width: 100%;
   }
   .filterSelect {
     flex: 1;
-    min-width: 100px;
+    min-width: 0;
   }
   .totalPill {
     margin-left: 0;
     text-align: center;
+    width: 100%;
   }
 
+  /* Rows become stacked cards */
   .transactionRow,
   .withdrawalRow {
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.5rem;
-    padding: 0.625rem;
+    padding: 0.75rem 0.875rem;
   }
+
   .transactionUser,
   .withdrawalUser {
-    min-width: 100%;
+    min-width: 0;
   }
+
+  .transactionInfo,
+  .withdrawalInfo {
+    min-width: 0;
+  }
+
   .transactionAmount,
   .withdrawalAmount {
-    min-width: auto;
     text-align: left;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
   }
+  .transactionAmount .statusBadge,
+  .withdrawalAmount .statusBadge {
+    align-self: flex-start;
+  }
+
   .withdrawalStatus {
-    min-width: auto;
+    min-width: 0;
     align-items: flex-start;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
   }
+
   .withdrawalActions {
     width: 100%;
-    justify-content: flex-start;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
   }
   .withdrawalActions button {
     flex: 1;
     justify-content: center;
   }
+  .viewBtn {
+    align-self: flex-end;
+  }
 
   .detailGrid {
     grid-template-columns: 1fr;
   }
-
   .modal {
     max-width: 100%;
-    margin: 0.5rem;
     border-radius: 14px;
   }
   .modalBody {
     padding: 1rem;
   }
-
+  .modalHeader {
+    padding: 1rem;
+  }
   .modalActions {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
   .modalCancel,
   .modalConfirm {
@@ -1234,7 +1508,11 @@
     grid-template-columns: 1fr 1fr;
   }
   .chartPlaceholder {
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
+  }
+  .chartPlaceholder svg {
+    width: 36px;
+    height: 36px;
   }
 
   .approvalBreakdown {
@@ -1243,12 +1521,35 @@
   .breakdownRow {
     font-size: 0.8125rem;
   }
+
+  .breakdownGrid {
+    grid-template-columns: 1fr;
+  }
+  .breakdownCard {
+    border-right: none;
+    padding: 12px 16px;
+  }
+  .breakdownCardBalance {
+    font-size: 16px;
+  }
+
+  .transactionDesc {
+    max-width: 100%;
+  }
+
+  .messageIconSuccess,
+  .messageIconError,
+  .messageIconWarning,
+  .messageIconInfo {
+    font-size: 2.5rem;
+  }
 }
 
-@media (max-width: 480px) {
+/* ── 540px — phones in landscape / small tablets ── */
+@media (max-width: 540px) {
   .page {
-    padding: 0.5rem;
-    gap: 0.5rem;
+    padding: 0.75rem;
+    gap: 0.75rem;
   }
 
   .pageTitle {
@@ -1263,63 +1564,54 @@
     padding: 1px 8px;
   }
 
+  .headerActions button {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
   .statsBar {
     grid-template-columns: 1fr 1fr;
     gap: 0.375rem;
   }
   .statChip {
-    padding: 0.375rem 0.5rem;
-    border-radius: 8px;
+    padding: 0.4375rem 0.5rem;
+    gap: 0.375rem;
   }
   .chipIcon svg {
     width: 14px;
     height: 14px;
   }
   .chipVal {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
   .chipLabel {
     font-size: 0.55rem;
+    letter-spacing: 0.05em;
   }
 
-  .quickStats {
-    grid-template-columns: 1fr;
+  .tab {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+  .tab svg {
+    width: 12px;
+    height: 12px;
   }
 
-  .transactionRow,
-  .withdrawalRow {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0.5rem;
+  .filterSelect {
+    font-size: 0.7rem;
+    padding: 0.4375rem 0.625rem;
+    padding-right: 1.5rem;
   }
-  .transactionAmount,
-  .withdrawalAmount {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border);
-  }
-  .withdrawalStatus {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-  .withdrawalActions {
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-  .withdrawalActions button {
-    width: 100%;
-    justify-content: center;
+  .searchInput {
+    font-size: 0.8125rem;
   }
 
   .userAvatar {
-    width: 30px;
-    height: 30px;
-    font-size: 0.625rem;
+    width: 32px;
+    height: 32px;
+    font-size: 0.6875rem;
   }
   .userName {
     font-size: 0.75rem;
@@ -1327,20 +1619,47 @@
   .userEmail {
     font-size: 0.625rem;
   }
-
-  .viewBtn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .pagination {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.75rem;
-  }
-  .pageBtn {
-    padding: 0.375rem 0.75rem;
+  .transactionType,
+  .withdrawalBank {
     font-size: 0.75rem;
+  }
+  .transactionRef,
+  .withdrawalRef,
+  .withdrawalAccount {
+    font-size: 0.625rem;
+  }
+
+  .statusBadge {
+    font-size: 0.5625rem;
+    padding: 2px 8px;
+    gap: 3px;
+  }
+  .statusBadge svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .approveBtn,
+  .rejectBtn {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.625rem;
+  }
+  .viewBtn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .copyBtn {
+    padding: 0.1875rem 0.5rem;
+    font-size: 0.6rem;
+    gap: 0.1875rem;
+  }
+  .copyBtn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .copyBtn span {
+    font-size: 0.6rem;
   }
 
   .detailGrid {
@@ -1348,19 +1667,34 @@
     padding: 0.5rem;
   }
   .detailItem {
-    padding: 0.375rem;
+    padding: 0.375rem 0;
   }
   .detailValue {
     font-size: 0.8125rem;
   }
-
-  .copyBtn {
-    padding: 0.1875rem 0.5rem;
-    font-size: 0.6rem;
+  .detailLabel {
+    font-size: 0.55rem;
   }
-  .copyBtn svg {
-    width: 12px;
-    height: 12px;
+  .detailName {
+    font-size: 0.875rem;
+  }
+  .detailEmail {
+    font-size: 0.75rem;
+  }
+  .userAvatarLarge {
+    width: 40px;
+    height: 40px;
+    font-size: 0.875rem;
+  }
+
+  .quickStats {
+    grid-template-columns: 1fr;
+  }
+  .quickStat {
+    padding: 0.75rem;
+  }
+  .quickStatValue {
+    font-size: 1.0625rem;
   }
 
   .approvalBreakdown {
@@ -1374,7 +1708,421 @@
     font-size: 1rem;
   }
 
+  .pagination {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .pageBtn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  .pageInfo {
+    font-size: 0.75rem;
+  }
+
   .confirmMessage {
     font-size: 0.875rem;
+  }
+  .modalTitle {
+    font-size: 0.9375rem;
+  }
+  .modalBody {
+    padding: 0.875rem;
+  }
+  .messageText {
+    font-size: 0.8125rem;
+  }
+  .messageBtn {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .metaPre {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
+
+  .breakdownCardBalance {
+    font-size: 15px;
+  }
+  .breakdownCardCur {
+    font-size: 10px;
+  }
+  .breakdownCardRow {
+    font-size: 10px;
+  }
+}
+
+/* ── 400px — small phones (iPhone SE, Pixel 5) ── */
+@media (max-width: 400px) {
+  .page {
+    padding: 0.625rem;
+    gap: 0.625rem;
+  }
+
+  .eyebrow {
+    font-size: 0.5625rem;
+  }
+  .pageTitle {
+    font-size: 1rem;
+  }
+  .pageTitle svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .headerActions {
+    gap: 0.375rem;
+  }
+  .headerActions button {
+    font-size: 0.6875rem;
+    padding: 0.4375rem 0.625rem;
+    gap: 0.25rem;
+  }
+  .headerActions button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .statsBar {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3125rem;
+  }
+  .statChip {
+    padding: 0.375rem 0.4375rem;
+    gap: 0.3125rem;
+  }
+  .chipIcon svg {
+    width: 12px;
+    height: 12px;
+  }
+  .chipVal {
+    font-size: 0.75rem;
+  }
+  .chipLabel {
+    font-size: 0.5rem;
+  }
+
+  .tab {
+    padding: 0.3125rem 0.5rem;
+    font-size: 0.65rem;
+  }
+  .tab svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .filterSelect {
+    font-size: 0.65rem;
+    padding: 0.375rem 0.5rem;
+    padding-right: 1.375rem;
+  }
+  .totalPill {
+    font-size: 0.65rem;
+    padding: 0.1875rem 0.5rem;
+  }
+
+  .transactionRow,
+  .withdrawalRow {
+    padding: 0.625rem 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .userAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.625rem;
+  }
+  .userName {
+    font-size: 0.6875rem;
+  }
+  .userEmail {
+    font-size: 0.5625rem;
+  }
+
+  .statusBadge {
+    font-size: 0.5rem;
+    padding: 2px 6px;
+  }
+  .statusBadge svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  .approveBtn,
+  .rejectBtn {
+    font-size: 0.5625rem;
+    padding: 0.3125rem 0.5rem;
+    gap: 0.1875rem;
+  }
+  .approveBtn svg,
+  .rejectBtn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .viewBtn {
+    width: 28px;
+    height: 28px;
+  }
+  .viewBtn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .copyBtn {
+    font-size: 0.5625rem;
+    padding: 0.1875rem 0.4375rem;
+  }
+  .copyBtn svg {
+    width: 10px;
+    height: 10px;
+  }
+  .copyBtn span {
+    font-size: 0.5625rem;
+  }
+
+  .detailGrid {
+    padding: 0.4375rem;
+    gap: 0.3125rem;
+  }
+  .detailValue {
+    font-size: 0.75rem;
+  }
+  .detailLabel {
+    font-size: 0.5rem;
+  }
+  .userAvatarLarge {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+  .detailName {
+    font-size: 0.8125rem;
+  }
+  .detailEmail {
+    font-size: 0.6875rem;
+  }
+
+  .quickStat {
+    padding: 0.625rem;
+  }
+  .quickStatLabel {
+    font-size: 0.5625rem;
+  }
+  .quickStatValue {
+    font-size: 0.9375rem;
+  }
+
+  .chartPlaceholder {
+    padding: 1rem 0.75rem;
+  }
+  .chartPlaceholder svg {
+    width: 28px;
+    height: 28px;
+  }
+  .chartPlaceholder p {
+    font-size: 0.75rem;
+  }
+
+  .modalTitle {
+    font-size: 0.875rem;
+  }
+  .modalBody {
+    padding: 0.75rem;
+  }
+  .confirmMessage {
+    font-size: 0.8125rem;
+  }
+  .messageText {
+    font-size: 0.75rem;
+  }
+
+  .breakdownCard {
+    padding: 10px 12px;
+  }
+  .breakdownCardBalance {
+    font-size: 14px;
+  }
+  .breakdownCardCur {
+    font-size: 9px;
+  }
+  .breakdownCardRow {
+    font-size: 9px;
+  }
+  .breakdownHeader {
+    padding: 10px 12px;
+  }
+  .breakdownTitle {
+    font-size: 11px;
+  }
+  .breakdownSub {
+    font-size: 10px;
+  }
+
+  .scopeNotice {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+  .metaPre {
+    font-size: 9px;
+    padding: 6px 8px;
+  }
+}
+
+/* ── 340px — smallest usable phone (Galaxy Fold outer screen) ── */
+@media (max-width: 340px) {
+  .page {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .pageTitle {
+    font-size: 0.9375rem;
+    gap: 0.375rem;
+  }
+  .pageTitle svg {
+    width: 16px;
+    height: 16px;
+  }
+  .countPill {
+    font-size: 0.5625rem;
+    padding: 1px 6px;
+  }
+
+  .headerActions button {
+    font-size: 0.625rem;
+    padding: 0.375rem 0.5rem;
+  }
+  .headerActions button svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .statsBar {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+  }
+  .statChip {
+    padding: 0.3125rem 0.375rem;
+    gap: 0.25rem;
+    border-radius: 8px;
+  }
+  .chipIcon svg {
+    width: 11px;
+    height: 11px;
+  }
+  .chipVal {
+    font-size: 0.6875rem;
+  }
+  .chipLabel {
+    font-size: 0.45rem;
+  }
+
+  .tab {
+    padding: 0.25rem 0.4375rem;
+    font-size: 0.6rem;
+    gap: 0.1875rem;
+  }
+  .tab svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .searchWrap {
+    padding: 0.375rem 0.5rem;
+  }
+  .searchInput {
+    font-size: 0.75rem;
+  }
+  .filterSelect {
+    font-size: 0.6rem;
+    padding: 0.3125rem 0.4375rem;
+    padding-right: 1.25rem;
+  }
+
+  .transactionRow,
+  .withdrawalRow {
+    padding: 0.5rem 0.625rem;
+    gap: 0.375rem;
+  }
+
+  .userAvatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.5625rem;
+  }
+  .userName {
+    font-size: 0.625rem;
+  }
+  .userEmail {
+    font-size: 0.5rem;
+  }
+
+  .transactionType,
+  .withdrawalBank {
+    font-size: 0.6875rem;
+  }
+  .transactionRef,
+  .withdrawalRef,
+  .withdrawalAccount {
+    font-size: 0.5625rem;
+  }
+
+  .statusBadge {
+    font-size: 0.45rem;
+    padding: 1px 5px;
+    gap: 2px;
+  }
+  .statusBadge svg {
+    width: 8px;
+    height: 8px;
+  }
+
+  .approveBtn,
+  .rejectBtn {
+    font-size: 0.5rem;
+    padding: 0.25rem 0.4375rem;
+  }
+  .viewBtn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .copyBtn {
+    font-size: 0.5rem;
+    padding: 0.125rem 0.375rem;
+  }
+  .copyBtn svg {
+    width: 9px;
+    height: 9px;
+  }
+  .copyBtn span {
+    font-size: 0.5rem;
+  }
+
+  .detailValue {
+    font-size: 0.6875rem;
+  }
+  .detailGrid {
+    padding: 0.375rem;
+    gap: 0.25rem;
+  }
+
+  .quickStatValue {
+    font-size: 0.875rem;
+  }
+
+  .breakdownCardBalance {
+    font-size: 13px;
+  }
+
+  .modalBody {
+    padding: 0.625rem;
+  }
+  .modalTitle {
+    font-size: 0.8125rem;
+  }
+  .messageText {
+    font-size: 0.6875rem;
   }
 }

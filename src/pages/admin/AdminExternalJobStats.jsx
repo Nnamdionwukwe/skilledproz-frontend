@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import api from "../../lib/api";
 import s from "./AdminExternalJobStats.module.css";
 
@@ -34,7 +35,7 @@ export default function AdminExternalJobStats() {
       <div className={s.header}>
         <h1 className={s.title}>Job Click Analytics</h1>
         <Link to="/admin/external/jobs" className={s.backLink}>
-          ← Back to jobs
+          <ArrowLeft size={14} /> Back to jobs
         </Link>
       </div>
 
@@ -97,8 +98,32 @@ export default function AdminExternalJobStats() {
                     {user.firstName} {user.lastName}
                   </td>
                   <td>{user.email}</td>
-                  <td>{actions.applied ? "✅" : "❌"}</td>
-                  <td>{actions.proceeded ? "✅" : "❌"}</td>
+                  <td>
+                    {actions.applied ? (
+                      <CheckCircle2
+                        size={16}
+                        style={{ color: "var(--green, #22c55e)" }}
+                      />
+                    ) : (
+                      <XCircle
+                        size={16}
+                        style={{ color: "var(--red, #ef4444)" }}
+                      />
+                    )}
+                  </td>
+                  <td>
+                    {actions.proceeded ? (
+                      <CheckCircle2
+                        size={16}
+                        style={{ color: "var(--green, #22c55e)" }}
+                      />
+                    ) : (
+                      <XCircle
+                        size={16}
+                        style={{ color: "var(--red, #ef4444)" }}
+                      />
+                    )}
+                  </td>
                 </tr>
               ))
             )}

@@ -1,5 +1,5 @@
 // src/pages/admin/AdminManualPayments.jsx
-// Complete admin manual-payment verification panel.
+// Complete admin manual-payment verification panel — full backend field coverage.
 //
 // Features:
 //   • All payment attempts per booking (retries, failures, pending, verified)
@@ -9,11 +9,13 @@
 //   • Status filter: All / Pending / Verified (HELD) / Failed / Released / Refunded
 //   • Date range + search (ref, hash, name, title)
 //   • Payment-attempt history drawer per payment card
-//   • Stats bar with live counts per status
+//   • Stats bar with live counts AND GMV per status
 //   • Reject modal with preset reasons
 //   • Audit-friendly checklist before approving
 //   • Pagination
 //   • CSV export of visible payments
+//   • FULL backend field coverage (IDs, UUIDs, timestamps, rejection reasons,
+//     bank details, crypto details, geographic info, category, escrow/release dates)
 //
 // API:
 //   GET  /admin/payments?provider&status&from&to&search&page&limit
@@ -23,6 +25,38 @@
 //   PATCH /admin/payments/:bookingId/reject-manual
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Landmark,
+  Bitcoin,
+  ClipboardList,
+  Clock,
+  Lock,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Wallet,
+  Gift,
+  Copy,
+  Check,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  Search,
+  ExternalLink,
+  AlertTriangle,
+  X,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Loader2,
+  MapPin,
+  Tag,
+  Hash,
+  User,
+  Info,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import styles from "./AdminManualPayments.module.css";
@@ -45,6 +79,15 @@ const fmtDate = (d) =>
       })
     : "—";
 
+const fmtDateShort = (d) =>
+  d
+    ? new Date(d).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
+
 const timeAgo = (d) => {
   if (!d) return "—";
   const m = Math.floor((Date.now() - new Date(d)) / 60000);
@@ -52,6 +95,17 @@ const timeAgo = (d) => {
   if (m < 1440) return `${Math.floor(m / 60)}h ago`;
   return `${Math.floor(m / 1440)}d ago`;
 };
+
+/** Parse a `notes` JSON blob — backend stores { reason, rejectedAt } on rejection */
+function parseNotes(notes) {
+  if (!notes) return null;
+  if (typeof notes === "object") return notes;
+  try {
+    return JSON.parse(notes);
+  } catch {
+    return null;
+  }
+}
 
 const STATUS_COLORS = {
   PENDING: {
@@ -81,12 +135,12 @@ const STATUS_COLORS = {
   },
 };
 
-const STATUS_LABELS = {
-  PENDING: "⏳ Pending",
-  HELD: "🔒 In Escrow",
-  RELEASED: "✅ Released",
-  FAILED: "❌ Failed",
-  REFUNDED: "↩ Refunded",
+const STATUS_META = {
+  PENDING: { Icon: Clock, label: "Pending" },
+  HELD: { Icon: Lock, label: "In Escrow" },
+  RELEASED: { Icon: CheckCircle2, label: "Released" },
+  FAILED: { Icon: XCircle, label: "Failed" },
+  REFUNDED: { Icon: RotateCcw, label: "Refunded" },
 };
 
 function explorerUrl(hash, network) {
@@ -112,24 +166,29 @@ async function copy(text) {
 // ── Sub-components ────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
+  const Icon = toast.type === "error" ? XCircle : CheckCircle2;
   return (
     <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-      {toast.msg}
+      <Icon size={14} />
+      <span>{toast.msg}</span>
     </div>
   );
 }
 
 function StatusBadge({ status }) {
   const c = STATUS_COLORS[status] || STATUS_COLORS.PENDING;
+  const m = STATUS_META[status] || { Icon: Clock, label: status };
+  const Icon = m.Icon;
   return (
     <span
       className={styles.statusBadge}
       style={{ background: c.bg, color: c.text, borderColor: c.border }}
     >
-      {STATUS_LABELS[status] || status}
+      <Icon size={11} /> {m.label}
     </span>
   );
 }
+
 function ReferralBadge({ amount, currency = "NGN" }) {
   if (!amount || amount <= 0) return null;
   return (
@@ -137,12 +196,12 @@ function ReferralBadge({ amount, currency = "NGN" }) {
       className={styles.referralBadge}
       title={`Referral discount applied: ${currency} ${Number(amount).toLocaleString()} off the gross total`}
     >
-      🎁 −{currency} {Number(amount).toLocaleString()} referral
+      <Gift size={11} /> −{currency} {Number(amount).toLocaleString()} referral
     </span>
   );
 }
 
-function CopyPill({ text, display, mono }) {
+function CopyPill({ text, display, mono, title }) {
   const [ok, setOk] = useState(false);
   async function handle() {
     if (await copy(text)) {
@@ -150,13 +209,15 @@ function CopyPill({ text, display, mono }) {
       setTimeout(() => setOk(false), 1600);
     }
   }
+  if (!text) return <span className={styles.infoVal}>—</span>;
   return (
     <span
       className={`${styles.copyPill} ${mono ? styles.copyPillMono : ""} ${ok ? styles.copyPillOk : ""}`}
+      title={title}
     >
       <span className={styles.copyPillText}>{display ?? text}</span>
       <button className={styles.copyPillBtn} onClick={handle} title="Copy">
-        {ok ? "✓" : "⎘"}
+        {ok ? <Check size={11} /> : <Copy size={11} />}
       </button>
     </span>
   );
@@ -167,7 +228,7 @@ function ProofViewer({ url, label = "Payment Proof" }) {
   if (!url)
     return (
       <div className={styles.proofEmpty}>
-        <span>📎</span>
+        <Paperclip size={22} />
         <p>No proof uploaded</p>
         <small>Verify via bank statement or blockchain explorer.</small>
       </div>
@@ -183,11 +244,11 @@ function ProofViewer({ url, label = "Payment Proof" }) {
           rel="noreferrer"
           className={styles.proofOpenBtn}
         >
-          📄 Open PDF Receipt ↗
+          <FileText size={12} /> Open PDF Receipt <ExternalLink size={11} />
         </a>
       ) : err ? (
         <div className={styles.proofImgErr}>
-          <span>🖼️</span>
+          <ImageIcon size={22} />
           <p>Image failed to load</p>
         </div>
       ) : (
@@ -206,7 +267,7 @@ function ProofViewer({ url, label = "Payment Proof" }) {
         rel="noreferrer"
         className={styles.proofOpenBtn}
       >
-        🔍 Open Full Size ↗
+        <ExternalLink size={11} /> Open Full Size
       </a>
     </div>
   );
@@ -240,7 +301,7 @@ function Checklist({ items }) {
       ))}
       {allChecked && (
         <p className={styles.checklistAllDone}>
-          ✅ All checks passed — safe to approve
+          <CheckCircle2 size={12} /> All checks passed — safe to approve
         </p>
       )}
     </div>
@@ -268,6 +329,7 @@ function UserChip({ label, user }) {
   const initials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase() ||
     "?";
+  const location = [user?.city, user?.country].filter(Boolean).join(", ");
   return (
     <div className={styles.userChip}>
       <div className={styles.userChipAvatar}>
@@ -277,12 +339,51 @@ function UserChip({ label, user }) {
           <span>{initials}</span>
         )}
       </div>
-      <div>
-        <p className={styles.userChipRole}>{label}</p>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p className={styles.userChipRole}>
+          <User size={9} style={{ verticalAlign: -1, marginRight: 3 }} />
+          {label}
+        </p>
         <p className={styles.userChipName}>
           {user?.firstName} {user?.lastName}
         </p>
         {user?.email && <p className={styles.userChipEmail}>{user.email}</p>}
+        {location && (
+          <p className={styles.userChipEmail}>
+            <MapPin size={9} style={{ verticalAlign: -1, marginRight: 3 }} />
+            {location}
+          </p>
+        )}
+        {user?.id && (
+          <div style={{ marginTop: 4 }}>
+            <CopyPill
+              text={user.id}
+              display={`${user.id.slice(0, 8)}…`}
+              mono
+              title={user.id}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Rejection reason banner ────────────────────────────────────────────────────
+function RejectionBanner({ notes }) {
+  const parsed = parseNotes(notes);
+  if (!parsed?.reason) return null;
+  return (
+    <div className={styles.rejectionBanner}>
+      <XCircle size={14} />
+      <div>
+        <p className={styles.rejectionBannerTitle}>Rejection reason</p>
+        <p className={styles.rejectionBannerText}>{parsed.reason}</p>
+        {parsed.rejectedAt && (
+          <p className={styles.rejectionBannerMeta}>
+            Rejected at {fmtDate(parsed.rejectedAt)}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -304,70 +405,107 @@ function AttemptsDrawer({ bookingId, onClose }) {
   return (
     <div className={styles.attemptsDrawer}>
       <div className={styles.attemptsDrawerHeader}>
-        <p className={styles.attemptsDrawerTitle}>📋 All Payment Attempts</p>
+        <p className={styles.attemptsDrawerTitle}>
+          <ClipboardList size={14} /> All Payment Attempts ({attempts.length})
+        </p>
         <button className={styles.attemptsDrawerClose} onClick={onClose}>
-          ×
+          <X size={14} />
         </button>
       </div>
       {loading ? (
         <div className={styles.attemptsLoading}>
-          <span className={styles.spin} /> Loading…
+          <Loader2 size={14} className={styles.spin} /> Loading…
         </div>
       ) : attempts.length === 0 ? (
         <p className={styles.attemptsEmpty}>No payment attempts found.</p>
       ) : (
         <div className={styles.attemptsList}>
-          {attempts.map((a, i) => (
-            <div
-              key={a.id}
-              className={`${styles.attemptRow} ${i === 0 ? styles.attemptRowLatest : ""}`}
-            >
-              <div className={styles.attemptRowLeft}>
-                <span className={styles.attemptNum}>#{a.attemptNumber}</span>
-                <div>
-                  <div className={styles.attemptProvider}>
-                    {a.provider === "bank_transfer" ? "🏦" : "₿"}{" "}
-                    {a.provider.replace("_", " ")}
-                    <ReferralBadge
-                      amount={a.referralDiscount}
-                      currency={a.currency}
-                    />
-                  </div>
-                  <p className={styles.attemptDate}>{fmtDate(a.createdAt)}</p>
-                  {a.providerRef && (
-                    <p className={styles.attemptRef}>{a.providerRef}</p>
-                  )}
-                  {a.cryptoTxHash && (
+          {attempts.map((a, i) => {
+            const parsed = parseNotes(a.notes);
+            return (
+              <div
+                key={a.id}
+                className={`${styles.attemptRow} ${i === 0 ? styles.attemptRowLatest : ""}`}
+              >
+                <div className={styles.attemptRowLeft}>
+                  <span className={styles.attemptNum}>#{a.attemptNumber}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className={styles.attemptProvider}>
+                      {a.provider === "bank_transfer" ? (
+                        <Landmark size={12} />
+                      ) : (
+                        <Bitcoin size={12} />
+                      )}{" "}
+                      {a.provider.replace("_", " ")}
+                      <ReferralBadge
+                        amount={a.referralDiscount}
+                        currency={a.currency}
+                      />
+                    </div>
+                    <p className={styles.attemptDate}>{fmtDate(a.createdAt)}</p>
+                    {a.providerRef && (
+                      <div style={{ marginTop: 4 }}>
+                        <CopyPill
+                          text={a.providerRef}
+                          display={a.providerRef}
+                          mono
+                        />
+                      </div>
+                    )}
+                    {a.cryptoTxHash && (
+                      <div style={{ marginTop: 4 }}>
+                        <CopyPill
+                          text={a.cryptoTxHash}
+                          display={`${a.cryptoTxHash.slice(0, 12)}…${a.cryptoTxHash.slice(-6)}`}
+                          mono
+                          title={a.cryptoTxHash}
+                        />
+                      </div>
+                    )}
+                    {a.bankName && (
+                      <p className={styles.attemptRef}>
+                        Bank: {a.bankName}
+                        {a.accountName ? ` · ${a.accountName}` : ""}
+                      </p>
+                    )}
+                    {a.cryptoCurrency && (
+                      <p className={styles.attemptRef}>
+                        {a.cryptoCurrency} on {a.cryptoNetwork}
+                        {a.cryptoAmount ? ` · ${a.cryptoAmount}` : ""}
+                      </p>
+                    )}
+                    {parsed?.reason && (
+                      <p className={styles.attemptRejReason}>
+                        Rejected: {parsed.reason}
+                      </p>
+                    )}
                     <p
                       className={styles.attemptRef}
-                      style={{ fontFamily: "monospace" }}
+                      style={{ opacity: 0.6, marginTop: 3 }}
                     >
-                      {a.cryptoTxHash.slice(0, 20)}…
+                      ID: {a.id}
                     </p>
+                  </div>
+                </div>
+                <div className={styles.attemptRowRight}>
+                  <span className={styles.attemptAmt}>
+                    {fmt(a.amount, a.currency)}
+                  </span>
+                  <StatusBadge status={a.status} />
+                  {a.escrowReleasedAt && (
+                    <span className={styles.attemptDate}>
+                      Released {fmtDateShort(a.escrowReleasedAt)}
+                    </span>
                   )}
-                  {a.notes &&
-                    (() => {
-                      try {
-                        const n = JSON.parse(a.notes);
-                        return n.reason ? (
-                          <p className={styles.attemptRejReason}>
-                            Rejected: {n.reason}
-                          </p>
-                        ) : null;
-                      } catch {
-                        return null;
-                      }
-                    })()}
+                  {a.refundedAt && (
+                    <span className={styles.attemptDate}>
+                      Refunded {fmtDateShort(a.refundedAt)}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className={styles.attemptRowRight}>
-                <span className={styles.attemptAmt}>
-                  {fmt(a.amount, a.currency)}
-                </span>
-                <StatusBadge status={a.status} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -386,6 +524,7 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
   const isPending = payment.status === "PENDING";
   const explorerLink = explorerUrl(payment.cryptoTxHash, payment.cryptoNetwork);
   const hasReferral = payment.referralDiscount > 0;
+  const parsedNotes = parseNotes(payment.notes);
 
   const bankChecklist = [
     "Reference number matches the booking exactly",
@@ -419,7 +558,8 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
             <span
               className={`${styles.refTag} ${isCrypto ? styles.refTagCrypto : ""}`}
             >
-              {isBank ? "🏦" : "₿"} {payment.providerRef}
+              {isBank ? <Landmark size={11} /> : <Bitcoin size={11} />}{" "}
+              {payment.providerRef}
             </span>
             {hasReferral && (
               <ReferralBadge
@@ -434,6 +574,19 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
             {isCrypto && payment.cryptoCurrency && (
               <span className={styles.cryptoTag}>
                 {payment.cryptoCurrency} · {payment.cryptoNetwork}
+              </span>
+            )}
+            {parsedNotes?.reason && (
+              <span
+                className={styles.bankTag}
+                style={{
+                  background: "rgba(239,68,68,.12)",
+                  color: "var(--red)",
+                  borderColor: "rgba(239,68,68,.3)",
+                }}
+                title={parsedNotes.reason}
+              >
+                <XCircle size={10} /> Reason on file
               </span>
             )}
           </div>
@@ -451,31 +604,90 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
           </p>
           {hasReferral && (
             <p className={styles.referralSaving}>
-              🎁 saved ₦{Number(payment.referralDiscount).toLocaleString()}
+              <Gift size={11} /> saved ₦
+              {Number(payment.referralDiscount).toLocaleString()}
             </p>
           )}
           <StatusBadge status={payment.status} />
-          <span className={styles.chevron}>{expanded ? "▲" : "▼"}</span>
+          <span className={styles.chevron}>
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </span>
         </div>
       </div>
 
       {/* Expanded body */}
       {expanded && (
         <div className={styles.payCardBody}>
+          {/* Rejection banner if previously rejected */}
+          <RejectionBanner notes={payment.notes} />
+
           {/* Parties */}
           <div className={styles.section}>
             <p className={styles.sectionLabel}>PARTIES</p>
             <div className={styles.partiesRow}>
               <UserChip label="Hirer (paid)" user={b?.hirer} />
-              <span className={styles.arrow}>→</span>
+              <span className={styles.arrow}>
+                <ChevronRight size={18} />
+              </span>
               <UserChip label="Worker (receives)" user={b?.worker} />
             </div>
           </div>
 
-          {/* ── Referral discount banner ── */}
+          {/* Booking context */}
+          <div className={styles.section}>
+            <p className={styles.sectionLabel}>
+              <Tag size={11} /> BOOKING CONTEXT
+            </p>
+            <div className={styles.infoRows}>
+              <div className={styles.infoRow}>
+                <span className={styles.infoKey}>Booking ID</span>
+                <CopyPill
+                  text={b?.id}
+                  display={b?.id ? `${b.id.slice(0, 12)}…` : "—"}
+                  mono
+                  title={b?.id}
+                />
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoKey}>Booking status</span>
+                <span className={styles.infoVal}>{b?.status || "—"}</span>
+              </div>
+              {b?.category?.name && (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoKey}>Category</span>
+                  <span className={styles.infoVal}>
+                    {b.category.icon ? `${b.category.icon} ` : ""}
+                    {b.category.name}
+                  </span>
+                </div>
+              )}
+              <div className={styles.infoRow}>
+                <span className={styles.infoKey}>Payment ID</span>
+                <CopyPill
+                  text={payment.id}
+                  display={`${payment.id.slice(0, 12)}…`}
+                  mono
+                  title={payment.id}
+                />
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoKey}>Payer user ID</span>
+                <CopyPill
+                  text={payment.userId}
+                  display={`${payment.userId.slice(0, 12)}…`}
+                  mono
+                  title={payment.userId}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Referral discount banner */}
           {hasReferral && (
             <div className={styles.referralBanner}>
-              <span className={styles.referralBannerIcon}>🎁</span>
+              <span className={styles.referralBannerIcon}>
+                <Gift size={20} />
+              </span>
               <div className={styles.referralBannerBody}>
                 <p className={styles.referralBannerTitle}>
                   Referral Discount Applied
@@ -515,7 +727,15 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
             {/* Left: Transfer / Crypto details + fee table */}
             <div className={styles.infoPanel}>
               <p className={styles.sectionLabel}>
-                {isBank ? "🏦 TRANSFER DETAILS" : "₿ TRANSACTION DETAILS"}
+                {isBank ? (
+                  <>
+                    <Landmark size={11} /> TRANSFER DETAILS
+                  </>
+                ) : (
+                  <>
+                    <Bitcoin size={11} /> TRANSACTION DETAILS
+                  </>
+                )}
               </p>
 
               <div className={styles.infoRows}>
@@ -577,7 +797,7 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
                 )}
                 {payment.referralDiscount > 0 && (
                   <FeeRow
-                    label="🎁 Referral discount"
+                    label="Referral discount"
                     value={-payment.referralDiscount}
                     cur={payment.currency}
                     green
@@ -602,16 +822,44 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
                 />
               </div>
 
-              <div className={styles.infoRow} style={{ marginTop: 8 }}>
-                <span className={styles.infoKey}>Submitted</span>
-                <span className={styles.infoVal}>
-                  {fmtDate(payment.createdAt)}
-                </span>
+              {/* Timeline */}
+              <p className={styles.sectionLabel} style={{ marginTop: 10 }}>
+                <Clock size={11} /> TIMELINE
+              </p>
+              <div className={styles.infoRows}>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoKey}>Submitted</span>
+                  <span className={styles.infoVal}>
+                    {fmtDate(payment.createdAt)}
+                  </span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoKey}>Last updated</span>
+                  <span className={styles.infoVal}>
+                    {fmtDate(payment.updatedAt)}
+                  </span>
+                </div>
+                {payment.escrowReleasedAt && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoKey}>Escrow released</span>
+                    <span className={styles.infoVal}>
+                      {fmtDate(payment.escrowReleasedAt)}
+                    </span>
+                  </div>
+                )}
+                {payment.refundedAt && (
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoKey}>Refunded</span>
+                    <span className={styles.infoVal}>
+                      {fmtDate(payment.refundedAt)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Platform wallet for crypto */}
               {isCrypto && payment.cryptoWallet && (
-                <div className={styles.walletBox}>
+                <div className={styles.walletBox} style={{ marginTop: 10 }}>
                   <p className={styles.walletBoxLabel}>
                     Platform Wallet (recipient)
                   </p>
@@ -627,17 +875,19 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
                       rel="noreferrer"
                       className={styles.explorerBtn}
                     >
-                      🔍 View on Blockchain Explorer ↗
+                      <Search size={12} /> View on Blockchain Explorer{" "}
+                      <ExternalLink size={11} />
                     </a>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Right: Proof of payment (bank receipt OR crypto screenshot) */}
+            {/* Right: Proof of payment + rejection context */}
             <div className={styles.infoPanel}>
-              <p className={styles.sectionLabel}>📎 PROOF OF PAYMENT</p>
-              {/* Bank uses bankTransferProof; crypto screenshot is also stored in bankTransferProof */}
+              <p className={styles.sectionLabel}>
+                <Paperclip size={11} /> PROOF OF PAYMENT
+              </p>
               <ProofViewer
                 url={payment.bankTransferProof}
                 label={
@@ -659,9 +909,15 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
             className={styles.attemptsBtn}
             onClick={() => setShowAttempts((o) => !o)}
           >
-            {showAttempts
-              ? "▲ Hide payment history"
-              : "🕐 View all payment attempts for this booking"}
+            {showAttempts ? (
+              <>
+                <ChevronUp size={12} /> Hide payment history
+              </>
+            ) : (
+              <>
+                <Clock size={12} /> View all payment attempts for this booking
+              </>
+            )}
           </button>
 
           {showAttempts && (
@@ -681,10 +937,12 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
               >
                 {busy ? (
                   <>
-                    <span className={styles.spin} /> Verifying…
+                    <Loader2 size={13} className={styles.spin} /> Verifying…
                   </>
                 ) : (
-                  "✅ Approve — Move to Escrow"
+                  <>
+                    <CheckCircle2 size={14} /> Approve — Move to Escrow
+                  </>
                 )}
               </button>
               <button
@@ -694,7 +952,7 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
                 }
                 disabled={busy}
               >
-                ❌ Reject
+                <XCircle size={14} /> Reject
               </button>
             </div>
           )}
@@ -707,7 +965,9 @@ function PaymentCard({ payment, onVerify, onReject, verifying }) {
                 {payment.status === "RELEASED" &&
                   "Payment has been released to the worker."}
                 {payment.status === "FAILED" &&
-                  "This payment was rejected or failed."}
+                  (parsedNotes?.reason
+                    ? `Rejected: ${parsedNotes.reason}`
+                    : "This payment was rejected or failed.")}
                 {payment.status === "REFUNDED" &&
                   "Payment was refunded to the hirer."}
               </span>
@@ -736,14 +996,18 @@ function RejectModal({ target, onClose, onConfirm, loading }) {
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <p className={styles.modalTitle}>❌ Reject Payment</p>
+          <p className={styles.modalTitle}>
+            <XCircle size={15} /> Reject Payment
+          </p>
           <button className={styles.modalClose} onClick={onClose}>
-            ×
+            <X size={14} />
           </button>
         </div>
         <div className={styles.modalBody}>
           <div className={styles.rejectAlert}>
-            <span>⚠️</span>
+            <span>
+              <AlertTriangle size={18} />
+            </span>
             <div>
               <p className={styles.rejectAlertTitle}>
                 Rejecting: "{target?.title}"
@@ -785,7 +1049,7 @@ function RejectModal({ target, onClose, onConfirm, loading }) {
             >
               {loading ? (
                 <>
-                  <span className={styles.spin} /> Rejecting…
+                  <Loader2 size={13} className={styles.spin} /> Rejecting…
                 </>
               ) : (
                 "Confirm Rejection"
@@ -871,7 +1135,7 @@ export default function AdminManualPayments() {
     setVerifying(paymentId);
     try {
       await api.patch(`/admin/payments/${bookingId}/verify`);
-      notify("Payment verified — funds held in escrow ✅");
+      notify("Payment verified — funds held in escrow");
       fetchPayments();
     } catch (e) {
       notify(e.response?.data?.message || "Verification failed", "error");
@@ -908,32 +1172,49 @@ export default function AdminManualPayments() {
     const rows = [
       [
         "Date",
-        "Booking",
+        "Booking ID",
+        "Booking Title",
         "Hirer",
         "Worker",
         "Provider",
+        "Payment ID",
         "Ref / TX Hash",
         "Amount",
         "Currency",
-        "Status",
+        "Platform Fee",
+        "Worker Payout",
         "Referral Discount",
+        "Status",
+        "Rejection Reason",
       ],
-      ...payments.map((p) => [
-        fmtDate(p.createdAt),
-        p.booking?.title || "",
-        `${p.booking?.hirer?.firstName || ""} ${p.booking?.hirer?.lastName || ""}`.trim(),
-        `${p.booking?.worker?.firstName || ""} ${p.booking?.worker?.lastName || ""}`.trim(),
-        p.provider,
-        p.provider === "crypto"
-          ? p.cryptoTxHash || p.providerRef
-          : p.providerRef,
-        p.amount,
-        p.currency,
-        p.status,
-        p.referralDiscount || 0,
-      ]),
+      ...payments.map((p) => {
+        const parsed = parseNotes(p.notes);
+        return [
+          fmtDate(p.createdAt),
+          p.booking?.id || "",
+          p.booking?.title || "",
+          `${p.booking?.hirer?.firstName || ""} ${p.booking?.hirer?.lastName || ""}`.trim(),
+          `${p.booking?.worker?.firstName || ""} ${p.booking?.worker?.lastName || ""}`.trim(),
+          p.provider,
+          p.id,
+          p.provider === "crypto"
+            ? p.cryptoTxHash || p.providerRef
+            : p.providerRef,
+          p.amount,
+          p.currency,
+          p.platformFee,
+          p.workerPayout,
+          p.referralDiscount || 0,
+          p.status,
+          parsed?.reason || "",
+        ];
+      }),
     ];
-    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const csv = rows
+      .map((r) =>
+        r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -945,7 +1226,9 @@ export default function AdminManualPayments() {
 
   // ── Stats ───────────────────────────────────────────────────────────────────
   const totalPending = summary.PENDING?.count || 0;
+  const totalPendingGmv = summary.PENDING?.gmv || 0;
   const totalHeld = summary.HELD?.count || 0;
+  const totalHeldGmv = summary.HELD?.gmv || 0;
   const totalFailed = summary.FAILED?.count || 0;
   const totalReleased = summary.RELEASED?.count || 0;
   const totalGMV = Object.values(summary).reduce(
@@ -962,12 +1245,56 @@ export default function AdminManualPayments() {
     "REFUNDED",
   ];
 
+  const STATS = [
+    {
+      Icon: Clock,
+      label: "Pending",
+      value: totalPending,
+      sub: totalPendingGmv > 0 ? fmt(totalPendingGmv) : null,
+      accent: totalPending > 0 ? "yellow" : "",
+    },
+    {
+      Icon: Lock,
+      label: "In Escrow",
+      value: totalHeld,
+      sub: totalHeldGmv > 0 ? fmt(totalHeldGmv) : null,
+      accent: totalHeld > 0 ? "indigo" : "",
+    },
+    {
+      Icon: CheckCircle2,
+      label: "Released",
+      value: totalReleased,
+      sub: summary.RELEASED?.gmv ? fmt(summary.RELEASED.gmv) : null,
+      accent: "",
+    },
+    {
+      Icon: XCircle,
+      label: "Failed",
+      value: totalFailed,
+      sub: null,
+      accent: totalFailed > 0 ? "red" : "",
+    },
+    {
+      Icon: Wallet,
+      label: "Total GMV",
+      value: `₦${Math.round(totalGMV).toLocaleString()}`,
+      sub: null,
+      accent: "orange",
+    },
+  ];
+
+  const TABS = [
+    { id: "ALL", label: "All", Icon: ClipboardList },
+    { id: "bank_transfer", label: "Bank Transfer", Icon: Landmark },
+    { id: "crypto", label: "Crypto", Icon: Bitcoin },
+  ];
+
   return (
     <AdminLayout>
       <div className={styles.page}>
         <Toast toast={toast} />
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <p className={styles.eyebrow}>Admin · Payments</p>
@@ -980,82 +1307,61 @@ export default function AdminManualPayments() {
           </div>
           <div className={styles.headerRight}>
             {totalPending > 0 && (
-              <div className={styles.alertPill}>⚠️ {totalPending} pending</div>
+              <div className={styles.alertPill}>
+                <AlertTriangle size={13} /> {totalPending} pending
+              </div>
             )}
             <button
               className={styles.exportBtn}
               onClick={handleExport}
               disabled={payments.length === 0}
             >
-              ⬇ Export CSV
+              <Download size={13} /> Export CSV
             </button>
           </div>
         </div>
 
-        {/* ── Stats bar ── */}
+        {/* Stats bar */}
         <div className={styles.statsBar}>
-          {[
-            {
-              icon: "⏳",
-              label: "Pending",
-              value: totalPending,
-              accent: totalPending > 0 ? "yellow" : "",
-            },
-            {
-              icon: "🔒",
-              label: "In Escrow",
-              value: totalHeld,
-              accent: totalHeld > 0 ? "indigo" : "",
-            },
-            { icon: "✅", label: "Released", value: totalReleased, accent: "" },
-            {
-              icon: "❌",
-              label: "Failed",
-              value: totalFailed,
-              accent: totalFailed > 0 ? "red" : "",
-            },
-            {
-              icon: "💰",
-              label: "Total GMV",
-              value: `₦${Math.round(totalGMV).toLocaleString()}`,
-              accent: "orange",
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
-            >
-              <span className={styles.statIcon}>{s.icon}</span>
-              <p className={styles.statVal}>{s.value}</p>
-              <p className={styles.statLabel}>{s.label}</p>
-            </div>
-          ))}
+          {STATS.map((s) => {
+            const Icon = s.Icon;
+            return (
+              <div
+                key={s.label}
+                className={`${styles.statCard} ${s.accent ? styles[`accent_${s.accent}`] : ""}`}
+              >
+                <span className={styles.statIcon}>
+                  <Icon size={20} />
+                </span>
+                <p className={styles.statVal}>{s.value}</p>
+                <p className={styles.statLabel}>{s.label}</p>
+                {s.sub && <p className={styles.statSub}>{s.sub}</p>}
+              </div>
+            );
+          })}
         </div>
 
-        {/* ── Filter bar ── */}
+        {/* Filter bar */}
         <div className={styles.filterBar}>
-          {/* Provider tabs */}
           <div className={styles.tabBar}>
-            {[
-              { id: "ALL", label: "All", icon: "📋" },
-              { id: "bank_transfer", label: "Bank Transfer", icon: "🏦" },
-              { id: "crypto", label: "Crypto", icon: "₿" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                className={`${styles.tab} ${providerTab === t.id ? styles.tabActive : ""}`}
-                onClick={() => {
-                  setProviderTab(t.id);
-                  setPage(1);
-                }}
-              >
-                {t.icon} {t.label}
-              </button>
-            ))}
+            {TABS.map((t) => {
+              const Icon = t.Icon;
+              return (
+                <button
+                  key={t.id}
+                  className={`${styles.tab} ${providerTab === t.id ? styles.tabActive : ""}`}
+                  onClick={() => {
+                    setProviderTab(t.id);
+                    setPage(1);
+                  }}
+                >
+                  <Icon size={12} /> {t.label}
+                </button>
+              );
+            })}
           </div>
 
           <div className={styles.filterRight}>
-            {/* Status filter */}
             <select
               className={styles.statusSelect}
               value={statusFilter}
@@ -1071,7 +1377,6 @@ export default function AdminManualPayments() {
               ))}
             </select>
 
-            {/* Date range */}
             <input
               type="date"
               className={styles.dateInput}
@@ -1093,9 +1398,10 @@ export default function AdminManualPayments() {
               title="To date"
             />
 
-            {/* Search */}
             <div className={styles.searchWrap}>
-              <span className={styles.searchIcon}>🔍</span>
+              <span className={styles.searchIcon}>
+                <Search size={12} />
+              </span>
               <input
                 className={styles.searchInput}
                 placeholder="Ref, hash, name, title…"
@@ -1111,14 +1417,14 @@ export default function AdminManualPayments() {
                     setPage(1);
                   }}
                 >
-                  ×
+                  <X size={12} />
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── Payment list ── */}
+        {/* Payment list */}
         <div className={styles.list}>
           {loading ? (
             [1, 2, 3].map((i) => (
@@ -1130,7 +1436,13 @@ export default function AdminManualPayments() {
             ))
           ) : payments.length === 0 ? (
             <div className={styles.empty}>
-              <span>{providerTab === "crypto" ? "₿" : "🏦"}</span>
+              <span>
+                {providerTab === "crypto" ? (
+                  <Bitcoin size={40} />
+                ) : (
+                  <Landmark size={40} />
+                )}
+              </span>
               <p className={styles.emptyTitle}>No payments found</p>
               <p className={styles.emptySub}>
                 Try adjusting your filters or date range.
@@ -1149,7 +1461,7 @@ export default function AdminManualPayments() {
           )}
         </div>
 
-        {/* ── Pagination ── */}
+        {/* Pagination */}
         {pages > 1 && (
           <div className={styles.pagination}>
             <button
@@ -1157,7 +1469,7 @@ export default function AdminManualPayments() {
               onClick={() => setPage((v) => Math.max(1, v - 1))}
               disabled={page === 1}
             >
-              ← Prev
+              <ChevronLeft size={13} /> Prev
             </button>
             <span className={styles.pageInfo}>
               {page} / {pages} · {total} total
@@ -1167,7 +1479,7 @@ export default function AdminManualPayments() {
               onClick={() => setPage((v) => v + 1)}
               disabled={page >= pages}
             >
-              Next →
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}

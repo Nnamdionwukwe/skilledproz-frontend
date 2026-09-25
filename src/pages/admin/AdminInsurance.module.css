@@ -906,3 +906,608 @@
     width: 100%;
   }
 }
+/* ── Policy detail modal ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+  padding: 16px;
+}
+
+.modal,
+.modalWide {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
+}
+.modalWide {
+  max-width: 700px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  z-index: 1;
+}
+
+.modalTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.modalClose {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.modalClose:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+.modalBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* User card */
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.avatarLg {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1.5px solid var(--orange-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--orange);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatarLg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userCardInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.userCardName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.userCardEmail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.userCardMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+/* Plan hero */
+.planHero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.planHeroIcon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.planHeroInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.planHeroTier {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.planHeroPrice {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+/* Section title */
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin: 12px 0 8px;
+}
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+/* Detail grid */
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.detailCell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.detailLabel {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.detailVal {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+
+/* Copy pill */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+
+/* No booking note */
+.noBooking {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  margin: 0;
+  text-align: center;
+}
+
+/* Raw title/body boxes */
+.rawBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+}
+.rawLabel {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+}
+.rawText {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin: 0;
+  word-break: break-word;
+}
+
+/* ── Skeleton loader ── */
+.skeletonWrap {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  animation: fadeUp 0.3s ease;
+}
+.skeletonRow,
+.skeletonBodyRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr 1fr 1fr 0.8fr 0.9fr 0.9fr 0.8fr;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  animation: fadeUp 0.35s ease both;
+}
+.skeletonRow {
+  background: var(--bg-card);
+}
+.skeletonBodyRow:last-child {
+  border-bottom: none;
+}
+.skCell,
+.skBar {
+  height: 10px;
+  width: 70%;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Table row hover (already exists in some tables) ── */
+.tableRow:hover {
+  background: var(--bg-card);
+}
+
+/* ── Row click hint ── */
+.tableRow {
+  cursor: pointer;
+}
+
+/* ── Modal responsive ── */
+@media (min-width: 640px) {
+  .overlay {
+    align-items: center;
+  }
+  .modal,
+  .modalWide {
+    border-radius: 16px;
+  }
+}
+/* ── Skeleton blocks (used inside stat cards, breakdown rows, plan cards) ── */
+
+.skBlockIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlockPill {
+  width: 60px;
+  height: 20px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlockValue {
+  width: 70%;
+  height: 22px;
+  border-radius: 6px;
+  margin-top: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlockValueSm {
+  width: 55%;
+  height: 14px;
+  border-radius: 6px;
+  margin-top: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlockLabel {
+  width: 55%;
+  height: 10px;
+  border-radius: 4px;
+  margin-top: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlockSub {
+  width: 40%;
+  height: 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlockRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.skBlockRow .skBlockSub {
+  flex: 1;
+  margin-top: 0;
+  width: auto;
+  height: 12px;
+}
+
+.skBlockTall {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  margin-top: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skSectionTitle {
+  width: 160px;
+  height: 16px;
+  border-radius: 6px;
+  margin: 0 0 12px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBarTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Tab icon alignment ── */
+.tab {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Alert icon alignment ── */
+.alertClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Stat icon alignment (Lucide) ── */
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.statCardAccent .statIcon {
+  color: var(--orange);
+}
+.statCardGreen .statIcon {
+  color: var(--green);
+}
+
+/* ── Plan icon wrapper (Lucide) ── */
+.planIconWrap svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* ── Breakdown icon (Lucide) ── */
+.breakdownIcon svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* ── Plan hero icon (Lucide) ── */
+.planHeroIcon svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* ── Empty state icon ── */
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* ── Coverage card icon ── */
+.coverageHeader svg {
+  stroke-width: 2.2;
+  color: inherit;
+}
+
+/* ── Plan pill icon ── */
+.planPill svg {
+  stroke-width: 2.2;
+  color: inherit;
+  vertical-align: middle;
+}
+
+/* ── Popup tag icons ── */
+.popularBadge svg,
+.coveragePopularTag svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+
+/* ── Feature tick icon ── */
+.planFeatureTick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.planFeatureTick svg {
+  stroke-width: 3;
+  color: inherit;
+}
+
+/* ── Pagination buttons ── */
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Copy pill icon ── */
+.copyPillBtn svg {
+  stroke-width: 2.2;
+  color: inherit;
+}
+
+/* ── Modal title icon ── */
+.modalTitle svg {
+  stroke-width: 2.2;
+  color: inherit;
+}
+
+/* ── Modal close ── */
+.modalClose svg {
+  stroke-width: 2.2;
+  color: inherit;
+}
+
+/* ── BtnOutline icon ── */
+.btnOutline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

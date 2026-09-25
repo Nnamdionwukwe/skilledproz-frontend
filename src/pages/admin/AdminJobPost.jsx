@@ -1,6 +1,14 @@
 // src/pages/admin/AdminJobPost.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  X,
+  ArrowLeft,
+  Plus,
+  FolderOpen,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import s from "./AdminJobPost.module.css";
@@ -72,9 +80,20 @@ function Toast({ toast, onClose }) {
   if (!toast) return null;
   return (
     <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
-      {toast.msg}
+      <span className={s.toastMsg}>
+        {toast.type === "success" && (
+          <CheckCircle2 size={14} className={s.toastIcon} />
+        )}
+        {toast.type === "error" && (
+          <AlertCircle size={14} className={s.toastIcon} />
+        )}
+        {toast.type === "info" && (
+          <CheckCircle2 size={14} className={s.toastIcon} />
+        )}
+        {toast.msg}
+      </span>
       <button className={s.toastClose} onClick={onClose}>
-        ✕
+        <X size={14} />
       </button>
     </div>
   );
@@ -249,7 +268,7 @@ export default function AdminJobPost() {
             categoryIds: [...prev.categoryIds, cat.id],
           }));
         }
-        showToast(`✅ "${cat.name}" already exists – selected`, "info");
+        showToast(`"${cat.name}" already exists – selected`, "info");
         setNewCategory({ name: "", description: "" });
       } else {
         const newCat = data.category;
@@ -260,12 +279,12 @@ export default function AdminJobPost() {
           ...prev,
           categoryIds: [...prev.categoryIds, newCat.id],
         }));
-        showToast(`✅ "${newCat.name}" added successfully!`, "success");
+        showToast(`"${newCat.name}" added successfully!`, "success");
         setNewCategory({ name: "", description: "" });
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add category.");
-      showToast("❌ Failed to add category. Please try again.", "error");
+      showToast("Failed to add category. Please try again.", "error");
     } finally {
       setAddingCategory(false);
     }
@@ -348,11 +367,16 @@ export default function AdminJobPost() {
             className={s.cancelBtn}
             onClick={() => navigate("/admin/external/jobs")}
           >
-            ← Back
+            <ArrowLeft size={14} /> Back
           </button>
         </div>
 
-        {error && <div className={s.errorBanner}>{error}</div>}
+        {error && (
+          <div className={s.errorBanner}>
+            <AlertCircle size={14} className={s.errorIcon} />
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className={s.form}>
           {/* ── Row 1: Basic info ── */}
@@ -578,7 +602,6 @@ export default function AdminJobPost() {
             </div>
           </div>
 
-          {/* ── Row 7: URL & Source ── */}
           {/* ── Row 7: Application Methods ── */}
           <div className={s.row}>
             <div className={s.field}>
@@ -705,7 +728,10 @@ export default function AdminJobPost() {
                         checked={form.categoryIds.includes(cat.id)}
                         onChange={() => handleCategoryToggle(cat.id)}
                       />
-                      {cat.icon || "📁"} {cat.name}
+                      <span className={s.categoryChipIcon}>
+                        {cat.icon ? cat.icon : <FolderOpen size={13} />}
+                      </span>
+                      {cat.name}
                     </label>
                   ))}
                   {categories.length === 0 && (
@@ -745,7 +771,13 @@ export default function AdminJobPost() {
                     onClick={handleAddCategory}
                     disabled={addingCategory || !newCategory.name.trim()}
                   >
-                    {addingCategory ? "Adding..." : "＋ Add"}
+                    {addingCategory ? (
+                      "Adding..."
+                    ) : (
+                      <>
+                        <Plus size={13} /> Add
+                      </>
+                    )}
                   </button>
                 </div>
               </>

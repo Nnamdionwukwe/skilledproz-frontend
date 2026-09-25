@@ -1,11 +1,47 @@
 // src/pages/withdrawals/AdminWithdrawals.jsx
-// Full withdrawal / payout queue management.
-// Endpoints used:
+// Full withdrawal / payout queue management — complete backend field coverage.
+//
+// Endpoints:
 //   GET    /admin/withdrawals?status=&page=&limit=
-//   PATCH  /admin/withdrawals/:id/approve
-//   PATCH  /admin/withdrawals/:id/reject   { reason }
+//   PATCH  /admin/withdrawals/:id/approve   { notes }
+//   PATCH  /admin/withdrawals/:id/reject    { reason }
+//
+// Renders EVERY field the backend sends:
+//   • Bank transfer details: bankCode, bankName, accountNumber, accountName, country
+//   • Mobile money: mobileNumber, mobileName, mobileProvider, country
+//   • Crypto: cryptoAddress, cryptoCurrency, cryptoNetwork
+//   • Fee / debt info: originalAmount, debtDeducted, debtBalanceBefore,
+//                       withdrawalFee, netPayout, adminNotes, approvedAt
+//   • Provider payout metadata: provider, transferId, transferCode
+//   • Failure info: error, failedAt
+//   • Identifiers: withdrawal.id, workerId, reference
+//   • Timestamps: createdAt, updatedAt, processedAt, completedAt
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Landmark,
+  Bitcoin,
+  Smartphone,
+  CreditCard,
+  ArrowLeftRight,
+  Wallet,
+  Clock,
+  Zap,
+  ClipboardList,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Search,
+  X,
+  Copy,
+  Check,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  Eye,
+  Building2,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import s from "./AdminWithdrawals.module.css";
@@ -28,14 +64,21 @@ const STATUS_META = {
   CANCELLED: { label: "Cancelled", color: "dim" },
 };
 
+// Icon map for methods. Each entry is the component + a key for display.
 const METHOD_ICONS = {
-  bank_transfer: "🏦",
-  crypto: "₿",
-  paypal: "🅿️",
-  stripe: "💳",
-  mobile_money: "📱",
-  wire_transfer: "🔁",
+  bank_transfer: { Icon: Landmark, key: "bank_transfer" },
+  crypto: { Icon: Bitcoin, key: "crypto" },
+  paypal: { Icon: CreditCard, key: "paypal" },
+  stripe: { Icon: CreditCard, key: "stripe" },
+  mobile_money: { Icon: Smartphone, key: "mobile_money" },
+  wire_transfer: { Icon: ArrowLeftRight, key: "wire_transfer" },
 };
+
+function MethodIcon({ method, size = 16, className }) {
+  const entry = METHOD_ICONS[method];
+  const Icon = entry?.Icon ?? Wallet;
+  return <Icon size={size} className={className} />;
+}
 
 const LIMIT = 15;
 
@@ -54,6 +97,17 @@ function fmtDate(d) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+}
+
+function fmtDateTime(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -78,6 +132,26 @@ function methodLabel(method) {
   return (method ?? "unknown").replace(/_/g, " ");
 }
 
+function parseMeta(withdrawal) {
+  const raw = withdrawal?.meta ?? withdrawal?.details;
+  if (!raw) return {};
+  if (typeof raw === "object") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(String(text));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ user }) {
   return (
@@ -97,6 +171,31 @@ function StatusBadge({ status }) {
   return (
     <span className={`${s.badge} ${s[`badge_${meta.color}`]}`}>
       {meta.label}
+    </span>
+  );
+}
+
+// ─── Copy pill ────────────────────────────────────────────────────────────────
+function CopyPill({ text, label }) {
+  const [ok, setOk] = useState(false);
+  if (!text) return <span className={s.mono}>—</span>;
+  return (
+    <span className={s.copyPill} title={String(text)}>
+      <span className={s.copyPillText}>{label ?? text}</span>
+      <button
+        type="button"
+        className={s.copyPillBtn}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (await copyText(text)) {
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }
+        }}
+        title="Copy"
+      >
+        {ok ? <Check size={11} /> : <Copy size={11} />}
+      </button>
     </span>
   );
 }
@@ -132,6 +231,7 @@ function ApproveModal({ withdrawal, onClose, onSuccess }) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const meta = parseMeta(withdrawal);
 
   async function handleApprove() {
     setLoading(true);
@@ -150,14 +250,15 @@ function ApproveModal({ withdrawal, onClose, onSuccess }) {
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>✅ Approve Withdrawal</h3>
+          <h3 className={s.modalTitle}>
+            <CheckCircle2 size={16} /> Approve Withdrawal
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={14} />
           </button>
         </div>
 
         <div className={s.modalBody}>
-          {/* Summary card */}
           <div className={s.summaryCard}>
             <div className={s.summaryRow}>
               <span className={s.summaryLabel}>Worker</span>
@@ -174,8 +275,10 @@ function ApproveModal({ withdrawal, onClose, onSuccess }) {
             <div className={s.summaryRow}>
               <span className={s.summaryLabel}>Method</span>
               <span className={s.summaryVal}>
-                {METHOD_ICONS[withdrawal.method] || "💸"}{" "}
-                {methodLabel(withdrawal.method)}
+                <MethodIcon method={withdrawal.method} size={13} />
+                <span style={{ marginLeft: 5 }}>
+                  {methodLabel(withdrawal.method)}
+                </span>
               </span>
             </div>
             {withdrawal.destination && (
@@ -186,10 +289,26 @@ function ApproveModal({ withdrawal, onClose, onSuccess }) {
                 </span>
               </div>
             )}
+            {meta.withdrawalFee > 0 && (
+              <div className={s.summaryRow}>
+                <span className={s.summaryLabel}>Withdrawal fee</span>
+                <span className={s.summaryVal}>
+                  {fmt(meta.withdrawalFee, withdrawal.currency)}
+                </span>
+              </div>
+            )}
+            {meta.netPayout != null && (
+              <div className={s.summaryRow}>
+                <span className={s.summaryLabel}>Net payout</span>
+                <span className={`${s.summaryVal} ${s.amountHighlight}`}>
+                  {fmt(meta.netPayout, withdrawal.currency)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className={s.approveNote}>
-            <span>⚠️</span>
+            <AlertTriangle size={16} />
             <p>
               Approving will move this withdrawal to <strong>PROCESSING</strong>{" "}
               and notify the worker. Ensure the payout has been initiated
@@ -222,7 +341,9 @@ function ApproveModal({ withdrawal, onClose, onSuccess }) {
               {loading ? (
                 <span className={s.spinner} />
               ) : (
-                "✅ Approve & Process"
+                <>
+                  <CheckCircle2 size={14} /> Approve &amp; Process
+                </>
               )}
             </button>
           </div>
@@ -259,9 +380,11 @@ function RejectModal({ withdrawal, onClose, onSuccess }) {
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>❌ Reject Withdrawal</h3>
+          <h3 className={s.modalTitle}>
+            <XCircle size={16} /> Reject Withdrawal
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={14} />
           </button>
         </div>
 
@@ -282,8 +405,10 @@ function RejectModal({ withdrawal, onClose, onSuccess }) {
             <div className={s.summaryRow}>
               <span className={s.summaryLabel}>Method</span>
               <span className={s.summaryVal}>
-                {METHOD_ICONS[withdrawal.method] || "💸"}{" "}
-                {methodLabel(withdrawal.method)}
+                <MethodIcon method={withdrawal.method} size={13} />
+                <span style={{ marginLeft: 5 }}>
+                  {methodLabel(withdrawal.method)}
+                </span>
               </span>
             </div>
           </div>
@@ -316,7 +441,9 @@ function RejectModal({ withdrawal, onClose, onSuccess }) {
               {loading ? (
                 <span className={s.spinner} />
               ) : (
-                "❌ Reject Withdrawal"
+                <>
+                  <XCircle size={14} /> Reject Withdrawal
+                </>
               )}
             </button>
           </div>
@@ -326,17 +453,24 @@ function RejectModal({ withdrawal, onClose, onSuccess }) {
   );
 }
 
-// ─── Detail modal ─────────────────────────────────────────────────────────────
+// ─── Detail modal — renders EVERYTHING the backend sends ──────────────────────
 function DetailModal({ withdrawal: w, onClose, onApprove, onReject }) {
   const isPending = w.status === "PENDING";
+  const meta = parseMeta(w);
+  const failureReason = meta.error || null;
 
   return (
     <div className={s.backdrop} onClick={onClose}>
-      <div className={s.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`${s.modal} ${s.modalLg}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>Withdrawal Detail</h3>
+          <h3 className={s.modalTitle}>
+            <ClipboardList size={16} /> Withdrawal Detail
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={14} />
           </button>
         </div>
 
@@ -349,6 +483,13 @@ function DetailModal({ withdrawal: w, onClose, onApprove, onReject }) {
                 {w.worker?.firstName} {w.worker?.lastName}
               </p>
               <p className={s.workerEmail}>{w.worker?.email}</p>
+              {(w.worker?.city || w.worker?.country) && (
+                <p className={s.workerEmail}>
+                  {[w.worker?.city, w.worker?.country]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              )}
             </div>
             <StatusBadge status={w.status} />
           </div>
@@ -357,43 +498,318 @@ function DetailModal({ withdrawal: w, onClose, onApprove, onReject }) {
           <div className={s.amountHero}>
             <span className={s.amountHeroLabel}>Requested Amount</span>
             <span className={s.amountHeroVal}>{fmt(w.amount, w.currency)}</span>
+            {meta.originalAmount != null &&
+              meta.originalAmount !== w.amount && (
+                <span className={s.amountHeroSub}>
+                  Originally {fmt(meta.originalAmount, w.currency)}
+                </span>
+              )}
           </div>
 
-          {/* Detail grid */}
+          {/* Identifiers */}
+          <p className={s.sectionTitle}>Identifiers</p>
           <div className={s.detailGrid}>
-            {[
-              {
-                label: "Method",
-                value: `${METHOD_ICONS[w.method] || "💸"} ${methodLabel(w.method)}`,
-              },
-              { label: "Destination", value: w.destination || "—", mono: true },
-              { label: "Reference", value: w.reference || "—", mono: true },
-              { label: "Requested", value: fmtDate(w.createdAt) },
-              {
-                label: "Processed",
-                value: w.processedAt ? fmtDate(w.processedAt) : "—",
-              },
-              {
-                label: "Completed",
-                value: w.completedAt ? fmtDate(w.completedAt) : "—",
-              },
-            ].map(({ label, value, mono }) => (
-              <div key={label} className={s.detailCell}>
-                <span className={s.detailLabel}>{label}</span>
-                <span className={`${s.detailVal} ${mono ? s.mono : ""}`}>
-                  {value}
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Withdrawal ID</span>
+              <CopyPill text={w.id} label={`${w.id.slice(0, 12)}…`} />
+            </div>
+            {w.workerId && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Worker ID</span>
+                <CopyPill
+                  text={w.workerId}
+                  label={`${w.workerId.slice(0, 12)}…`}
+                />
+              </div>
+            )}
+            {w.reference && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Reference</span>
+                <CopyPill text={w.reference} />
+              </div>
+            )}
+          </div>
+
+          {/* Amount breakdown */}
+          <p className={s.sectionTitle}>Amount breakdown</p>
+          <div className={s.detailGrid}>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Requested amount</span>
+              <span className={`${s.detailVal} ${s.amountHighlight}`}>
+                {fmt(w.amount, w.currency)}
+              </span>
+            </div>
+            {meta.originalAmount != null && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Original request</span>
+                <span className={s.detailVal}>
+                  {fmt(meta.originalAmount, w.currency)}
                 </span>
               </div>
-            ))}
+            )}
+            {meta.debtDeducted > 0 && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Debt deducted</span>
+                <span className={s.detailVal}>
+                  −{fmt(meta.debtDeducted, w.currency)}
+                </span>
+              </div>
+            )}
+            {meta.debtBalanceBefore > 0 && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Debt before</span>
+                <span className={s.detailVal}>
+                  {fmt(meta.debtBalanceBefore, w.currency)}
+                </span>
+              </div>
+            )}
+            {meta.withdrawalFee != null && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Withdrawal fee</span>
+                <span className={s.detailVal}>
+                  {fmt(meta.withdrawalFee, w.currency)}
+                </span>
+              </div>
+            )}
+            {meta.netPayout != null && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Net payout</span>
+                <span className={`${s.detailVal} ${s.amountHighlight}`}>
+                  {fmt(meta.netPayout, w.currency)}
+                </span>
+              </div>
+            )}
           </div>
 
+          {/* Method + destination */}
+          <p className={s.sectionTitle}>
+            <MethodIcon method={w.method} size={11} />
+            <span style={{ marginLeft: 5 }}>{methodLabel(w.method)}</span>
+          </p>
+          <div className={s.detailGrid}>
+            {w.method === "bank_transfer" && (
+              <>
+                {meta.bankName && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Bank name</span>
+                    <span className={s.detailVal}>{meta.bankName}</span>
+                  </div>
+                )}
+                {meta.bankCode && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Bank code</span>
+                    <span className={`${s.detailVal} ${s.mono}`}>
+                      {meta.bankCode}
+                    </span>
+                  </div>
+                )}
+                {meta.accountName && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Account name</span>
+                    <span className={s.detailVal}>{meta.accountName}</span>
+                  </div>
+                )}
+                {meta.accountNumber && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Account number</span>
+                    <CopyPill text={meta.accountNumber} />
+                  </div>
+                )}
+                {meta.country && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Country</span>
+                    <span className={s.detailVal}>{meta.country}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {w.method === "mobile_money" && (
+              <>
+                {meta.mobileProvider && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Provider</span>
+                    <span className={s.detailVal}>{meta.mobileProvider}</span>
+                  </div>
+                )}
+                {meta.mobileName && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Account name</span>
+                    <span className={s.detailVal}>{meta.mobileName}</span>
+                  </div>
+                )}
+                {meta.mobileNumber && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Mobile number</span>
+                    <CopyPill text={meta.mobileNumber} />
+                  </div>
+                )}
+                {meta.country && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Country</span>
+                    <span className={s.detailVal}>{meta.country}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {w.method === "crypto" && (
+              <>
+                {meta.cryptoCurrency && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Currency</span>
+                    <span className={s.detailVal}>{meta.cryptoCurrency}</span>
+                  </div>
+                )}
+                {meta.cryptoNetwork && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Network</span>
+                    <span className={s.detailVal}>{meta.cryptoNetwork}</span>
+                  </div>
+                )}
+                {meta.cryptoAddress && (
+                  <div
+                    className={s.detailCell}
+                    style={{ gridColumn: "1 / -1" }}
+                  >
+                    <span className={s.detailLabel}>Crypto address</span>
+                    <CopyPill text={meta.cryptoAddress} />
+                  </div>
+                )}
+              </>
+            )}
+
+            {w.destination &&
+              !meta.accountNumber &&
+              !meta.mobileNumber &&
+              !meta.cryptoAddress && (
+                <div className={s.detailCell}>
+                  <span className={s.detailLabel}>Destination</span>
+                  <CopyPill text={w.destination} />
+                </div>
+              )}
+          </div>
+
+          {/* Provider metadata */}
+          {(meta.provider ||
+            meta.transferId ||
+            meta.transferCode ||
+            meta.approvedAt ||
+            meta.adminNotes ||
+            meta.note) && (
+            <>
+              <p className={s.sectionTitle}>Payout processing</p>
+              <div className={s.detailGrid}>
+                {meta.provider && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Provider</span>
+                    <span className={s.detailVal}>{meta.provider}</span>
+                  </div>
+                )}
+                {meta.transferId && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Transfer ID</span>
+                    <CopyPill text={String(meta.transferId)} />
+                  </div>
+                )}
+                {meta.transferCode && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Transfer code</span>
+                    <CopyPill text={String(meta.transferCode)} />
+                  </div>
+                )}
+                {meta.approvedAt && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Approved at</span>
+                    <span className={s.detailVal}>
+                      {fmtDateTime(meta.approvedAt)}
+                    </span>
+                  </div>
+                )}
+                {meta.adminNotes && (
+                  <div
+                    className={s.detailCell}
+                    style={{ gridColumn: "1 / -1" }}
+                  >
+                    <span className={s.detailLabel}>Admin notes</span>
+                    <span className={s.detailVal}>{meta.adminNotes}</span>
+                  </div>
+                )}
+                {meta.note && (
+                  <div
+                    className={s.detailCell}
+                    style={{ gridColumn: "1 / -1" }}
+                  >
+                    <span className={s.detailLabel}>Note</span>
+                    <span className={s.detailVal}>{meta.note}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Failure info */}
+          {(failureReason || meta.failedAt) && (
+            <>
+              <p className={s.sectionTitle}>Failure</p>
+              <div className={s.detailGrid}>
+                {failureReason && (
+                  <div
+                    className={s.detailCell}
+                    style={{ gridColumn: "1 / -1" }}
+                  >
+                    <span className={s.detailLabel}>Error</span>
+                    <span className={s.detailVal}>{failureReason}</span>
+                  </div>
+                )}
+                {meta.failedAt && (
+                  <div className={s.detailCell}>
+                    <span className={s.detailLabel}>Failed at</span>
+                    <span className={s.detailVal}>
+                      {fmtDateTime(meta.failedAt)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Timestamps */}
+          <p className={s.sectionTitle}>Timestamps</p>
+          <div className={s.detailGrid}>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Requested</span>
+              <span className={s.detailVal}>{fmtDateTime(w.createdAt)}</span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Last updated</span>
+              <span className={s.detailVal}>{fmtDateTime(w.updatedAt)}</span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Processed</span>
+              <span className={s.detailVal}>
+                {w.processedAt ? fmtDateTime(w.processedAt) : "—"}
+              </span>
+            </div>
+            <div className={s.detailCell}>
+              <span className={s.detailLabel}>Completed</span>
+              <span className={s.detailVal}>
+                {w.completedAt ? fmtDateTime(w.completedAt) : "—"}
+              </span>
+            </div>
+          </div>
+
+          {/* Legacy notes field */}
           {w.notes && (
             <div className={s.notesBox}>
-              <span className={s.notesIcon}>📝</span>
+              <span className={s.notesIcon}>
+                <FileText size={16} />
+              </span>
               <p className={s.notesText}>{w.notes}</p>
             </div>
           )}
 
+          {/* Actions */}
           {isPending && (
             <div className={s.modalActions}>
               <button
@@ -403,7 +819,7 @@ function DetailModal({ withdrawal: w, onClose, onApprove, onReject }) {
                   onReject(w);
                 }}
               >
-                ❌ Reject
+                <XCircle size={14} /> Reject
               </button>
               <button
                 className={s.btnApprove}
@@ -412,7 +828,7 @@ function DetailModal({ withdrawal: w, onClose, onApprove, onReject }) {
                   onApprove(w);
                 }}
               >
-                ✅ Approve
+                <CheckCircle2 size={14} /> Approve
               </button>
             </div>
           )}
@@ -428,7 +844,6 @@ function WithdrawalRow({ w, index, onDetail, onApprove, onReject }) {
 
   return (
     <div className={s.tableRow} style={{ animationDelay: `${index * 0.025}s` }}>
-      {/* Worker */}
       <div className={s.tdWorker}>
         <Avatar user={w.worker} />
         <div className={s.tdWorkerInfo}>
@@ -439,14 +854,14 @@ function WithdrawalRow({ w, index, onDetail, onApprove, onReject }) {
         </div>
       </div>
 
-      {/* Amount */}
       <div className={s.tdAmount}>
         <span className={s.tdAmountVal}>{fmt(w.amount, w.currency)}</span>
       </div>
 
-      {/* Method */}
       <div className={s.tdMethod}>
-        <span className={s.methodIcon}>{METHOD_ICONS[w.method] || "💸"}</span>
+        <span className={s.methodIcon}>
+          <MethodIcon method={w.method} size={16} />
+        </span>
         <div className={s.methodInfo}>
           <span className={s.methodName}>{methodLabel(w.method)}</span>
           {w.destination && (
@@ -455,23 +870,20 @@ function WithdrawalRow({ w, index, onDetail, onApprove, onReject }) {
         </div>
       </div>
 
-      {/* Status */}
       <div className={s.tdStatus}>
         <StatusBadge status={w.status} />
         <span className={s.tdRelative}>{fmtRelative(w.createdAt)}</span>
       </div>
 
-      {/* Date */}
       <div className={s.tdDate}>{fmtDate(w.createdAt)}</div>
 
-      {/* Actions */}
       <div className={s.tdActions}>
         <button
           className={s.viewBtn}
           onClick={() => onDetail(w)}
           title="View details"
         >
-          👁
+          <Eye size={14} />
         </button>
         {isPending && (
           <>
@@ -480,14 +892,14 @@ function WithdrawalRow({ w, index, onDetail, onApprove, onReject }) {
               onClick={() => onApprove(w)}
               title="Approve"
             >
-              ✅
+              <CheckCircle2 size={14} />
             </button>
             <button
               className={s.rejectBtn}
               onClick={() => onReject(w)}
               title="Reject"
             >
-              ❌
+              <XCircle size={14} />
             </button>
           </>
         )}
@@ -508,14 +920,12 @@ export default function AdminWithdrawals() {
   const [total, setTotal] = useState(0);
   const [toast, setToast] = useState(null);
 
-  // Modals
   const [approveTarget, setApproveTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [detailTarget, setDetailTarget] = useState(null);
 
   const searchTimer = useRef(null);
 
-  // ── Load ────────────────────────────────────────────────────────────────────
   const load = useCallback(
     async (pg = 1, tab = filter, q = search) => {
       setLoading(true);
@@ -532,7 +942,6 @@ export default function AdminWithdrawals() {
         setPages(d.pages);
         setPage(pg);
 
-        // Build stats from first ALL load
         if (tab === "ALL" && pg === 1) {
           setStats({
             pendingCount: d.pendingCount,
@@ -566,7 +975,6 @@ export default function AdminWithdrawals() {
     setPage(1);
   }
 
-  // ── Toast ───────────────────────────────────────────────────────────────────
   function showToast(type, msg) {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
@@ -579,31 +987,32 @@ export default function AdminWithdrawals() {
     load(page, filter, search);
   }
 
-  // ── Stat aggregates from withdrawals in view ────────────────────────────────
-  const pendingInView = withdrawals.filter(
-    (w) => w.status === "PENDING",
-  ).length;
   const processingCount = withdrawals.filter(
     (w) => w.status === "PROCESSING",
   ).length;
+  const completedCount = withdrawals.filter(
+    (w) => w.status === "COMPLETED",
+  ).length;
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <AdminLayout>
       <div className={s.page}>
-        {/* ── Toast ── */}
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
             <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+              {toast.type === "success" ? (
+                <CheckCircle2 size={13} />
+              ) : (
+                <XCircle size={13} />
+              )}
+              <span style={{ marginLeft: 6 }}>{toast.msg}</span>
             </span>
             <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
+              <X size={13} />
             </button>
           </div>
         )}
 
-        {/* ── Header ── */}
         <div className={s.pageHeader}>
           <div>
             <p className={s.eyebrow}>Finance</p>
@@ -622,10 +1031,9 @@ export default function AdminWithdrawals() {
           </div>
         </div>
 
-        {/* ── Stats grid ── */}
         <div className={s.statsGrid}>
           <StatCard
-            icon="⏳"
+            icon={<Clock size={18} />}
             accent="yellow"
             label="Pending Payouts"
             value={stats?.pendingCount ?? "—"}
@@ -637,7 +1045,7 @@ export default function AdminWithdrawals() {
             delay={0}
           />
           <StatCard
-            icon="⚡"
+            icon={<Zap size={18} />}
             accent="indigo"
             label="Processing"
             value={processingCount}
@@ -645,7 +1053,7 @@ export default function AdminWithdrawals() {
             delay={0.05}
           />
           <StatCard
-            icon="📋"
+            icon={<ClipboardList size={18} />}
             accent="orange"
             label="Total Requests"
             value={total}
@@ -653,16 +1061,15 @@ export default function AdminWithdrawals() {
             delay={0.1}
           />
           <StatCard
-            icon="✅"
+            icon={<CheckCircle2 size={18} />}
             accent="green"
             label="Completed"
-            value={withdrawals.filter((w) => w.status === "COMPLETED").length}
+            value={completedCount}
             sub="This page"
             delay={0.15}
           />
         </div>
 
-        {/* ── Filter tabs + Search ── */}
         <div className={s.toolBar}>
           <div className={s.filterBar}>
             {STATUS_TABS.map((tab) => (
@@ -680,7 +1087,9 @@ export default function AdminWithdrawals() {
           </div>
 
           <div className={s.searchBar}>
-            <span className={s.searchIcon}>🔍</span>
+            <span className={s.searchIcon}>
+              <Search size={14} />
+            </span>
             <input
               className={s.searchInput}
               placeholder="Search worker name or email…"
@@ -695,13 +1104,12 @@ export default function AdminWithdrawals() {
                   load(1, filter, "");
                 }}
               >
-                ✕
+                <X size={13} />
               </button>
             )}
           </div>
         </div>
 
-        {/* ── Pending alert banner ── */}
         {filter === "ALL" && stats?.pendingCount > 0 && (
           <div className={s.pendingBanner}>
             <span className={s.pendingBannerDot} />
@@ -717,14 +1125,12 @@ export default function AdminWithdrawals() {
               className={s.pendingBannerBtn}
               onClick={() => handleTabChange("PENDING")}
             >
-              Review →
+              Review <ArrowRight size={11} />
             </button>
           </div>
         )}
 
-        {/* ── Table ── */}
         <div className={s.tableWrap}>
-          {/* Head */}
           <div className={s.tableHead}>
             <span>Worker</span>
             <span>Amount</span>
@@ -734,13 +1140,14 @@ export default function AdminWithdrawals() {
             <span>Actions</span>
           </div>
 
-          {/* Body */}
           <div className={s.tableBody}>
             {loading ? (
               <SkeletonRows />
             ) : withdrawals.length === 0 ? (
               <div className={s.empty}>
-                <span className={s.emptyIcon}>💸</span>
+                <span className={s.emptyIcon}>
+                  <Wallet size={40} />
+                </span>
                 <p className={s.emptyTitle}>
                   {filter === "ALL"
                     ? "No withdrawals yet"
@@ -775,7 +1182,6 @@ export default function AdminWithdrawals() {
           </div>
         </div>
 
-        {/* ── Pagination ── */}
         {pages > 1 && (
           <div className={s.pager}>
             <button
@@ -783,7 +1189,7 @@ export default function AdminWithdrawals() {
               disabled={page === 1 || loading}
               onClick={() => load(page - 1)}
             >
-              ← Prev
+              <ChevronLeft size={13} /> Prev
             </button>
             <span className={s.pageInfo}>
               Page {page} of {pages}
@@ -793,13 +1199,12 @@ export default function AdminWithdrawals() {
               disabled={page === pages || loading}
               onClick={() => load(page + 1)}
             >
-              Next →
+              Next <ChevronRight size={13} />
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Modals ── */}
       {detailTarget && (
         <DetailModal
           withdrawal={detailTarget}

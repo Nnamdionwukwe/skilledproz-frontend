@@ -1083,3 +1083,222 @@
     border-bottom: 1px solid var(--border);
   }
 }
+/* ── Wide modal variant for the expanded detail panel ── */
+.modalLg {
+  max-width: 640px;
+  width: 100%;
+}
+
+/* ── Section title inside the detail modal ── */
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+}
+.sectionTitle:first-child {
+  margin-top: 0;
+}
+
+/* ── Copy pill ── */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+
+/* ── Amount hero sub-line (original amount if different) ── */
+.amountHeroSub {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Worker card extra line (city / country) ── */
+.workerEmail + .workerEmail {
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+/* ── Icon alignment helpers (Lucide replacements) ── */
+
+/* Stat card icons — inline-flex so Lucide icons align */
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.accent_yellow .statIcon {
+  color: #eab308;
+}
+.accent_indigo .statIcon {
+  color: #818cf8;
+}
+.accent_orange .statIcon {
+  color: var(--orange);
+}
+.accent_green .statIcon {
+  color: var(--green);
+}
+
+/* Method icon cell — align Lucide icon */
+.methodIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Action buttons — align Lucide icons */
+.viewBtn,
+.approveBtn,
+.rejectBtn {
+  color: var(--text-dim);
+}
+.viewBtn svg {
+  color: inherit;
+  stroke-width: 2;
+}
+.approveBtn svg {
+  color: var(--green);
+  stroke-width: 2.2;
+}
+.rejectBtn svg {
+  color: var(--red);
+  stroke-width: 2.2;
+}
+
+.viewBtn:hover svg {
+  color: var(--orange);
+}
+
+/* Search icon */
+.searchIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Toast icon alignment */
+.toast > span {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Modal title — align Lucide icon */
+.modalTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Modal close button — center Lucide icon */
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Approve note — align Lucide icon */
+.approveNote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #eab308;
+}
+
+/* Notes box icon */
+.notesIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Empty state icon — center Lucide */
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Summary value — align inline icons */
+.summaryVal {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Section title — align inline icons */
+.sectionTitle {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Pending banner button — align arrow */
+.pendingBannerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Page buttons — align chevrons */
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Action modal buttons — align Lucide */
+.btnApprove,
+.btnReject,
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Copy pill icon button */
+.copyPillBtn svg {
+  color: inherit;
+  stroke-width: 2.2;
+}

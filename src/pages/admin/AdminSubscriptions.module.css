@@ -1233,3 +1233,245 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
+/* ── Section title inside DetailModal ── */
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+}
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+/* ── Copy pill ── */
+.copyPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-dim);
+  max-width: 100%;
+  min-width: 0;
+}
+.copyPillText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyPillBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  font-family: var(--font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.copyPillBtn:hover {
+  color: var(--orange);
+}
+
+/* ── Next payment sub-line inside table expiry cell ── */
+.tdNextPayment {
+  display: block;
+  font-size: 10px;
+  color: var(--orange);
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+/* ── Price highlight (used in Detail / Cancel modals) ── */
+.priceHighlight {
+  color: var(--orange);
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+/* ── Auto-renew inline emoji helper (keeps sizing consistent) ── */
+.detailVal {
+  word-break: break-word;
+}
+/* ── Icon alignment helpers for Lucide replacements ── */
+
+/* Stat card icons */
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.accent_orange .statIcon {
+  color: var(--orange);
+}
+.accent_green .statIcon {
+  color: var(--green);
+}
+.accent_indigo .statIcon {
+  color: #818cf8;
+}
+.accent_gold .statIcon {
+  color: #eab308;
+}
+
+/* Tier badge icon */
+.tierBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tierBadge svg {
+  stroke-width: 2.2;
+  color: inherit;
+}
+
+/* Breakdown card icon */
+.breakdownCardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+}
+.breakdownCard_indigo .breakdownCardIcon {
+  color: #818cf8;
+}
+.breakdownCard_gold .breakdownCardIcon {
+  color: #eab308;
+}
+
+/* Plan hero icon */
+.planHeroIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.planHero_indigo .planHeroIcon {
+  color: #818cf8;
+}
+.planHero_gold .planHeroIcon {
+  color: #eab308;
+}
+
+/* Auto-renew + tier icons inside detail cells */
+.detailVal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  word-break: break-word;
+}
+.detailVal svg {
+  stroke-width: 2.2;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+/* Summary value icons (tier icon in cancel modal) */
+.summaryVal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.summaryVal svg {
+  stroke-width: 2.2;
+  color: inherit;
+}
+
+/* Cancel warning icon */
+.cancelWarning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--red);
+}
+
+/* Modal title icons */
+.modalTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Toast icon alignment */
+.toast > span {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Search icon */
+.searchIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Buttons with icons */
+.btnCancel,
+.btnCancelConfirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Table action buttons */
+.viewBtn,
+.cancelBtn {
+  color: var(--text-dim);
+}
+.viewBtn svg {
+  color: inherit;
+  stroke-width: 2;
+}
+.cancelBtn svg {
+  color: inherit;
+  stroke-width: 2.2;
+}
+.viewBtn:hover svg {
+  color: var(--orange);
+}
+.cancelBtn:hover svg {
+  color: var(--red);
+}
+
+/* Empty state icon */
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Pagination buttons */
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Modal close button */
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Copy pill icon button */
+.copyPillBtn svg {
+  color: inherit;
+  stroke-width: 2.2;
+}

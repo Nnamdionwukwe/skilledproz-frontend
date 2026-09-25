@@ -1,6 +1,30 @@
 // src/pages/admin/AdminExternalJobs.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
+import {
+  Building2,
+  MapPin,
+  Link2,
+  Wallet,
+  GraduationCap,
+  Globe,
+  Briefcase,
+  BarChart2,
+  Calendar,
+  Clock,
+  X,
+  Eye,
+  Pencil,
+  CheckCircle2,
+  Ban,
+  RotateCcw,
+  Trash2,
+  Plus,
+  AlertTriangle,
+  TrendingUp,
+  Search,
+  Inbox,
+} from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import s from "./AdminExternalJobs.module.css";
@@ -130,7 +154,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
           <div className={s.modalHeader}>
             <h3 className={s.modalTitle}>Loading…</h3>
             <button className={s.modalClose} onClick={onClose}>
-              ✕
+              <X size={16} />
             </button>
           </div>
           <div className={s.modalBody}>
@@ -150,7 +174,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
           <div className={s.modalHeader}>
             <h3 className={s.modalTitle}>Job Detail</h3>
             <button className={s.modalClose} onClick={onClose}>
-              ✕
+              <X size={16} />
             </button>
           </div>
           <div className={s.modalBody}>
@@ -170,7 +194,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
             <Badge status={job.status} meta={JOB_STATUS_META} />
           </div>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={16} />
           </button>
         </div>
 
@@ -178,18 +202,36 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
           {/* Company & Platform */}
           <div className={s.externalMeta}>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>🏢 Company</span>
+              <span className={s.metaLabel}>
+                <Building2
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Company
+              </span>
               <span className={s.metaValue}>{job.companyName || "—"}</span>
             </div>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>📍 Location</span>
+              <span className={s.metaLabel}>
+                <MapPin
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Location
+              </span>
               <span className={s.metaValue}>
                 {job.address || job.location || "—"}
                 {job.locationType && ` (${job.locationType})`}
               </span>
             </div>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>🔗 Source</span>
+              <span className={s.metaLabel}>
+                <Link2
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Source
+              </span>
               <span className={s.metaValue}>
                 {job.sourcePlatform || "—"}
                 {job.applicationUrl && (
@@ -199,29 +241,53 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                     rel="noopener noreferrer"
                     className={s.externalLink}
                   >
-                    &nbsp;↗ Apply
+                    &nbsp;Apply ↗
                   </a>
                 )}
               </span>
             </div>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>💰 Salary</span>
+              <span className={s.metaLabel}>
+                <Wallet
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Salary
+              </span>
               <span className={s.metaValue}>{formatSalary(job)}</span>
             </div>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>🎓 Education</span>
+              <span className={s.metaLabel}>
+                <GraduationCap
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Education
+              </span>
               <span className={s.metaValue}>
                 {formatEducation(job.educationLevel)}
               </span>
             </div>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>🌐 Language</span>
+              <span className={s.metaLabel}>
+                <Globe
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Language
+              </span>
               <span className={s.metaValue}>
                 {job.languageRequirement || "—"}
               </span>
             </div>
             <div className={s.metaRow}>
-              <span className={s.metaLabel}>📍 Applicant Location</span>
+              <span className={s.metaLabel}>
+                <MapPin
+                  size={12}
+                  style={{ marginRight: 6, verticalAlign: -2 }}
+                />
+                Applicant Location
+              </span>
               <span className={s.metaValue}>
                 {job.applicantLocation || "—"}
               </span>
@@ -256,22 +322,40 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
 
           {/* Additional meta */}
           <div className={s.chipRow}>
-            {job.jobType && <span className={s.chip}>💼 {job.jobType}</span>}
+            {job.jobType && (
+              <span className={s.chip}>
+                <Briefcase size={11} style={{ verticalAlign: -2 }} />{" "}
+                {job.jobType}
+              </span>
+            )}
             {job.experienceLevel && (
-              <span className={s.chip}>📊 {job.experienceLevel}</span>
+              <span className={s.chip}>
+                <BarChart2 size={11} style={{ verticalAlign: -2 }} />{" "}
+                {job.experienceLevel}
+              </span>
             )}
             {job.experienceLength && (
-              <span className={s.chip}>📅 {job.experienceLength}</span>
+              <span className={s.chip}>
+                <Calendar size={11} style={{ verticalAlign: -2 }} />{" "}
+                {job.experienceLength}
+              </span>
             )}
             {job.minQualification && (
-              <span className={s.chip}>🎓 {job.minQualification}</span>
+              <span className={s.chip}>
+                <GraduationCap size={11} style={{ verticalAlign: -2 }} />{" "}
+                {job.minQualification}
+              </span>
             )}
             {job.workingHours && (
-              <span className={s.chip}>⏰ {job.workingHours}</span>
+              <span className={s.chip}>
+                <Clock size={11} style={{ verticalAlign: -2 }} />{" "}
+                {job.workingHours}
+              </span>
             )}
             {job.expiryDate && (
               <span className={`${s.chip} ${s.chipRed}`}>
-                ⏳ Expires {fmtDate(job.expiryDate)}
+                <Clock size={11} style={{ verticalAlign: -2 }} /> Expires{" "}
+                {fmtDate(job.expiryDate)}
               </span>
             )}
           </div>
@@ -300,7 +384,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
               to={`/admin/external/jobs/edit/${job.id}`}
               className={s.btnEdit}
             >
-              ✏️ Edit
+              <Pencil size={13} /> Edit
             </Link>
             {job.status === "OPEN" && (
               <>
@@ -311,7 +395,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                     onStatusChange(job, "FILLED");
                   }}
                 >
-                  ✅ Mark Filled
+                  <CheckCircle2 size={13} /> Mark Filled
                 </button>
                 <button
                   className={s.btnStatusCancel}
@@ -320,7 +404,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                     onStatusChange(job, "CANCELLED");
                   }}
                 >
-                  🚫 Cancel Job
+                  <Ban size={13} /> Cancel Job
                 </button>
               </>
             )}
@@ -332,7 +416,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                   onStatusChange(job, "OPEN");
                 }}
               >
-                🔄 Re‑open
+                <RotateCcw size={13} /> Re‑open
               </button>
             )}
             <button
@@ -342,7 +426,7 @@ function ExternalDetailModal({ jobId, onClose, onStatusChange, onDelete }) {
                 onDelete(job);
               }}
             >
-              🗑 Delete
+              <Trash2 size={13} /> Delete
             </button>
           </div>
         </div>
@@ -358,10 +442,26 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
   const [error, setError] = useState("");
 
   const meta = {
-    OPEN: { label: "Re-open", icon: "🔄", btn: s.btnStatusReopen },
-    FILLED: { label: "Fill", icon: "✅", btn: s.btnStatusFill },
-    CANCELLED: { label: "Cancel", icon: "🚫", btn: s.btnStatusCancel },
-  }[targetStatus] ?? { label: targetStatus, icon: "⚡", btn: s.btnSubmit };
+    OPEN: {
+      label: "Re-open",
+      icon: <RotateCcw size={13} />,
+      btn: s.btnStatusReopen,
+    },
+    FILLED: {
+      label: "Fill",
+      icon: <CheckCircle2 size={13} />,
+      btn: s.btnStatusFill,
+    },
+    CANCELLED: {
+      label: "Cancel",
+      icon: <Ban size={13} />,
+      btn: s.btnStatusCancel,
+    },
+  }[targetStatus] ?? {
+    label: targetStatus,
+    icon: <TrendingUp size={13} />,
+    btn: s.btnSubmit,
+  };
 
   async function handleConfirm() {
     setLoading(true);
@@ -385,7 +485,7 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
         <div className={s.modalHeader}>
           <h3 className={s.modalTitle}>{meta.icon} Change Job Status</h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={16} />
           </button>
         </div>
         <div className={s.modalBody}>
@@ -430,7 +530,7 @@ function StatusModal({ job, targetStatus, onClose, onSuccess }) {
               {loading ? (
                 <span className={s.spinner} />
               ) : (
-                `${meta.icon} Confirm`
+                <>{meta.icon} Confirm</>
               )}
             </button>
           </div>
@@ -464,14 +564,18 @@ function DeleteModal({ job, onClose, onSuccess }) {
     <div className={s.backdrop} onClick={onClose}>
       <div className={s.modal} onClick={(e) => e.stopPropagation()}>
         <div className={s.modalHeader}>
-          <h3 className={s.modalTitle}>🗑 Delete Job</h3>
+          <h3 className={s.modalTitle}>
+            <Trash2 size={15} /> Delete Job
+          </h3>
           <button className={s.modalClose} onClick={onClose}>
-            ✕
+            <X size={16} />
           </button>
         </div>
         <div className={s.modalBody}>
           <div className={s.deleteWarning}>
-            <span className={s.deleteWarningIcon}>⚠️</span>
+            <span className={s.deleteWarningIcon}>
+              <AlertTriangle size={18} />
+            </span>
             <p className={s.deleteWarningText}>
               This will permanently delete this external job listing.
             </p>
@@ -509,7 +613,13 @@ function DeleteModal({ job, onClose, onSuccess }) {
               onClick={handleDelete}
               disabled={loading}
             >
-              {loading ? <span className={s.spinner} /> : "🗑 Delete"}
+              {loading ? (
+                <span className={s.spinner} />
+              ) : (
+                <>
+                  <Trash2 size={13} /> Delete
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -525,9 +635,18 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
       <div className={s.tdJob}>
         <div className={s.tdJobTitle}>{job.title}</div>
         <div className={s.tdJobMeta}>
-          <span className={s.typeChip}>💼 {job.jobType || "N/A"}</span>
+          <span className={s.typeChip}>
+            <Briefcase
+              size={10}
+              style={{ verticalAlign: -1, marginRight: 3 }}
+            />
+            {job.jobType || "N/A"}
+          </span>
           {job.locationType && (
-            <span className={s.typeChip}>📍 {job.locationType}</span>
+            <span className={s.typeChip}>
+              <MapPin size={10} style={{ verticalAlign: -1, marginRight: 3 }} />
+              {job.locationType}
+            </span>
           )}
         </div>
       </div>
@@ -551,7 +670,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
             className={s.applyLink}
             title="Apply on external site"
           >
-            🔗
+            <Link2 size={14} />
           </a>
         )}
       </div>
@@ -573,21 +692,21 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
           onClick={() => onDetail(job.id)}
           title="View details"
         >
-          👁
+          <Eye size={14} />
         </button>
         <Link
           to={`/admin/external/jobs/edit/${job.id}`}
           className={s.editBtn}
           title="Edit job"
         >
-          ✏️
+          <Pencil size={14} />
         </Link>
         <Link
           to={`/admin/external/jobs/${job.id}/stats`}
           className={s.statsBtn}
           title="View click analytics"
         >
-          📊
+          <BarChart2 size={14} />
         </Link>
         {job.status === "OPEN" ? (
           <>
@@ -596,14 +715,14 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
               onClick={() => onStatusChange(job, "FILLED")}
               title="Mark as Filled"
             >
-              ✅
+              <CheckCircle2 size={14} />
             </button>
             <button
               className={s.cancelBtn}
               onClick={() => onStatusChange(job, "CANCELLED")}
               title="Cancel"
             >
-              🚫
+              <Ban size={14} />
             </button>
           </>
         ) : (
@@ -612,7 +731,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
             onClick={() => onStatusChange(job, "OPEN")}
             title="Re‑open"
           >
-            🔄
+            <RotateCcw size={14} />
           </button>
         )}
         <button
@@ -620,7 +739,7 @@ function JobRow({ job, index, onDetail, onStatusChange, onDelete }) {
           onClick={() => onDelete(job)}
           title="Delete"
         >
-          🗑
+          <Trash2 size={14} />
         </button>
       </div>
     </div>
@@ -725,11 +844,18 @@ export default function AdminExternalJobs() {
       <div className={s.page}>
         {toast && (
           <div className={`${s.toast} ${s[`toast_${toast.type}`]}`}>
-            <span>
-              {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              {toast.type === "success" ? (
+                <CheckCircle2 size={14} />
+              ) : (
+                <X size={14} />
+              )}
+              {toast.msg}
             </span>
             <button className={s.toastClose} onClick={() => setToast(null)}>
-              ✕
+              <X size={14} />
             </button>
           </div>
         )}
@@ -745,25 +871,31 @@ export default function AdminExternalJobs() {
             </p>
           </div>
           <Link to="/admin/external/jobs/create" className={s.primaryBtn}>
-            ＋ Add External Job
+            <Plus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />
+            Add External Job
           </Link>
         </div>
         <div className={s.statsGrid}>
           <StatCard
-            icon="💼"
+            icon={<Briefcase size={18} />}
             label="Total External Jobs"
             value={total}
             accent="orange"
           />
-          <StatCard icon="🟢" label="Open" value={openCount} accent="green" />
           <StatCard
-            icon="✅"
+            icon={<CheckCircle2 size={18} />}
+            label="Open"
+            value={openCount}
+            accent="green"
+          />
+          <StatCard
+            icon={<CheckCircle2 size={18} />}
             label="Filled"
             value={filledCount}
             accent="indigo"
           />
           <StatCard
-            icon="🔗"
+            icon={<Link2 size={18} />}
             label="External Sources"
             value={uniqueSources}
             accent="blue"
@@ -798,7 +930,9 @@ export default function AdminExternalJobs() {
               ))}
             </select>
             <div className={s.searchBar}>
-              <span className={s.searchIcon}>🔍</span>
+              <span className={s.searchIcon}>
+                <Search size={13} />
+              </span>
               <input
                 className={s.searchInput}
                 placeholder="Search job title, company…"
@@ -813,7 +947,7 @@ export default function AdminExternalJobs() {
                     load(1, filter, "", categoryId);
                   }}
                 >
-                  ✕
+                  <X size={12} />
                 </button>
               )}
             </div>
@@ -835,7 +969,9 @@ export default function AdminExternalJobs() {
               ))
             ) : jobs.length === 0 ? (
               <div className={s.empty}>
-                <span className={s.emptyIcon}>🔗</span>
+                <span className={s.emptyIcon}>
+                  <Inbox size={40} />
+                </span>
                 <p className={s.emptyTitle}>
                   {filter === "ALL" && !search
                     ? "No external jobs added yet"

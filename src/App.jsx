@@ -87,7 +87,7 @@ import FeedPage from "./pages/feed/FeedPage";
 import InsuranceSuccess from "./components/hirer/InsuranceSuccess";
 import SettingsPage from "./components/settimg/SettingsPage";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
-import AdminSubscriptions from "./pages/admin/AdminSubscriptions.module";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions.jsx";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminVideoCalls from "./pages/admin/AdminVideoCalls";
