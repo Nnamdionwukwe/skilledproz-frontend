@@ -55,7 +55,7 @@ const NAV = [
   {
     group: "User Analytics",
     items: [
-      { label: "User Insights", path: "/admin/analytics/users", icon: FiUsers },
+      { label: "User Insight", path: "/admin/analytics/users", icon: FiUsers },
       { label: "Live Feed", path: "/admin/analytics/live", icon: FiRadio },
       { label: "Segments", path: "/admin/analytics/segments", icon: FiTarget },
     ],
