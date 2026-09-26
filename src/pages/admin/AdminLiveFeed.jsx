@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
-import { timeAgo } from "../../lib/analytics/formatUtils";
+import { timeAgo, fmtFull } from "../../lib/analytics/formatUtils";
 import styles from "./AdminAnalytics.module.css";
 
 import { FiRadio, FiRefreshCw, FiUsers } from "react-icons/fi";
@@ -34,6 +34,9 @@ export default function AdminLiveFeed() {
     timerRef.current = setInterval(load, 5000);
     return () => clearInterval(timerRef.current);
   }, [autoRefresh, load]);
+
+  const events = data?.events || [];
+  const activeSessions = data?.activeSessions ?? 0;
 
   return (
     <AdminLayout>
@@ -89,7 +92,7 @@ export default function AdminLiveFeed() {
                   </span>
                 </div>
                 <div className={styles.statValue}>
-                  {fmtFull(data.activeSessions)}
+                  {fmtFull(activeSessions)}
                 </div>
                 <div className={styles.statLabel}>Active Sessions</div>
               </div>
@@ -99,7 +102,7 @@ export default function AdminLiveFeed() {
                     <FiRadio size={16} />
                   </span>
                 </div>
-                <div className={styles.statValue}>{data.events.length}</div>
+                <div className={styles.statValue}>{events.length}</div>
                 <div className={styles.statLabel}>Events in Window</div>
               </div>
             </div>
@@ -112,11 +115,11 @@ export default function AdminLiveFeed() {
                 </p>
               </div>
               <div className={styles.panelBody}>
-                {data.events.length === 0 ? (
+                {events.length === 0 ? (
                   <div className={styles.noData}>No events in this window</div>
                 ) : (
                   <div className={styles.feedList}>
-                    {data.events.map((e) => (
+                    {events.map((e) => (
                       <div key={e.id} className={styles.feedItem}>
                         <span className={styles.feedItemTime}>
                           {timeAgo(e.createdAt)}

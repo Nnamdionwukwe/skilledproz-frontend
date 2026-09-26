@@ -50,6 +50,10 @@ export default function AdminAnalyticsUsers() {
     setParams(next);
   };
 
+  const users = data?.users || [];
+  const totalUsers = data?.total ?? 0;
+  const totalPages = data?.pages ?? 1;
+
   return (
     <AdminLayout>
       <div className={styles.page}>
@@ -96,7 +100,7 @@ export default function AdminAnalyticsUsers() {
             <div className={styles.panelHeader}>
               <h3 className={styles.panelTitle}>Users with Insights</h3>
               <p className={styles.panelSub}>
-                {fmtFull(data.total)} user(s) · sorted by {sortBy}
+                {fmtFull(totalUsers)} user(s) · sorted by {sortBy}
               </p>
             </div>
             <div className={styles.panelBody} style={{ padding: 0 }}>
@@ -113,76 +117,82 @@ export default function AdminAnalyticsUsers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.users.length === 0 && (
+                  {users.length === 0 && (
                     <tr>
                       <td colSpan={7} className={styles.noData}>
                         No insights yet. Run the aggregation job to populate.
                       </td>
                     </tr>
                   )}
-                  {data.users.map((u) => (
-                    <tr key={u.id}>
-                      <td>
-                        <Link
-                          to={`/admin/analytics/user/${u.user.id}`}
-                          className={styles.userCell}
-                          style={{ textDecoration: "none" }}
-                        >
-                          <div className={styles.userAvatar}>
-                            {u.user.avatar ? (
-                              <img src={u.user.avatar} alt="" />
-                            ) : (
-                              `${u.user.firstName?.[0] || ""}${u.user.lastName?.[0] || ""}`
-                            )}
-                          </div>
-                          <div>
-                            <div className={styles.userName}>
-                              {u.user.firstName} {u.user.lastName}
-                            </div>
-                            <div className={styles.userEmail}>
-                              {u.user.email}
-                            </div>
-                          </div>
-                        </Link>
-                      </td>
-                      <td>
-                        <span className={styles.scoreBar}>
-                          <span
-                            className={styles.scoreBarFill}
-                            style={{ width: `${u.engagementScore}%` }}
-                          />
-                        </span>
-                        <strong>{u.engagementScore}</strong>
-                      </td>
-                      <td>{fmtFull(u.totalSessions)}</td>
-                      <td>{fmtFull(u.totalPageViews)}</td>
-                      <td>{fmtDuration(u.totalTimeOnPlatform)}</td>
-                      <td>
-                        {u.segments?.slice(0, 2).map((s) => (
-                          <span
-                            key={s}
-                            className={styles.pillOrange}
-                            style={{ marginRight: 4 }}
+                  {users.map((u) => {
+                    const segments = u.segments || [];
+                    const userObj = u.user || {};
+                    return (
+                      <tr key={u.id}>
+                        <td>
+                          <Link
+                            to={`/admin/analytics/user/${userObj.id}`}
+                            className={styles.userCell}
+                            style={{ textDecoration: "none" }}
                           >
-                            {s}
+                            <div className={styles.userAvatar}>
+                              {userObj.avatar ? (
+                                <img src={userObj.avatar} alt="" />
+                              ) : (
+                                `${userObj.firstName?.[0] || ""}${userObj.lastName?.[0] || ""}`
+                              )}
+                            </div>
+                            <div>
+                              <div className={styles.userName}>
+                                {userObj.firstName} {userObj.lastName}
+                              </div>
+                              <div className={styles.userEmail}>
+                                {userObj.email}
+                              </div>
+                            </div>
+                          </Link>
+                        </td>
+                        <td>
+                          <span className={styles.scoreBar}>
+                            <span
+                              className={styles.scoreBarFill}
+                              style={{
+                                width: `${u.engagementScore ?? 0}%`,
+                              }}
+                            />
                           </span>
-                        ))}
-                        {u.segments?.length > 2 && (
-                          <span className={styles.pill}>
-                            +{u.segments.length - 2}
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ fontSize: 11, color: "#888" }}>
-                        {timeAgo(u.lastActiveAt)}
-                      </td>
-                    </tr>
-                  ))}
+                          <strong>{u.engagementScore ?? 0}</strong>
+                        </td>
+                        <td>{fmtFull(u.totalSessions ?? 0)}</td>
+                        <td>{fmtFull(u.totalPageViews ?? 0)}</td>
+                        <td>{fmtDuration(u.totalTimeOnPlatform)}</td>
+                        <td>
+                          {segments.slice(0, 2).map((s) => (
+                            <span
+                              key={s}
+                              className={styles.pillOrange}
+                              style={{ marginRight: 4 }}
+                            >
+                              {s}
+                            </span>
+                          ))}
+                          {segments.length > 2 && (
+                            <span className={styles.pill}>
+                              +{segments.length - 2}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ fontSize: 11, color: "#888" }}>
+                          {timeAgo(u.lastActiveAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
-            {data.pages > 1 && (
+            {totalPages > 1 && (
               <div className={styles.pagination}>
                 <button
                   className={styles.pageBtn}
@@ -192,11 +202,11 @@ export default function AdminAnalyticsUsers() {
                   <FiChevronLeft size={14} />
                 </button>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>
-                  Page {page} of {data.pages}
+                  Page {page} of {totalPages}
                 </span>
                 <button
                   className={styles.pageBtn}
-                  disabled={page >= data.pages}
+                  disabled={page >= totalPages}
                   onClick={() => setParam("page", String(page + 1))}
                 >
                   <FiChevronRight size={14} />

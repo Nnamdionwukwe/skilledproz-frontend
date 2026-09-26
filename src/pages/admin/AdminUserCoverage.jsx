@@ -10,9 +10,6 @@ import {
   FiClock,
   FiMousePointer,
   FiRefreshCw,
-  FiMonitor,
-  FiMapPin,
-  FiGlobe,
 } from "react-icons/fi";
 import analyticsApi from "../../lib/analytics/analyticsApi";
 import {
@@ -61,6 +58,12 @@ export default function AdminUserCoverage() {
 
   const user = data?.user;
   const insight = data?.insight;
+
+  const recentSessions = data?.recentSessions || [];
+  const recentEvents = data?.recentEvents || [];
+  const recentPageViews = data?.recentPageViews || [];
+  const recentInteractions = data?.recentInteractions || [];
+  const segments = insight?.segments || [];
 
   return (
     <AdminLayout>
@@ -129,9 +132,9 @@ export default function AdminUserCoverage() {
                 label="Engagement Score"
                 value={insight?.engagementScore ?? 0}
                 sub={
-                  insight?.engagementScore >= 70
+                  (insight?.engagementScore ?? 0) >= 70
                     ? "Power user"
-                    : insight?.engagementScore >= 40
+                    : (insight?.engagementScore ?? 0) >= 40
                       ? "Active"
                       : "Low"
                 }
@@ -179,19 +182,19 @@ export default function AdminUserCoverage() {
             </div>
 
             {/* ── Segments ── */}
-            {insight?.segments?.length > 0 && (
+            {segments.length > 0 && (
               <div className={styles.panel} style={{ marginBottom: 24 }}>
                 <div className={styles.panelHeader}>
                   <h3 className={styles.panelTitle}>Segments</h3>
                   <p className={styles.panelSub}>
-                    This user belongs to {insight.segments.length} segment(s)
+                    This user belongs to {segments.length} segment(s)
                   </p>
                 </div>
                 <div
                   className={styles.panelBody}
                   style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
                 >
-                  {insight.segments.map((s) => (
+                  {segments.map((s) => (
                     <span
                       key={s}
                       className={`${styles.pill} ${styles.pillOrange}`}
@@ -209,7 +212,7 @@ export default function AdminUserCoverage() {
                 <div className={styles.panelHeader}>
                   <h3 className={styles.panelTitle}>Recent Sessions</h3>
                   <p className={styles.panelSub}>
-                    Last {data.recentSessions.length} browser sessions
+                    Last {recentSessions.length} browser sessions
                   </p>
                 </div>
                 <div className={styles.panelBody} style={{ padding: 0 }}>
@@ -223,14 +226,14 @@ export default function AdminUserCoverage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.recentSessions.length === 0 && (
+                      {recentSessions.length === 0 && (
                         <tr>
                           <td colSpan={4} className={styles.noData}>
                             No sessions yet
                           </td>
                         </tr>
                       )}
-                      {data.recentSessions.map((s) => (
+                      {recentSessions.map((s) => (
                         <tr key={s.id}>
                           <td>{fmtDate(s.startedAt)}</td>
                           <td>{fmtDuration(s.durationMs)}</td>
@@ -253,7 +256,7 @@ export default function AdminUserCoverage() {
                 <div className={styles.panelHeader}>
                   <h3 className={styles.panelTitle}>Recent Events</h3>
                   <p className={styles.panelSub}>
-                    Last {data.recentEvents.length} events
+                    Last {recentEvents.length} events
                   </p>
                 </div>
                 <div
@@ -269,14 +272,14 @@ export default function AdminUserCoverage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.recentEvents.length === 0 && (
+                      {recentEvents.length === 0 && (
                         <tr>
                           <td colSpan={3} className={styles.noData}>
                             No events yet
                           </td>
                         </tr>
                       )}
-                      {data.recentEvents.map((e) => (
+                      {recentEvents.map((e) => (
                         <tr key={e.id}>
                           <td>
                             <span className={styles.pillOrange}>
@@ -302,7 +305,7 @@ export default function AdminUserCoverage() {
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>Pages Visited</h3>
                 <p className={styles.panelSub}>
-                  Last {data.recentPageViews.length} page views
+                  Last {recentPageViews.length} page views
                 </p>
               </div>
               <div
@@ -320,14 +323,14 @@ export default function AdminUserCoverage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.recentPageViews.length === 0 && (
+                    {recentPageViews.length === 0 && (
                       <tr>
                         <td colSpan={5} className={styles.noData}>
                           No page views yet
                         </td>
                       </tr>
                     )}
-                    {data.recentPageViews.map((pv) => (
+                    {recentPageViews.map((pv) => (
                       <tr key={pv.id}>
                         <td style={{ fontSize: 12 }}>{pv.pagePath}</td>
                         <td style={{ fontSize: 11, color: "#888" }}>
@@ -356,7 +359,7 @@ export default function AdminUserCoverage() {
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>Interactions</h3>
                 <p className={styles.panelSub}>
-                  Last {data.recentInteractions.length} clicks and interactions
+                  Last {recentInteractions.length} clicks and interactions
                 </p>
               </div>
               <div
@@ -373,14 +376,14 @@ export default function AdminUserCoverage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.recentInteractions.length === 0 && (
+                    {recentInteractions.length === 0 && (
                       <tr>
                         <td colSpan={4} className={styles.noData}>
                           No interactions yet
                         </td>
                       </tr>
                     )}
-                    {data.recentInteractions.map((it) => (
+                    {recentInteractions.map((it) => (
                       <tr key={it.id}>
                         <td>
                           <span className={styles.pill}>{it.elementId}</span>
