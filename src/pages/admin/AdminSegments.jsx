@@ -17,7 +17,7 @@ export default function AdminSegments() {
     setLoading(true);
     analyticsApi
       .listSegments()
-      .then((r) => setSegments(r.data.data.segments || []))
+      .then((r) => setSegments(r.data?.data?.segments || []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -35,6 +35,10 @@ export default function AdminSegments() {
       .catch(console.error)
       .finally(() => setMembersLoading(false));
   };
+
+  const memberList = members?.members || [];
+  const memberTotal = members?.total ?? 0;
+  const safeSegments = segments || [];
 
   return (
     <AdminLayout>
@@ -72,7 +76,7 @@ export default function AdminSegments() {
 
             {!loading && (
               <div className={styles.statsGrid}>
-                {segments.map((s) => (
+                {safeSegments.map((s) => (
                   <button
                     key={s.id}
                     className={styles.statCard}
@@ -95,7 +99,7 @@ export default function AdminSegments() {
                     <div className={styles.statLabel}>
                       <span className={styles.pillOrange}>{s.key}</span> ·{" "}
                       <FiUsers size={11} style={{ verticalAlign: -1 }} />{" "}
-                      {fmtFull(s.memberCount)}
+                      {fmtFull(s.memberCount ?? 0)}
                     </div>
                     {s.description && (
                       <p
@@ -144,7 +148,7 @@ export default function AdminSegments() {
                 <h3 className={styles.panelTitle}>{selected.name}</h3>
                 <p className={styles.panelSub}>
                   <span className={styles.pillOrange}>{selected.key}</span> ·{" "}
-                  {fmtFull(selected.memberCount)} member(s)
+                  {fmtFull(selected.memberCount ?? 0)} member(s)
                   {selected.description && ` · ${selected.description}`}
                 </p>
               </div>
@@ -154,7 +158,7 @@ export default function AdminSegments() {
               <div className={styles.panelHeader}>
                 <h3 className={styles.panelTitle}>Members</h3>
                 <p className={styles.panelSub}>
-                  {members?.total || 0} total {membersLoading && "· loading..."}
+                  {memberTotal} total {membersLoading && "· loading..."}
                 </p>
               </div>
               <div className={styles.panelBody} style={{ padding: 0 }}>
@@ -167,7 +171,7 @@ export default function AdminSegments() {
                     </tr>
                   </thead>
                   <tbody>
-                    {!membersLoading && members?.members?.length === 0 && (
+                    {!membersLoading && memberList.length === 0 && (
                       <tr>
                         <td colSpan={3} className={styles.noData}>
                           No members yet. The nightly aggregation job populates
@@ -175,7 +179,7 @@ export default function AdminSegments() {
                         </td>
                       </tr>
                     )}
-                    {members?.members?.map((m) => (
+                    {memberList.map((m) => (
                       <tr key={m.id}>
                         <td>
                           <Link
