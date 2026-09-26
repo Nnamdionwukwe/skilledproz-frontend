@@ -1,4 +1,4 @@
-// src/lib/formatUtils.js
+// src/lib/analytics/formatUtils.js
 // Small helpers for the analytics pages.
 
 export function fmtNum(n) {
