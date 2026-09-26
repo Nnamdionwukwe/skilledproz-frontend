@@ -9,17 +9,19 @@ import { SubscriptionProvider } from "./components/context/SubscriptionContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { useAuthStore } from "./store/authStore";
+import { initAutoTrack } from "./lib/analytics/autoTrack";
 
 // Google OAuth client ID (same one used by the backend)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+// ── Analytics: attach global click / scroll / error listeners once ──────────
+initAutoTrack();
 
 // Waits for Zustand to rehydrate from localStorage before
 // mounting anything that makes authenticated API calls.
 function HydratedApp() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
-
-  if (!isHydrated) return null; // or a spinner
-
+  if (!isHydrated) return null;
   return (
     <SubscriptionProvider>
       <App />

@@ -31,6 +31,8 @@ import {
   FiSettings,
   FiLogOut,
   FiMenu,
+  FiRadio, // ← ADD
+  FiTarget,
 } from "react-icons/fi";
 
 // Font Awesome Icons (Fa)
@@ -48,6 +50,14 @@ const NAV = [
     items: [
       { label: "Overview", path: "/admin", icon: FiGrid },
       { label: "Analytics", path: "/admin/analytics", icon: FiBarChart2 },
+    ],
+  },
+  {
+    group: "User Analytics",
+    items: [
+      { label: "User Insights", path: "/admin/analytics/users", icon: FiUsers },
+      { label: "Live Feed", path: "/admin/analytics/live", icon: FiRadio },
+      { label: "Segments", path: "/admin/analytics/segments", icon: FiTarget },
     ],
   },
   {

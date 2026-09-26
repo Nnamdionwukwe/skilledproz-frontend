@@ -134,6 +134,11 @@ import WorkerRefundsPage from "./pages/worker/refunds/components/WorkerRefundsPa
 import CreateBookingFromJob from "./components/hirer/CreateBookingFromJob.jsx";
 import PostDetail from "./pages/feed/PostDetail.jsx";
 import AdminRefunds from "./pages/admin/AdminRefunds.jsx";
+import RouteTracker from "./lib/analytics/RouteTracker.jsx";
+import AdminUserCoverage from "./pages/admin/AdminUserCoverage.jsx";
+import AdminSegments from "./pages/admin/AdminSegments.jsx";
+import AdminLiveFeed from "./pages/admin/AdminLiveFeed.jsx";
+import AdminAnalyticsUsers from "./pages/admin/AdminAnalyticsUsers.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -202,6 +207,8 @@ function RoleRedirect() {
 export default function App() {
   return (
     <BrowserRouter>
+      <RouteTracker />
+
       <div id="google_translate_element" style={{ display: "none" }} />
       <Routes>
         {/* ── Root ── */}
@@ -277,6 +284,39 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminAnalytics />
+            </RequireAdmin>
+          }
+        />
+
+        <Route
+          path="/admin/analytics/users"
+          element={
+            <RequireAdmin>
+              <AdminAnalyticsUsers />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/live"
+          element={
+            <RequireAdmin>
+              <AdminLiveFeed />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/segments"
+          element={
+            <RequireAdmin>
+              <AdminSegments />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/user/:userId"
+          element={
+            <RequireAdmin>
+              <AdminUserCoverage />
             </RequireAdmin>
           }
         />

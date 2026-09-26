@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import api from "../lib/api";
+import tracker from "../lib/analytics/tracker";
 
 export const useAuthStore = create(
   persist(
@@ -15,6 +16,7 @@ export const useAuthStore = create(
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
         set({ user, accessToken, refreshToken });
+        if (user?.id) tracker.identify(user.id);
       },
 
       updateUser: (patch) => {
@@ -27,6 +29,7 @@ export const useAuthStore = create(
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         set({ user: null, accessToken: null, refreshToken: null });
+        tracker.unidentify();
       },
 
       // ── Called by the axios interceptor when the server rejects the session.
