@@ -34,6 +34,9 @@ import Footer from "./Footer";
 import SocialQR from "../components/SocialQR";
 import { SkilledProzLoader } from "../components/ui";
 
+// ── ANALYTICS ─────────────────────────────────────────────────────────────
+import tracker from "../lib/analytics/tracker";
+
 // ── CURRENCIES ──
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar", flag: "🇺🇸" },
@@ -232,6 +235,14 @@ export default function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showSurvey, setShowSurvey] = useState(false);
 
+  // ── ANALYTICS: page view on mount ─────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.landing.view", {
+      isAuthenticated: !!user,
+      userRole: user?.role || null,
+    });
+  }, []); // fires once
+
   useEffect(() => {
     // Simulate loading for the landing page
     const timer = setTimeout(() => {
@@ -245,11 +256,39 @@ export default function LandingPage() {
       .then((data) => {
         const cats = data.data?.categories || data.data || [];
         setCategories(Array.isArray(cats) ? cats : []);
+        // ── ANALYTICS: log categories loaded count ──────────────────────────
+        tracker.track("landing.categories.loaded", {
+          count: Array.isArray(cats) ? cats.length : 0,
+        });
       })
       .catch(() => setCategories([]));
 
     return () => clearTimeout(timer);
   }, []);
+
+  // ── ANALYTICS: scroll depth on hero ───────────────────────────────────────
+  // autoTrack already handles 25/50/75/100 global scroll depth. This fires
+  // when user has meaningfully engaged with the hero section.
+  useEffect(() => {
+    if (loading) return;
+    const heroEl = document.querySelector(`.${styles.hero}`);
+    if (!heroEl) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            tracker.track("landing.hero.viewed", {
+              ratio: entry.intersectionRatio,
+            });
+            obs.disconnect();
+          }
+        });
+      },
+      { threshold: [0.5, 0.9] },
+    );
+    obs.observe(heroEl);
+    return () => obs.disconnect();
+  }, [loading]);
 
   const filteredCats = categories.filter(
     (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
@@ -258,6 +297,10 @@ export default function LandingPage() {
   async function handleAddCategory() {
     if (!customCatName.trim()) return;
     setAddingCat(true);
+    // ── ANALYTICS: user started a custom category add ────────────────────────
+    tracker.track("landing.customCategory.attempt", {
+      name: customCatName.trim(),
+    });
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/categories/suggest`,
@@ -277,6 +320,12 @@ export default function LandingPage() {
         setCustomCatName("");
         setShowCustomCat(false);
         setTimeout(() => setAddedCat(null), 4000);
+        // ── ANALYTICS: custom category successfully added ──────────────────
+        tracker.action("landing.customCategory.created", {
+          categoryId: cat.id,
+          categoryName: cat.name,
+          categorySlug: cat.slug,
+        });
       }
     } catch {}
     setAddingCat(false);
@@ -312,7 +361,11 @@ export default function LandingPage() {
       <div className={styles.page}>
         {/* ── Navbar ── */}
         <nav className={styles.navbar}>
-          <Link to="/" className={styles.navLogo}>
+          <Link
+            to="/"
+            className={styles.navLogo}
+            data-track-id="landing.nav.logo"
+          >
             Skilled<span>Proz</span>
           </Link>
 
@@ -324,16 +377,29 @@ export default function LandingPage() {
               ["Blog", "/blog"],
             ].map(([label, href]) => (
               <li key={label}>
-                <Link to={href}>{label}</Link>
+                <Link
+                  to={href}
+                  data-track-id={`landing.nav.${label.toLowerCase().replace(/\s+/g, "")}`}
+                >
+                  {label}
+                </Link>
               </li>
             ))}
           </ul>
 
           <div className={styles.navCta}>
-            <Link to="/login" className={styles.btnOutline}>
+            <Link
+              to="/login"
+              className={styles.btnOutline}
+              data-track-id="landing.nav.signin"
+            >
               Sign in
             </Link>
-            <Link to="/register" className={styles.btnPrimary}>
+            <Link
+              to="/register"
+              className={styles.btnPrimary}
+              data-track-id="landing.nav.getStarted"
+            >
               Get Started
             </Link>
           </div>
@@ -342,6 +408,7 @@ export default function LandingPage() {
             className={styles.menuToggle}
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Menu"
+            data-track-id="landing.nav.menuToggle"
           >
             {mobileOpen ? (
               <FaTimes style={{ color: "var(--text)" }} />
@@ -362,7 +429,12 @@ export default function LandingPage() {
             ["Get Started For Free", "/register"],
             ["Dowload App", "/download"],
           ].map(([label, href]) => (
-            <Link key={label} to={href} onClick={() => setMobileOpen(false)}>
+            <Link
+              key={label}
+              to={href}
+              onClick={() => setMobileOpen(false)}
+              data-track-id={`landing.mobileNav.${label.toLowerCase().replace(/\s+/g, "")}`}
+            >
               {label}
             </Link>
           ))}
@@ -392,13 +464,25 @@ export default function LandingPage() {
             </p>
 
             <div className={styles.heroActions}>
-              <Link to="/register/hirer" className={styles.btnHeroPrimary}>
+              <Link
+                to="/register/hirer"
+                className={styles.btnHeroPrimary}
+                data-track-id="landing.hero.hireWorker"
+              >
                 Hire a Worker <FaArrowRight />
               </Link>
-              <Link to="/register/worker" className={styles.btnHeroSecondary}>
+              <Link
+                to="/register/worker"
+                className={styles.btnHeroSecondary}
+                data-track-id="landing.hero.startEarning"
+              >
                 Start Earning
               </Link>
-              <Link to="/download" className={styles.btnHeroApp}>
+              <Link
+                to="/download"
+                className={styles.btnHeroApp}
+                data-track-id="landing.hero.downloadApp"
+              >
                 <FaDownload /> Download App
               </Link>
             </div>
@@ -413,7 +497,15 @@ export default function LandingPage() {
               />
               <button
                 className={styles.surveyToggle}
-                onClick={() => setShowSurvey(!showSurvey)}
+                onClick={() => {
+                  const next = !showSurvey;
+                  setShowSurvey(next);
+                  // ── ANALYTICS: user toggled the survey widget ─────────────
+                  tracker.action("landing.survey.toggle", {
+                    opened: next,
+                  });
+                }}
+                data-track-id="landing.hero.surveyToggle"
               >
                 {showSurvey ? "−" : "+"} Tell us what you need
               </button>
@@ -422,7 +514,11 @@ export default function LandingPage() {
                   <p className={styles.surveyText}>
                     👋 Help us build what matters most to you
                   </p>
-                  <a href="/survey" className={styles.surveyLink}>
+                  <a
+                    href="/survey"
+                    className={styles.surveyLink}
+                    data-track-id="landing.hero.takeSurvey"
+                  >
                     Take 2-min survey <FaArrowRight />
                   </a>
                 </div>
@@ -513,7 +609,16 @@ export default function LandingPage() {
 
             <div className={styles.featuresGrid}>
               {FEATURES.map((f) => (
-                <div key={f.title} className={styles.featureCard}>
+                <div
+                  key={f.title}
+                  className={styles.featureCard}
+                  data-track-id={`landing.feature.${f.title.toLowerCase().replace(/\s+/g, "")}`}
+                  onClick={() =>
+                    tracker.track("landing.feature.clicked", {
+                      feature: f.title,
+                    })
+                  }
+                >
                   <span className={styles.featureIcon}>{f.icon}</span>
                   <h3 className={styles.featureTitle}>{f.title}</h3>
                   <p className={styles.featureDesc}>{f.desc}</p>
@@ -535,13 +640,26 @@ export default function LandingPage() {
             <div className={styles.tabToggle}>
               <button
                 className={`${styles.tabBtn} ${activeTab === "hirer" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("hirer")}
+                onClick={() => {
+                  setActiveTab("hirer");
+                  // ── ANALYTICS: how-it-works tab switch ────────────────────
+                  tracker.track("landing.howItWorks.tabSwitched", {
+                    tab: "hirer",
+                  });
+                }}
+                data-track-id="landing.howItWorks.tab.hirer"
               >
                 I want to hire
               </button>
               <button
                 className={`${styles.tabBtn} ${activeTab === "worker" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("worker")}
+                onClick={() => {
+                  setActiveTab("worker");
+                  tracker.track("landing.howItWorks.tabSwitched", {
+                    tab: "worker",
+                  });
+                }}
+                data-track-id="landing.howItWorks.tab.worker"
               >
                 I want to earn
               </button>
@@ -576,7 +694,22 @@ export default function LandingPage() {
                 className={styles.catSearchInput}
                 placeholder="Search categories..."
                 value={catSearch}
-                onChange={(e) => setCatSearch(e.target.value)}
+                onChange={(e) => {
+                  setCatSearch(e.target.value);
+                  // Debounced search intent tracking
+                  if (e.target.value.length === 1) {
+                    tracker.track("landing.categorySearch.started");
+                  }
+                }}
+                onBlur={(e) => {
+                  if (e.target.value.length > 0) {
+                    tracker.action("landing.categorySearch.committed", {
+                      query: e.target.value,
+                      resultCount: filteredCats.length,
+                    });
+                  }
+                }}
+                data-track-id="landing.categorySearch"
               />
             </div>
 
@@ -587,6 +720,15 @@ export default function LandingPage() {
                     key={cat.id}
                     to={`/categories/${cat.slug}`}
                     className={styles.catCard}
+                    data-track-id={`landing.category.${cat.slug}`}
+                    onClick={() =>
+                      tracker.action("landing.category.clicked", {
+                        categoryId: cat.id,
+                        categorySlug: cat.slug,
+                        categoryName: cat.name,
+                        fromSearch: !!catSearch,
+                      })
+                    }
                   >
                     <span className={styles.catIcon}>{cat.icon || "🔧"}</span>
                     <span className={styles.catName}>{cat.name}</span>
@@ -602,7 +744,11 @@ export default function LandingPage() {
 
             {!catSearch && filteredCats.length > 48 && (
               <div className={styles.catViewAll}>
-                <Link to="/categories" className={styles.btnViewAll}>
+                <Link
+                  to="/categories"
+                  className={styles.btnViewAll}
+                  data-track-id="landing.category.viewAll"
+                >
                   Browse all {filteredCats.length} categories <FaArrowRight />
                 </Link>
               </div>
@@ -622,7 +768,11 @@ export default function LandingPage() {
                 {!showCustomCat ? (
                   <button
                     className={styles.catAddBtn}
-                    onClick={() => setShowCustomCat(true)}
+                    onClick={() => {
+                      setShowCustomCat(true);
+                      tracker.action("landing.customCategory.formOpened");
+                    }}
+                    data-track-id="landing.customCategory.open"
                   >
                     <FaPlus /> Add your profession
                   </button>
@@ -637,11 +787,13 @@ export default function LandingPage() {
                         e.key === "Enter" && handleAddCategory()
                       }
                       placeholder="e.g. Drone Operator, Solar Engineer..."
+                      data-track-id="landing.customCategory.input"
                     />
                     <button
                       className={styles.catSubmitBtn}
                       onClick={handleAddCategory}
                       disabled={addingCat || !customCatName.trim()}
+                      data-track-id="landing.customCategory.submit"
                     >
                       {addingCat ? "Adding..." : "Add"}
                     </button>
@@ -650,7 +802,9 @@ export default function LandingPage() {
                       onClick={() => {
                         setShowCustomCat(false);
                         setCustomCatName("");
+                        tracker.track("landing.customCategory.cancelled");
                       }}
+                      data-track-id="landing.customCategory.cancel"
                     >
                       Cancel
                     </button>
@@ -743,7 +897,11 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/register/hirer" className={styles.ctaBtn}>
+                <Link
+                  to="/register/hirer"
+                  className={styles.ctaBtn}
+                  data-track-id="landing.cta.hirer"
+                >
                   Create Hirer Account <FaArrowRight />
                 </Link>
               </div>
@@ -771,7 +929,11 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/register/worker" className={styles.ctaBtnOutline}>
+                <Link
+                  to="/register/worker"
+                  className={styles.ctaBtnOutline}
+                  data-track-id="landing.cta.worker"
+                >
                   Create Worker Account <FaArrowRight />
                 </Link>
               </div>
