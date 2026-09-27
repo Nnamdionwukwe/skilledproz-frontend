@@ -4,6 +4,7 @@ import { Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import api from "../../lib/api";
 import AuthLayout from "../../components/auth/AuthLayout";
 import s from "../../components/auth/form.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -20,31 +21,57 @@ export default function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     if (!token) {
       setError("Reset token missing from URL.");
+      tracker.action("resetPassword.validation.failed", {
+        reason: "no_token",
+      });
       return;
     }
     if (form.password.length < 8) {
       setError("Password must be at least 8 characters.");
+      tracker.action("resetPassword.validation.failed", {
+        reason: "password_too_short",
+      });
       return;
     }
     if (form.password !== form.confirm) {
       setError("Passwords don't match.");
+      tracker.action("resetPassword.validation.failed", {
+        reason: "passwords_mismatch",
+      });
       return;
     }
+
     setStatus("loading");
+
+    tracker.action("resetPassword.submit.attempt", {
+      hasToken: !!token,
+    });
+
     try {
       await api.post("/auth/reset-password", {
         token,
         password: form.password,
       });
       setStatus("success");
+
+      tracker.action("resetPassword.success", {
+        hasToken: !!token,
+      });
+
       setTimeout(() => navigate("/login"), 2800);
     } catch (err) {
-      setError(
-        err?.response?.data?.message || "Reset failed. Link may have expired.",
-      );
+      const message =
+        err?.response?.data?.message || "Reset failed. Link may have expired.";
+      setError(message);
       setStatus("idle");
+
+      tracker.action("resetPassword.failed", {
+        reason: message,
+        hasToken: !!token,
+      });
     }
   };
 
@@ -100,14 +127,27 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={form.password}
                 onChange={onChange}
+                onFocus={() => {
+                  if (!form.password) {
+                    tracker.track("resetPassword.form.password.focused");
+                  }
+                }}
                 required
                 style={{ paddingRight: 42 }}
+                data-track-id="resetPassword.form.password"
               />
               <button
                 type="button"
                 className={s.iconRight}
-                onClick={() => setShowPw(!showPw)}
+                onClick={() => {
+                  const next = !showPw;
+                  setShowPw(next);
+                  tracker.track("resetPassword.password.toggled", {
+                    visible: next,
+                  });
+                }}
                 tabIndex={-1}
+                data-track-id="resetPassword.form.showPassword"
               >
                 {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
@@ -128,6 +168,7 @@ export default function ResetPassword() {
                 value={form.confirm}
                 onChange={onChange}
                 required
+                data-track-id="resetPassword.form.confirm"
               />
             </div>
           </div>
@@ -138,13 +179,18 @@ export default function ResetPassword() {
               status === "loading" || !form.password || !form.confirm || !token
             }
             style={{ marginTop: 4 }}
+            data-track-id="resetPassword.form.submit"
           >
             {status === "loading" && <span className={s.spinner} />}
             {status === "loading" ? "Resetting…" : "Set New Password →"}
           </button>
         </form>
         <p className={s.footer}>
-          <Link to="/forgot-password" className={s.link}>
+          <Link
+            to="/forgot-password"
+            className={s.link}
+            data-track-id="resetPassword.requestNewLink"
+          >
             Request a new reset link
           </Link>
         </p>

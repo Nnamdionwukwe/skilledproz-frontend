@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, AlertCircle } from "lucide-react";
 import api from "../../lib/api";
 import AuthLayout from "../../components/auth/AuthLayout";
 import s from "../../components/auth/form.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -12,11 +13,24 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus("loading");
+
+    tracker.action("forgotPassword.submit.attempt", {
+      emailDomain: email.split("@")[1] || null,
+    });
+
     try {
       await api.post("/auth/forgot-password", { email });
       setStatus("sent");
+
+      tracker.action("forgotPassword.sent", {
+        emailDomain: email.split("@")[1] || null,
+      });
     } catch {
       setStatus("error");
+
+      tracker.action("forgotPassword.failed", {
+        emailDomain: email.split("@")[1] || null,
+      });
     }
   };
 
@@ -36,6 +50,7 @@ export default function ForgotPassword() {
             to="/login"
             className={`${s.btn} ${s.btnOutline}`}
             style={{ textDecoration: "none", textAlign: "center" }}
+            data-track-id="forgotPassword.backToSignIn.sent"
           >
             <ArrowLeft size={14} /> Back to sign in
           </Link>
@@ -46,7 +61,11 @@ export default function ForgotPassword() {
   return (
     <AuthLayout>
       <div className={s.container}>
-        <Link to="/login" className={s.backBtn}>
+        <Link
+          to="/login"
+          className={s.backBtn}
+          data-track-id="forgotPassword.backToSignIn"
+        >
           <ArrowLeft size={15} /> Back to sign in
         </Link>
         <div className={s.header}>
@@ -80,7 +99,13 @@ export default function ForgotPassword() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => {
+                  if (!email) {
+                    tracker.track("forgotPassword.form.email.focused");
+                  }
+                }}
                 required
+                data-track-id="forgotPassword.form.email"
               />
             </div>
           </div>
@@ -88,6 +113,7 @@ export default function ForgotPassword() {
             type="submit"
             className={`${s.btn} ${s.btnPrimary}`}
             disabled={status === "loading" || !email}
+            data-track-id="forgotPassword.form.submit"
           >
             {status === "loading" && <span className={s.spinner} />}
             {status === "loading" ? "Sending…" : "Send Reset Link"}

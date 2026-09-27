@@ -29,6 +29,9 @@ import {
 import styles from "./WaitlistSection.module.css";
 import CountdownTimer from "../ui/CountdownTimer";
 
+// ── ANALYTICS ─────────────────────────────────────────────────────────────
+import tracker from "../../lib/analytics/tracker";
+
 // ─── Confirmation Modal Component ──────────────────────────────────────────
 
 function ConfirmationModal({
@@ -49,7 +52,11 @@ function ConfirmationModal({
         </div>
         <h3 className={styles.modalTitle}>{title}</h3>
         <p className={styles.modalMessage}>{message}</p>
-        <button className={styles.modalButton} onClick={onClose}>
+        <button
+          className={styles.modalButton}
+          onClick={onClose}
+          data-track-id="waitlist.modal.close"
+        >
           {buttonLabel || "Got it!"}
         </button>
       </div>
@@ -73,9 +80,39 @@ export default function WaitlistSection() {
     buttonLabel: "Got it!",
   });
 
+  // ── ANALYTICS: page/section view on mount ────────────────────────────────
+  // Fires once when the waitlist section mounts. Gives us a baseline count of
+  // how many visitors actually reach this section (it's low on the landing page,
+  // so this is a meaningful signal — "scrolled to waitlist").
+  // We use IntersectionObserver to only count it when the section is actually
+  // visible in the viewport, not just when it's rendered off-screen.
+  const [sectionFired, setSectionFired] = useState(false);
+
+  const sectionRef = (node) => {
+    if (!node || sectionFired) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+            tracker.track("page.waitlist.view", {
+              source: window.location.pathname,
+              referrer: document.referrer || null,
+            });
+            setSectionFired(true);
+            obs.disconnect();
+          }
+        });
+      },
+      { threshold: [0.3] },
+    );
+    obs.observe(node);
+  };
+
   const showModal = (title, message, icon = null, buttonLabel = "Got it!") => {
     setModalContent({ title, message, icon, buttonLabel });
     setModalOpen(true);
+    // ── ANALYTICS: modal opened ───────────────────────────────────────────
+    tracker.action("waitlist.modal.opened", { title });
   };
 
   const handleSubmit = async (e) => {
@@ -84,6 +121,11 @@ export default function WaitlistSection() {
 
     setStatus("loading");
     setMessage("");
+
+    // ── ANALYTICS: user is attempting to join waitlist ────────────────────
+    tracker.action("waitlist.join.attempt", {
+      emailDomain: email.split("@")[1] || null,
+    });
 
     try {
       const res = await fetch(
@@ -107,6 +149,10 @@ export default function WaitlistSection() {
           "✅",
           "Awesome!",
         );
+        // ── ANALYTICS: duplicate email attempt ────────────────────────────
+        tracker.action("waitlist.join.duplicate", {
+          emailDomain: email.split("@")[1] || null,
+        });
         setEmail("");
         return;
       }
@@ -123,6 +169,12 @@ export default function WaitlistSection() {
         "🚀",
         "Amazing!",
       );
+      // ── ANALYTICS: successful waitlist join (domain event) ────────────
+      tracker.action("waitlist.joined", {
+        emailDomain: email.split("@")[1] || null,
+        source: window.location.pathname,
+        referrer: document.referrer || null,
+      });
       setEmail("");
     } catch (err) {
       setStatus("error");
@@ -134,6 +186,10 @@ export default function WaitlistSection() {
         "⚠️",
         "Try Again",
       );
+      // ── ANALYTICS: join failed ────────────────────────────────────────
+      tracker.action("waitlist.join.failed", {
+        reason: err.message || "unknown",
+      });
     }
   };
 
@@ -146,6 +202,10 @@ export default function WaitlistSection() {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
+      // ── ANALYTICS: referral link copied ───────────────────────────────
+      tracker.action("waitlist.referral.copied", {
+        link: referralLink,
+      });
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -156,6 +216,8 @@ export default function WaitlistSection() {
       `https://wa.me/?text=${encodeURIComponent(`${referralMessage}\n${referralLink}`)}`,
       "_blank",
     );
+    // ── ANALYTICS: shared on WhatsApp ─────────────────────────────────────
+    tracker.action("waitlist.referral.shared", { channel: "whatsapp" });
   };
 
   const shareOnTwitter = () => {
@@ -163,6 +225,7 @@ export default function WaitlistSection() {
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${referralMessage}\n${referralLink}`)}`,
       "_blank",
     );
+    tracker.action("waitlist.referral.shared", { channel: "twitter" });
   };
 
   const shareOnFacebook = () => {
@@ -170,6 +233,7 @@ export default function WaitlistSection() {
       `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`,
       "_blank",
     );
+    tracker.action("waitlist.referral.shared", { channel: "facebook" });
   };
 
   const benefits = [
@@ -206,7 +270,7 @@ export default function WaitlistSection() {
   ];
 
   return (
-    <section className={styles.waitlist}>
+    <section className={styles.waitlist} ref={sectionRef}>
       <div className={styles.container}>
         {/* ─── Confirmation Modal ─────────────────────────────────────────── */}
         <ConfirmationModal
@@ -316,13 +380,19 @@ export default function WaitlistSection() {
                   placeholder="Enter your best email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => {
+                    // ── ANALYTICS: user started filling the form ──────────
+                    tracker.track("waitlist.form.started");
+                  }}
                   required
                   disabled={status === "loading" || status === "success"}
+                  data-track-id="waitlist.form.email"
                 />
                 <button
                   type="submit"
                   className={styles.button}
                   disabled={status === "loading" || status === "success"}
+                  data-track-id="waitlist.form.submit"
                 >
                   {status === "loading" ? (
                     <FaSpinner className={styles.spinner} />
@@ -368,7 +438,15 @@ export default function WaitlistSection() {
           <div className={styles.referralWrapper}>
             <button
               className={styles.referralToggle}
-              onClick={() => setShowReferral(!showReferral)}
+              onClick={() => {
+                const next = !showReferral;
+                setShowReferral(next);
+                // ── ANALYTICS: referral section toggled ───────────────────
+                tracker.action("waitlist.referral.toggle", {
+                  opened: next,
+                });
+              }}
+              data-track-id="waitlist.referral.toggle"
             >
               <FaShareAlt /> Refer a Friend & Earn Bonuses
               <span className={styles.referralToggleIcon}>
@@ -402,6 +480,7 @@ export default function WaitlistSection() {
                   <button
                     className={styles.referralCopyBtn}
                     onClick={handleCopyLink}
+                    data-track-id="waitlist.referral.copyTop"
                   >
                     {copied ? <FaCheck /> : <FaCopy />}
                     {copied ? "Copied!" : "Copy"}
@@ -413,24 +492,28 @@ export default function WaitlistSection() {
                   <button
                     className={styles.shareBtnWhatsApp}
                     onClick={shareOnWhatsApp}
+                    data-track-id="waitlist.referral.shareWhatsApp"
                   >
                     <FaWhatsapp /> WhatsApp
                   </button>
                   <button
                     className={styles.shareBtnTwitter}
                     onClick={shareOnTwitter}
+                    data-track-id="waitlist.referral.shareTwitter"
                   >
                     <FaTwitter /> Twitter
                   </button>
                   <button
                     className={styles.shareBtnFacebook}
                     onClick={shareOnFacebook}
+                    data-track-id="waitlist.referral.shareFacebook"
                   >
                     <FaFacebook /> Facebook
                   </button>
                   <button
                     className={styles.shareBtnLink}
                     onClick={handleCopyLink}
+                    data-track-id="waitlist.referral.copyBottom"
                   >
                     <FaLink /> Copy Link
                   </button>
@@ -463,6 +546,12 @@ export default function WaitlistSection() {
             <Link
               to={`/survey${email ? `?email=${encodeURIComponent(email)}` : ""}`}
               className={styles.surveyBtn}
+              data-track-id="waitlist.survey.open"
+              onClick={() =>
+                tracker.action("waitlist.survey.clicked", {
+                  hasEmail: !!email,
+                })
+              }
             >
               <FaClipboardList /> Tell us what feature you need most{" "}
               <FaArrowRight className={styles.surveyArrow} />
@@ -471,7 +560,12 @@ export default function WaitlistSection() {
               Help us build the platform <strong>you</strong> actually need
             </p>
 
-            <Link to={`/socials`} className={styles.socialBtn}>
+            <Link
+              to={`/socials`}
+              className={styles.socialBtn}
+              data-track-id="waitlist.socials.open"
+              onClick={() => tracker.action("waitlist.socials.clicked")}
+            >
               <span className={styles.socialBtnIcon}>
                 <FaShareAlt />
                 <span className={styles.socialBtnPulse} />

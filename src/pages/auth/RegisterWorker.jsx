@@ -18,6 +18,7 @@ import { useAuthStore } from "../../store/authStore";
 import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 import g from "../../components/auth/GoogleSignInButton.module.css";
 import styles from "./WorkerRegister.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 const ALL_CURRENCIES = [
   "USD",
@@ -112,6 +113,15 @@ export default function WorkerRegister() {
     pricingNote: "",
   });
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.workerRegister.view", {
+      hasRefFromUrl: !!new URLSearchParams(window.location.search).get("ref"),
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load categories
   useEffect(() => {
     api
@@ -139,11 +149,20 @@ export default function WorkerRegister() {
       if (exists) {
         const next = prev.filter((c) => c.id !== cat.id);
         if (primaryCatId === cat.id) setPrimaryCatId(next[0]?.id || "");
+        tracker.track("workerRegister.category.removed", {
+          categoryId: cat.id,
+          categoryName: cat.name,
+        });
         return next;
       }
       if (prev.length >= 5) return prev;
       const next = [...prev, cat];
       if (!primaryCatId) setPrimaryCatId(cat.id);
+      tracker.track("workerRegister.category.added", {
+        categoryId: cat.id,
+        categoryName: cat.name,
+        totalSelected: next.length,
+      });
       return next;
     });
   }
@@ -151,6 +170,9 @@ export default function WorkerRegister() {
   async function handleAddCustomCategory() {
     if (!customCatName.trim()) return;
     setAddingCat(true);
+    tracker.action("workerRegister.customCategory.attempt", {
+      name: customCatName.trim(),
+    });
     try {
       const res = await api.post("/categories/suggest", {
         name: customCatName.trim(),
@@ -163,8 +185,15 @@ export default function WorkerRegister() {
       setCustomCatName("");
       setShowCustomCat(false);
       setCatSearch("");
+      tracker.action("workerRegister.customCategory.created", {
+        categoryId: cat.id,
+        categoryName: cat.name,
+      });
     } catch {
       setError("Failed to add custom category");
+      tracker.action("workerRegister.customCategory.failed", {
+        name: customCatName.trim(),
+      });
     } finally {
       setAddingCat(false);
     }
@@ -204,21 +233,52 @@ export default function WorkerRegister() {
     const err = validateStep();
     if (err) {
       setError(err);
+      tracker.track("workerRegister.step.validationFailed", {
+        step,
+        stepId: STEPS[step]?.id,
+        reason: err,
+      });
       return;
     }
     setError("");
-    setStep((s) => s + 1);
+    const nextStep = step + 1;
+    setStep(nextStep);
+    tracker.track("workerRegister.step.advanced", {
+      from: step,
+      to: nextStep,
+      fromId: STEPS[step]?.id,
+      toId: STEPS[nextStep]?.id,
+    });
   }
 
   async function handleSubmit() {
     const err = validateStep();
     if (err) {
       setError(err);
+      tracker.track("workerRegister.submit.validationFailed", {
+        reason: err,
+      });
       return;
     }
 
     setLoading(true);
     setError("");
+
+    tracker.action("workerRegister.submit.attempt", {
+      hasPhone: !!account.phone,
+      hasCountry: !!account.country,
+      hasCity: !!account.city,
+      hasReferralCode: !!account.referralCode?.trim(),
+      categoryCount: selectedCats.length,
+      hasPrimaryCategory: !!primaryCatId,
+      currency: pricing.currency,
+      hasHourly: !!pricing.hourlyRate,
+      hasDaily: !!pricing.dailyRate,
+      hasWeekly: !!pricing.weeklyRate,
+      hasMonthly: !!pricing.monthlyRate,
+      hasCustom: !!pricing.customRate,
+    });
+
     try {
       const payload = {
         // Account fields (top-level)
@@ -270,9 +330,22 @@ export default function WorkerRegister() {
         res.data.data.accessToken,
         res.data.data.refreshToken,
       );
+
+      tracker.action("workerRegister.success", {
+        categoryCount: selectedCats.length,
+        primaryCategoryId: primaryCatId || null,
+        currency: pricing.currency,
+        hasReferralCode: !!account.referralCode?.trim(),
+        emailDomain: account.email.split("@")[1] || null,
+      });
+
       navigate("/dashboard/worker");
     } catch (e) {
       setError(e.response?.data?.message || "Registration failed");
+      tracker.action("workerRegister.failed", {
+        reason: e.response?.data?.message || "unknown",
+        emailDomain: account.email.split("@")[1] || null,
+      });
     } finally {
       setLoading(false);
     }
@@ -288,7 +361,11 @@ export default function WorkerRegister() {
       <div className={styles.container}>
         <button
           className={styles.backBtn}
-          onClick={() => navigate("/register")}
+          onClick={() => {
+            tracker.track("workerRegister.back.clicked");
+            navigate("/register");
+          }}
+          data-track-id="workerRegister.back"
         >
           <ArrowLeft size={15} /> Back
         </button>
@@ -347,12 +424,14 @@ export default function WorkerRegister() {
                   value={account.firstName}
                   onChange={(v) => a("firstName", v)}
                   placeholder="John"
+                  trackId="workerRegister.firstName"
                 />
                 <Field
                   label="Last Name *"
                   value={account.lastName}
                   onChange={(v) => a("lastName", v)}
                   placeholder="Doe"
+                  trackId="workerRegister.lastName"
                 />
               </div>
               <Field
@@ -361,6 +440,7 @@ export default function WorkerRegister() {
                 onChange={(v) => a("email", v)}
                 type="email"
                 placeholder="you@example.com"
+                trackId="workerRegister.email"
               />
               <Field
                 label="Phone"
@@ -368,6 +448,7 @@ export default function WorkerRegister() {
                 onChange={(v) => a("phone", v)}
                 type="tel"
                 placeholder="+234..."
+                trackId="workerRegister.phone"
               />
               <div className={styles.row2}>
                 <Field
@@ -375,12 +456,14 @@ export default function WorkerRegister() {
                   value={account.country}
                   onChange={(v) => a("country", v)}
                   placeholder="Nigeria"
+                  trackId="workerRegister.country"
                 />
                 <Field
                   label="City"
                   value={account.city}
                   onChange={(v) => a("city", v)}
                   placeholder="Lagos"
+                  trackId="workerRegister.city"
                 />
               </div>
 
@@ -401,6 +484,7 @@ export default function WorkerRegister() {
                   }
                   style={{ textTransform: "uppercase", letterSpacing: "0.1em" }}
                   maxLength={12}
+                  data-track-id="workerRegister.referralCode"
                 />
               </div>
               <Field
@@ -408,12 +492,14 @@ export default function WorkerRegister() {
                 value={account.password}
                 onChange={(v) => a("password", v)}
                 type="password"
+                trackId="workerRegister.password"
               />
               <Field
                 label="Confirm Password *"
                 value={account.confirm}
                 onChange={(v) => a("confirm", v)}
                 type="password"
+                trackId="workerRegister.confirmPassword"
               />
             </div>
           )}
@@ -427,6 +513,7 @@ export default function WorkerRegister() {
                 value={profile.title}
                 onChange={(v) => p("title", v)}
                 placeholder="e.g. Certified Electrician"
+                trackId="workerRegister.profileTitle"
               />
               <Field
                 label="Description *"
@@ -434,6 +521,7 @@ export default function WorkerRegister() {
                 onChange={(v) => p("description", v)}
                 multiline
                 placeholder="Describe your skills, experience, specializations..."
+                trackId="workerRegister.profileDescription"
               />
               <div className={styles.row2}>
                 <Field
@@ -442,6 +530,7 @@ export default function WorkerRegister() {
                   onChange={(v) => p("yearsExperience", v)}
                   type="number"
                   placeholder="0"
+                  trackId="workerRegister.yearsExperience"
                 />
                 <Field
                   label="Service Radius (km)"
@@ -449,6 +538,7 @@ export default function WorkerRegister() {
                   onChange={(v) => p("serviceRadius", v)}
                   type="number"
                   placeholder="25"
+                  trackId="workerRegister.serviceRadius"
                 />
               </div>
             </div>
@@ -474,11 +564,18 @@ export default function WorkerRegister() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setPrimaryCatId(c.id)}
+                        onClick={() => {
+                          setPrimaryCatId(c.id);
+                          tracker.track("workerRegister.category.primarySet", {
+                            categoryId: c.id,
+                            categoryName: c.name,
+                          });
+                        }}
                         className={styles.setPrimaryBtn}
                         title={
                           c.id === primaryCatId ? "Primary" : "Set as primary"
                         }
+                        data-track-id={`workerRegister.category.setPrimary.${c.id}`}
                       >
                         <Star
                           size={13}
@@ -490,6 +587,7 @@ export default function WorkerRegister() {
                         onClick={() => toggleCat(c)}
                         className={styles.removeCatBtn}
                         aria-label="Remove category"
+                        data-track-id={`workerRegister.category.remove.${c.id}`}
                       >
                         ×
                       </button>
@@ -516,6 +614,7 @@ export default function WorkerRegister() {
                   value={catSearch}
                   onChange={(e) => setCatSearch(e.target.value)}
                   style={{ paddingLeft: 36 }}
+                  data-track-id="workerRegister.categorySearch"
                 />
               </div>
 
@@ -528,6 +627,7 @@ export default function WorkerRegister() {
                       key={c.id}
                       className={`${styles.catChip} ${selected ? styles.catChipSelected : ""}`}
                       onClick={() => toggleCat(c)}
+                      data-track-id={`workerRegister.category.${c.id}`}
                     >
                       {c.icon && <span>{c.icon}</span>}
                       <span>{c.name}</span>
@@ -545,7 +645,11 @@ export default function WorkerRegister() {
                 <button
                   type="button"
                   className={styles.addCatBtn}
-                  onClick={() => setShowCustomCat(true)}
+                  onClick={() => {
+                    setShowCustomCat(true);
+                    tracker.track("workerRegister.customCategory.opened");
+                  }}
+                  data-track-id="workerRegister.customCategory.open"
                 >
                   <Plus size={13} /> Add a custom category
                 </button>
@@ -560,6 +664,7 @@ export default function WorkerRegister() {
                     onKeyDown={(e) =>
                       e.key === "Enter" && handleAddCustomCategory()
                     }
+                    data-track-id="workerRegister.customCategory.input"
                   />
                   <div className={styles.row2}>
                     <button
@@ -567,6 +672,7 @@ export default function WorkerRegister() {
                       className={styles.primaryBtn}
                       onClick={handleAddCustomCategory}
                       disabled={addingCat || !customCatName.trim()}
+                      data-track-id="workerRegister.customCategory.submit"
                     >
                       {addingCat ? "Adding..." : "Add Category"}
                     </button>
@@ -576,7 +682,11 @@ export default function WorkerRegister() {
                       onClick={() => {
                         setShowCustomCat(false);
                         setCustomCatName("");
+                        tracker.track(
+                          "workerRegister.customCategory.cancelled",
+                        );
                       }}
+                      data-track-id="workerRegister.customCategory.cancel"
                     >
                       Cancel
                     </button>
@@ -600,7 +710,14 @@ export default function WorkerRegister() {
                 <select
                   className={styles.select}
                   value={pricing.currency}
-                  onChange={(e) => pr("currency", e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    pr("currency", val);
+                    tracker.track("workerRegister.currency.changed", {
+                      currency: val,
+                    });
+                  }}
+                  data-track-id="workerRegister.currency"
                 >
                   {ALL_CURRENCIES.map((c) => (
                     <option key={c} value={c}>
@@ -616,24 +733,28 @@ export default function WorkerRegister() {
                   suffix="/hr"
                   value={pricing.hourlyRate}
                   onChange={(v) => pr("hourlyRate", v)}
+                  trackId="workerRegister.hourlyRate"
                 />
                 <PriceField
                   label="Daily Rate"
                   suffix="/day"
                   value={pricing.dailyRate}
                   onChange={(v) => pr("dailyRate", v)}
+                  trackId="workerRegister.dailyRate"
                 />
                 <PriceField
                   label="Weekly Rate"
                   suffix="/wk"
                   value={pricing.weeklyRate}
                   onChange={(v) => pr("weeklyRate", v)}
+                  trackId="workerRegister.weeklyRate"
                 />
                 <PriceField
                   label="Monthly Rate"
                   suffix="/mo"
                   value={pricing.monthlyRate}
                   onChange={(v) => pr("monthlyRate", v)}
+                  trackId="workerRegister.monthlyRate"
                 />
               </div>
 
@@ -645,12 +766,14 @@ export default function WorkerRegister() {
                   type="number"
                   onChange={(v) => pr("customRate", v)}
                   placeholder="0.00"
+                  trackId="workerRegister.customRate"
                 />
                 <Field
                   label="Custom Label"
                   value={pricing.customRateLabel}
                   onChange={(v) => pr("customRateLabel", v)}
                   placeholder="e.g. per project"
+                  trackId="workerRegister.customRateLabel"
                 />
               </div>
               <Field
@@ -659,6 +782,7 @@ export default function WorkerRegister() {
                 multiline
                 onChange={(v) => pr("pricingNote", v)}
                 placeholder="Discounts, terms, travel fees..."
+                trackId="workerRegister.pricingNote"
               />
 
               {/* Live preview */}
@@ -710,18 +834,27 @@ export default function WorkerRegister() {
                   onChange={(e) => {
                     setAgreed(e.target.checked);
                     setError("");
+                    tracker.track("workerRegister.terms.toggled", {
+                      agreed: e.target.checked,
+                    });
                   }}
+                  data-track-id="workerRegister.terms.agree"
                 />
                 I agree to the{" "}
                 <Link
                   to="/terms"
                   className={styles.link}
                   style={{ marginLeft: 3 }}
+                  data-track-id="workerRegister.terms.link"
                 >
                   Terms
                 </Link>{" "}
                 and{" "}
-                <Link to="/privacy" className={styles.link}>
+                <Link
+                  to="/privacy"
+                  className={styles.link}
+                  data-track-id="workerRegister.privacy.link"
+                >
                   Privacy Policy
                 </Link>
               </label>
@@ -734,15 +867,27 @@ export default function WorkerRegister() {
               <button
                 className={styles.secondaryBtn}
                 onClick={() => {
-                  setStep((s) => s - 1);
+                  const prevStep = step - 1;
+                  setStep(prevStep);
                   setError("");
+                  tracker.track("workerRegister.step.wentBack", {
+                    from: step,
+                    to: prevStep,
+                    fromId: STEPS[step]?.id,
+                    toId: STEPS[prevStep]?.id,
+                  });
                 }}
+                data-track-id="workerRegister.step.back"
               >
                 ← Back
               </button>
             )}
             {step < STEPS.length - 1 ? (
-              <button className={styles.primaryBtn} onClick={next}>
+              <button
+                className={styles.primaryBtn}
+                onClick={next}
+                data-track-id={`workerRegister.step.${STEPS[step]?.id}.next`}
+              >
                 Continue →
               </button>
             ) : (
@@ -750,6 +895,7 @@ export default function WorkerRegister() {
                 className={styles.primaryBtn}
                 onClick={handleSubmit}
                 disabled={loading || !agreed}
+                data-track-id="workerRegister.submit"
               >
                 {loading ? (
                   <>
@@ -767,13 +913,21 @@ export default function WorkerRegister() {
 
         <p className={styles.footer}>
           Already have an account?{" "}
-          <Link to="/login" className={styles.link}>
+          <Link
+            to="/login"
+            className={styles.link}
+            data-track-id="workerRegister.login.link"
+          >
             Sign in
           </Link>
         </p>
         <p className={styles.footer} style={{ marginTop: 6 }}>
           Hiring someone?{" "}
-          <Link to="/register/hirer" className={styles.link}>
+          <Link
+            to="/register/hirer"
+            className={styles.link}
+            data-track-id="workerRegister.hirer.link"
+          >
             Register as Hirer
           </Link>
         </p>
@@ -791,6 +945,7 @@ function Field({
   type = "text",
   placeholder,
   multiline,
+  trackId,
 }) {
   return (
     <div className={styles.field}>
@@ -801,7 +956,13 @@ function Field({
           value={value || ""}
           rows={3}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => {
+            if (trackId && !value) {
+              tracker.track(`${trackId}.focused`);
+            }
+          }}
           placeholder={placeholder}
+          data-track-id={trackId}
         />
       ) : (
         <input
@@ -809,14 +970,20 @@ function Field({
           type={type}
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => {
+            if (trackId && !value) {
+              tracker.track(`${trackId}.focused`);
+            }
+          }}
           placeholder={placeholder}
+          data-track-id={trackId}
         />
       )}
     </div>
   );
 }
 
-function PriceField({ label, suffix, value, onChange }) {
+function PriceField({ label, suffix, value, onChange, trackId }) {
   return (
     <div className={styles.priceField}>
       <label className={styles.label}>{label}</label>
@@ -829,6 +996,7 @@ function PriceField({ label, suffix, value, onChange }) {
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder="0.00"
+          data-track-id={trackId}
         />
         <span className={styles.priceSuffix}>{suffix}</span>
       </div>

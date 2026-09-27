@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuthStore } from "../../store/authStore";
 import s from "./GoogleSignInButton.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 /**
  * Google Sign-In button built to match the SkilledProz auth UI.
@@ -43,6 +44,14 @@ export default function GoogleSignInButton({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
       setError("");
+
+      // ── ANALYTICS: user completed Google OAuth flow ────────────────────
+      tracker.action("googleAuth.oauth.completed", {
+        mode,
+        role: role || null,
+        hasRefCode: !!refCode,
+      });
+
       try {
         // Only include role when the caller provided one.
         const payload = { accessToken: tokenResponse.access_token };
@@ -55,6 +64,15 @@ export default function GoogleSignInButton({
 
         // ── New user needing a role ─────────────────────────────────────
         if (result?.needsRole) {
+          // ── ANALYTICS: new Google user, no role yet ─────────────────────
+          tracker.action("googleAuth.newUser", {
+            mode,
+            emailDomain:
+              (result.googleProfile?.email || "").split("@")[1] || null,
+            hasRefCode: !!refCode,
+            routedTo: onNewUser ? "parent_callback" : "register_page",
+          });
+
           if (onNewUser) {
             onNewUser(
               result.googleProfile,
@@ -77,6 +95,14 @@ export default function GoogleSignInButton({
         }
 
         // ── Existing user (or completed signup with role) ───────────────
+        // ── ANALYTICS: existing Google user signed in ─────────────────────
+        tracker.action("googleAuth.existingUser", {
+          mode,
+          role: result?.user?.role || null,
+          emailDomain: (result?.user?.email || "").split("@")[1] || null,
+          hasRefCode: !!refCode,
+        });
+
         if (onSuccess) {
           onSuccess(result);
           return;
@@ -99,6 +125,13 @@ export default function GoogleSignInButton({
           code === "ACCOUNT_DELETED" ||
           code === "ACCOUNT_NOT_FOUND"
         ) {
+          // ── ANALYTICS: blocked account attempt ────────────────────────
+          tracker.action("googleAuth.blocked", {
+            mode,
+            code,
+            role: role || null,
+          });
+
           const params = new URLSearchParams();
           params.set("code", code);
           if (res?.message) params.set("reason", res.message);
@@ -112,24 +145,52 @@ export default function GoogleSignInButton({
           err?.message ||
           "Google sign-in failed. Please try again.";
         setError(message);
+
+        // ── ANALYTICS: Google auth failed ────────────────────────────────
+        tracker.action("googleAuth.failed", {
+          mode,
+          role: role || null,
+          reason: code || message || "unknown",
+        });
       } finally {
         setLoading(false);
       }
     },
     onError: () => {
       setError("Google sign-in was cancelled or failed.");
+
+      // ── ANALYTICS: user cancelled the Google popup/flow ────────────────
+      tracker.action("googleAuth.cancelled", {
+        mode,
+        role: role || null,
+      });
     },
   });
+
+  const handleClick = () => {
+    // ── ANALYTICS: user clicked the Google button ────────────────────────
+    tracker.action("googleAuth.button.clicked", {
+      mode,
+      role: role || null,
+      hasRefCode: !!refCode,
+    });
+    googleLogin();
+  };
 
   return (
     <div className={s.wrap}>
       <button
         type="button"
         className={s.googleBtn}
-        onClick={() => googleLogin()}
+        onClick={handleClick}
         disabled={loading}
         aria-label={
           mode === "signup" ? "Sign up with Google" : "Sign in with Google"
+        }
+        data-track-id={
+          mode === "signup"
+            ? `googleAuth.button.signup${role ? `.${role.toLowerCase()}` : ""}`
+            : "googleAuth.button.signin"
         }
       >
         {loading ? (

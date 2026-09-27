@@ -7,6 +7,7 @@ import { useAuthStore } from "../../../store/authStore";
 import HirerLayout from "../../layout/HirerLayout";
 import BookingWorkerInfo from "./BookingWorkerInfo";
 import BookingFormFields from "./BookingFormFields";
+import tracker from "../../../lib/analytics/tracker";
 
 // ── Fee config ──────────────────────────────────────────────────────────────
 const HIRER_FEE_RATE = 0.05;
@@ -65,6 +66,18 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
   const minDate = new Date(Date.now() + 60 * 60 * 1000)
     .toISOString()
     .slice(0, 16);
+
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.createBooking.view", {
+      hasPropWorkerId: !!propWorkerId,
+      hasUrlWorkerId: !!searchParams.get("workerId"),
+      fromJobId: fromJobId || null,
+      viewerRole: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Helpers ──────────────────────────────────────────────────────────
   const DURATION_OPTIONS = [
@@ -170,10 +183,22 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
           w.categories?.find((c) => c.isPrimary) || w.categories?.[0];
         if (primaryCat)
           setForm((f) => ({ ...f, categoryId: primaryCat.category.id }));
+
+        // ── ANALYTICS: worker loaded ─────────────────────────────────────
+        tracker.track("createBooking.worker.loaded", {
+          workerId: id,
+          isVerified: w?.verificationStatus === "VERIFIED",
+          categoryCount: w?.categories?.length || 0,
+          availableUnits: available.map((o) => o.unit),
+        });
       })
-      .catch(() =>
-        setWorkerError("Worker not found. Check the ID and try again."),
-      )
+      .catch(() => {
+        setWorkerError("Worker not found. Check the ID and try again.");
+        // ── ANALYTICS: worker lookup failed ──────────────────────────────
+        tracker.track("createBooking.worker.load.failed", {
+          workerId: id,
+        });
+      })
       .finally(() => setWorkerLoading(false));
   }, [form.workerId]);
 
@@ -195,8 +220,21 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             (jp.estimatedHours ? String(jp.estimatedHours) : f.estimatedValue),
         }));
         if (jp.estimatedUnit) setSelectedUnit(jp.estimatedUnit);
+
+        // ── ANALYTICS: job post loaded ───────────────────────────────────
+        tracker.track("createBooking.jobPost.loaded", {
+          jobPostId: fromJobId,
+          budget: jp?.budget || null,
+          currency: jp?.currency || null,
+          categoryId: jp?.categoryId || null,
+        });
       })
-      .catch(() => {});
+      .catch(() => {
+        // ── ANALYTICS: job post lookup failed ────────────────────────────
+        tracker.track("createBooking.jobPost.load.failed", {
+          jobPostId: fromJobId,
+        });
+      });
   }, [fromJobId]);
 
   // ── Derived ──────────────────────────────────────────────────────────
@@ -248,6 +286,10 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     e.preventDefault();
     if (!worker) {
       setError("Please enter a valid Worker ID first.");
+      // ── ANALYTICS: submit blocked, no worker ─────────────────────────────
+      tracker.action("createBooking.submit.blocked", {
+        reason: "no_worker",
+      });
       return;
     }
     const required = [
@@ -263,22 +305,57 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         setError(
           `Please fill in: ${k.replace(/([A-Z])/g, " $1").toLowerCase()}`,
         );
+        // ── ANALYTICS: submit blocked, missing field ────────────────────
+        tracker.action("createBooking.submit.blocked", {
+          reason: "missing_field",
+          field: k,
+        });
         return;
       }
     }
     // For non‑custom units, ensure a rate exists
     if (lockedRate <= 0 && currentOption?.unit !== "custom" && !isNegotiated) {
       setError("This worker has not set a rate for the selected duration.");
+      // ── ANALYTICS: submit blocked, no rate ──────────────────────────────
+      tracker.action("createBooking.submit.blocked", {
+        reason: "no_rate_for_unit",
+        selectedUnit,
+      });
       return;
     }
 
     // If negotiated, ensure a rate is entered
     if (isNegotiated && !negotiatedRate) {
       setError("Please enter the agreed total amount.");
+      // ── ANALYTICS: submit blocked, no negotiated rate ───────────────────
+      tracker.action("createBooking.submit.blocked", {
+        reason: "no_negotiated_rate",
+      });
       return;
     }
 
     setLoading(true);
+
+    // ── ANALYTICS: submit attempt with full context ─────────────────────
+    tracker.action("createBooking.submit.attempt", {
+      workerId: form.workerId,
+      isFromJob,
+      fromJobId: fromJobId || null,
+      selectedUnit,
+      jobType,
+      locationType,
+      budgetType,
+      durationType,
+      isNegotiated,
+      hasAddress: !!form.address,
+      hasNotes: !!form.notes,
+      hasRequirements: !!form.requirements,
+      hasResponsibilities: !!form.responsibilities,
+      estimatedValue: form.estimatedValue || null,
+      lockedRate,
+      lockedCurrency,
+    });
+
     try {
       // ── Compute estimatedHours ──
       let estimatedHours = null;
@@ -358,6 +435,22 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
       const res = await api.post("/bookings", payload);
 
       const { booking } = res.data.data;
+
+      // ── ANALYTICS: booking created successfully ─────────────────────────
+      tracker.action("createBooking.success", {
+        bookingId: booking.id,
+        workerId: form.workerId,
+        isFromJob,
+        fromJobId: fromJobId || null,
+        amount: payload.agreedRate,
+        currency: payload.currency,
+        selectedUnit,
+        isNegotiated,
+        estimatedValue: payload.estimatedValue,
+        jobType: payload.jobType,
+        locationType: payload.locationType,
+      });
+
       if (onSuccess) onSuccess(booking);
       else navigate(`/bookings/${booking.id}/pay`);
     } catch (e) {
@@ -365,6 +458,14 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
         e.response?.data?.message ||
           "Failed to create booking. Please try again.",
       );
+
+      // ── ANALYTICS: booking creation failed ──────────────────────────────
+      tracker.action("createBooking.failed", {
+        workerId: form.workerId,
+        isFromJob,
+        fromJobId: fromJobId || null,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setLoading(false);
     }
@@ -387,6 +488,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             <button
               onClick={() => navigate("/bookings")}
               className={styles.submitBtn}
+              data-track-id="createBooking.restricted.backToBookings"
             >
               Back to Bookings
             </button>
@@ -398,7 +500,11 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
 
   return (
     <HirerLayout>
-      <Link to="/bookings" className={styles.back}>
+      <Link
+        to="/bookings"
+        className={styles.back}
+        data-track-id="createBooking.back"
+      >
         ← Back to Bookings
       </Link>
       <div className={styles.page}>
@@ -463,6 +569,7 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
             type="submit"
             className={styles.submitBtn}
             disabled={loading || !worker}
+            data-track-id="createBooking.submit"
           >
             {loading ? (
               <>

@@ -13,6 +13,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import tracker from "../../lib/analytics/tracker";
 
 // ── Helper: format duration exactly like BookingDetailMain ──────────────
 function formatDuration(booking) {
@@ -107,16 +108,48 @@ export default function BookingList() {
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const isHirer = user?.role === "HIRER";
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.bookingList.view", {
+      role: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     const params = { page, limit: 12 };
     if (filter !== "ALL") params.status = filter;
-    api.get("/bookings", { params }).then((res) => {
-      setBookings(res.data.data.bookings);
-      setPages(res.data.data.pages);
-      setTotal(res.data.data.total);
-      setLoading(false);
-    });
+    api
+      .get("/bookings", { params })
+      .then((res) => {
+        const data = res.data.data;
+        setBookings(data.bookings);
+        setPages(data.pages);
+        setTotal(data.total);
+        setLoading(false);
+
+        // ── ANALYTICS: bookings list loaded ──────────────────────────────
+        tracker.track("bookingList.loaded", {
+          role: user?.role || "GUEST",
+          filter,
+          page,
+          count: data.bookings?.length || 0,
+          total: data.total || 0,
+          pages: data.pages || 1,
+        });
+      })
+      .catch((err) => {
+        setLoading(false);
+        // ── ANALYTICS: bookings list failed to load ──────────────────────
+        tracker.track("bookingList.load.failed", {
+          role: user?.role || "GUEST",
+          filter,
+          page,
+          reason: err.response?.data?.message || "unknown",
+        });
+      });
   }, [filter, page]);
 
   return (
@@ -131,7 +164,16 @@ export default function BookingList() {
             </h1>
           </div>
           {isHirer && (
-            <Link to="/bookings/create" className={styles.newBtn}>
+            <Link
+              to="/bookings/create"
+              className={styles.newBtn}
+              data-track-id="bookingList.newBooking"
+              onClick={() =>
+                tracker.action("bookingList.newBooking.clicked", {
+                  role: user?.role,
+                })
+              }
+            >
               <span>+</span> New Booking
             </Link>
           )}
@@ -145,7 +187,14 @@ export default function BookingList() {
               onClick={() => {
                 setFilter(s);
                 setPage(1);
+                // ── ANALYTICS: filter applied ────────────────────────────
+                tracker.track("bookingList.filter.changed", {
+                  role: user?.role || "GUEST",
+                  from: filter,
+                  to: s,
+                });
               }}
+              data-track-id={`bookingList.filter.${s.toLowerCase()}`}
             >
               {s === "IN_PROGRESS"
                 ? "In Progress"
@@ -177,7 +226,15 @@ export default function BookingList() {
             <button
               className={styles.pageBtn}
               disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => {
+                setPage((p) => p - 1);
+                // ── ANALYTICS: pagination prev ───────────────────────────
+                tracker.track("bookingList.pagination.prev", {
+                  fromPage: page,
+                  toPage: page - 1,
+                });
+              }}
+              data-track-id="bookingList.pagination.prev"
             >
               ← Prev
             </button>
@@ -187,7 +244,15 @@ export default function BookingList() {
             <button
               className={styles.pageBtn}
               disabled={page === pages}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => {
+                setPage((p) => p + 1);
+                // ── ANALYTICS: pagination next ───────────────────────────
+                tracker.track("bookingList.pagination.next", {
+                  fromPage: page,
+                  toPage: page + 1,
+                });
+              }}
+              data-track-id="bookingList.pagination.next"
             >
               Next →
             </button>
@@ -221,6 +286,21 @@ function BookingCard({ booking, index }) {
       to={`/bookings/${booking.id}`}
       className={styles.card}
       style={{ animationDelay: `${index * 0.04}s` }}
+      onClick={() =>
+        tracker.action("bookingList.booking.clicked", {
+          bookingId: booking.id,
+          status: booking.status,
+          amount: booking.agreedRate,
+          currency: booking.currency,
+          jobType: booking.jobType || null,
+          locationType: booking.locationType || null,
+          hasPayment: !!booking.payments?.[0],
+          paymentStatus: booking.payments?.[0]?.status || null,
+          isNegotiated: !!booking.isNegotiated,
+          categoryId: booking.category?.id || null,
+        })
+      }
+      data-track-id={`bookingList.booking.${booking.id}`}
     >
       <div
         className={`${styles.accentBar} ${styles[`accent_${meta.color}`]}`}
@@ -340,10 +420,29 @@ function Empty({ filter, isHirer }) {
       <Link
         to={isHirer ? "/dashboard/hirer/post-job" : "/search"}
         className={styles.emptyBtn}
+        data-track-id="bookingList.empty.primaryCta"
+        onClick={() =>
+          tracker.action("bookingList.empty.cta.clicked", {
+            role: isHirer ? "HIRER" : "WORKER",
+            filter,
+            cta: isHirer ? "post_job" : "find_hirer",
+          })
+        }
       >
         {isHirer ? "Post a Job" : "Find a Hirer"}
       </Link>
-      <Link to={isHirer && "/search"} className={styles.emptyBtn}>
+      <Link
+        to={isHirer && "/search"}
+        className={styles.emptyBtn}
+        data-track-id="bookingList.empty.secondaryCta"
+        onClick={() =>
+          tracker.action("bookingList.empty.cta.clicked", {
+            role: isHirer ? "HIRER" : "WORKER",
+            filter,
+            cta: "find_worker",
+          })
+        }
+      >
         {isHirer ? "Find a Worker" : ""}
       </Link>
     </div>

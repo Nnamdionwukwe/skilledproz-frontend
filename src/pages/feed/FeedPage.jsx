@@ -19,6 +19,7 @@ import {
   FiRefreshCw,
   FiArrowUp,
 } from "react-icons/fi";
+import tracker from "../../lib/analytics/tracker";
 
 const FILTERS = [
   { value: "ALL", label: "All" },
@@ -65,6 +66,15 @@ export default function FeedPage() {
   // Track whether any dropdown/modal is open so polling can pause
   const [interacting, setInteracting] = useState(false);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.feed.view", {
+      role: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fetchPosts = useCallback(
     async (p = 1, f = filter, reset = false) => {
       if (p === 1) setLoading(true);
@@ -82,7 +92,23 @@ export default function FeedPage() {
         else setPosts((prev) => [...prev, ...newPosts]);
 
         setHasMore(p < pages);
-      } catch {}
+
+        // ── ANALYTICS: feed loaded ───────────────────────────────────────
+        tracker.track("feed.loaded", {
+          page: p,
+          filter: f,
+          count: newPosts?.length || 0,
+          total: res.data.data.total || 0,
+          isLoadMore: p > 1,
+        });
+      } catch (err) {
+        // ── ANALYTICS: feed load failed ──────────────────────────────────
+        tracker.track("feed.load.failed", {
+          page: p,
+          filter: f,
+          reason: err.response?.data?.message || "unknown",
+        });
+      }
       setLoading(false);
       setLoadingMore(false);
     },
@@ -111,28 +137,61 @@ export default function FeedPage() {
     dismissPending();
     // Scroll to top so the user actually sees them
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // ── ANALYTICS: new posts banner clicked ──────────────────────────────
+    tracker.action("feed.newPostsBanner.clicked", {
+      pendingCount: pendingPosts.length,
+      filter,
+    });
   };
 
   const handleFilterChange = (f) => {
+    const prev = filter;
     setFilter(f);
     setPage(1);
     dismissPending();
+
+    // ── ANALYTICS: filter changed ────────────────────────────────────────
+    tracker.track("feed.filter.changed", {
+      from: prev,
+      to: f,
+    });
   };
 
   const handleLoadMore = () => {
     const next = page + 1;
     setPage(next);
     fetchPosts(next);
+
+    // ── ANALYTICS: load more clicked ─────────────────────────────────────
+    tracker.track("feed.loadMore.clicked", {
+      fromPage: page,
+      toPage: next,
+      filter,
+    });
   };
 
   const handlePostCreated = (newPost) => {
     setPosts((prev) => [newPost, ...prev]);
     setTotal((prev) => prev + 1);
+
+    // ── ANALYTICS: post created from feed ────────────────────────────────
+    tracker.action("feed.post.created", {
+      postId: newPost?.id || null,
+      postType: newPost?.type || null,
+      hasImages: (newPost?.images?.length || 0) > 0,
+      contentLength: newPost?.content?.length || 0,
+    });
   };
 
   const handlePostDeleted = (postId) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
     setTotal((prev) => prev - 1);
+
+    // ── ANALYTICS: post deleted from feed ────────────────────────────────
+    tracker.action("feed.post.deleted", {
+      postId,
+    });
   };
 
   return (
@@ -151,6 +210,7 @@ export default function FeedPage() {
               className={styles.newPostsBanner}
               onClick={showPending}
               type="button"
+              data-track-id="feed.newPostsBanner"
             >
               <FiArrowUp size={14} />
               <span>
@@ -170,6 +230,7 @@ export default function FeedPage() {
                   filter === f.value ? styles.filterBtnActive : ""
                 }`}
                 onClick={() => handleFilterChange(f.value)}
+                data-track-id={`feed.filter.${f.value.toLowerCase()}`}
               >
                 {f.label}
               </button>
@@ -214,6 +275,7 @@ export default function FeedPage() {
                   className={styles.loadMoreBtn}
                   onClick={handleLoadMore}
                   disabled={loadingMore}
+                  data-track-id="feed.loadMore"
                 >
                   {loadingMore ? "Loading..." : "Load more posts"}
                 </button>
@@ -250,7 +312,11 @@ function FeedSidebar() {
           {user?.firstName} {user?.lastName}
         </p>
         <p className={styles.profileCardRole}>{user?.role}</p>
-        <Link to={`/workers/${user?.id}`} className={styles.profileCardBtn}>
+        <Link
+          to={`/workers/${user?.id}`}
+          className={styles.profileCardBtn}
+          data-track-id="feed.sidebar.viewProfile"
+        >
           View Profile
         </Link>
       </div>

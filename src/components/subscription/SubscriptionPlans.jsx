@@ -11,6 +11,7 @@ import {
   FiTag,
   FiCheck,
 } from "react-icons/fi";
+import tracker from "../../lib/analytics/tracker";
 
 export default function SubscriptionPlans({ onClose }) {
   const { user } = useAuthStore();
@@ -34,6 +35,15 @@ export default function SubscriptionPlans({ onClose }) {
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.subscriptionPlans.view", {
+      role: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!user?.role) return;
     setLoading(true);
@@ -42,10 +52,27 @@ export default function SubscriptionPlans({ onClose }) {
       api.get("/subscriptions/my"),
     ])
       .then(([plansRes, myRes]) => {
-        setPlans(plansRes.data.data.plans || []);
-        setCurrent(myRes.data.data);
+        const loadedPlans = plansRes.data.data.plans || [];
+        const myData = myRes.data.data;
+        setPlans(loadedPlans);
+        setCurrent(myData);
+
+        // ── ANALYTICS: subscription plans loaded ────────────────────────
+        tracker.track("subscriptionPlans.loaded", {
+          role: user.role,
+          plansCount: loadedPlans.length,
+          currentTier: myData?.subscription?.tier || "FREE",
+          currentPlanId: myData?.planId || null,
+          hasActiveSubscription: myData?.subscription?.tier !== "FREE",
+        });
       })
-      .catch(() => {})
+      .catch((err) => {
+        // ── ANALYTICS: plans load failed ────────────────────────────────
+        tracker.track("subscriptionPlans.load.failed", {
+          role: user.role,
+          reason: err.response?.data?.message || "unknown",
+        });
+      })
       .finally(() => setLoading(false));
   }, [user?.role]);
 
@@ -69,6 +96,11 @@ export default function SubscriptionPlans({ onClose }) {
     setPromoError("");
     setPromoSuccess("");
 
+    // ── ANALYTICS: promo code apply attempt ─────────────────────────────
+    tracker.action("subscriptionPlans.promo.apply.attempt", {
+      codeLength: code.length,
+    });
+
     try {
       const res = await api.get(`/subscriptions/promo/validate/${code}`);
       const data = res.data.data;
@@ -87,19 +119,42 @@ export default function SubscriptionPlans({ onClose }) {
             : `₦${Number(data.discountValue).toLocaleString()} off`;
         setPromoSuccess(`Code applied — ${label} on your subscription!`);
         setPromoInput("");
+
+        // ── ANALYTICS: promo code applied successfully ──────────────────
+        tracker.action("subscriptionPlans.promo.applied", {
+          code: data.code,
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+        });
       } else {
         setPromoError("Invalid promo code.");
+
+        // ── ANALYTICS: promo code invalid ───────────────────────────────
+        tracker.action("subscriptionPlans.promo.invalid", {
+          codeLength: code.length,
+        });
       }
     } catch (err) {
       setPromoError(
         err.response?.data?.message || "Invalid or expired promo code.",
       );
+
+      // ── ANALYTICS: promo code validate failed ─────────────────────────
+      tracker.action("subscriptionPlans.promo.failed", {
+        codeLength: code.length,
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setPromoLoading(false);
     }
   };
 
   const handleRemovePromo = () => {
+    // ── ANALYTICS: promo code removed ───────────────────────────────────
+    tracker.action("subscriptionPlans.promo.removed", {
+      code: promoApplied?.code || null,
+    });
+
     setPromoApplied(null);
     setPromoSuccess("");
     setPromoError("");
@@ -110,6 +165,19 @@ export default function SubscriptionPlans({ onClose }) {
   const handleSubscribe = async (planId) => {
     setSubscribing(planId);
     setError("");
+
+    // ── ANALYTICS: subscription checkout attempt ────────────────────────
+    const plan = plans.find((p) => p.id === planId);
+    tracker.action("subscriptionPlans.subscribe.attempt", {
+      planId,
+      planName: plan?.name || null,
+      planTier: plan?.tier || null,
+      planPrice: plan?.price || null,
+      currency: plan?.currency || null,
+      hasPromo: !!promoApplied,
+      promoCode: promoApplied?.code || null,
+    });
+
     try {
       const res = await api.post("/subscriptions/checkout", {
         planId,
@@ -120,31 +188,72 @@ export default function SubscriptionPlans({ onClose }) {
       if (!url) {
         setError("Could not open checkout. Please try again.");
         setSubscribing(null);
+
+        // ── ANALYTICS: no checkout URL returned ────────────────────────
+        tracker.action("subscriptionPlans.subscribe.failed", {
+          planId,
+          reason: "no_checkout_url",
+        });
         return;
       }
+
+      // ── ANALYTICS: checkout redirecting ─────────────────────────────
+      tracker.action("subscriptionPlans.subscribe.redirecting", {
+        planId,
+        planName: plan?.name || null,
+      });
 
       window.location.href = url;
     } catch (err) {
       setError(err.response?.data?.message || "Failed to start checkout.");
       setSubscribing(null);
+
+      // ── ANALYTICS: checkout failed ─────────────────────────────────
+      tracker.action("subscriptionPlans.subscribe.failed", {
+        planId,
+        reason: err.response?.data?.message || "unknown",
+      });
     }
   };
 
   // ── Cancel confirmation ──────────────────────────────────────────────────────
-  const requestCancel = () => setShowCancelConfirm(true);
+  const requestCancel = () => {
+    setShowCancelConfirm(true);
+    // ── ANALYTICS: cancel modal opened ──────────────────────────────────
+    tracker.action("subscriptionPlans.cancel.opened", {
+      currentTier: current?.subscription?.tier || null,
+    });
+  };
   const dismissCancel = () => setShowCancelConfirm(false);
 
   const confirmCancel = async () => {
     setCancelling(true);
     setError("");
+
+    // ── ANALYTICS: cancel confirmation attempt ──────────────────────────
+    tracker.action("subscriptionPlans.cancel.attempt", {
+      currentTier: current?.subscription?.tier || null,
+      planId: current?.planId || null,
+    });
+
     try {
       await api.post("/subscriptions/cancel");
       setSuccess("Subscription cancelled.");
       const myRes = await api.get("/subscriptions/my");
       setCurrent(myRes.data.data);
       setShowCancelConfirm(false);
+
+      // ── ANALYTICS: subscription cancelled ───────────────────────────
+      tracker.action("subscriptionPlans.cancel.success", {
+        previousTier: current?.subscription?.tier || null,
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Failed to cancel.");
+
+      // ── ANALYTICS: cancel failed ────────────────────────────────────
+      tracker.action("subscriptionPlans.cancel.failed", {
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setCancelling(false);
     }
@@ -168,6 +277,7 @@ export default function SubscriptionPlans({ onClose }) {
               onClick={onClose}
               type="button"
               aria-label="Close"
+              data-track-id="subscriptionPlans.close"
             >
               <FiX size={20} />
             </button>
@@ -197,6 +307,7 @@ export default function SubscriptionPlans({ onClose }) {
               className={styles.cancelLink}
               onClick={requestCancel}
               type="button"
+              data-track-id="subscriptionPlans.cancel.open"
             >
               Cancel
             </button>
@@ -229,6 +340,7 @@ export default function SubscriptionPlans({ onClose }) {
                 className={styles.promoRemoveBtn}
                 onClick={handleRemovePromo}
                 type="button"
+                data-track-id="subscriptionPlans.promo.remove"
               >
                 <FiX size={12} /> Remove
               </button>
@@ -247,12 +359,14 @@ export default function SubscriptionPlans({ onClose }) {
                   e.key === "Enter" && !promoLoading && handleApplyPromo()
                 }
                 maxLength={20}
+                data-track-id="subscriptionPlans.promo.input"
               />
               <button
                 className={styles.promoApplyBtn}
                 onClick={handleApplyPromo}
                 disabled={!promoInput.trim() || promoLoading}
                 type="button"
+                data-track-id="subscriptionPlans.promo.apply"
               >
                 {promoLoading ? <span className={styles.spinner} /> : "Apply"}
               </button>
@@ -373,6 +487,7 @@ export default function SubscriptionPlans({ onClose }) {
                       isCurrent || plan.price === 0 || subscribing === plan.id
                     }
                     type="button"
+                    data-track-id={`subscriptionPlans.subscribe.${plan.id}`}
                   >
                     {subscribing === plan.id ? (
                       <>
@@ -424,6 +539,7 @@ export default function SubscriptionPlans({ onClose }) {
                 onClick={dismissCancel}
                 disabled={cancelling}
                 type="button"
+                data-track-id="subscriptionPlans.cancel.keep"
               >
                 Keep Plan
               </button>
@@ -432,6 +548,7 @@ export default function SubscriptionPlans({ onClose }) {
                 onClick={confirmCancel}
                 disabled={cancelling}
                 type="button"
+                data-track-id="subscriptionPlans.cancel.confirm"
               >
                 {cancelling ? (
                   <>

@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/authStore";
 import styles from "./HirerPublicProfile.module.css";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import tracker from "../../lib/analytics/tracker";
 
 function timeAgo(date) {
   if (!date) return "—";
@@ -53,6 +54,17 @@ export default function HirerPublicProfile() {
 
   const isOwnProfile = viewerUser?.id === userId;
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.hirerProfile.view", {
+      hirerId: userId || null,
+      viewerRole: viewerUser?.role || "GUEST",
+      isOwnProfile,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
@@ -60,14 +72,45 @@ export default function HirerPublicProfile() {
 
     api
       .get(`/hirers/${userId}/profile`)
-      .then((res) => setData(res.data.data))
-      .catch((e) => setError(e.response?.data?.message || "Profile not found"))
+      .then((res) => {
+        setData(res.data.data);
+        // ── ANALYTICS: hirer data loaded ─────────────────────────────
+        const d = res.data.data;
+        tracker.track("hirerProfile.loaded", {
+          hirerId: userId,
+          isVerified: d?.profile?.user?.verificationStatus === "VERIFIED",
+          openJobsCount: d?.stats?.openJobs || 0,
+          totalHires: d?.stats?.totalHires || 0,
+          totalReviews: d?.stats?.totalReviews || 0,
+          avgRating: d?.stats?.avgRating || 0,
+          hasCompany: !!d?.profile?.companyName,
+          jobPostsCount: d?.jobPosts?.length || 0,
+        });
+      })
+      .catch((e) => {
+        setError(e.response?.data?.message || "Profile not found");
+        // ── ANALYTICS: hirer profile load failed ────────────────────
+        tracker.track("hirerProfile.load.failed", {
+          hirerId: userId,
+          reason: e.response?.data?.message || "unknown",
+          viewerRole: viewerUser?.role || "GUEST",
+        });
+      })
       .finally(() => setLoading(false));
   }, [userId]);
 
   async function handleApply(jobId) {
     setApplying(jobId);
     setApplyResult((r) => ({ ...r, [jobId]: null }));
+
+    // ── ANALYTICS: application attempt ──────────────────────────────────
+    tracker.action("hirerProfile.job.apply.attempt", {
+      hirerId: userId,
+      jobId,
+      hasMessage: !!(applyMsg[jobId] || "").trim(),
+      messageLength: (applyMsg[jobId] || "").length,
+    });
+
     try {
       await api.post(`/jobs/${jobId}/apply`, {
         message: applyMsg[jobId] || "",
@@ -80,6 +123,12 @@ export default function HirerPublicProfile() {
         },
       }));
       setApplyMsg((m) => ({ ...m, [jobId]: "" }));
+
+      // ── ANALYTICS: application sent successfully ─────────────────────
+      tracker.action("hirerProfile.job.applied", {
+        hirerId: userId,
+        jobId,
+      });
     } catch (e) {
       setApplyResult((r) => ({
         ...r,
@@ -88,6 +137,13 @@ export default function HirerPublicProfile() {
           msg: e.response?.data?.message || "Failed to apply.",
         },
       }));
+
+      // ── ANALYTICS: application failed ────────────────────────────────
+      tracker.action("hirerProfile.job.apply.failed", {
+        hirerId: userId,
+        jobId,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setApplying(null);
     }
@@ -164,6 +220,12 @@ export default function HirerPublicProfile() {
                   <a
                     href={`tel:${hirerUser.phone}`}
                     className={styles.contactItem}
+                    onClick={() =>
+                      tracker.action("hirerProfile.contact.phone.clicked", {
+                        hirerId: userId,
+                      })
+                    }
+                    data-track-id="hirerProfile.contact.phone"
                   >
                     📱 <span>{hirerUser.phone}</span>
                   </a>
@@ -172,6 +234,12 @@ export default function HirerPublicProfile() {
                   <a
                     href={`mailto:${hirerUser.email}`}
                     className={styles.contactItem}
+                    onClick={() =>
+                      tracker.action("hirerProfile.contact.email.clicked", {
+                        hirerId: userId,
+                      })
+                    }
+                    data-track-id="hirerProfile.contact.email"
                   >
                     ✉️ <span>{hirerUser.email}</span>
                   </a>
@@ -192,6 +260,13 @@ export default function HirerPublicProfile() {
                     target="_blank"
                     rel="noreferrer"
                     className={styles.contactItem}
+                    onClick={() =>
+                      tracker.action("hirerProfile.contact.website.clicked", {
+                        hirerId: userId,
+                        website: profile.website,
+                      })
+                    }
+                    data-track-id="hirerProfile.contact.website"
                   >
                     🌐{" "}
                     <span>{profile.website.replace(/^https?:\/\//, "")}</span>
@@ -243,7 +318,13 @@ export default function HirerPublicProfile() {
             <div className={styles.heroCta}>
               <button
                 className={styles.msgBtn}
-                onClick={() => navigate(`/messages?with=${userId}`)}
+                onClick={() => {
+                  tracker.action("hirerProfile.message.clicked", {
+                    hirerId: userId,
+                  });
+                  navigate(`/messages?with=${userId}`);
+                }}
+                data-track-id="hirerProfile.message"
               >
                 💬
               </button>
@@ -252,7 +333,11 @@ export default function HirerPublicProfile() {
 
           {isOwnProfile && (
             <div className={styles.heroCta}>
-              <Link to="/settings" className={styles.editBtn}>
+              <Link
+                to="/settings"
+                className={styles.editBtn}
+                data-track-id="hirerProfile.edit"
+              >
                 ✏️ Edit Profile
               </Link>
             </div>
@@ -265,7 +350,16 @@ export default function HirerPublicProfile() {
             <button
               key={t}
               className={`${styles.tabBtn} ${tab === t ? styles.tabBtnActive : ""}`}
-              onClick={() => setTab(t)}
+              onClick={() => {
+                setTab(t);
+                // ── ANALYTICS: tab switched ──────────────────────────────
+                tracker.track("hirerProfile.tab.switched", {
+                  hirerId: userId,
+                  from: tab,
+                  to: t,
+                });
+              }}
+              data-track-id={`hirerProfile.tab.${t}`}
             >
               {t === "jobs" ? `Open Jobs (${stats.openJobs})` : ""}
               {t === "reviews" ? `Reviews (${stats.totalReviews})` : ""}
@@ -340,12 +434,25 @@ export default function HirerPublicProfile() {
                                   [job.id]: e.target.value,
                                 }))
                               }
+                              onFocus={() => {
+                                if (!applyMsg[job.id]) {
+                                  tracker.track(
+                                    "hirerProfile.job.apply.message.focused",
+                                    {
+                                      hirerId: userId,
+                                      jobId: job.id,
+                                    },
+                                  );
+                                }
+                              }}
                               rows={2}
+                              data-track-id={`hirerProfile.job.apply.message.${job.id}`}
                             />
                             <button
                               className={styles.applyBtn}
                               onClick={() => handleApply(job.id)}
                               disabled={applying === job.id}
+                              data-track-id={`hirerProfile.job.apply.${job.id}`}
                             >
                               {applying === job.id ? (
                                 <>
@@ -361,7 +468,20 @@ export default function HirerPublicProfile() {
                       </div>
                     )}
 
-                    <Link to={`/jobs/${job.id}`} className={styles.jobViewLink}>
+                    <Link
+                      to={`/jobs/${job.id}`}
+                      className={styles.jobViewLink}
+                      onClick={() =>
+                        tracker.action("hirerProfile.job.view.clicked", {
+                          hirerId: userId,
+                          jobId: job.id,
+                          jobTitle: job.title,
+                          budget: job.budget,
+                          currency: job.currency,
+                        })
+                      }
+                      data-track-id={`hirerProfile.job.view.${job.id}`}
+                    >
                       View full details →
                     </Link>
                   </div>
@@ -442,7 +562,11 @@ function ProfileError({ msg }) {
           {msg?.includes("private") ? "Private Profile" : "Hirer not found"}
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>{msg}</p>
-        <Link to="/search" className={styles.backLink}>
+        <Link
+          to="/search"
+          className={styles.backLink}
+          data-track-id="hirerProfile.notFound.backToSearch"
+        >
           ← Back to Search
         </Link>
       </div>

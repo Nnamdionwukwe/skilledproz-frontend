@@ -4,6 +4,7 @@ import HirerLayout from "../layout/HirerLayout";
 import api from "../../lib/api";
 import styles from "./HirerReviews.module.css";
 import ReportButton from "../../pages/reports/ReportButton";
+import tracker from "../../lib/analytics/tracker";
 
 function Stars({ rating }) {
   return (
@@ -42,6 +43,14 @@ export default function HirerReviewsReceived() {
   const limit = 10;
   const pages = Math.ceil(total / limit);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.hirerReviewsReceived.view", {
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     api;
@@ -53,8 +62,25 @@ export default function HirerReviewsReceived() {
         setTotal(d.total || 0);
         setAvgRating(d.avgRating || 0);
         setDistribution(d.distribution || {});
+
+        // ── ANALYTICS: reviews list loaded ──────────────────────────────
+        tracker.track("hirerReviewsReceived.loaded", {
+          page,
+          count: d.reviews?.length || 0,
+          total: d.total || 0,
+          avgRating: d.avgRating || 0,
+          hasDistribution: !!d.distribution,
+        });
       })
-      .catch(() => setError("Failed to load reviews"))
+      .catch((err) => {
+        setError("Failed to load reviews");
+
+        // ── ANALYTICS: reviews load failed ──────────────────────────────
+        tracker.track("hirerReviewsReceived.load.failed", {
+          page,
+          reason: err.response?.data?.message || "unknown",
+        });
+      })
       .finally(() => setLoading(false));
   }, [page]);
 
@@ -73,6 +99,7 @@ export default function HirerReviewsReceived() {
           <Link
             to="/dashboard/hirer/reviews/given"
             className={styles.switchBtn}
+            data-track-id="hirerReviewsReceived.switchToGiven"
           >
             See Reviews Given →
           </Link>
@@ -201,7 +228,17 @@ export default function HirerReviewsReceived() {
             <button
               className={styles.pageBtn}
               disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => {
+                const prev = page - 1;
+                setPage(prev);
+
+                // ── ANALYTICS: pagination prev ──────────────────────────
+                tracker.track("hirerReviewsReceived.pagination.prev", {
+                  fromPage: page,
+                  toPage: prev,
+                });
+              }}
+              data-track-id="hirerReviewsReceived.pagination.prev"
             >
               ← Prev
             </button>
@@ -211,7 +248,17 @@ export default function HirerReviewsReceived() {
             <button
               className={styles.pageBtn}
               disabled={page === pages}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => {
+                const next = page + 1;
+                setPage(next);
+
+                // ── ANALYTICS: pagination next ──────────────────────────
+                tracker.track("hirerReviewsReceived.pagination.next", {
+                  fromPage: page,
+                  toPage: next,
+                });
+              }}
+              data-track-id="hirerReviewsReceived.pagination.next"
             >
               Next →
             </button>

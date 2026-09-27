@@ -139,6 +139,10 @@ import AdminUserCoverage from "./pages/admin/AdminUserCoverage.jsx";
 import AdminSegments from "./pages/admin/AdminSegments.jsx";
 import AdminLiveFeed from "./pages/admin/AdminLiveFeed.jsx";
 import AdminAnalyticsUsers from "./pages/admin/AdminAnalyticsUsers.jsx";
+import AdminFunnelBuilder from "./pages/admin/AdminFunnelBuilder.jsx";
+import AdminTopWorkers from "./pages/admin/AdminTopWorkers.jsx";
+import AdminPaymentFunnel from "./pages/admin/AdminPaymentFunnel.jsx";
+import AdminCategoryDemand from "./pages/admin/AdminCategoryDemand.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -309,6 +313,38 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminSegments />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/funnel-builder"
+          element={
+            <RequireAdmin>
+              <AdminFunnelBuilder />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/top-workers"
+          element={
+            <RequireAdmin>
+              <AdminTopWorkers />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/payment-funnel"
+          element={
+            <RequireAdmin>
+              <AdminPaymentFunnel />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/analytics/category-demand"
+          element={
+            <RequireAdmin>
+              <AdminCategoryDemand />
             </RequireAdmin>
           }
         />

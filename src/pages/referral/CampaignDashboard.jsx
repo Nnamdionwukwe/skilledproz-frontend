@@ -36,6 +36,7 @@ import {
   FiFileText,
   FiLoader,
 } from "react-icons/fi";
+import tracker from "../../lib/analytics/tracker";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtAmt(n) {
@@ -179,7 +180,11 @@ function Avatar({ name, avatar }) {
 function FullscreenImage({ src, alt, onClose }) {
   useEffect(() => {
     function onKey(e) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        // ── ANALYTICS: lightbox closed via escape ─────────────────────
+        tracker.track("campaign.lightbox.closed", { via: "escape" });
+      }
     }
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -195,14 +200,23 @@ function FullscreenImage({ src, alt, onClose }) {
   return (
     <div
       className={styles.lightboxBackdrop}
-      onClick={onClose}
+      onClick={() => {
+        onClose();
+        // ── ANALYTICS: lightbox closed via overlay ──────────────────────
+        tracker.track("campaign.lightbox.closed", { via: "overlay" });
+      }}
       role="dialog"
       aria-modal="true"
     >
       <button
         className={styles.lightboxClose}
-        onClick={onClose}
+        onClick={() => {
+          onClose();
+          // ── ANALYTICS: lightbox closed via button ─────────────────────
+          tracker.track("campaign.lightbox.closed", { via: "closeBtn" });
+        }}
         aria-label="Close"
+        data-track-id="campaign.lightbox.close"
       >
         <FiX size={22} />
       </button>
@@ -218,6 +232,7 @@ function FullscreenImage({ src, alt, onClose }) {
         rel="noreferrer"
         className={styles.lightboxOpen}
         onClick={(e) => e.stopPropagation()}
+        data-track-id="campaign.lightbox.openInTab"
       >
         Open in new tab ↗
       </a>
@@ -277,6 +292,13 @@ function SocialCard({
     }
     setFile(f);
     setPreview(URL.createObjectURL(f));
+
+    // ── ANALYTICS: screenshot file selected ─────────────────────────────
+    tracker.track("campaign.social.screenshot.selected", {
+      platform: task.platform,
+      fileType: f.type,
+      fileSizeKB: Math.round(f.size / 1024),
+    });
   }
 
   function clearFile() {
@@ -284,6 +306,11 @@ function SocialCard({
     if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
     if (fileRef.current) fileRef.current.value = "";
+
+    // ── ANALYTICS: screenshot removed ───────────────────────────────────
+    tracker.track("campaign.social.screenshot.removed", {
+      platform: task.platform,
+    });
   }
 
   function submit() {
@@ -325,6 +352,12 @@ function SocialCard({
                 background: pc.color,
                 color: task.platform === "tiktok" ? "#fff" : "#000",
               }}
+              onClick={() =>
+                tracker.action("campaign.social.follow.clicked", {
+                  platform: task.platform,
+                })
+              }
+              data-track-id={`campaign.social.follow.${task.platform}`}
             >
               Follow
             </a>
@@ -352,6 +385,7 @@ function SocialCard({
               type="button"
               className={styles.socialProofToggle}
               onClick={() => fileRef.current?.click()}
+              data-track-id={`campaign.social.choose.${task.platform}`}
             >
               <FiUpload size={12} /> Choose image
             </button>
@@ -361,9 +395,13 @@ function SocialCard({
                 src={preview}
                 alt="screenshot preview"
                 className={styles.socialPreviewImg}
-                onClick={() =>
-                  onViewScreenshot(preview, `${task.label} preview`)
-                }
+                onClick={() => {
+                  onViewScreenshot(preview, `${task.label} preview`);
+                  // ── ANALYTICS: preview opened ────────────────────────
+                  tracker.track("campaign.social.screenshot.previewed", {
+                    platform: task.platform,
+                  });
+                }}
                 style={{ cursor: "zoom-in" }}
               />
               <div className={styles.socialPreviewActions}>
@@ -371,6 +409,7 @@ function SocialCard({
                   type="button"
                   className={styles.socialPreviewBtn}
                   onClick={() => fileRef.current?.click()}
+                  data-track-id={`campaign.social.replace.${task.platform}`}
                 >
                   Replace
                 </button>
@@ -378,6 +417,7 @@ function SocialCard({
                   type="button"
                   className={`${styles.socialPreviewBtn} ${styles.socialPreviewBtnRed}`}
                   onClick={clearFile}
+                  data-track-id={`campaign.social.remove.${task.platform}`}
                 >
                   Remove
                 </button>
@@ -391,6 +431,7 @@ function SocialCard({
             onClick={submit}
             disabled={!file || reporting === task.platform}
             title={!file ? "Upload a screenshot first" : ""}
+            data-track-id={`campaign.social.markFollowed.${task.platform}`}
           >
             {reporting === task.platform ? (
               <>
@@ -407,9 +448,14 @@ function SocialCard({
         <button
           type="button"
           className={styles.socialProofView}
-          onClick={() =>
-            onViewScreenshot(screenshotUrl, `${task.label} screenshot`)
-          }
+          onClick={() => {
+            onViewScreenshot(screenshotUrl, `${task.label} screenshot`);
+            // ── ANALYTICS: submitted screenshot viewed ───────────────────
+            tracker.track("campaign.social.submittedScreenshot.viewed", {
+              platform: task.platform,
+            });
+          }}
+          data-track-id={`campaign.social.viewScreenshot.${task.platform}`}
         >
           📎 View submitted screenshot
         </button>
@@ -441,21 +487,46 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
     const amt = parseFloat(form.amount);
     if (!amt || amt < minWithdrawal) {
       setError(`Minimum is ${fmtAmt(minWithdrawal)}`);
+      tracker.action("campaign.withdraw.blocked", {
+        reason: "below_minimum",
+        amount: amt,
+      });
       return;
     }
     if (amt > balance) {
       setError(`Insufficient balance. Available: ${fmtAmt(balance)}`);
+      tracker.action("campaign.withdraw.blocked", {
+        reason: "insufficient_balance",
+        amount: amt,
+        balance,
+      });
       return;
     }
     if (!form.bankName || !form.accountNumber || !form.accountName) {
       setError("All bank fields required");
+      tracker.action("campaign.withdraw.blocked", {
+        reason: "missing_bank_details",
+      });
       return;
     }
     if (!form.pin || form.pin.length !== 4) {
       setError("Please enter your 4-digit withdrawal PIN");
+      tracker.action("campaign.withdraw.blocked", {
+        reason: "missing_pin",
+      });
       return;
     }
     setLoading(true);
+
+    // ── ANALYTICS: withdrawal attempt ────────────────────────────────────
+    tracker.action("campaign.withdraw.attempt", {
+      amount: amt,
+      balance,
+      hasBankName: !!form.bankName,
+      hasAccountNumber: !!form.accountNumber,
+      hasAccountName: !!form.accountName,
+    });
+
     try {
       await api.post("/campaign/withdraw", {
         amount: form.amount,
@@ -464,6 +535,12 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
         accountNumber: form.accountNumber.trim(),
         accountName: form.accountName.trim(),
       });
+
+      // ── ANALYTICS: withdrawal succeeded ──────────────────────────────
+      tracker.action("campaign.withdraw.success", {
+        amount: amt,
+      });
+
       onSuccess();
     } catch (e) {
       const status = e.response?.status;
@@ -472,8 +549,16 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
       // Detect the "PIN not set" case so we can show a helpful CTA
       if (status === 403 && /pin/i.test(msg)) {
         setPinNotSet(true);
+        tracker.action("campaign.withdraw.pinNotSet", {});
       }
       setError(msg);
+
+      // ── ANALYTICS: withdrawal failed ─────────────────────────────────
+      tracker.action("campaign.withdraw.failed", {
+        amount: amt,
+        status,
+        reason: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -486,7 +571,11 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
           <p className={styles.modalTitle}>
             <FiCreditCard size={16} /> Withdraw Campaign Earnings
           </p>
-          <button className={styles.modalClose} onClick={onClose}>
+          <button
+            className={styles.modalClose}
+            onClick={onClose}
+            data-track-id="campaign.withdraw.close"
+          >
             <FiX size={14} />
           </button>
         </div>
@@ -533,6 +622,7 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
                 value={form[f.k]}
                 onChange={(e) => setF(f.k, e.target.value)}
                 maxLength={f.k === "accountNumber" ? 10 : undefined}
+                data-track-id={`campaign.withdraw.${f.k}`}
               />
             </div>
           ))}
@@ -551,6 +641,7 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
                 setF("pin", e.target.value.replace(/\D/g, "").slice(0, 4));
               }}
               autoComplete="off"
+              data-track-id="campaign.withdraw.pin"
             />
             <p
               className={styles.formHint}
@@ -579,12 +670,18 @@ function WithdrawModal({ balance, minWithdrawal, onClose, onSuccess }) {
                 textDecoration: "underline",
                 marginBottom: 4,
               }}
+              data-track-id="campaign.withdraw.setPinCta"
             >
               Set your withdrawal PIN in Settings → Security →
             </a>
           )}
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading}
+            data-track-id="campaign.withdraw.submit"
+          >
             {loading ? (
               <>
                 <span className={styles.spinner} /> Processing…
@@ -610,7 +707,16 @@ function SubmissionCard({ sub }) {
     >
       <div
         className={styles.submissionCardTop}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          // ── ANALYTICS: submission expanded/collapsed ──────────────────
+          tracker.track("campaign.submission.toggled", {
+            submissionId: sub.id,
+            opened: next,
+          });
+        }}
+        data-track-id={`campaign.submission.${sub.id}`}
       >
         <div className={styles.submissionCardLeft}>
           <p className={styles.submissionDate}>{sub.date}</p>
@@ -692,6 +798,15 @@ export default function CampaignDashboard() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [lightbox, setLightbox] = useState(null); // { src, alt } | null
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.campaignDashboard.view", {
+      role: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function showToast(msg, type = "success") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -715,8 +830,22 @@ export default function CampaignDashboard() {
       if (subsRes.status === "fulfilled")
         setSubmissions(subsRes.value.data.data?.submissions || []);
       if (tasksRes.status === "fulfilled") setMyTasks(tasksRes.value.data.data);
-    } catch {
+
+      // ── ANALYTICS: campaign data loaded ─────────────────────────────────
+      tracker.track("campaignDashboard.loaded", {
+        totalReferred: statusRes.value?.data?.data?.stats?.totalReferred || 0,
+        readyToSubmit: statusRes.value?.data?.data?.stats?.readyToSubmit || 0,
+        submissionsCount: submissions?.length || 0,
+        hasMyTasks: !!tasksRes.value?.data?.data?.hasCampaignReferral,
+        walletBalance: statusRes.value?.data?.data?.wallet?.balance || 0,
+      });
+    } catch (err) {
       showToast("Failed to load campaign data", "error");
+
+      // ── ANALYTICS: campaign load failed ─────────────────────────────────
+      tracker.track("campaignDashboard.load.failed", {
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setLoading(false);
     }
@@ -747,6 +876,11 @@ export default function CampaignDashboard() {
       setCopied(true);
       showToast("Link copied!");
       setTimeout(() => setCopied(false), 2000);
+
+      // ── ANALYTICS: campaign referral link copied ────────────────────────
+      tracker.action("campaignDashboard.link.copied", {
+        referralCode,
+      });
     } catch {
       showToast("Copy failed", "error");
     }
@@ -755,12 +889,28 @@ export default function CampaignDashboard() {
   async function handleSubmit() {
     setSubmitting(true);
     setShowConfirm(false);
+
+    // ── ANALYTICS: submission attempt ────────────────────────────────────
+    tracker.action("campaign.submit.attempt", {
+      readyCount: status?.stats?.readyToSubmit || 0,
+    });
+
     try {
       const res = await api.post("/campaign/submit");
       showToast(`${res.data.message}`);
       await loadAll();
+
+      // ── ANALYTICS: submission succeeded ──────────────────────────────
+      tracker.action("campaign.submit.success", {
+        message: res.data?.message || null,
+      });
     } catch (e) {
       showToast(e.response?.data?.message || "Submission failed", "error");
+
+      // ── ANALYTICS: submission failed ─────────────────────────────────
+      tracker.action("campaign.submit.failed", {
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -773,6 +923,13 @@ export default function CampaignDashboard() {
       return;
     }
     setReporting(platform);
+
+    // ── ANALYTICS: social follow report attempt ──────────────────────────
+    tracker.action("campaign.social.report.attempt", {
+      platform,
+      fileSizeKB: Math.round(file.size / 1024),
+    });
+
     try {
       const fd = new FormData();
       fd.append("platform", platform);
@@ -785,8 +942,20 @@ export default function CampaignDashboard() {
         `${platform} follow recorded${res.data.data?.allDone ? " — all tasks done!" : ""}`,
       );
       await loadAll();
+
+      // ── ANALYTICS: social follow recorded ────────────────────────────
+      tracker.action("campaign.social.report.success", {
+        platform,
+        allDone: !!res.data.data?.allDone,
+      });
     } catch (e) {
       showToast(e.response?.data?.message || "Failed to record", "error");
+
+      // ── ANALYTICS: social follow report failed ───────────────────────
+      tracker.action("campaign.social.report.failed", {
+        platform,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setReporting(null);
     }
@@ -861,12 +1030,19 @@ export default function CampaignDashboard() {
                 <button
                   className={styles.withdrawBtn}
                   disabled={!st?.wallet?.canWithdraw}
-                  onClick={() => setShowWd(true)}
+                  onClick={() => {
+                    setShowWd(true);
+                    // ── ANALYTICS: withdraw modal opened ─────────────────
+                    tracker.action("campaign.withdraw.opened", {
+                      balance: walletBalance,
+                    });
+                  }}
                   title={
                     !st?.wallet?.canWithdraw
                       ? `Min. ${fmtAmt(minWithdrawal)}`
                       : ""
                   }
+                  data-track-id="campaign.withdrawOpen"
                 >
                   <FiCreditCard size={14} /> Withdraw
                 </button>
@@ -989,8 +1165,15 @@ export default function CampaignDashboard() {
                 </div>
                 <button
                   className={styles.submitBannerBtn}
-                  onClick={() => setShowConfirm(true)}
+                  onClick={() => {
+                    setShowConfirm(true);
+                    // ── ANALYTICS: submit confirm modal opened ────────
+                    tracker.action("campaign.submit.confirmOpened", {
+                      readyCount,
+                    });
+                  }}
                   disabled={submitting}
+                  data-track-id="campaign.submit.openConfirm"
                 >
                   {submitting ? (
                     <>
@@ -1043,6 +1226,7 @@ export default function CampaignDashboard() {
                 <button
                   className={styles.modalClose}
                   onClick={() => setShowConfirm(false)}
+                  data-track-id="campaign.submit.cancelConfirm"
                 >
                   <FiX size={14} />
                 </button>
@@ -1070,6 +1254,7 @@ export default function CampaignDashboard() {
                   <button
                     className={styles.confirmCancel}
                     onClick={() => setShowConfirm(false)}
+                    data-track-id="campaign.submit.cancel"
                   >
                     Cancel
                   </button>
@@ -1077,6 +1262,7 @@ export default function CampaignDashboard() {
                     className={styles.confirmSubmit}
                     onClick={handleSubmit}
                     disabled={submitting}
+                    data-track-id="campaign.submit.confirm"
                   >
                     {submitting ? (
                       <>
@@ -1101,7 +1287,16 @@ export default function CampaignDashboard() {
                 <button
                   key={t.key}
                   className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-                  onClick={() => setTab(t.key)}
+                  onClick={() => {
+                    const prev = tab;
+                    setTab(t.key);
+                    // ── ANALYTICS: tab switched ────────────────────────
+                    tracker.track("campaignDashboard.tab.switched", {
+                      from: prev,
+                      to: t.key,
+                    });
+                  }}
+                  data-track-id={`campaignDashboard.tab.${t.key}`}
                 >
                   <TabIcon size={13} />
                   {t.label}
@@ -1126,6 +1321,7 @@ export default function CampaignDashboard() {
                   className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`}
                   onClick={copyLink}
                   disabled={!referralCode}
+                  data-track-id="campaignDashboard.copyLink"
                 >
                   {copied ? (
                     <>
@@ -1144,6 +1340,12 @@ export default function CampaignDashboard() {
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnWa}`}
+                    onClick={() =>
+                      tracker.action("campaign.share.clicked", {
+                        channel: "whatsapp",
+                      })
+                    }
+                    data-track-id="campaign.share.whatsapp"
                   >
                     <svg
                       width="16"
@@ -1160,6 +1362,12 @@ export default function CampaignDashboard() {
                     target="_blank"
                     rel="noreferrer"
                     className={`${styles.shareBtn} ${styles.shareBtnX}`}
+                    onClick={() =>
+                      tracker.action("campaign.share.clicked", {
+                        channel: "twitter",
+                      })
+                    }
+                    data-track-id="campaign.share.twitter"
                   >
                     <svg
                       width="14"

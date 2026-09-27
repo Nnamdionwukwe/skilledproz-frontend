@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
+import AlertModal from "../../components/ui/AlertModal";
 import styles from "./AdminAnalytics.module.css";
 
 // ─── Icons (react-icons — same family as AdminLayout) ─────────────────────────
@@ -25,6 +26,8 @@ import {
   FiRadio,
   FiCheck,
   FiCornerDownRight,
+  FiMail,
+  FiLoader,
 } from "react-icons/fi";
 import { FaTrophy, FaMedal, FaAward } from "react-icons/fa";
 
@@ -83,13 +86,11 @@ function RevenueChart({ monthly }) {
         {monthly.map((m) => (
           <div key={m.month} className={styles.barGroup}>
             <div className={styles.barWrap}>
-              {/* GMV — background dim bar */}
               <div
                 className={styles.barGmv}
                 style={{ height: `${Math.max(3, (m.gmv / maxGMV) * 120)}px` }}
                 title={`GMV: ₦${fmtFull(m.gmv)}`}
               />
-              {/* Revenue — foreground solid bar */}
               <div
                 className={styles.bar}
                 style={{
@@ -100,7 +101,6 @@ function RevenueChart({ monthly }) {
             </div>
             <div className={styles.barLabel}>{m.month?.slice(5)}</div>
             <div className={styles.barVal}>₦{fmt(m.revenue)}</div>
-            {/* ── workerPayouts (backend sends per month) */}
             {(m.workerPayouts ?? 0) > 0 && (
               <div
                 className={styles.barValSub}
@@ -109,7 +109,6 @@ function RevenueChart({ monthly }) {
                 ₦{fmt(m.workerPayouts)}
               </div>
             )}
-            {/* ── payment count (backend sends per month) */}
             {m.count != null && (
               <div
                 className={styles.barValSub}
@@ -172,7 +171,6 @@ function SignupChart({ growth }) {
             </div>
             <div className={styles.barLabel}>{m.month?.slice(5)}</div>
             <div className={styles.barVal}>{m.total || 0}</div>
-            {/* ── ADDED ── split workers/hirers numeric (backend sends both) */}
             <div className={styles.barValSub}>
               {m.workers || 0}w · {m.hirers || 0}h
             </div>
@@ -366,14 +364,12 @@ function CategoryTable({ categories }) {
             </span>
             <div className={styles.catDetails}>
               <span className={styles.catName}>{c.name}</span>
-              {/* ── parent category (backend include: { parent: true }) */}
               {c.parent?.name && (
                 <span className={styles.catParent}>
                   <FiCornerDownRight size={10} />
                   {c.parent.name}
                 </span>
               )}
-              {/* ── user-submitted badge (backend scalar) */}
               {c.isUserSubmitted && (
                 <span className={styles.catUserBadge}>User suggested</span>
               )}
@@ -454,6 +450,13 @@ export default function AdminAnalytics() {
   const [usersData, setUsersData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [sendingDigest, setSendingDigest] = useState(false);
+  const [digestModal, setDigestModal] = useState({
+    isOpen: false,
+    variant: "amber",
+    title: "",
+    subtitle: "",
+  });
 
   const fetchAll = useCallback(() => {
     setLoading(true);
@@ -475,6 +478,61 @@ export default function AdminAnalytics() {
     fetchAll();
   }, [fetchAll]);
 
+  // ── Send test digest — shows a platform AlertModal instead of alert() ──
+  const handleSendTestDigest = async () => {
+    setSendingDigest(true);
+    try {
+      const res = await api.post("/admin/analytics/send-test-digest");
+      setDigestModal({
+        isOpen: true,
+        variant: "green",
+        title: "Test digest sent",
+        subtitle:
+          res.data?.message ||
+          "The digest email has been queued and will arrive shortly.",
+        alerts: [
+          {
+            icon: FiMail,
+            label: "Recipient",
+            description:
+              res.data?.data?.recipient || "skilledprozmarketplace@gmail.com",
+            variant: "green",
+          },
+          {
+            icon: FiCheckCircle,
+            label: "Currencies active",
+            description:
+              res.data?.data?.currenciesActive?.length > 0
+                ? res.data.data.currenciesActive.join(", ")
+                : "None yet",
+            variant: "green",
+          },
+        ],
+      });
+    } catch (err) {
+      setDigestModal({
+        isOpen: true,
+        variant: "red",
+        title: "Digest failed to send",
+        subtitle:
+          err.response?.data?.message ||
+          err.message ||
+          "Something went wrong while sending the digest.",
+        alerts: [
+          {
+            icon: FiAlertCircle,
+            label: "What to do",
+            description:
+              "Check the backend logs and confirm the email service is configured.",
+            variant: "red",
+          },
+        ],
+      });
+    } finally {
+      setSendingDigest(false);
+    }
+  };
+
   const ov = statsData?.overview || {};
   const funnel = statsData?.bookingFunnel || [];
   const topCats = statsData?.topCategories || [];
@@ -495,7 +553,6 @@ export default function AdminAnalytics() {
             <h1 className={styles.pageTitle}>Analytics</h1>
           </div>
           <div className={styles.headerRight}>
-            {/* Date range selector — drives all three endpoints */}
             <div className={styles.rangeGroup}>
               {MONTH_OPTIONS.map((opt) => (
                 <button
@@ -514,6 +571,17 @@ export default function AdminAnalytics() {
             >
               <FiRefreshCw size={16} />
             </button>
+
+            <button
+              className={styles.digestBtn}
+              onClick={handleSendTestDigest}
+              disabled={sendingDigest}
+              title="Send a test daily digest email now"
+            >
+              {sendingDigest ? <FiLoader size={14} /> : <FiMail size={14} />}
+              <span>{sendingDigest ? "Sending…" : "Send test digest"}</span>
+            </button>
+
             <div className={styles.liveTag}>
               <FiRadio size={10} />
               Live
@@ -527,7 +595,6 @@ export default function AdminAnalytics() {
           <>
             {/* ── Overview Stats ── */}
             <div className={styles.statsGrid}>
-              {/* Row 1 — Users */}
               <StatCard
                 icon={<FiUsers size={16} />}
                 label="Total Users"
@@ -554,7 +621,6 @@ export default function AdminAnalytics() {
                 sub={`+${ov.newBookingsToday ?? 0} bookings`}
               />
 
-              {/* Row 2 — Bookings */}
               <StatCard
                 icon={<FiClipboard size={16} />}
                 label="Total Bookings"
@@ -582,7 +648,6 @@ export default function AdminAnalytics() {
                 delay={0.21}
               />
 
-              {/* Row 3 — Money */}
               <StatCard
                 icon={<FiDollarSign size={16} />}
                 label="Platform Revenue"
@@ -614,7 +679,6 @@ export default function AdminAnalytics() {
                 accent={ov.disputedBookings > 0 ? "red" : undefined}
               />
 
-              {/* Row 4 — Platform */}
               <StatCard
                 icon={<FiFileText size={16} />}
                 label="Total Job Posts"
@@ -696,6 +760,15 @@ export default function AdminAnalytics() {
           </>
         )}
       </div>
+
+      {/* ── Send Digest result — platform modal, no alert() ── */}
+      <AlertModal
+        isOpen={digestModal.isOpen}
+        onClose={() => setDigestModal((m) => ({ ...m, isOpen: false }))}
+        title={digestModal.title}
+        subtitle={digestModal.subtitle}
+        alerts={digestModal.alerts || []}
+      />
     </AdminLayout>
   );
 }

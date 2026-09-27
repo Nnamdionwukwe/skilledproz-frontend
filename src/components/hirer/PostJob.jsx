@@ -31,6 +31,7 @@ import {
   FiTrendingUp,
   FiCheckSquare,
 } from "react-icons/fi";
+import tracker from "../../lib/analytics/tracker";
 
 const ALL_CURRENCIES = [
   "USD",
@@ -220,6 +221,14 @@ export default function PostJob() {
     applicationPhone: "",
   });
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.postJob.view", {
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     api
       .get("/categories?limit=1000")
@@ -293,6 +302,12 @@ export default function PostJob() {
   async function handleAddCustomCategory() {
     if (!customCatName.trim()) return;
     setAddingCat(true);
+
+    // ── ANALYTICS: custom category attempt ───────────────────────────────
+    tracker.action("postJob.customCategory.attempt", {
+      name: customCatName.trim(),
+    });
+
     try {
       const res = await api.post("/categories/suggest", {
         name: customCatName.trim(),
@@ -303,8 +318,19 @@ export default function PostJob() {
       setCustomCatName("");
       setShowCustomCat(false);
       setCatSearch("");
+
+      // ── ANALYTICS: custom category created ─────────────────────────────
+      tracker.action("postJob.customCategory.created", {
+        categoryId: newCat.id,
+        categoryName: newCat.name,
+      });
     } catch {
       setError("Failed to add custom category");
+
+      // ── ANALYTICS: custom category failed ──────────────────────────────
+      tracker.action("postJob.customCategory.failed", {
+        name: customCatName.trim(),
+      });
     } finally {
       setAddingCat(false);
     }
@@ -338,10 +364,22 @@ export default function PostJob() {
     setForm((f) => ({ ...f, skills: [...f.skills, trimmed] }));
     setSkillInput("");
     setError("");
+
+    // ── ANALYTICS: skill added ───────────────────────────────────────────
+    tracker.track("postJob.skill.added", {
+      skill: trimmed,
+      totalSkills: form.skills.length + 1,
+    });
   }
 
   function removeSkill(skill) {
     setForm((f) => ({ ...f, skills: f.skills.filter((s) => s !== skill) }));
+
+    // ── ANALYTICS: skill removed ─────────────────────────────────────────
+    tracker.track("postJob.skill.removed", {
+      skill,
+      totalSkills: form.skills.length - 1,
+    });
   }
 
   function handleSkillKeyDown(e) {
@@ -356,15 +394,42 @@ export default function PostJob() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!form.categoryId) return setError("Please select a category.");
-    if (!form.title) return setError("Job title is required.");
-    if (!form.description) return setError("Description is required.");
-    if (form.locationType !== "REMOTE" && !form.address)
-      return setError(
-        "Please enter a service address for on-site or hybrid jobs.",
-      );
-    if (!form.scheduledAt)
-      return setError("Please choose a scheduled date and time.");
+    if (!form.categoryId) {
+      setError("Please select a category.");
+      tracker.action("postJob.submit.blocked", {
+        reason: "no_category",
+      });
+      return;
+    }
+    if (!form.title) {
+      setError("Job title is required.");
+      tracker.action("postJob.submit.blocked", {
+        reason: "no_title",
+      });
+      return;
+    }
+    if (!form.description) {
+      setError("Description is required.");
+      tracker.action("postJob.submit.blocked", {
+        reason: "no_description",
+      });
+      return;
+    }
+    if (form.locationType !== "REMOTE" && !form.address) {
+      setError("Please enter a service address for on-site or hybrid jobs.");
+      tracker.action("postJob.submit.blocked", {
+        reason: "no_address",
+        locationType: form.locationType,
+      });
+      return;
+    }
+    if (!form.scheduledAt) {
+      setError("Please choose a scheduled date and time.");
+      tracker.action("postJob.submit.blocked", {
+        reason: "no_schedule",
+      });
+      return;
+    }
 
     const hasBudget = form.budget !== "" && form.budget !== null;
     const hasSalary =
@@ -372,9 +437,13 @@ export default function PostJob() {
       form.salaryMin !== "" ||
       form.salaryMax !== "";
     if (!hasBudget && !hasSalary) {
-      return setError(
+      setError(
         "Please enter a budget, or provide a salary range (amount / min / max).",
       );
+      tracker.action("postJob.submit.blocked", {
+        reason: "no_budget_or_salary",
+      });
+      return;
     }
 
     if (
@@ -382,12 +451,37 @@ export default function PostJob() {
       form.salaryMax !== "" &&
       parseFloat(form.salaryMax) < parseFloat(form.salaryMin)
     ) {
-      return setError(
-        "Salary maximum must be greater than or equal to minimum.",
-      );
+      setError("Salary maximum must be greater than or equal to minimum.");
+      tracker.action("postJob.submit.blocked", {
+        reason: "invalid_salary_range",
+      });
+      return;
     }
 
     setLoading(true);
+
+    // ── ANALYTICS: submit attempt with full context ──────────────────────
+    tracker.action("postJob.submit.attempt", {
+      categoryId: form.categoryId,
+      jobType: form.jobType,
+      locationType: form.locationType,
+      budgetType: form.budgetType,
+      durationType: form.durationType,
+      durationUnit: form.durationUnit,
+      currency: form.currency,
+      hasBudget: !!form.budget,
+      hasSalaryRange: hasSalary,
+      hasSalaryText: !!form.salaryText,
+      hasCompanyName: !!form.companyName,
+      hasSkills: form.skills.length > 0,
+      skillCount: form.skills.length,
+      hasApplicationUrl: !!form.applicationUrl,
+      hasApplicationEmail: !!form.applicationEmail,
+      hasApplicationWhatsApp: !!form.applicationWhatsApp,
+      hasApplicationPhone: !!form.applicationPhone,
+      advancedFieldsShown: showAdvanced,
+    });
+
     try {
       const estimatedHours = toEstimatedHours(
         form.durationUnit,
@@ -460,8 +554,27 @@ export default function PostJob() {
       const res = await api.post("/jobs", payload);
       setPostedJob(res.data.data.jobPost);
       setSubmitted(true);
+
+      // ── ANALYTICS: job posted successfully ─────────────────────────────
+      tracker.action("postJob.success", {
+        jobPostId: res.data.data.jobPost.id,
+        categoryId: form.categoryId,
+        jobType: form.jobType,
+        locationType: form.locationType,
+        budgetType: form.budgetType,
+        currency: form.currency,
+        budget: hasBudget ? parseFloat(form.budget) : null,
+        skillCount: form.skills.length,
+        hadAdvancedFields: showAdvanced,
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Failed to post job.");
+
+      // ── ANALYTICS: job post failed ─────────────────────────────────────
+      tracker.action("postJob.failed", {
+        categoryId: form.categoryId,
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setLoading(false);
     }
@@ -472,6 +585,10 @@ export default function PostJob() {
     setPostedJob(null);
     setError("");
     setShowAdvanced(false);
+
+    // ── ANALYTICS: post another job ──────────────────────────────────────
+    tracker.action("postJob.postAnother.clicked");
+
     setForm({
       categoryId: "",
       title: "",
@@ -655,10 +772,15 @@ export default function PostJob() {
               <Link
                 to="/dashboard/hirer/jobs-management"
                 className={styles.submitBtn}
+                data-track-id="postJob.success.viewMyJobs"
               >
                 View My Jobs
               </Link>
-              <button className={styles.resetBtn} onClick={resetForm}>
+              <button
+                className={styles.resetBtn}
+                onClick={resetForm}
+                data-track-id="postJob.success.postAnother"
+              >
                 Post Another Job
               </button>
             </div>
@@ -683,6 +805,12 @@ export default function PostJob() {
           onApply={(result) => {
             set("title", result.title);
             set("description", result.description);
+
+            // ── ANALYTICS: AI assistant result applied ─────────────────────
+            tracker.action("postJob.aiAssistant.applied", {
+              titleLength: (result.title || "").length,
+              descriptionLength: (result.description || "").length,
+            });
           }}
         />
 
@@ -699,6 +827,7 @@ export default function PostJob() {
               value={catSearch}
               onChange={(e) => setCatSearch(e.target.value)}
               style={{ marginBottom: 6 }}
+              data-track-id="postJob.category.search"
             />
 
             <select
@@ -706,6 +835,7 @@ export default function PostJob() {
               value={form.categoryId}
               onChange={(e) => set("categoryId", e.target.value)}
               size={catSearch ? Math.min(filteredCats.length + 1, 8) : 1}
+              data-track-id="postJob.category.select"
             >
               {!catSearch && <option value="">Select a category</option>}
               {filteredCats.map((c) => (
@@ -729,7 +859,9 @@ export default function PostJob() {
                   onClick={() => {
                     set("categoryId", "");
                     setCatSearch("");
+                    tracker.track("postJob.category.cleared");
                   }}
+                  data-track-id="postJob.category.clear"
                 >
                   <FiX size={14} />
                 </button>
@@ -740,7 +872,11 @@ export default function PostJob() {
               <button
                 type="button"
                 className={styles.addCatBtn}
-                onClick={() => setShowCustomCat(true)}
+                onClick={() => {
+                  setShowCustomCat(true);
+                  tracker.track("postJob.customCategory.opened");
+                }}
+                data-track-id="postJob.customCategory.open"
               >
                 <FiPlus size={13} /> Can't find your category? Add a custom one
               </button>
@@ -752,6 +888,7 @@ export default function PostJob() {
                   value={customCatName}
                   onChange={(e) => setCustomCatName(e.target.value)}
                   autoFocus
+                  data-track-id="postJob.customCategory.input"
                 />
                 <div className={styles.customCatActions}>
                   <button
@@ -760,6 +897,7 @@ export default function PostJob() {
                     style={{ height: 36, fontSize: 13 }}
                     onClick={handleAddCustomCategory}
                     disabled={addingCat || !customCatName.trim()}
+                    data-track-id="postJob.customCategory.submit"
                   >
                     {addingCat ? "Adding..." : "Add Category"}
                   </button>
@@ -770,7 +908,9 @@ export default function PostJob() {
                     onClick={() => {
                       setShowCustomCat(false);
                       setCustomCatName("");
+                      tracker.track("postJob.customCategory.cancelled");
                     }}
+                    data-track-id="postJob.customCategory.cancel"
                   >
                     Cancel
                   </button>
@@ -789,6 +929,7 @@ export default function PostJob() {
               placeholder="e.g. Fix leaking bathroom pipe"
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
+              data-track-id="postJob.title"
             />
           </div>
 
@@ -803,6 +944,7 @@ export default function PostJob() {
               placeholder="Describe the job in detail..."
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
+              data-track-id="postJob.description"
             />
           </div>
 
@@ -820,6 +962,7 @@ export default function PostJob() {
                       form.jobType === t.value ? styles.optionCardActive : ""
                     }`}
                     onClick={() => set("jobType", t.value)}
+                    data-track-id={`postJob.jobType.${t.value}`}
                   >
                     <Icon size={18} />
                     <span>{t.label}</span>
@@ -845,6 +988,7 @@ export default function PostJob() {
                         : ""
                     }`}
                     onClick={() => set("locationType", t.value)}
+                    data-track-id={`postJob.locationType.${t.value}`}
                   >
                     <Icon size={18} />
                     <span>{t.label}</span>
@@ -865,6 +1009,7 @@ export default function PostJob() {
                 placeholder="Full address where work will be done"
                 value={form.address}
                 onChange={(e) => set("address", e.target.value)}
+                data-track-id="postJob.address"
               />
               <div className={styles.row2} style={{ marginTop: 8 }}>
                 <input
@@ -874,6 +1019,7 @@ export default function PostJob() {
                   placeholder="Latitude (optional)"
                   value={form.latitude}
                   onChange={(e) => set("latitude", e.target.value)}
+                  data-track-id="postJob.latitude"
                 />
                 <input
                   className={styles.input}
@@ -882,6 +1028,7 @@ export default function PostJob() {
                   placeholder="Longitude (optional)"
                   value={form.longitude}
                   onChange={(e) => set("longitude", e.target.value)}
+                  data-track-id="postJob.longitude"
                 />
               </div>
             </div>
@@ -897,6 +1044,7 @@ export default function PostJob() {
               type="datetime-local"
               value={form.scheduledAt}
               onChange={(e) => set("scheduledAt", e.target.value)}
+              data-track-id="postJob.scheduledAt"
             />
           </div>
 
@@ -921,6 +1069,7 @@ export default function PostJob() {
                       form.durationUnit === u.value ? styles.unitPillActive : ""
                     }`}
                     onClick={() => set("durationUnit", u.value)}
+                    data-track-id={`postJob.durationUnit.${u.value}`}
                   >
                     {u.label}
                   </button>
@@ -944,6 +1093,7 @@ export default function PostJob() {
                 value={form.estimatedValue}
                 onChange={(e) => set("estimatedValue", e.target.value)}
                 style={{ marginTop: 8 }}
+                data-track-id="postJob.estimatedValue"
               />
               {form.estimatedValue && form.durationUnit !== "custom" && (
                 <p className={styles.durationSummary}>
@@ -971,6 +1121,7 @@ export default function PostJob() {
                 className={styles.select}
                 value={form.durationType}
                 onChange={(e) => set("durationType", e.target.value)}
+                data-track-id="postJob.durationType"
               >
                 {DURATION_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -989,6 +1140,7 @@ export default function PostJob() {
                 }
                 value={form.durationValue}
                 onChange={(e) => set("durationValue", e.target.value)}
+                data-track-id="postJob.durationValue"
               />
             </div>
             {form.durationValue && form.durationType && (
@@ -1020,11 +1172,13 @@ export default function PostJob() {
                 step="0.01"
                 value={form.budget}
                 onChange={(e) => set("budget", e.target.value)}
+                data-track-id="postJob.budget"
               />
               <select
                 className={styles.select}
                 value={form.currency}
                 onChange={(e) => set("currency", e.target.value)}
+                data-track-id="postJob.currency"
               >
                 {ALL_CURRENCIES.map((c) => (
                   <option key={c} value={c}>
@@ -1042,6 +1196,7 @@ export default function PostJob() {
                     form.budgetType === t.value ? styles.unitPillActive : ""
                   }`}
                   onClick={() => set("budgetType", t.value)}
+                  data-track-id={`postJob.budgetType.${t.value}`}
                 >
                   {t.label}
                 </button>
@@ -1076,6 +1231,7 @@ export default function PostJob() {
                     type="button"
                     className={styles.skillRemove}
                     onClick={() => removeSkill(skill)}
+                    data-track-id={`postJob.skill.remove.${skill}`}
                   >
                     <FiX size={12} />
                   </button>
@@ -1094,6 +1250,7 @@ export default function PostJob() {
                 onBlur={() => {
                   if (skillInput.trim()) addSkill(skillInput);
                 }}
+                data-track-id="postJob.skill.input"
               />
             </div>
 
@@ -1107,6 +1264,7 @@ export default function PostJob() {
                       key={s}
                       className={styles.skillSuggestion}
                       onClick={() => addSkill(s)}
+                      data-track-id={`postJob.skill.suggestion.${s}`}
                     >
                       <FiPlus size={11} /> {s}
                     </button>
@@ -1124,6 +1282,7 @@ export default function PostJob() {
               placeholder="Access instructions, tools needed, preferences..."
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
+              data-track-id="postJob.notes"
             />
           </div>
 
@@ -1133,7 +1292,14 @@ export default function PostJob() {
               type="button"
               className={styles.addCatBtn}
               style={{ padding: 12, fontSize: 13 }}
-              onClick={() => setShowAdvanced((v) => !v)}
+              onClick={() => {
+                const next = !showAdvanced;
+                setShowAdvanced(next);
+                tracker.track("postJob.advancedPanel.toggled", {
+                  opened: next,
+                });
+              }}
+              data-track-id="postJob.advancedPanel.toggle"
             >
               {showAdvanced ? (
                 <>
@@ -1158,6 +1324,7 @@ export default function PostJob() {
                   placeholder="e.g. SkilledProz Farms Ltd"
                   value={form.companyName}
                   onChange={(e) => set("companyName", e.target.value)}
+                  data-track-id="postJob.advanced.companyName"
                 />
               </div>
 
@@ -1173,6 +1340,7 @@ export default function PostJob() {
                   placeholder="e.g. ₦250,000 a month"
                   value={form.salaryText}
                   onChange={(e) => set("salaryText", e.target.value)}
+                  data-track-id="postJob.advanced.salaryText"
                 />
               </div>
 
@@ -1195,11 +1363,13 @@ export default function PostJob() {
                     placeholder="Fixed amount (optional)"
                     value={form.salaryAmount}
                     onChange={(e) => set("salaryAmount", e.target.value)}
+                    data-track-id="postJob.advanced.salaryAmount"
                   />
                   <select
                     className={styles.select}
                     value={form.salaryCurrency}
                     onChange={(e) => set("salaryCurrency", e.target.value)}
+                    data-track-id="postJob.advanced.salaryCurrency"
                   >
                     <option value="">Salary Currency</option>
                     {ALL_CURRENCIES.map((c) => (
@@ -1218,6 +1388,7 @@ export default function PostJob() {
                     placeholder="Min (optional)"
                     value={form.salaryMin}
                     onChange={(e) => set("salaryMin", e.target.value)}
+                    data-track-id="postJob.advanced.salaryMin"
                   />
                   <input
                     className={styles.input}
@@ -1227,6 +1398,7 @@ export default function PostJob() {
                     placeholder="Max (optional)"
                     value={form.salaryMax}
                     onChange={(e) => set("salaryMax", e.target.value)}
+                    data-track-id="postJob.advanced.salaryMax"
                   />
                 </div>
                 <div className={styles.unitPills} style={{ marginTop: 8 }}>
@@ -1245,6 +1417,7 @@ export default function PostJob() {
                           form.salaryPeriod === p.value ? "" : p.value,
                         )
                       }
+                      data-track-id={`postJob.advanced.salaryPeriod.${p.value}`}
                     >
                       {p.label}
                     </button>
@@ -1279,6 +1452,7 @@ export default function PostJob() {
                           form.experienceLevel === t.value ? "" : t.value,
                         )
                       }
+                      data-track-id={`postJob.advanced.experienceLevel.${t.value}`}
                     >
                       {t.label}
                     </button>
@@ -1290,6 +1464,7 @@ export default function PostJob() {
                   placeholder="e.g. 2 years"
                   value={form.experienceLength}
                   onChange={(e) => set("experienceLength", e.target.value)}
+                  data-track-id="postJob.advanced.experienceLength"
                 />
               </div>
 
@@ -1299,6 +1474,7 @@ export default function PostJob() {
                   className={styles.select}
                   value={form.educationLevel}
                   onChange={(e) => set("educationLevel", e.target.value)}
+                  data-track-id="postJob.advanced.educationLevel"
                 >
                   <option value="">Select education level</option>
                   {EDUCATION_LEVELS.map((e) => (
@@ -1317,6 +1493,7 @@ export default function PostJob() {
                   placeholder="e.g. Diploma in Agriculture"
                   value={form.minQualification}
                   onChange={(e) => set("minQualification", e.target.value)}
+                  data-track-id="postJob.advanced.minQualification"
                 />
               </div>
 
@@ -1327,6 +1504,7 @@ export default function PostJob() {
                   placeholder="e.g. English, Yoruba"
                   value={form.languageRequirement}
                   onChange={(e) => set("languageRequirement", e.target.value)}
+                  data-track-id="postJob.advanced.languageRequirement"
                 />
               </div>
 
@@ -1337,6 +1515,7 @@ export default function PostJob() {
                   placeholder="e.g. Full time — Mon–Sat, 8am–5pm"
                   value={form.workingHours}
                   onChange={(e) => set("workingHours", e.target.value)}
+                  data-track-id="postJob.advanced.workingHours"
                 />
               </div>
 
@@ -1347,6 +1526,7 @@ export default function PostJob() {
                   placeholder="e.g. Lagos, Nigeria"
                   value={form.applicantLocation}
                   onChange={(e) => set("applicantLocation", e.target.value)}
+                  data-track-id="postJob.advanced.applicantLocation"
                 />
               </div>
 
@@ -1358,6 +1538,7 @@ export default function PostJob() {
                   placeholder="Day-to-day responsibilities of the role..."
                   value={form.responsibilities}
                   onChange={(e) => set("responsibilities", e.target.value)}
+                  data-track-id="postJob.advanced.responsibilities"
                 />
               </div>
 
@@ -1369,6 +1550,7 @@ export default function PostJob() {
                   placeholder="Must-haves, tools, certifications..."
                   value={form.requirements}
                   onChange={(e) => set("requirements", e.target.value)}
+                  data-track-id="postJob.advanced.requirements"
                 />
               </div>
 
@@ -1389,6 +1571,7 @@ export default function PostJob() {
                       placeholder="Application URL (https://…)"
                       value={form.applicationUrl}
                       onChange={(e) => set("applicationUrl", e.target.value)}
+                      data-track-id="postJob.advanced.applicationUrl"
                     />
                   </div>
                   <div className={styles.applyChannelRow}>
@@ -1399,6 +1582,7 @@ export default function PostJob() {
                       placeholder="Application email"
                       value={form.applicationEmail}
                       onChange={(e) => set("applicationEmail", e.target.value)}
+                      data-track-id="postJob.advanced.applicationEmail"
                     />
                   </div>
                   <div className={styles.applyChannelRow}>
@@ -1413,6 +1597,7 @@ export default function PostJob() {
                       onChange={(e) =>
                         set("applicationWhatsApp", e.target.value)
                       }
+                      data-track-id="postJob.advanced.applicationWhatsApp"
                     />
                   </div>
                   <div className={styles.applyChannelRow}>
@@ -1422,6 +1607,7 @@ export default function PostJob() {
                       placeholder="Phone number (e.g. +2348012345678)"
                       value={form.applicationPhone}
                       onChange={(e) => set("applicationPhone", e.target.value)}
+                      data-track-id="postJob.advanced.applicationPhone"
                     />
                   </div>
                 </div>
@@ -1435,6 +1621,7 @@ export default function PostJob() {
                   placeholder="e.g. Indeed, LinkedIn (for external jobs)"
                   value={form.sourcePlatform}
                   onChange={(e) => set("sourcePlatform", e.target.value)}
+                  data-track-id="postJob.advanced.sourcePlatform"
                 />
               </div>
 
@@ -1445,6 +1632,7 @@ export default function PostJob() {
                   type="datetime-local"
                   value={form.expiryDate}
                   onChange={(e) => set("expiryDate", e.target.value)}
+                  data-track-id="postJob.advanced.expiryDate"
                 />
               </div>
             </>
@@ -1452,7 +1640,12 @@ export default function PostJob() {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading}
+            data-track-id="postJob.submit"
+          >
             {loading ? (
               <>
                 <span className={styles.spinner} /> Posting...

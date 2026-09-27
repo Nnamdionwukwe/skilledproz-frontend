@@ -8,6 +8,7 @@ import api from "../../../lib/api";
 import FeatureGate from "../../../components/subscription/FeatureGate";
 import DashboardCurrencySwitch from "../../../components/common/DashboardCurrencySwitch";
 import { useCurrency } from "../../../context/CurrencyContext";
+import tracker from "../../../lib/analytics/tracker";
 
 // ─── Local currency formatter (symbol-based, always 2 decimals) ──────────
 function formatCurrency(amount, currency = "NGN") {
@@ -62,13 +63,36 @@ export default function WorkerDashboard() {
   const navigate = useNavigate();
   const { dashboardCurrency } = useCurrency();
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.workerDashboard.view", {
+      userId: user?.id || null,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     api
       .get("/workers/dashboard")
-      .then((res) => setData(res.data.data))
-      .catch((err) =>
-        setError(err.response?.data?.message || "Failed to load dashboard"),
-      )
+      .then((res) => {
+        setData(res.data.data);
+        // ── ANALYTICS: dashboard data loaded ──────────────────────────────
+        tracker.track("workerDashboard.loaded", {
+          hasProfile: !!res.data.data?.profile,
+          profileCompletion: res.data.data?.profile?.profileCompletion || 0,
+          upcomingCount: res.data.data?.upcomingBookings?.length || 0,
+          recentBookingsCount: res.data.data?.recentBookings?.length || 0,
+          recentReviewsCount: res.data.data?.recentReviews?.length || 0,
+        });
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || "Failed to load dashboard");
+        // ── ANALYTICS: dashboard failed to load ───────────────────────────
+        tracker.track("workerDashboard.load.failed", {
+          reason: err.response?.data?.message || "unknown",
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -196,7 +220,11 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Earnings trend</span>
-              <Link to="/dashboard/worker/earnings" className={ui.cardLink}>
+              <Link
+                to="/dashboard/worker/earnings"
+                className={ui.cardLink}
+                data-track-id="workerDashboard.earnings.viewReport"
+              >
                 Full report →
               </Link>
             </div>
@@ -254,6 +282,12 @@ export default function WorkerDashboard() {
                   <Link
                     to="/dashboard/worker/profile"
                     style={{ color: "var(--brand)", fontWeight: 700 }}
+                    data-track-id="workerDashboard.profile.update"
+                    onClick={() =>
+                      tracker.action("workerDashboard.profile.update.clicked", {
+                        completionPct: completion,
+                      })
+                    }
                   >
                     Update now →
                   </Link>
@@ -313,7 +347,11 @@ export default function WorkerDashboard() {
                 <div className={ui.card} style={{ flex: 1 }}>
                   <div className={ui.cardHeader}>
                     <span className={ui.cardTitle}>Upcoming jobs</span>
-                    <Link to="/bookings" className={ui.cardLink}>
+                    <Link
+                      to="/bookings"
+                      className={ui.cardLink}
+                      data-track-id="workerDashboard.upcoming.seeAll"
+                    >
                       See all →
                     </Link>
                   </div>
@@ -328,9 +366,16 @@ export default function WorkerDashboard() {
                       const d = b.scheduledAt ? new Date(b.scheduledAt) : null;
                       return (
                         <div
-                          onClick={() => navigate(`/bookings/${b.id}`)}
+                          onClick={() => {
+                            tracker.action("workerDashboard.upcoming.clicked", {
+                              bookingId: b.id,
+                              status: b.status,
+                            });
+                            navigate(`/bookings/${b.id}`);
+                          }}
                           key={b.id}
                           className={styles.upcomingItem}
+                          data-track-id={`workerDashboard.upcoming.booking.${b.id}`}
                         >
                           {d && (
                             <div className={styles.upcomingDate}>
@@ -371,7 +416,11 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Recent bookings</span>
-              <Link to="/bookings" className={ui.cardLink}>
+              <Link
+                to="/bookings"
+                className={ui.cardLink}
+                data-track-id="workerDashboard.recentBookings.viewAll"
+              >
                 View all →
               </Link>
             </div>
@@ -382,9 +431,16 @@ export default function WorkerDashboard() {
             ) : (
               recentBookings.slice(0, 6).map((b) => (
                 <div
-                  onClick={() => navigate(`/bookings/${b.id}`)}
+                  onClick={() => {
+                    tracker.action("workerDashboard.recentBooking.clicked", {
+                      bookingId: b.id,
+                      status: b.status,
+                    });
+                    navigate(`/bookings/${b.id}`);
+                  }}
                   key={b.id}
                   className={styles.bookingItem}
+                  data-track-id={`workerDashboard.recentBooking.${b.id}`}
                 >
                   <div className={styles.bookingAvatar}>
                     {b.hirer?.avatar ? (
@@ -441,7 +497,11 @@ export default function WorkerDashboard() {
           <div className={ui.card}>
             <div className={ui.cardHeader}>
               <span className={ui.cardTitle}>Recent reviews</span>
-              <Link to="/dashboard/worker/reviews" className={ui.cardLink}>
+              <Link
+                to="/dashboard/worker/reviews"
+                className={ui.cardLink}
+                data-track-id="workerDashboard.recentReviews.seeAll"
+              >
                 See all →
               </Link>
             </div>

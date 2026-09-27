@@ -36,6 +36,7 @@ import {
 import VideoIntroSection from "./VideoIntroSection";
 import ReportButton from "../../pages/reports/ReportButton";
 import useSavedWorker from "../../hooks/useSavedWorker";
+import tracker from "../../lib/analytics/tracker";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -77,6 +78,17 @@ export default function WorkerPublicProfile() {
     toggle,
   } = useSavedWorker(userId, { enabled: isHirer && !isOwnProfile });
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.workerProfile.view", {
+      workerId: userId || null,
+      viewerRole: viewerUser?.role || "GUEST",
+      isOwnProfile,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
@@ -89,11 +101,38 @@ export default function WorkerPublicProfile() {
         .catch(() => ({ data: { data: { reviews: [] } } })),
     ])
       .then(([wRes, rRes]) => {
-        setWorker(wRes.data.data.worker);
+        const w = wRes.data.data.worker;
+        setWorker(w);
         setReviews(rRes.data.data.reviews || []);
+
+        // ── ANALYTICS: worker data loaded ──────────────────────────────
+        tracker.track("workerProfile.loaded", {
+          workerId: userId,
+          isVerified: w?.verificationStatus === "VERIFIED",
+          isAvailable: !!w?.isAvailable,
+          hasVideoIntro: !!w?.videoIntroUrl,
+          portfolioCount: w?.portfolio?.length || 0,
+          certificationsCount: w?.certifications?.length || 0,
+          categoryCount: w?.categories?.length || 0,
+          hasMultiRate:
+            (w?.dailyRate || 0) > 0 ||
+            (w?.weeklyRate || 0) > 0 ||
+            (w?.monthlyRate || 0) > 0 ||
+            (w?.yearlyRate || 0) > 0 ||
+            (w?.customRate || 0) > 0,
+          avgRating: w?.avgRating || 0,
+          totalReviews: w?.totalReviews || 0,
+          completedJobs: w?.completedJobs || 0,
+        });
       })
       .catch((e) => {
         setError(e.response?.data?.message || "Profile not found");
+        // ── ANALYTICS: worker profile load failed ─────────────────────
+        tracker.track("workerProfile.load.failed", {
+          workerId: userId,
+          reason: e.response?.data?.message || "unknown",
+          viewerRole: viewerUser?.role || "GUEST",
+        });
       })
       .finally(() => setLoading(false));
   }, [userId]);
@@ -102,7 +141,14 @@ export default function WorkerPublicProfile() {
   useEffect(() => {
     if (!lightbox) return;
     const onKey = (e) => {
-      if (e.key === "Escape") setLightbox(null);
+      if (e.key === "Escape") {
+        setLightbox(null);
+        // ── ANALYTICS: lightbox closed via Escape ───────────────────────
+        tracker.track("workerProfile.lightbox.closed", {
+          via: "escape",
+          type: lightbox.type,
+        });
+      }
     };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -255,7 +301,16 @@ export default function WorkerPublicProfile() {
               {/* Contact info */}
               <div className={styles.contactRow}>
                 {user.phone && (
-                  <a href={`tel:${user.phone}`} className={styles.contactItem}>
+                  <a
+                    href={`tel:${user.phone}`}
+                    className={styles.contactItem}
+                    onClick={() =>
+                      tracker.action("workerProfile.contact.phone.clicked", {
+                        workerId: userId,
+                      })
+                    }
+                    data-track-id="workerProfile.contact.phone"
+                  >
                     <FiPhone size={12} /> <span>{user.phone}</span>
                   </a>
                 )}
@@ -263,6 +318,12 @@ export default function WorkerPublicProfile() {
                   <a
                     href={`mailto:${user.email}`}
                     className={styles.contactItem}
+                    onClick={() =>
+                      tracker.action("workerProfile.contact.email.clicked", {
+                        workerId: userId,
+                      })
+                    }
+                    data-track-id="workerProfile.contact.email"
                   >
                     <FiMail size={12} /> <span>{user.email}</span>
                   </a>
@@ -337,9 +398,16 @@ export default function WorkerPublicProfile() {
               <div className={styles.actionBtns}>
                 <button
                   className={styles.bookBtn}
-                  onClick={() =>
-                    navigate(`/bookings/create?workerId=${userId}`)
-                  }
+                  onClick={() => {
+                    tracker.action("workerProfile.book.clicked", {
+                      workerId: userId,
+                      workerTitle: worker.title || null,
+                      hourlyRate: worker.hourlyRate,
+                      currency: worker.currency,
+                    });
+                    navigate(`/bookings/create?workerId=${userId}`);
+                  }}
+                  data-track-id="workerProfile.book"
                 >
                   Book Now
                 </button>
@@ -347,11 +415,19 @@ export default function WorkerPublicProfile() {
                 {isHirer && (
                   <button
                     className={`${styles.saveBtn} ${isSaved ? styles.saveBtnActive : ""}`}
-                    onClick={toggle}
+                    onClick={() => {
+                      toggle();
+                      // ── ANALYTICS: save/unsave worker ────────────────
+                      tracker.action("workerProfile.save.toggled", {
+                        workerId: userId,
+                        wasSaved: isSaved,
+                      });
+                    }}
                     disabled={checkingSave || toggling}
                     title={isSaved ? "Remove from saved" : "Save worker"}
                     type="button"
                     aria-pressed={isSaved}
+                    data-track-id="workerProfile.save"
                   >
                     <FiBookmark
                       size={16}
@@ -362,8 +438,14 @@ export default function WorkerPublicProfile() {
 
                 <button
                   className={styles.msgBtn}
-                  onClick={() => navigate(`/messages?with=${userId}`)}
+                  onClick={() => {
+                    tracker.action("workerProfile.message.clicked", {
+                      workerId: userId,
+                    });
+                    navigate(`/messages?with=${userId}`);
+                  }}
                   title="Message"
+                  data-track-id="workerProfile.message"
                 >
                   <FiMessageCircle size={16} />
                 </button>
@@ -377,7 +459,11 @@ export default function WorkerPublicProfile() {
             )}
 
             {isOwnProfile && (
-              <Link to="/settings" className={styles.editBtn}>
+              <Link
+                to="/settings"
+                className={styles.editBtn}
+                data-track-id="workerProfile.edit"
+              >
                 <FiEdit3 size={14} /> Edit Profile
               </Link>
             )}
@@ -390,7 +476,16 @@ export default function WorkerPublicProfile() {
             <button
               key={key}
               className={`${styles.tabBtn} ${tab === key ? styles.tabBtnActive : ""}`}
-              onClick={() => setTab(key)}
+              onClick={() => {
+                setTab(key);
+                // ── ANALYTICS: tab switched ──────────────────────────────
+                tracker.track("workerProfile.tab.switched", {
+                  workerId: userId,
+                  from: tab,
+                  to: key,
+                });
+              }}
+              data-track-id={`workerProfile.tab.${key}`}
             >
               {label}
               {typeof count === "number" && count > 0 && (
@@ -483,15 +578,22 @@ export default function WorkerPublicProfile() {
                       key={item.id}
                       type="button"
                       className={styles.portfolioCard}
-                      onClick={() =>
+                      onClick={() => {
                         setLightbox({
                           type: "portfolio",
                           url: item.imageUrl,
                           title: item.title,
                           description: item.description,
-                        })
-                      }
+                        });
+                        // ── ANALYTICS: portfolio item opened ────────────
+                        tracker.action("workerProfile.portfolio.opened", {
+                          workerId: userId,
+                          itemId: item.id,
+                          itemTitle: item.title,
+                        });
+                      }}
                       aria-label={`View ${item.title} full screen`}
+                      data-track-id={`workerProfile.portfolio.${item.id}`}
                     >
                       <div className={styles.portfolioImg}>
                         <img
@@ -575,17 +677,30 @@ export default function WorkerPublicProfile() {
                         <button
                           type="button"
                           className={styles.certLink}
-                          onClick={() =>
+                          onClick={() => {
+                            const isPdf = isPdfUrl(cert.documentUrl);
                             setLightbox({
-                              type: isPdfUrl(cert.documentUrl) ? "pdf" : "cert",
+                              type: isPdf ? "pdf" : "cert",
                               url: cert.documentUrl,
                               title: cert.name,
                               issuer: cert.issuedBy,
                               issueDate: cert.issueDate,
                               expiryDate: cert.expiryDate,
                               isVerified: cert.verified,
-                            })
-                          }
+                            });
+                            // ── ANALYTICS: certification viewed ──────────
+                            tracker.action(
+                              "workerProfile.certification.viewed",
+                              {
+                                workerId: userId,
+                                certId: cert.id,
+                                certName: cert.name,
+                                isPdf,
+                                isVerified: cert.verified,
+                              },
+                            );
+                          }}
+                          data-track-id={`workerProfile.certification.${cert.id}`}
                         >
                           View <FiChevronRight size={12} />
                         </button>
@@ -681,7 +796,14 @@ export default function WorkerPublicProfile() {
       {lightbox && (
         <div
           className={styles.lightboxOverlay}
-          onClick={() => setLightbox(null)}
+          onClick={() => {
+            setLightbox(null);
+            // ── ANALYTICS: lightbox closed via overlay click ─────────────
+            tracker.track("workerProfile.lightbox.closed", {
+              via: "overlay",
+              type: lightbox.type,
+            });
+          }}
           role="dialog"
           aria-modal="true"
           aria-label={lightbox.title}
@@ -692,8 +814,14 @@ export default function WorkerPublicProfile() {
             onClick={(e) => {
               e.stopPropagation();
               setLightbox(null);
+              // ── ANALYTICS: lightbox closed via close button ──────────
+              tracker.track("workerProfile.lightbox.closed", {
+                via: "closeBtn",
+                type: lightbox.type,
+              });
             }}
             aria-label="Close"
+            data-track-id="workerProfile.lightbox.close"
           >
             <FiX size={22} />
           </button>
@@ -890,7 +1018,11 @@ function ProfileError({ msg }) {
           {isPrivate ? "Private Profile" : "Worker not found"}
         </h2>
         <p className={styles.notFoundSub}>{msg}</p>
-        <Link to="/search" className={styles.notFoundLink}>
+        <Link
+          to="/search"
+          className={styles.notFoundLink}
+          data-track-id="workerProfile.notFound.backToSearch"
+        >
           <FiArrowLeft size={13} /> Back to Search
         </Link>
       </div>

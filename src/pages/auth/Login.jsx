@@ -7,6 +7,7 @@ import AuthLayout from "../../components/auth/AuthLayout";
 import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 import s from "../../components/auth/form.module.css";
 import g from "../../components/auth/GoogleSignInButton.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,6 +19,16 @@ export default function Login() {
   const [error, setError] = useState("");
   const [accountBlock, setAccountBlock] = useState(null);
   const [refCode, setRefCode] = useState("");
+
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    const urlRef = searchParams.get("ref");
+    tracker.track("page.login.view", {
+      hasRefCode: !!urlRef,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clear any stale pending Google signup whenever we land on /login.
   useEffect(() => {
@@ -31,6 +42,10 @@ export default function Login() {
       const code = ref.toUpperCase().trim();
       setRefCode(code);
       sessionStorage.setItem("pendingRefCode", code);
+      tracker.track("login.refcode.captured", {
+        refCode: code,
+        source: "url_param",
+      });
     } else {
       // Fall back to anything previously stashed (e.g. after a reload).
       const stored = sessionStorage.getItem("pendingRefCode");
@@ -47,6 +62,11 @@ export default function Login() {
     else if (code === "ACCOUNT_DELETED") setAccountBlock("deleted");
     else if (code === "ACCOUNT_NOT_FOUND") setAccountBlock("not_found");
     else if (reason) setError(reason);
+
+    tracker.track("login.blockedAccount", {
+      code: code || null,
+      reason: reason || null,
+    });
 
     const t = setTimeout(() => {
       const next = new URLSearchParams(searchParams);
@@ -67,6 +87,13 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setAccountBlock(null);
+
+    tracker.action("login.submit.attempt", {
+      emailDomain: form.email.split("@")[1] || null,
+      hasPassword: !!form.password,
+      hasRefCode: !!refCode,
+    });
+
     try {
       const loggedInUser = await login(form.email, form.password);
       const role = loggedInUser.role;
@@ -76,6 +103,14 @@ export default function Login() {
           : role === "WORKER"
             ? "/dashboard/worker"
             : "/dashboard/hirer";
+
+      tracker.action("login.success", {
+        role,
+        emailDomain: form.email.split("@")[1] || null,
+        destination: dest,
+        hadRefCode: !!refCode,
+      });
+
       navigate(dest, { replace: true });
     } catch (err) {
       const res = err?.response?.data;
@@ -83,14 +118,26 @@ export default function Login() {
 
       if (code === "ACCOUNT_BANNED") {
         setAccountBlock("banned");
+        tracker.action("login.blocked", {
+          reason: "banned",
+          emailDomain: form.email.split("@")[1] || null,
+        });
         return;
       }
       if (code === "ACCOUNT_DELETED") {
         setAccountBlock("deleted");
+        tracker.action("login.blocked", {
+          reason: "deleted",
+          emailDomain: form.email.split("@")[1] || null,
+        });
         return;
       }
       if (code === "ACCOUNT_NOT_FOUND") {
         setAccountBlock("not_found");
+        tracker.action("login.blocked", {
+          reason: "not_found",
+          emailDomain: form.email.split("@")[1] || null,
+        });
         return;
       }
 
@@ -102,12 +149,20 @@ export default function Login() {
           res?.message ||
             "This account was created with Google. Please sign in with Google.",
         );
+        tracker.action("login.failed", {
+          reason: "google_only_account",
+          emailDomain: form.email.split("@")[1] || null,
+        });
         return;
       }
 
       setError(
         res?.message ?? err?.message ?? "Login failed. Please try again.",
       );
+      tracker.action("login.failed", {
+        reason: code || "invalid_credentials",
+        emailDomain: form.email.split("@")[1] || null,
+      });
     }
   };
 
@@ -118,6 +173,12 @@ export default function Login() {
       "googlePendingSignup",
       JSON.stringify({ googleProfile, accessToken, refCode: code }),
     );
+
+    tracker.action("login.google.newUser", {
+      emailDomain: (googleProfile?.email || "").split("@")[1] || null,
+      hasRefCode: !!code,
+    });
+
     navigate("/register", {
       state: { googleProfile, accessToken, refCode: code, from: "google" },
     });
@@ -133,6 +194,13 @@ export default function Login() {
         : role === "WORKER"
           ? "/dashboard/worker"
           : "/dashboard/hirer";
+
+    tracker.action("login.google.success", {
+      role,
+      emailDomain: (result.user.email || "").split("@")[1] || null,
+      destination: dest,
+    });
+
     navigate(dest, { replace: true });
   };
 
@@ -165,7 +233,11 @@ export default function Login() {
           </h1>
           <p className={s.subtitle}>
             No account yet?{" "}
-            <Link to="/register" className={s.link}>
+            <Link
+              to="/register"
+              className={s.link}
+              data-track-id="login.register.link"
+            >
               Create one free &nbsp;→
             </Link>
           </p>
@@ -194,6 +266,12 @@ export default function Login() {
                 display: "inline-flex",
                 justifyContent: "center",
               }}
+              data-track-id="login.support.contact"
+              onClick={() =>
+                tracker.track("login.support.clicked", {
+                  reason: accountBlock,
+                })
+              }
             >
               Contact support
             </a>
@@ -231,7 +309,13 @@ export default function Login() {
                 autoComplete="email"
                 value={form.email}
                 onChange={onChange}
+                onFocus={() => {
+                  if (!form.email) {
+                    tracker.track("login.form.email.focused");
+                  }
+                }}
                 required
+                data-track-id="login.form.email"
               />
             </div>
           </div>
@@ -239,7 +323,11 @@ export default function Login() {
           <div className={s.field}>
             <div className={s.labelRow}>
               <label className={s.label}>Password</label>
-              <Link to="/forgot-password" className={s.linkSmall}>
+              <Link
+                to="/forgot-password"
+                className={s.linkSmall}
+                data-track-id="login.forgotPassword.link"
+              >
                 Forgot?
               </Link>
             </div>
@@ -257,13 +345,21 @@ export default function Login() {
                 onChange={onChange}
                 required
                 style={{ paddingRight: 42 }}
+                data-track-id="login.form.password"
               />
               <button
                 type="button"
                 className={s.iconRight}
-                onClick={() => setShowPw((v) => !v)}
+                onClick={() => {
+                  const next = !showPw;
+                  setShowPw(next);
+                  tracker.track("login.password.toggled", {
+                    visible: next,
+                  });
+                }}
                 tabIndex={-1}
                 aria-label={showPw ? "Hide password" : "Show password"}
+                data-track-id="login.form.showPassword"
               >
                 {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
@@ -275,6 +371,7 @@ export default function Login() {
             className={`${s.btn} ${s.btnPrimary}`}
             disabled={isLoading || !form.email.trim() || !form.password}
             style={{ marginTop: 4 }}
+            data-track-id="login.form.submit"
           >
             {isLoading && <span className={s.spinner} />}
             {isLoading ? "Signing in…" : "Sign In"}

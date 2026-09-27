@@ -14,11 +14,21 @@ import api from "../../lib/api";
 import FeatureGate from "../subscription/FeatureGate";
 import { useCurrency } from "../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
+import tracker from "../../lib/analytics/tracker";
 
 export default function HirerDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { fmt, dashboardCurrency, getSymbol } = useCurrency();
+
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.hirerDashboard.view", {
+      dashboardCurrency,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     api
@@ -26,8 +36,25 @@ export default function HirerDashboard() {
       .then((res) => {
         setData(res.data.data);
         setLoading(false);
+
+        // ── ANALYTICS: dashboard loaded ──────────────────────────────────
+        const d = res.data.data;
+        tracker.track("hirerDashboard.loaded", {
+          totalBookings: d?.stats?.totalBookings || 0,
+          activeBookings: d?.stats?.activeBookings || 0,
+          completedBookings: d?.stats?.completedBookings || 0,
+          hasRecentBookings: (d?.recentBookings?.length || 0) > 0,
+          recentBookingsCount: d?.recentBookings?.length || 0,
+          recentWorkersCount: d?.recentWorkers?.length || 0,
+        });
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setLoading(false);
+        // ── ANALYTICS: dashboard load failed ─────────────────────────────
+        tracker.track("hirerDashboard.load.failed", {
+          reason: err.response?.data?.message || "unknown",
+        });
+      });
   }, []);
 
   if (loading)
@@ -62,7 +89,16 @@ export default function HirerDashboard() {
           </div>
           <div className={styles.headerActions}>
             <DashboardCurrencySwitch />
-            <Link to="/dashboard/hirer/post-job" className={styles.ctaBtn}>
+            <Link
+              to="/dashboard/hirer/post-job"
+              className={styles.ctaBtn}
+              data-track-id="hirerDashboard.postJob"
+              onClick={() =>
+                tracker.action("hirerDashboard.postJob.clicked", {
+                  totalBookings: stats.totalBookings,
+                })
+              }
+            >
               <span className={styles.ctaBtnIcon}>
                 <FiPlus size={16} />
               </span>
@@ -107,7 +143,11 @@ export default function HirerDashboard() {
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}>Recent Bookings</h2>
-              <Link to="/bookings" className={styles.panelLink}>
+              <Link
+                to="/bookings"
+                className={styles.panelLink}
+                data-track-id="hirerDashboard.recentBookings.viewAll"
+              >
                 View all →
               </Link>
             </div>
@@ -130,6 +170,7 @@ export default function HirerDashboard() {
               <Link
                 to="/dashboard/hirer/saved-workers"
                 className={styles.panelLink}
+                data-track-id="hirerDashboard.recentWorkers.viewAll"
               >
                 View all →
               </Link>
@@ -228,6 +269,15 @@ function BookingRow({ booking, delay }) {
       to={`/bookings/${booking.id}`}
       className={styles.bookingRow}
       style={{ animationDelay: `${delay}s` }}
+      onClick={() =>
+        tracker.action("hirerDashboard.recentBooking.clicked", {
+          bookingId: booking.id,
+          status: booking.status,
+          amount: booking.agreedRate,
+          currency: booking.currency,
+        })
+      }
+      data-track-id={`hirerDashboard.recentBooking.${booking.id}`}
     >
       <div className={styles.bookingRowLeft}>
         <div className={styles.bookingAvatar}>
@@ -279,6 +329,14 @@ function WorkerRow({ worker, delay }) {
       to={`/workers/${worker.id}`}
       className={styles.workerRow}
       style={{ animationDelay: `${delay}s` }}
+      onClick={() =>
+        tracker.action("hirerDashboard.recentWorker.clicked", {
+          workerId: worker.id,
+          workerTitle: worker.workerProfile?.title || null,
+          avgRating: worker.workerProfile?.avgRating || null,
+        })
+      }
+      data-track-id={`hirerDashboard.recentWorker.${worker.id}`}
     >
       <div className={styles.workerAvatar}>
         {worker.avatar ? (

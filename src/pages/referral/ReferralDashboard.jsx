@@ -27,6 +27,7 @@ import {
   FiShare2,
   FiSlash,
 } from "react-icons/fi";
+import tracker from "../../lib/analytics/tracker";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtAmt(n) {
@@ -181,6 +182,12 @@ function ShareButtons({ link, shareText }) {
         target="_blank"
         rel="noreferrer"
         className={`${styles.shareBtn} ${styles.shareBtnWa}`}
+        onClick={() =>
+          tracker.action("referral.share.clicked", {
+            channel: "whatsapp",
+          })
+        }
+        data-track-id="referral.share.whatsapp"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
@@ -192,6 +199,12 @@ function ShareButtons({ link, shareText }) {
         target="_blank"
         rel="noreferrer"
         className={`${styles.shareBtn} ${styles.shareBtnX}`}
+        onClick={() =>
+          tracker.action("referral.share.clicked", {
+            channel: "twitter",
+          })
+        }
+        data-track-id="referral.share.twitter"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -201,11 +214,15 @@ function ShareButtons({ link, shareText }) {
       {typeof navigator !== "undefined" && navigator.share && (
         <button
           className={`${styles.shareBtn} ${styles.shareBtnMore}`}
-          onClick={() =>
+          onClick={() => {
+            tracker.action("referral.share.clicked", {
+              channel: "native",
+            });
             navigator
               .share({ title: "SkilledProz", text: shareText, url: link })
-              .catch(() => {})
-          }
+              .catch(() => {});
+          }}
+          data-track-id="referral.share.native"
         >
           <FiShare2 size={13} /> More
         </button>
@@ -239,21 +256,46 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
       setError(
         `Minimum withdrawal is ${fmtAmt(wallet?.minWithdrawal || 5000)}`,
       );
+      tracker.action("referral.withdraw.blocked", {
+        reason: "below_minimum",
+        amount: amt,
+      });
       return;
     }
     if (amt > (wallet?.balance || 0)) {
       setError(`Insufficient balance. Available: ${fmtAmt(wallet?.balance)}`);
+      tracker.action("referral.withdraw.blocked", {
+        reason: "insufficient_balance",
+        amount: amt,
+        balance: wallet?.balance,
+      });
       return;
     }
     if (!form.bankName || !form.accountNumber || !form.accountName) {
       setError("All bank details are required");
+      tracker.action("referral.withdraw.blocked", {
+        reason: "missing_bank_details",
+      });
       return;
     }
     if (!form.pin || form.pin.length !== 4) {
       setError("Please enter your 4-digit withdrawal PIN");
+      tracker.action("referral.withdraw.blocked", {
+        reason: "missing_pin",
+      });
       return;
     }
     setLoading(true);
+
+    // ── ANALYTICS: withdrawal attempt ────────────────────────────────────
+    tracker.action("referral.withdraw.attempt", {
+      amount: amt,
+      balance: wallet?.balance,
+      hasBankName: !!form.bankName,
+      hasAccountNumber: !!form.accountNumber,
+      hasAccountName: !!form.accountName,
+    });
+
     try {
       await api.post("/referral/withdraw", {
         amount: form.amount,
@@ -262,6 +304,12 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
         accountNumber: form.accountNumber.trim(),
         accountName: form.accountName.trim(),
       });
+
+      // ── ANALYTICS: withdrawal succeeded ──────────────────────────────
+      tracker.action("referral.withdraw.success", {
+        amount: amt,
+      });
+
       onSuccess();
     } catch (e) {
       const status = e.response?.status;
@@ -270,8 +318,17 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
       // Detect the "PIN not set" case so we can show a helpful CTA
       if (status === 403 && /pin/i.test(msg)) {
         setPinNotSet(true);
+        // ── ANALYTICS: PIN not set blocker ────────────────────────────
+        tracker.action("referral.withdraw.pinNotSet", {});
       }
       setError(msg);
+
+      // ── ANALYTICS: withdrawal failed ─────────────────────────────────
+      tracker.action("referral.withdraw.failed", {
+        amount: amt,
+        status,
+        reason: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -284,7 +341,11 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
           <p className={styles.modalTitle}>
             <FiCreditCard size={16} /> Withdraw Earnings
           </p>
-          <button className={styles.modalClose} onClick={onClose}>
+          <button
+            className={styles.modalClose}
+            onClick={onClose}
+            data-track-id="referral.withdraw.close"
+          >
             <FiX size={14} />
           </button>
         </div>
@@ -306,6 +367,7 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
               placeholder={`Min. ${fmtAmt(wallet?.minWithdrawal || 5000)}`}
               value={form.amount}
               onChange={(e) => setF("amount", e.target.value)}
+              data-track-id="referral.withdraw.amount"
             />
           </div>
           <div className={styles.formField}>
@@ -315,6 +377,7 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
               placeholder="e.g. First Bank"
               value={form.bankName}
               onChange={(e) => setF("bankName", e.target.value)}
+              data-track-id="referral.withdraw.bankName"
             />
           </div>
           <div className={styles.formField}>
@@ -325,6 +388,7 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
               maxLength={10}
               value={form.accountNumber}
               onChange={(e) => setF("accountNumber", e.target.value)}
+              data-track-id="referral.withdraw.accountNumber"
             />
           </div>
           <div className={styles.formField}>
@@ -334,6 +398,7 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
               placeholder="Name on the account"
               value={form.accountName}
               onChange={(e) => setF("accountName", e.target.value)}
+              data-track-id="referral.withdraw.accountName"
             />
           </div>
 
@@ -351,6 +416,7 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
                 setF("pin", e.target.value.replace(/\D/g, "").slice(0, 4));
               }}
               autoComplete="off"
+              data-track-id="referral.withdraw.pin"
             />
             <p
               className={styles.formHint}
@@ -379,12 +445,18 @@ function WithdrawModal({ wallet, onClose, onSuccess }) {
                 textDecoration: "underline",
                 marginBottom: 4,
               }}
+              data-track-id="referral.withdraw.setPinCta"
             >
               Set your withdrawal PIN in Settings → Security →
             </a>
           )}
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading}
+            data-track-id="referral.withdraw.submit"
+          >
             {loading ? (
               <>
                 <span className={styles.spinner} /> Processing…
@@ -415,6 +487,15 @@ export default function ReferralDashboard() {
   const [showWd, setShowWd] = useState(false);
   const [toast, setToast] = useState(null);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.referralDashboard.view", {
+      role: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function showToast(msg, type = "success") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -424,8 +505,26 @@ export default function ReferralDashboard() {
     try {
       const res = await api.get("/referral/dashboard");
       setDashboard(res.data.data);
-    } catch {
+
+      // ── ANALYTICS: dashboard loaded ──────────────────────────────────────
+      const d = res.data.data;
+      tracker.track("referralDashboard.loaded", {
+        tier: d?.tier?.current || null,
+        tierKey: d?.tier?.key || null,
+        totalReferrals: d?.stats?.totalReferrals || 0,
+        successfulReferrals: d?.stats?.successfulReferrals || 0,
+        pendingReferrals: d?.stats?.pendingReferrals || 0,
+        walletBalance: d?.wallet?.balance || 0,
+        canWithdraw: !!d?.wallet?.canWithdraw,
+        leaderboardRank: d?.leaderboardRank || null,
+      });
+    } catch (err) {
       showToast("Failed to load referral data", "error");
+
+      // ── ANALYTICS: dashboard failed to load ──────────────────────────────
+      tracker.track("referralDashboard.load.failed", {
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setLoading(false);
     }
@@ -437,6 +536,10 @@ export default function ReferralDashboard() {
 
   useEffect(() => {
     if (tab !== "leaderboard" || leaderboard) return;
+
+    // ── ANALYTICS: leaderboard tab opened ────────────────────────────────
+    tracker.track("referralDashboard.leaderboard.opened");
+
     api
       .get("/referral/leaderboard?limit=20")
       .then((r) => setLeaderboard(r.data.data))
@@ -457,6 +560,11 @@ export default function ReferralDashboard() {
       setCopied(true);
       showToast("Link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
+
+      // ── ANALYTICS: referral link copied ────────────────────────────────
+      tracker.action("referralDashboard.link.copied", {
+        referralCode,
+      });
     } catch {
       showToast("Failed to copy", "error");
     }
@@ -507,6 +615,7 @@ export default function ReferralDashboard() {
               className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`}
               onClick={copyLink}
               disabled={!referralCode}
+              data-track-id="referralDashboard.copyLink"
             >
               {copied ? (
                 <>
@@ -694,12 +803,19 @@ export default function ReferralDashboard() {
                   <button
                     className={styles.withdrawBtn}
                     disabled={!d.wallet.canWithdraw}
-                    onClick={() => setShowWd(true)}
+                    onClick={() => {
+                      setShowWd(true);
+                      // ── ANALYTICS: withdraw modal opened ──────────────
+                      tracker.action("referral.withdraw.opened", {
+                        balance: d.wallet.balance,
+                      });
+                    }}
                     title={
                       d.wallet.canWithdraw
                         ? "Withdraw to bank"
                         : `Min. ${fmtAmt(d.wallet.minWithdrawal)} required`
                     }
+                    data-track-id="referralDashboard.withdrawOpen"
                   >
                     <FiCreditCard size={14} /> Withdraw Earnings
                   </button>
@@ -851,7 +967,16 @@ export default function ReferralDashboard() {
                 <button
                   key={t.key}
                   className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-                  onClick={() => setTab(t.key)}
+                  onClick={() => {
+                    const prev = tab;
+                    setTab(t.key);
+                    // ── ANALYTICS: tab switched ───────────────────────
+                    tracker.track("referralDashboard.tab.switched", {
+                      from: prev,
+                      to: t.key,
+                    });
+                  }}
+                  data-track-id={`referralDashboard.tab.${t.key}`}
                 >
                   {TabIcon && <TabIcon size={13} />}
                   {t.label}
@@ -880,7 +1005,11 @@ export default function ReferralDashboard() {
                   <p className={styles.emptySub}>
                     Share your referral code to get started and start earning!
                   </p>
-                  <button className={styles.emptyBtn} onClick={copyLink}>
+                  <button
+                    className={styles.emptyBtn}
+                    onClick={copyLink}
+                    data-track-id="referralDashboard.emptyState.copyLink"
+                  >
                     Copy my referral link
                   </button>
                 </div>

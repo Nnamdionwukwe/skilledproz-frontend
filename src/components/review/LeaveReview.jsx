@@ -11,6 +11,7 @@ import {
   FaSpinner,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import tracker from "../../lib/analytics/tracker";
 
 export default function LeaveReview() {
   const { bookingId } = useParams();
@@ -27,25 +28,92 @@ export default function LeaveReview() {
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.leaveReview.view", {
+      bookingId: bookingId || null,
+      viewerRole: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     api
       .get(`/bookings/${bookingId}`)
-      .then((res) => setBooking(res.data.data.booking))
-      .catch(() => setError("Could not load booking."))
+      .then((res) => {
+        const b = res.data.data.booking;
+        setBooking(b);
+
+        // ── ANALYTICS: booking context loaded ───────────────────────────
+        tracker.track("leaveReview.booking.loaded", {
+          bookingId,
+          status: b.status,
+          viewerIsHirer: user?.id === b.hirerId,
+          hasCategory: !!b.category,
+          categoryId: b.category?.id || null,
+        });
+      })
+      .catch((err) => {
+        setError("Could not load booking.");
+
+        // ── ANALYTICS: booking load failed ──────────────────────────────
+        tracker.track("leaveReview.booking.load.failed", {
+          bookingId,
+          reason: err.response?.data?.message || "unknown",
+        });
+      })
       .finally(() => setLoading(false));
   }, [bookingId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!rating) return setError("Please select a star rating.");
+    if (!rating) {
+      setError("Please select a star rating.");
+      tracker.action("leaveReview.submit.blocked", {
+        reason: "no_rating",
+        hasComment: comment.length > 0,
+      });
+      return;
+    }
     setSubmitting(true);
     setError("");
+
+    // ── ANALYTICS: review submit attempt ─────────────────────────────────
+    tracker.action("leaveReview.submit.attempt", {
+      bookingId,
+      rating,
+      hasComment: comment.trim().length > 0,
+      commentLength: comment.length,
+      viewerRole: user?.role || "GUEST",
+      isHirer,
+    });
+
     try {
       await api.post("/reviews", { bookingId, rating, comment });
       setSubmitted(true);
+
+      // ── ANALYTICS: review submitted successfully ────────────────────
+      tracker.action("leaveReview.submitted", {
+        bookingId,
+        rating,
+        hasComment: comment.trim().length > 0,
+        commentLength: comment.length,
+        viewerRole: user?.role || "GUEST",
+        isHirer,
+      });
+
       setTimeout(() => navigate(`/bookings/${bookingId}`), 2500);
     } catch (e) {
       setError(e.response?.data?.message || "Failed to submit review.");
+
+      // ── ANALYTICS: review submit failed ─────────────────────────────
+      tracker.action("leaveReview.submit.failed", {
+        bookingId,
+        rating,
+        viewerRole: user?.role || "GUEST",
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +157,11 @@ export default function LeaveReview() {
         <div className={styles.reviewWrap}>
           {/* Header */}
           <div className={styles.reviewHeader}>
-            <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
+            <Link
+              to={`/bookings/${bookingId}`}
+              className={styles.backLink}
+              data-track-id="leaveReview.back"
+            >
               <FaArrowLeft style={{ marginRight: "6px" }} /> Back to Booking
             </Link>
           </div>
@@ -135,7 +207,15 @@ export default function LeaveReview() {
                   onClick={() => {
                     setRating(s);
                     setError("");
+
+                    // ── ANALYTICS: rating selected ─────────────────────
+                    tracker.action("leaveReview.rating.selected", {
+                      bookingId,
+                      rating: s,
+                      viewerRole: user?.role || "GUEST",
+                    });
                   }}
+                  data-track-id={`leaveReview.star.${s}`}
                 >
                   <FaStar
                     size={32}
@@ -167,8 +247,16 @@ export default function LeaveReview() {
                 }
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
+                onFocus={() => {
+                  if (!comment) {
+                    tracker.track("leaveReview.comment.focused", {
+                      bookingId,
+                    });
+                  }
+                }}
                 rows={4}
                 maxLength={500}
+                data-track-id="leaveReview.comment"
               />
               <div className={styles.commentCount}>{comment.length} / 500</div>
             </div>
@@ -184,6 +272,7 @@ export default function LeaveReview() {
               type="submit"
               className={styles.submitBtn}
               disabled={submitting || !rating}
+              data-track-id="leaveReview.submit"
             >
               {submitting ? (
                 <>

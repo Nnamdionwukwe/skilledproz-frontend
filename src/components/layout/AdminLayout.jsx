@@ -33,6 +33,8 @@ import {
   FiMenu,
   FiRadio, // ← ADD
   FiTarget,
+  FiFilter,
+  FiTrendingUp,
 } from "react-icons/fi";
 
 // Font Awesome Icons (Fa)
@@ -58,6 +60,26 @@ const NAV = [
       { label: "User Insights", path: "/admin/analytics/users", icon: FiUsers },
       { label: "Live Feed", path: "/admin/analytics/live", icon: FiRadio },
       { label: "Segments", path: "/admin/analytics/segments", icon: FiTarget },
+      {
+        label: "Funnel Builder",
+        path: "/admin/analytics/funnel-builder",
+        icon: FiFilter,
+      },
+      {
+        label: "Top Workers",
+        path: "/admin/analytics/top-workers",
+        icon: FiTrendingUp,
+      },
+      {
+        label: "Payment Funnel",
+        path: "/admin/analytics/payment-funnel",
+        icon: FiCreditCard,
+      },
+      {
+        label: "Category Demand",
+        path: "/admin/analytics/category-demand",
+        icon: FiTag,
+      },
     ],
   },
   {

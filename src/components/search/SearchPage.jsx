@@ -19,6 +19,7 @@ import {
   FiBookmark,
 } from "react-icons/fi";
 import { useAuthStore } from "../../store/authStore";
+import tracker from "../../lib/analytics/tracker";
 
 const RATINGS = [
   { label: "4★ & above", value: 4 },
@@ -88,6 +89,16 @@ export default function SearchPage() {
   const [locating, setLocating] = useState(false);
   const sugRef = useRef(null);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.search.view", {
+      hasInitialQuery: !!initQuery,
+      initialQueryLength: initQuery.length,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     function handler(e) {
       if (sugRef.current && !sugRef.current.contains(e.target))
@@ -104,7 +115,15 @@ export default function SearchPage() {
       .catch(() => {});
     api
       .get("/search/trending")
-      .then((r) => setTrending(r.data.data || {}))
+      .then((r) => {
+        setTrending(r.data.data || {});
+        // ── ANALYTICS: trending data loaded ───────────────────────────────
+        tracker.track("search.trending.loaded", {
+          categoryCount: r.data.data?.categories?.length || 0,
+          topWorkersCount: r.data.data?.topWorkers?.length || 0,
+          recentlyJoinedCount: r.data.data?.recentlyJoined?.length || 0,
+        });
+      })
       .catch(() => {});
     if (initQuery) doSearch(initQuery, DEFAULT_FILTERS, 1);
   }, []);
@@ -127,6 +146,21 @@ export default function SearchPage() {
     if (!q || q.trim().length < 2) return;
     setLoading(true);
     setTab("results");
+
+    // ── ANALYTICS: search submitted ───────────────────────────────────────
+    const activeFilterKeys = Object.keys(f).filter(
+      (k) =>
+        f[k] &&
+        !(k === "available" && f[k] === "true") &&
+        !["lat", "lng"].includes(k),
+    );
+    tracker.track("search.executed", {
+      queryLength: q.length,
+      page: p,
+      activeFilterCount: activeFilterKeys.length,
+      activeFilterKeys,
+    });
+
     try {
       const res = await api.get("/search", {
         params: {
@@ -149,11 +183,25 @@ export default function SearchPage() {
           ...(f.lng && { lng: f.lng }),
         },
       });
+      const resultCount = res.data.data.workers?.total || 0;
       setWorkers(res.data.data.workers?.data || []);
-      setTotal(res.data.data.workers?.total || 0);
+      setTotal(resultCount);
       setPages(res.data.data.workers?.pages || 1);
+
+      // ── ANALYTICS: search results received ────────────────────────────
+      tracker.track("search.results", {
+        queryLength: q.length,
+        resultCount,
+        isZeroResult: resultCount === 0,
+        page: p,
+      });
     } catch {
       setWorkers([]);
+      // ── ANALYTICS: search API error ───────────────────────────────────
+      tracker.track("search.failed", {
+        queryLength: q.length,
+        page: p,
+      });
     } finally {
       setLoading(false);
     }
@@ -172,10 +220,34 @@ export default function SearchPage() {
     const next = { ...filters, [key]: val };
     setFilters(next);
     setPage(1);
+
+    // ── ANALYTICS: filter applied ─────────────────────────────────────────
+    tracker.action("search.filter.applied", {
+      filterKey: key,
+      value: val,
+      activeFilterCount: Object.keys(next).filter(
+        (k) =>
+          next[k] &&
+          !(k === "available" && next[k] === "true") &&
+          !["lat", "lng"].includes(k),
+      ).length,
+    });
+
     if (query) doSearch(query, next, 1);
   }
 
   function clearFilters() {
+    // ── ANALYTICS: filters cleared ────────────────────────────────────────
+    tracker.action("search.filters.cleared", {
+      previousActiveCount: activeFiltersCount,
+      previousFilters: Object.keys(filters).filter(
+        (k) =>
+          filters[k] &&
+          !(k === "available" && filters[k] === "true") &&
+          !["lat", "lng"].includes(k),
+      ),
+    });
+
     setFilters(DEFAULT_FILTERS);
     setPage(1);
     if (query) doSearch(query, DEFAULT_FILTERS, 1);
@@ -185,6 +257,13 @@ export default function SearchPage() {
     setPage(p);
     doSearch(query, filters, p);
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // ── ANALYTICS: pagination ─────────────────────────────────────────────
+    tracker.track("search.pagination", {
+      fromPage: page,
+      toPage: p,
+      direction: p > page ? "next" : "prev",
+    });
   }
 
   async function findNearby() {
@@ -192,6 +271,10 @@ export default function SearchPage() {
     setLocating(true);
     setNearbyLoading(true);
     setTab("nearby");
+
+    // ── ANALYTICS: nearby search attempted ────────────────────────────────
+    tracker.action("search.nearby.attempt");
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
@@ -215,8 +298,16 @@ export default function SearchPage() {
           const workersWithNote = data.workers || [];
           workersWithNote._expansionNote = data.expansionNote || null;
           setNearbyWorkers(workersWithNote);
+
+          // ── ANALYTICS: nearby results received ────────────────────────
+          tracker.track("search.nearby.results", {
+            workerCount: workersWithNote.length,
+            radius: filters.radius || 25,
+          });
         } catch {
           setNearbyWorkers([]);
+          // ── ANALYTICS: nearby API error ──────────────────────────────
+          tracker.track("search.nearby.failed");
         } finally {
           setLocating(false);
           setNearbyLoading(false);
@@ -225,6 +316,8 @@ export default function SearchPage() {
       () => {
         setLocating(false);
         setNearbyLoading(false);
+        // ── ANALYTICS: user denied location ───────────────────────────────
+        tracker.track("search.nearby.denied");
       },
     );
   }
@@ -249,6 +342,12 @@ export default function SearchPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Search plumbers, electricians, cleaners..."
               autoComplete="off"
+              onFocus={() => {
+                if (!input) {
+                  tracker.track("search.input.focused");
+                }
+              }}
+              data-track-id="search.input"
             />
             {input && (
               <button
@@ -257,8 +356,10 @@ export default function SearchPage() {
                 onClick={() => {
                   setInput("");
                   setSuggestions(null);
+                  tracker.track("search.input.cleared");
                 }}
                 aria-label="Clear search"
+                data-track-id="search.input.clear"
               >
                 <FiX size={18} />
               </button>
@@ -270,6 +371,7 @@ export default function SearchPage() {
               onClick={findNearby}
               title="Find nearby"
               aria-label="Find nearby workers"
+              data-track-id="search.nearby.btn"
             >
               {locating ? (
                 <span className={styles.spinner} />
@@ -277,7 +379,11 @@ export default function SearchPage() {
                 <FiMapPin size={16} />
               )}
             </button>
-            <button type="submit" className={styles.searchSubmit}>
+            <button
+              type="submit"
+              className={styles.searchSubmit}
+              data-track-id="search.submit"
+            >
               Search
             </button>
           </form>
@@ -296,7 +402,14 @@ export default function SearchPage() {
                         applyFilter("category", c.slug);
                         setSuggestions(null);
                         handleSearch();
+                        // ── ANALYTICS: suggestion clicked ────────────────
+                        tracker.action("search.suggestion.clicked", {
+                          type: "category",
+                          categorySlug: c.slug,
+                          categoryName: c.name,
+                        });
                       }}
+                      data-track-id={`search.suggestion.category.${c.slug}`}
                     >
                       {c.icon ? <span>{c.icon}</span> : <FiTool size={14} />}
                       <span>{c.name}</span>
@@ -312,6 +425,14 @@ export default function SearchPage() {
                       key={w.id}
                       href={`/workers/${w.id}`}
                       className={styles.sugItem}
+                      onClick={() =>
+                        tracker.action("search.suggestion.clicked", {
+                          type: "worker",
+                          workerId: w.id,
+                          workerTitle: w.workerProfile?.title || null,
+                        })
+                      }
+                      data-track-id={`search.suggestion.worker.${w.id}`}
                     >
                       <div className={styles.sugAvatar}>
                         {w.avatar ? (
@@ -344,7 +465,14 @@ export default function SearchPage() {
                         setInput(c.city);
                         applyFilter("city", c.city);
                         setSuggestions(null);
+                        // ── ANALYTICS: suggestion clicked ────────────────
+                        tracker.action("search.suggestion.clicked", {
+                          type: "city",
+                          city: c.city,
+                          country: c.country,
+                        });
                       }}
+                      data-track-id={`search.suggestion.city.${c.city}`}
                     >
                       <FiMapPin size={13} /> {c.city}, {c.country}
                     </button>
@@ -389,6 +517,7 @@ export default function SearchPage() {
                     <button
                       className={styles.clearFiltersBtn}
                       onClick={clearFilters}
+                      data-track-id="search.filters.clearAll"
                     >
                       Clear all
                     </button>
@@ -398,6 +527,7 @@ export default function SearchPage() {
                     className={styles.filterCloseBtn}
                     onClick={() => setShowFilters(false)}
                     aria-label="Close filters"
+                    data-track-id="search.filters.close"
                   >
                     <FiX size={14} />
                   </button>
@@ -416,6 +546,7 @@ export default function SearchPage() {
                         e.target.checked ? "true" : "false",
                       )
                     }
+                    data-track-id="search.filter.available"
                   />
                   <span className={styles.toggleSlider} />
                   <span className={styles.toggleLabel}>Available only</span>
@@ -428,6 +559,7 @@ export default function SearchPage() {
                   className={styles.filterSelect}
                   value={filters.category}
                   onChange={(e) => applyFilter("category", e.target.value)}
+                  data-track-id="search.filter.category"
                 >
                   <option value="">All categories</option>
                   {filterMeta.categories?.map((c) => (
@@ -446,6 +578,7 @@ export default function SearchPage() {
                   placeholder="e.g. Lagos"
                   value={filters.city}
                   onChange={(e) => applyFilter("city", e.target.value)}
+                  data-track-id="search.filter.city"
                 />
               </FilterSection>
 
@@ -458,6 +591,7 @@ export default function SearchPage() {
                     placeholder="Min"
                     value={filters.minRate}
                     onChange={(e) => applyFilter("minRate", e.target.value)}
+                    data-track-id="search.filter.minRate"
                   />
                   <span className={styles.rateSep}>–</span>
                   <input
@@ -466,6 +600,7 @@ export default function SearchPage() {
                     placeholder="Max"
                     value={filters.maxRate}
                     onChange={(e) => applyFilter("maxRate", e.target.value)}
+                    data-track-id="search.filter.maxRate"
                   />
                 </div>
               </FilterSection>
@@ -478,6 +613,7 @@ export default function SearchPage() {
                       key={r.value}
                       className={`${styles.ratingOpt} ${filters.rating == r.value ? styles.ratingOptActive : ""}`}
                       onClick={() => applyFilter("rating", r.value)}
+                      data-track-id={`search.filter.rating.${r.value || "any"}`}
                     >
                       {r.label}
                     </button>
@@ -494,6 +630,7 @@ export default function SearchPage() {
                     applyFilter("radius", e.target.value);
                     if (e.target.value && !filters.lat) findNearby();
                   }}
+                  data-track-id="search.filter.radius"
                 >
                   <option value="">Any distance</option>
                   {DISTANCES.map((d) => (
@@ -515,6 +652,7 @@ export default function SearchPage() {
                   className={styles.filterSelect}
                   value={filters.language}
                   onChange={(e) => applyFilter("language", e.target.value)}
+                  data-track-id="search.filter.language"
                 >
                   <option value="">Any language</option>
                   {(filterMeta.languages?.length
@@ -545,6 +683,7 @@ export default function SearchPage() {
                       key={g.value}
                       className={`${styles.ratingOpt} ${filters.gender === g.value ? styles.ratingOptActive : ""}`}
                       onClick={() => applyFilter("gender", g.value)}
+                      data-track-id={`search.filter.gender.${g.value || "any"}`}
                     >
                       {g.label}
                     </button>
@@ -560,6 +699,7 @@ export default function SearchPage() {
                       key={v.value}
                       className={`${styles.ratingOpt} ${filters.verification === v.value ? styles.ratingOptActive : ""}`}
                       onClick={() => applyFilter("verification", v.value)}
+                      data-track-id={`search.filter.verification.${v.value || "any"}`}
                     >
                       {v.label}
                     </button>
@@ -584,7 +724,16 @@ export default function SearchPage() {
                   <button
                     key={t.key}
                     className={`${styles.tab} ${tab === t.key ? styles.tabActive : ""}`}
-                    onClick={() => setTab(t.key)}
+                    onClick={() => {
+                      const prev = tab;
+                      setTab(t.key);
+                      // ── ANALYTICS: tab switched ───────────────────────
+                      tracker.track("search.tab.switched", {
+                        from: prev,
+                        to: t.key,
+                      });
+                    }}
+                    data-track-id={`search.tab.${t.key}`}
                   >
                     {t.label}
                   </button>
@@ -593,6 +742,7 @@ export default function SearchPage() {
               <button
                 className={styles.mobileFilterBtn}
                 onClick={() => setShowFilters((s) => !s)}
+                data-track-id="search.filters.mobileToggle"
               >
                 <FiSliders size={14} /> Filters{" "}
                 {activeFiltersCount > 0 && (
@@ -617,7 +767,14 @@ export default function SearchPage() {
                           onClick={() => {
                             applyFilter("category", c.slug);
                             setTab("results");
+                            // ── ANALYTICS: trending category clicked ──
+                            tracker.action("search.trending.category.clicked", {
+                              categoryId: c.id,
+                              categorySlug: c.slug,
+                              categoryName: c.name,
+                            });
                           }}
+                          data-track-id={`search.trending.category.${c.slug}`}
                         >
                           <span className={styles.catIcon}>
                             {c.icon || <FiTool size={24} />}
@@ -686,7 +843,11 @@ export default function SearchPage() {
                     <p className={styles.emptyText}>
                       Try different keywords or adjust your filters.
                     </p>
-                    <button className={styles.emptyBtn} onClick={clearFilters}>
+                    <button
+                      className={styles.emptyBtn}
+                      onClick={clearFilters}
+                      data-track-id="search.empty.clearFilters"
+                    >
                       Clear Filters
                     </button>
                   </div>
@@ -711,6 +872,7 @@ export default function SearchPage() {
                           className={styles.pageBtn}
                           disabled={page === 1}
                           onClick={() => changePage(page - 1)}
+                          data-track-id="search.pagination.prev"
                         >
                           <FiArrowLeft size={14} /> Prev
                         </button>
@@ -721,6 +883,7 @@ export default function SearchPage() {
                           className={styles.pageBtn}
                           disabled={page === pages}
                           onClick={() => changePage(page + 1)}
+                          data-track-id="search.pagination.next"
                         >
                           Next <FiArrowRight size={14} />
                         </button>
@@ -753,7 +916,11 @@ export default function SearchPage() {
                     />{" "}
                     button to find workers near you.
                   </p>
-                  <button className={styles.emptyBtn} onClick={findNearby}>
+                  <button
+                    className={styles.emptyBtn}
+                    onClick={findNearby}
+                    data-track-id="search.nearby.retry"
+                  >
                     Try Again
                   </button>
                 </div>
@@ -826,6 +993,17 @@ function WorkerCard({
       href={`/workers/${user?.id}`}
       className={styles.workerCard}
       style={{ animationDelay: `${delay}s` }}
+      onClick={() =>
+        tracker.action("search.workerCard.clicked", {
+          workerId: user?.id,
+          workerTitle: worker.title || null,
+          isNew,
+          isVerified: verificationStatus === "VERIFIED",
+          hasDistance: dist != null,
+          source: "search",
+        })
+      }
+      data-track-id={`search.workerCard.${user?.id}`}
     >
       <div className={styles.wcTop}>
         <div className={styles.wcAvatar}>
@@ -899,10 +1077,16 @@ function WorkerCard({
                 e.preventDefault();
                 e.stopPropagation();
                 toggle();
+                // ── ANALYTICS: save/unsave worker ─────────────────────────
+                tracker.action("search.workerCard.save.toggled", {
+                  workerId: user?.id,
+                  wasSaved: isSaved,
+                });
               }}
               disabled={checkingSave || toggling}
               title={isSaved ? "Remove from saved" : "Save worker"}
               aria-label={isSaved ? "Remove from saved" : "Save worker"}
+              data-track-id={`search.workerCard.save.${user?.id}`}
             >
               <FiBookmark size={14} fill={isSaved ? "currentColor" : "none"} />
             </button>

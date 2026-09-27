@@ -21,6 +21,7 @@ import {
   FaExclamationCircle,
   FaSpinner,
 } from "react-icons/fa";
+import tracker from "../../../lib/analytics/tracker";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -151,7 +152,11 @@ function NotFound({ backTo = "/bookings" }) {
           <FaExclamationCircle size={48} />
         </span>
         <h2 className={styles.notFoundTitle}>Booking not found</h2>
-        <Link to={backTo} className={styles.back}>
+        <Link
+          to={backTo}
+          className={styles.back}
+          data-track-id="bookingDetail.notFound.back"
+        >
           <FaArrowLeft style={{ marginRight: "6px" }} /> Back to Bookings
         </Link>
       </div>
@@ -171,7 +176,11 @@ function Toast({ type, message, onClose }) {
         )}
       </span>
       <span className={styles.toastMessage}>{message}</span>
-      <button className={styles.toastClose} onClick={onClose}>
+      <button
+        className={styles.toastClose}
+        onClick={onClose}
+        data-track-id="bookingDetail.toast.close"
+      >
         <FaTimes size={16} />
       </button>
     </div>
@@ -219,6 +228,16 @@ export default function BookingDetail() {
 
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
   const userId = user?.id;
+
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.bookingDetail.view", {
+      bookingId: id || null,
+      viewerRole: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showToastMessage = (type, message) => {
     setToast({ type, message });
@@ -292,8 +311,33 @@ export default function BookingDetail() {
           .finally(() => {
             setRefundsLoading(false);
           });
+
+        // ── ANALYTICS: booking detail loaded ─────────────────────────────
+        tracker.track("bookingDetail.loaded", {
+          bookingId: id,
+          status: b.status,
+          viewerRole: user?.role || "GUEST",
+          viewerIsHirer: userId === b.hirerId,
+          viewerIsWorker: userId === b.workerId,
+          amount: b.agreedRate,
+          currency: b.currency,
+          categoryId: b.category?.id || null,
+          hasPayment: !!b.payment,
+          paymentStatus: b.payment?.status || null,
+          isNegotiated: !!b.isNegotiated,
+          jobType: b.jobType || null,
+          locationType: b.locationType || null,
+          isPast: b.scheduledAt ? new Date(b.scheduledAt) < new Date() : false,
+        });
       })
-      .catch(() => {})
+      .catch((e) => {
+        // ── ANALYTICS: booking detail failed to load ─────────────────────
+        tracker.track("bookingDetail.load.failed", {
+          bookingId: id,
+          viewerRole: user?.role || "GUEST",
+          reason: e.response?.data?.message || "unknown",
+        });
+      })
       .finally(() => setLoading(false));
   }, [id, user]);
 
@@ -320,6 +364,18 @@ export default function BookingDetail() {
   // ── Status update ────────────────────────────────────────────────────
   async function updateStatus(status, extra = {}) {
     setActing(true);
+
+    // ── ANALYTICS: status change attempt ─────────────────────────────────
+    tracker.action("bookingDetail.status.attempt", {
+      bookingId: id,
+      fromStatus: booking?.status || null,
+      toStatus: status,
+      viewerRole: user?.role || "GUEST",
+      viewerIsHirer: userId === booking?.hirerId,
+      viewerIsWorker: userId === booking?.workerId,
+      hasCancelReason: !!extra.cancelReason,
+    });
+
     try {
       const res = await api.patch(`/bookings/${id}/status`, {
         status,
@@ -333,11 +389,28 @@ export default function BookingDetail() {
       setShowCancel(false);
       setCancelReason("");
       setCancelError("");
+
+      // ── ANALYTICS: status change succeeded ───────────────────────────
+      tracker.action("bookingDetail.status.changed", {
+        bookingId: id,
+        fromStatus: booking?.status || null,
+        toStatus: status,
+        viewerRole: user?.role || "GUEST",
+      });
     } catch (e) {
       showToastMessage(
         "error",
         e.response?.data?.message || "Action failed. Please try again.",
       );
+
+      // ── ANALYTICS: status change failed ──────────────────────────────
+      tracker.action("bookingDetail.status.failed", {
+        bookingId: id,
+        fromStatus: booking?.status || null,
+        toStatus: status,
+        viewerRole: user?.role || "GUEST",
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setActing(false);
     }
@@ -346,23 +419,51 @@ export default function BookingDetail() {
   function handleCancelSubmit() {
     if (!cancelReason.trim()) {
       setCancelError("Please provide a reason.");
+      // ── ANALYTICS: cancel blocked by missing reason ──────────────────
+      tracker.action("bookingDetail.cancel.blocked", {
+        bookingId: id,
+        reason: "missing_reason",
+      });
       return;
     }
+    // ── ANALYTICS: cancel submitted ──────────────────────────────────────
+    tracker.action("bookingDetail.cancel.submitted", {
+      bookingId: id,
+      reasonLength: cancelReason.trim().length,
+    });
     updateStatus("CANCELLED", { cancelReason: cancelReason.trim() });
   }
 
   // ── SOS resolve ──────────────────────────────────────────────────────
   const handleResolveSOS = async () => {
     setResolvingSOS(true);
+
+    // ── ANALYTICS: SOS resolve attempt ───────────────────────────────────
+    tracker.action("bookingDetail.sos.resolve.attempt", {
+      bookingId: booking?.id,
+      viewerRole: user?.role || "GUEST",
+    });
+
     try {
       await api.patch(`/bookings/${booking.id}/sos/resolve`);
       showToastMessage("success", "SOS marked as resolved.");
       refetch();
+
+      // ── ANALYTICS: SOS resolved ──────────────────────────────────────
+      tracker.action("bookingDetail.sos.resolved", {
+        bookingId: booking.id,
+      });
     } catch (err) {
       showToastMessage(
         "error",
         err.response?.data?.message || "Failed to resolve SOS",
       );
+
+      // ── ANALYTICS: SOS resolve failed ────────────────────────────────
+      tracker.action("bookingDetail.sos.resolve.failed", {
+        bookingId: booking?.id,
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setResolvingSOS(false);
       setShowSOSConfirm(false);
@@ -372,6 +473,15 @@ export default function BookingDetail() {
   // ── Refund handlers ───────────────────────────────────────────────────
   const handleRefundRequest = async (refundData) => {
     setRefundLoading(true);
+
+    // ── ANALYTICS: refund request attempt ────────────────────────────────
+    tracker.action("bookingDetail.refund.attempt", {
+      bookingId: id,
+      amount: refundData?.amount,
+      currency: refundData?.currency,
+      refundType: refundData?.refundType || refundData?.type || null,
+    });
+
     try {
       const response = await api.post("/refunds/request", refundData);
       showToastMessage("success", "Refund request submitted successfully!");
@@ -379,11 +489,25 @@ export default function BookingDetail() {
       // Refresh refunds
       const res = await api.get(`/refunds/my?bookingId=${id}`);
       setRefunds(res.data.data?.refunds || []);
+
+      // ── ANALYTICS: refund request submitted ──────────────────────────
+      tracker.action("bookingDetail.refund.submitted", {
+        bookingId: id,
+        refundId: response.data?.data?.refund?.id || null,
+        amount: refundData?.amount,
+        currency: refundData?.currency,
+      });
     } catch (error) {
       showToastMessage(
         "error",
         error.response?.data?.message || "Failed to submit refund request",
       );
+
+      // ── ANALYTICS: refund request failed ─────────────────────────────
+      tracker.action("bookingDetail.refund.failed", {
+        bookingId: id,
+        reason: error.response?.data?.message || "unknown",
+      });
     } finally {
       setRefundLoading(false);
     }
@@ -392,6 +516,12 @@ export default function BookingDetail() {
   // ── Invoice ──────────────────────────────────────────────────────────
   const handleDownloadInvoice = async () => {
     setInvoiceLoading(true);
+
+    // ── ANALYTICS: invoice download attempt ──────────────────────────────
+    tracker.action("bookingDetail.invoice.download.attempt", {
+      bookingId: booking.id,
+    });
+
     try {
       const res = await api.get(`/payments/invoice/${booking.id}`, {
         responseType: "blob",
@@ -404,8 +534,18 @@ export default function BookingDetail() {
       link.download = `invoice-${booking.id.slice(0, 8)}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
+
+      // ── ANALYTICS: invoice downloaded ────────────────────────────────
+      tracker.action("bookingDetail.invoice.downloaded", {
+        bookingId: booking.id,
+      });
     } catch {
       showToastMessage("error", "Failed to download invoice");
+
+      // ── ANALYTICS: invoice download failed ───────────────────────────
+      tracker.action("bookingDetail.invoice.failed", {
+        bookingId: booking?.id,
+      });
     } finally {
       setInvoiceLoading(false);
     }
@@ -487,10 +627,28 @@ export default function BookingDetail() {
     setReferralPercent(pct);
     setReferralAmount(final);
     setReferralApplied(final > 0);
+
+    // ── ANALYTICS: referral slider changed ───────────────────────────────
+    tracker.action("bookingDetail.referral.slider.changed", {
+      bookingId: id,
+      percent: pct,
+      amount: final,
+      walletBalance,
+      applied: final > 0,
+    });
   };
 
   const handleReferralToggle = () => {
-    setReferralApplied((prev) => !prev);
+    const next = !referralApplied;
+    setReferralApplied(next);
+
+    // ── ANALYTICS: referral toggle changed ───────────────────────────────
+    tracker.action("bookingDetail.referral.toggle.changed", {
+      bookingId: id,
+      applied: next,
+      percent: referralPercent,
+      amount: referralAmount,
+    });
   };
 
   // ── Get refunds for this specific booking ──────────────────────────────
@@ -520,7 +678,11 @@ export default function BookingDetail() {
   return (
     <Layout>
       <div className={styles.page}>
-        <Link to="/bookings" className={styles.back}>
+        <Link
+          to="/bookings"
+          className={styles.back}
+          data-track-id="bookingDetail.back"
+        >
           <FaArrowLeft style={{ marginRight: "6px" }} /> Back to Bookings
         </Link>
 
@@ -555,6 +717,7 @@ export default function BookingDetail() {
                 className={styles.sosResolveBtn}
                 onClick={() => setShowSOSConfirm(true)}
                 disabled={resolvingSOS}
+                data-track-id="bookingDetail.sos.resolve.open"
               >
                 {resolvingSOS ? "Resolving..." : "Mark Resolved"}
               </button>
@@ -652,6 +815,11 @@ export default function BookingDetail() {
               onCancelOpen={() => {
                 setShowCancel(true);
                 setCancelError("");
+                // ── ANALYTICS: cancel modal opened ───────────────────────
+                tracker.action("bookingDetail.cancel.opened", {
+                  bookingId: id,
+                  status: booking.status,
+                });
               }}
               onCancelClose={() => {
                 setShowCancel(false);
@@ -663,7 +831,14 @@ export default function BookingDetail() {
                 setCancelError("");
               }}
               onCancelSubmit={handleCancelSubmit}
-              onShowDispute={() => setShowDispute(true)}
+              onShowDispute={() => {
+                setShowDispute(true);
+                // ── ANALYTICS: dispute modal opened ──────────────────────
+                tracker.action("bookingDetail.dispute.opened", {
+                  bookingId: id,
+                  status: booking.status,
+                });
+              }}
               onSuccess={(msg) => showToastMessage("success", msg)}
               refetch={refetch}
               updateStatus={updateStatus}
@@ -681,6 +856,12 @@ export default function BookingDetail() {
                 <RefundStatus
                   refund={activeRefund}
                   onViewDetails={() => {
+                    // ── ANALYTICS: refund details clicked ────────────────
+                    tracker.action("bookingDetail.refund.details.clicked", {
+                      bookingId: id,
+                      refundId: activeRefund.id,
+                      refundStatus: activeRefund.status,
+                    });
                     navigate(`/refunds/${activeRefund.id}`);
                   }}
                   isHirer={isHirer}

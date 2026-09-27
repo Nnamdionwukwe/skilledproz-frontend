@@ -34,6 +34,7 @@ import {
   FaEnvelope as FaEnvelopeIcon,
 } from "react-icons/fa";
 import styles from "./SurveyPage.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 const ROLES = [
   {
@@ -126,6 +127,14 @@ export default function SurveyPage() {
     }
   }, []);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.survey.view", {
+      cameWithEmail: !!new URLSearchParams(window.location.search).get("email"),
+      referrer: document.referrer || null,
+    });
+  }, []);
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -134,6 +143,7 @@ export default function SurveyPage() {
     if (step < totalSteps) {
       setStep(step + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      tracker.track("survey.step.advanced", { from: step, to: step + 1 });
     }
   };
 
@@ -141,6 +151,7 @@ export default function SurveyPage() {
     if (step > 1) {
       setStep(step - 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      tracker.track("survey.step.wentBack", { from: step, to: step - 1 });
     }
   };
 
@@ -159,6 +170,17 @@ export default function SurveyPage() {
 
     setStatus("submitting");
     setMessage("");
+
+    tracker.action("survey.submit.attempt", {
+      role: formData.role,
+      industry: formData.industry,
+      experience: formData.experience,
+      hasProblem: formData.problem.length > 10,
+      hasFeature: formData.feature.length > 10,
+      hasConcern: !!formData.concern,
+      hasHearAbout: !!formData.hearAbout,
+      hasEmail: !!formData.email,
+    });
 
     try {
       const payload = {
@@ -202,6 +224,21 @@ export default function SurveyPage() {
       setStatus("success");
       setMessage("🎉 Thank you! Your feedback will shape SkilledProz.");
 
+      tracker.action("survey.submitted", {
+        role: formData.role,
+        industry: formData.industry,
+        experience: formData.experience,
+        concern: formData.concern || null,
+        hearAbout: formData.hearAbout || null,
+        hasEmail: !!formData.email,
+        hasName: !!formData.name,
+        hasPhone: !!formData.phone,
+        hasLocation: !!formData.location,
+        problemLength: formData.problem.length,
+        featureLength: formData.feature.length,
+        additionalLength: formData.additionalFeedback.length,
+      });
+
       setTimeout(() => {
         navigate("/", { state: { surveyComplete: true } });
       }, 3000);
@@ -209,6 +246,12 @@ export default function SurveyPage() {
       console.error("❌ Survey error:", err);
       setStatus("error");
       setMessage(err.message || "Something went wrong. Please try again.");
+      tracker.action("survey.submit.failed", {
+        role: formData.role,
+        industry: formData.industry,
+        step,
+        reason: err.message || "unknown",
+      });
     }
   };
 
@@ -239,7 +282,11 @@ export default function SurveyPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.headerLeft}>
-            <Link to="/" className={styles.logo}>
+            <Link
+              to="/"
+              className={styles.logo}
+              data-track-id="survey.header.logo"
+            >
               Skilled<span>Proz</span>
             </Link>
             <span className={styles.headerDivider}>|</span>
@@ -247,13 +294,25 @@ export default function SurveyPage() {
           </div>
 
           <nav className={styles.nav}>
-            <Link to="/" className={styles.navLink}>
+            <Link
+              to="/"
+              className={styles.navLink}
+              data-track-id="survey.header.home"
+            >
               <FaHomeIcon /> Home
             </Link>
-            <Link to="/about" className={styles.navLink}>
+            <Link
+              to="/about"
+              className={styles.navLink}
+              data-track-id="survey.header.about"
+            >
               <FaInfoCircle /> About
             </Link>
-            <Link to="/contact" className={styles.navLink}>
+            <Link
+              to="/contact"
+              className={styles.navLink}
+              data-track-id="survey.header.contact"
+            >
               <FaPhoneAlt /> Contact
             </Link>
           </nav>
@@ -262,7 +321,11 @@ export default function SurveyPage() {
             <span className={styles.stepIndicator}>
               Step {step} of {totalSteps}
             </span>
-            <Link to="/register" className={styles.headerCta}>
+            <Link
+              to="/register"
+              className={styles.headerCta}
+              data-track-id="survey.header.joinNow"
+            >
               Join Now
             </Link>
           </div>
@@ -297,7 +360,11 @@ export default function SurveyPage() {
               <p>{message}</p>
               <button
                 className={styles.retryBtn}
-                onClick={() => setStatus("idle")}
+                onClick={() => {
+                  setStatus("idle");
+                  tracker.track("survey.submit.retried", { step });
+                }}
+                data-track-id="survey.error.retry"
               >
                 Try Again
               </button>
@@ -327,8 +394,12 @@ export default function SurveyPage() {
                         className={`${styles.optionCard} ${formData.role === role.id ? styles.selected : ""}`}
                         onClick={() => {
                           handleInputChange("role", role.id);
+                          tracker.track("survey.role.selected", {
+                            role: role.id,
+                          });
                           setTimeout(handleNext, 300);
                         }}
+                        data-track-id={`survey.step1.role.${role.id}`}
                       >
                         <span className={styles.optionIconLarge}>
                           {role.icon}
@@ -346,7 +417,14 @@ export default function SurveyPage() {
                     <button
                       type="button"
                       className={styles.backBtn}
-                      onClick={() => navigate("/")}
+                      onClick={() => {
+                        tracker.track("survey.abandoned", {
+                          atStep: 1,
+                          role: formData.role || null,
+                        });
+                        navigate("/");
+                      }}
+                      data-track-id="survey.step1.backToHome"
                     >
                       <FaArrowLeft /> Back to Home
                     </button>
@@ -375,6 +453,10 @@ export default function SurveyPage() {
                         className={`${styles.industryCard} ${formData.industry === ind.id ? styles.selected : ""}`}
                         onClick={() => {
                           handleInputChange("industry", ind.id);
+                          tracker.track("survey.industry.selected", {
+                            industry: ind.id,
+                            role: formData.role,
+                          });
                           setTimeout(handleNext, 300);
                         }}
                         style={{
@@ -387,6 +469,7 @@ export default function SurveyPage() {
                               ? `${ind.color}15`
                               : undefined,
                         }}
+                        data-track-id={`survey.step2.industry.${ind.id}`}
                       >
                         <span
                           className={styles.industryIcon}
@@ -406,6 +489,7 @@ export default function SurveyPage() {
                       type="button"
                       className={styles.backBtn}
                       onClick={handleBack}
+                      data-track-id="survey.step2.back"
                     >
                       <FaArrowLeft /> Back
                     </button>
@@ -414,6 +498,7 @@ export default function SurveyPage() {
                       className={styles.nextBtn}
                       onClick={handleNext}
                       disabled={!isStepValid()}
+                      data-track-id="survey.step2.next"
                     >
                       Next <FaArrowRight />
                     </button>
@@ -442,8 +527,13 @@ export default function SurveyPage() {
                         className={`${styles.optionCard} ${formData.experience === exp.id ? styles.selected : ""}`}
                         onClick={() => {
                           handleInputChange("experience", exp.id);
+                          tracker.track("survey.experience.selected", {
+                            experience: exp.id,
+                            role: formData.role,
+                          });
                           setTimeout(handleNext, 300);
                         }}
+                        data-track-id={`survey.step3.experience.${exp.id}`}
                       >
                         <span className={styles.optionIconLarge}>
                           {exp.icon}
@@ -458,6 +548,7 @@ export default function SurveyPage() {
                       type="button"
                       className={styles.backBtn}
                       onClick={handleBack}
+                      data-track-id="survey.step3.back"
                     >
                       <FaArrowLeft /> Back
                     </button>
@@ -466,6 +557,7 @@ export default function SurveyPage() {
                       className={styles.nextBtn}
                       onClick={handleNext}
                       disabled={!isStepValid()}
+                      data-track-id="survey.step3.next"
                     >
                       Next <FaArrowRight />
                     </button>
@@ -494,8 +586,14 @@ export default function SurveyPage() {
                     onChange={(e) =>
                       handleInputChange("problem", e.target.value)
                     }
+                    onFocus={() => {
+                      if (!formData.problem) {
+                        tracker.track("survey.step4.problem.focused");
+                      }
+                    }}
                     rows={6}
                     required
+                    data-track-id="survey.step4.problem"
                   />
                   <div className={styles.charCount}>
                     {formData.problem.length} characters (minimum 10)
@@ -506,6 +604,7 @@ export default function SurveyPage() {
                       type="button"
                       className={styles.backBtn}
                       onClick={handleBack}
+                      data-track-id="survey.step4.back"
                     >
                       <FaArrowLeft /> Back
                     </button>
@@ -514,6 +613,7 @@ export default function SurveyPage() {
                       className={styles.nextBtn}
                       onClick={handleNext}
                       disabled={!isStepValid()}
+                      data-track-id="survey.step4.next"
                     >
                       Next <FaArrowRight />
                     </button>
@@ -542,8 +642,14 @@ export default function SurveyPage() {
                     onChange={(e) =>
                       handleInputChange("feature", e.target.value)
                     }
+                    onFocus={() => {
+                      if (!formData.feature) {
+                        tracker.track("survey.step5.feature.focused");
+                      }
+                    }}
                     rows={5}
                     required
+                    data-track-id="survey.step5.feature"
                   />
                   <div className={styles.charCount}>
                     {formData.feature.length} characters (minimum 10)
@@ -554,6 +660,7 @@ export default function SurveyPage() {
                       type="button"
                       className={styles.backBtn}
                       onClick={handleBack}
+                      data-track-id="survey.step5.back"
                     >
                       <FaArrowLeft /> Back
                     </button>
@@ -562,6 +669,7 @@ export default function SurveyPage() {
                       className={styles.nextBtn}
                       onClick={handleNext}
                       disabled={!isStepValid()}
+                      data-track-id="survey.step5.next"
                     >
                       Next <FaArrowRight />
                     </button>
@@ -596,6 +704,7 @@ export default function SurveyPage() {
                             handleInputChange("name", e.target.value)
                           }
                           className={styles.input}
+                          data-track-id="survey.step6.name"
                         />
                       </div>
                       <div className={styles.formField}>
@@ -611,6 +720,7 @@ export default function SurveyPage() {
                           }
                           className={styles.input}
                           required
+                          data-track-id="survey.step6.email"
                         />
                       </div>
                     </div>
@@ -627,6 +737,7 @@ export default function SurveyPage() {
                             handleInputChange("phone", e.target.value)
                           }
                           className={styles.input}
+                          data-track-id="survey.step6.phone"
                         />
                       </div>
                       <div className={styles.formField}>
@@ -641,6 +752,7 @@ export default function SurveyPage() {
                             handleInputChange("location", e.target.value)
                           }
                           className={styles.input}
+                          data-track-id="survey.step6.location"
                         />
                       </div>
                     </div>
@@ -660,10 +772,18 @@ export default function SurveyPage() {
                           onClick={() => {
                             if (formData.concern === c.id) {
                               handleInputChange("concern", "");
+                              tracker.track("survey.concern.deselected", {
+                                concern: c.id,
+                              });
                             } else {
                               handleInputChange("concern", c.id);
+                              tracker.track("survey.concern.selected", {
+                                concern: c.id,
+                                role: formData.role,
+                              });
                             }
                           }}
+                          data-track-id={`survey.step6.concern.${c.id}`}
                         >
                           {c.icon} {c.label}
                         </button>
@@ -685,10 +805,18 @@ export default function SurveyPage() {
                           onClick={() => {
                             if (formData.hearAbout === h.id) {
                               handleInputChange("hearAbout", "");
+                              tracker.track("survey.hearAbout.deselected", {
+                                channel: h.id,
+                              });
                             } else {
                               handleInputChange("hearAbout", h.id);
+                              tracker.track("survey.hearAbout.selected", {
+                                channel: h.id,
+                                role: formData.role,
+                              });
                             }
                           }}
+                          data-track-id={`survey.step6.hearAbout.${h.id}`}
                         >
                           {h.label}
                         </button>
@@ -709,6 +837,7 @@ export default function SurveyPage() {
                         handleInputChange("additionalFeedback", e.target.value)
                       }
                       rows={3}
+                      data-track-id="survey.step6.additionalFeedback"
                     />
                   </div>
 
@@ -717,6 +846,7 @@ export default function SurveyPage() {
                       type="button"
                       className={styles.backBtn}
                       onClick={handleBack}
+                      data-track-id="survey.step6.back"
                     >
                       <FaArrowLeft /> Back
                     </button>
@@ -724,6 +854,7 @@ export default function SurveyPage() {
                       type="submit"
                       className={styles.submitBtn}
                       disabled={status === "submitting" || !formData.email}
+                      data-track-id="survey.step6.submit"
                     >
                       {status === "submitting" ? (
                         <>
@@ -747,15 +878,23 @@ export default function SurveyPage() {
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <div className={styles.footerBrand}>
-            <Link to="/" className={styles.footerLogo}>
+            <Link
+              to="/"
+              className={styles.footerLogo}
+              data-track-id="survey.footer.logo"
+            >
               Skilled<span>Proz</span>
             </Link>
             <p>Building the future of work, together.</p>
           </div>
           <div className={styles.footerLinks}>
-            <Link to="/privacy">Privacy Policy</Link>
-            <Link to="/terms">Terms of Service</Link>
-            <Link to="/contact">
+            <Link to="/privacy" data-track-id="survey.footer.privacy">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" data-track-id="survey.footer.terms">
+              Terms of Service
+            </Link>
+            <Link to="/contact" data-track-id="survey.footer.contact">
               <FaEnvelopeIcon /> Contact
             </Link>
           </div>

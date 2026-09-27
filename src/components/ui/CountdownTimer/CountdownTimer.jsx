@@ -8,6 +8,7 @@ import {
 import styles from "./CountdownTimer.module.css";
 import SurveyModal from "../../survey/SurveyModal";
 import SurveyPage from "../../survey/SurveyModal";
+import tracker from "../../../lib/analytics/tracker";
 
 /**
  * CountdownTimer Component
@@ -70,6 +71,13 @@ const CountdownTimer = ({
     return () => clearInterval(timer);
   }, [targetDate]);
 
+  // ── ANALYTICS: countdown expiry fires once ───────────────────────────────
+  useEffect(() => {
+    if (isExpired) {
+      tracker.track("countdown.expired", { targetDate, title });
+    }
+  }, [isExpired, targetDate, title]);
+
   const unitLabels = {
     days: "Days",
     hours: "Hours",
@@ -101,13 +109,26 @@ const CountdownTimer = ({
           <>
             <button
               className={styles.surveyBtn}
-              onClick={() => setShowSurveyModal(true)}
+              onClick={() => {
+                setShowSurveyModal(true);
+                tracker.action("countdown.survey.opened", {
+                  variant,
+                  state: "expired",
+                });
+              }}
+              data-track-id="countdown.survey.open.expired"
             >
               <FaClipboardList /> Tell us what you need
             </button>
             <SurveyModal
               isOpen={showSurveyModal}
-              onClose={() => setShowSurveyModal(false)}
+              onClose={() => {
+                setShowSurveyModal(false);
+                tracker.action("countdown.survey.closed", {
+                  variant,
+                  state: "expired",
+                });
+              }}
               email={email}
             />
           </>
@@ -150,7 +171,14 @@ const CountdownTimer = ({
         {showSurvey && (
           <button
             className={styles.surveyBtn}
-            onClick={() => setShowSurveyModal(true)}
+            onClick={() => {
+              setShowSurveyModal(true);
+              tracker.action("countdown.survey.opened", {
+                variant,
+                state: "countdown",
+              });
+            }}
+            data-track-id="countdown.survey.open.counting"
           >
             <FaClipboardList /> Tell us what feature you need most
           </button>
@@ -161,7 +189,13 @@ const CountdownTimer = ({
       {showSurvey && (
         <SurveyPage
           isOpen={showSurveyModal}
-          onClose={() => setShowSurveyModal(false)}
+          onClose={() => {
+            setShowSurveyModal(false);
+            tracker.action("countdown.survey.closed", {
+              variant,
+              state: "countdown",
+            });
+          }}
           email={email}
         />
       )}

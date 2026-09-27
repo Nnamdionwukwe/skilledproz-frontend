@@ -28,6 +28,7 @@ import {
   FaBriefcase,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
+import tracker from "../../lib/analytics/tracker";
 
 const HIRER_FEE_RATE = 0.05;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -152,6 +153,15 @@ export default function InitiatePayment() {
 
   const [copied, setCopied] = useState({});
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.initiatePayment.view", {
+      bookingId: bookingId || null,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCopy = async (text, key) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -167,6 +177,12 @@ export default function InitiatePayment() {
       setCopied((prev) => ({ ...prev, [key]: true }));
       setTimeout(() => setCopied((prev) => ({ ...prev, [key]: false })), 2000);
     }
+
+    // ── ANALYTICS: copy button used ──────────────────────────────────────
+    tracker.action("initiatePayment.copy.clicked", {
+      bookingId,
+      fieldKey: key,
+    });
   };
 
   const validateFileSize = (file) => {
@@ -175,6 +191,12 @@ export default function InitiatePayment() {
       setError(
         `File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum size is 5MB.`,
       );
+      // ── ANALYTICS: file too large ────────────────────────────────────
+      tracker.action("initiatePayment.file.rejected", {
+        bookingId,
+        reason: "too_large",
+        fileSizeMB: parseFloat((file.size / (1024 * 1024)).toFixed(1)),
+      });
       return false;
     }
     setError("");
@@ -188,8 +210,25 @@ export default function InitiatePayment() {
         const b = res.data.data.booking;
         setBooking(b);
         setBookingStatus(b.status);
+
+        // ── ANALYTICS: booking loaded ────────────────────────────────────
+        tracker.track("initiatePayment.booking.loaded", {
+          bookingId,
+          status: b.status,
+          source: b.source || null,
+          amount: b.agreedRate,
+          currency: b.currency,
+          estimatedUnit: b.estimatedUnit || null,
+          isNegotiated: !!b.isNegotiated,
+        });
       })
-      .catch(() => setError("Could not load booking details."))
+      .catch(() => {
+        setError("Could not load booking details.");
+        // ── ANALYTICS: booking load failed ───────────────────────────────
+        tracker.track("initiatePayment.booking.load.failed", {
+          bookingId,
+        });
+      })
       .finally(() => setLoading(false));
   }, [bookingId]);
 
@@ -213,6 +252,15 @@ export default function InitiatePayment() {
           const b = res.data.data.booking;
           setBooking(b);
           setBookingStatus(b.status);
+
+          // ── ANALYTICS: status polled and changed ─────────────────────
+          if (b.status !== bookingStatus) {
+            tracker.track("initiatePayment.status.changed", {
+              bookingId,
+              fromStatus: bookingStatus,
+              toStatus: b.status,
+            });
+          }
         })
         .catch(() => {});
     }, 8000);
@@ -233,16 +281,43 @@ export default function InitiatePayment() {
     setReferralPercent(pct);
     setReferralAmount(final);
     setReferralApplied(final > 0);
+
+    // ── ANALYTICS: referral slider changed ───────────────────────────────
+    tracker.action("initiatePayment.referral.slider.changed", {
+      bookingId,
+      percent: pct,
+      amount: final,
+      walletBalance,
+    });
   };
 
   const handleReferralToggle = () => {
     if (referralAmount === 0) return;
-    setReferralApplied((prev) => !prev);
+    const next = !referralApplied;
+    setReferralApplied(next);
+
+    // ── ANALYTICS: referral toggle changed ───────────────────────────────
+    tracker.action("initiatePayment.referral.toggle.changed", {
+      bookingId,
+      applied: next,
+      percent: referralPercent,
+      amount: referralAmount,
+    });
   };
 
   async function handleCardPay() {
     setPaying(true);
     setError("");
+
+    // ── ANALYTICS: card payment initiated ────────────────────────────────
+    tracker.action("initiatePayment.card.attempt", {
+      bookingId,
+      amount: p.totalCharged,
+      currency: p.currency,
+      referralApplied,
+      referralAmount: referralApplied ? referralAmount : 0,
+    });
+
     try {
       const res = await api.post(`/payments/initiate/${bookingId}`, {
         referralAmount: referralApplied ? referralAmount : 0,
@@ -250,11 +325,29 @@ export default function InitiatePayment() {
       const { paymentUrl } = res.data.data;
       if (!paymentUrl) {
         setError("Payment URL not received. Try again.");
+        // ── ANALYTICS: no payment URL returned ──────────────────────────
+        tracker.action("initiatePayment.card.failed", {
+          bookingId,
+          reason: "no_payment_url",
+        });
         return;
       }
+
+      // ── ANALYTICS: card payment redirecting ─────────────────────────────
+      tracker.action("initiatePayment.card.redirecting", {
+        bookingId,
+        amount: p.totalCharged,
+        currency: p.currency,
+      });
+
       window.location.href = paymentUrl;
     } catch (e) {
       setError(e.response?.data?.message || "Payment initiation failed.");
+      // ── ANALYTICS: card payment failed ──────────────────────────────────
+      tracker.action("initiatePayment.card.failed", {
+        bookingId,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setPaying(false);
     }
@@ -263,6 +356,16 @@ export default function InitiatePayment() {
   async function handleBankTransfer() {
     setPaying(true);
     setError("");
+
+    // ── ANALYTICS: bank transfer initiated ───────────────────────────────
+    tracker.action("initiatePayment.bank.initiated", {
+      bookingId,
+      amount: p.totalCharged,
+      currency: p.currency,
+      referralApplied,
+      referralAmount: referralApplied ? referralAmount : 0,
+    });
+
     try {
       const res = await api.post(`/payments/bank-transfer/${bookingId}`, {
         amount: p.totalCharged,
@@ -271,8 +374,19 @@ export default function InitiatePayment() {
       });
       setManualData(res.data.data);
       setConfirmStep("bank_transfer");
+
+      // ── ANALYTICS: bank details loaded ──────────────────────────────────
+      tracker.action("initiatePayment.bank.details.loaded", {
+        bookingId,
+        reference: res.data.data?.reference || null,
+      });
     } catch (e) {
       setError(e.response?.data?.message || "Could not load bank details.");
+      // ── ANALYTICS: bank details load failed ─────────────────────────────
+      tracker.action("initiatePayment.bank.details.failed", {
+        bookingId,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setPaying(false);
     }
@@ -281,6 +395,15 @@ export default function InitiatePayment() {
   async function confirmBankTransfer() {
     setConfirming(true);
     setError("");
+
+    // ── ANALYTICS: bank transfer confirmation attempt ────────────────────
+    tracker.action("initiatePayment.bank.confirm.attempt", {
+      bookingId,
+      hasSenderName: !!confirmForm.senderName,
+      hasBankName: !!confirmForm.bankName,
+      hasReceiptFile: !!bankReceiptFile,
+    });
+
     try {
       const fd = new FormData();
       if (confirmForm.senderName)
@@ -292,12 +415,24 @@ export default function InitiatePayment() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // ── ANALYTICS: bank transfer confirmed ──────────────────────────────
+      tracker.action("initiatePayment.bank.confirmed", {
+        bookingId,
+        amount: p.totalCharged,
+        currency: p.currency,
+      });
+
       navigate("/payments/manual-success", {
         state: { method: "bank", bookingId },
         replace: true,
       });
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed.");
+      // ── ANALYTICS: bank confirmation failed ─────────────────────────────
+      tracker.action("initiatePayment.bank.confirm.failed", {
+        bookingId,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setConfirming(false);
     }
@@ -306,6 +441,18 @@ export default function InitiatePayment() {
   async function handleCrypto() {
     setPaying(true);
     setError("");
+
+    // ── ANALYTICS: crypto payment initiated ──────────────────────────────
+    tracker.action("initiatePayment.crypto.initiated", {
+      bookingId,
+      token: selectedCryptoToken,
+      amount: p.totalCharged,
+      currency: p.currency,
+      convertedAmount: convertedCryptoAmount,
+      referralApplied,
+      referralAmount: referralApplied ? referralAmount : 0,
+    });
+
     try {
       const res = await api.post(`/payments/crypto/${bookingId}`, {
         cryptoCurrency: selectedCryptoToken,
@@ -315,8 +462,21 @@ export default function InitiatePayment() {
       });
       setManualData(res.data.data);
       setConfirmStep("crypto");
+
+      // ── ANALYTICS: crypto details loaded ────────────────────────────────
+      tracker.action("initiatePayment.crypto.details.loaded", {
+        bookingId,
+        token: selectedCryptoToken,
+        reference: res.data.data?.reference || null,
+      });
     } catch (e) {
       setError(e.response?.data?.message || "Could not load crypto details.");
+      // ── ANALYTICS: crypto details load failed ───────────────────────────
+      tracker.action("initiatePayment.crypto.details.failed", {
+        bookingId,
+        token: selectedCryptoToken,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setPaying(false);
     }
@@ -325,10 +485,25 @@ export default function InitiatePayment() {
   async function confirmCrypto() {
     if (!confirmForm.txHash) {
       setError("Transaction hash is required.");
+      // ── ANALYTICS: crypto confirmation blocked ──────────────────────────
+      tracker.action("initiatePayment.crypto.confirm.blocked", {
+        bookingId,
+        reason: "missing_tx_hash",
+      });
       return;
     }
     setConfirming(true);
     setError("");
+
+    // ── ANALYTICS: crypto confirmation attempt ──────────────────────────
+    tracker.action("initiatePayment.crypto.confirm.attempt", {
+      bookingId,
+      token: selectedCryptoToken,
+      hasTxHash: !!confirmForm.txHash,
+      hasCryptoAmount: !!confirmForm.cryptoAmount,
+      hasReceiptFile: !!cryptoReceiptFile,
+    });
+
     try {
       const fd = new FormData();
       fd.append("txHash", confirmForm.txHash);
@@ -341,12 +516,26 @@ export default function InitiatePayment() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // ── ANALYTICS: crypto confirmed ─────────────────────────────────────
+      tracker.action("initiatePayment.crypto.confirmed", {
+        bookingId,
+        token: selectedCryptoToken,
+        amount: p.totalCharged,
+        currency: p.currency,
+      });
+
       navigate("/payments/manual-success", {
         state: { method: "crypto", bookingId },
         replace: true,
       });
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed.");
+      // ── ANALYTICS: crypto confirmation failed ───────────────────────────
+      tracker.action("initiatePayment.crypto.confirm.failed", {
+        bookingId,
+        token: selectedCryptoToken,
+        reason: e.response?.data?.message || "unknown",
+      });
     } finally {
       setConfirming(false);
     }
@@ -365,6 +554,12 @@ export default function InitiatePayment() {
     setCryptoReceiptFile(null);
     setConfirmForm({});
     setError("");
+
+    // ── ANALYTICS: user changed method ──────────────────────────────────
+    tracker.action("initiatePayment.method.change", {
+      bookingId,
+      fromMethod: confirmStep === "bank_transfer" ? "bank_transfer" : "crypto",
+    });
   }
 
   if (loading)
@@ -383,7 +578,11 @@ export default function InitiatePayment() {
           <div className={styles.errorBox}>
             <FaExclamationTriangle className={styles.errorIcon} />
             <p>{error}</p>
-            <Link to="/bookings" className={styles.backLink}>
+            <Link
+              to="/bookings"
+              className={styles.backLink}
+              data-track-id="initiatePayment.error.backToBookings"
+            >
               <FaArrowLeft style={{ marginRight: "4px" }} /> Back to Bookings
             </Link>
           </div>
@@ -404,6 +603,7 @@ export default function InitiatePayment() {
               <button
                 className={styles.changeMethodBtn}
                 onClick={resetToMethodSelect}
+                data-track-id="initiatePayment.confirmStep.changeMethod"
               >
                 <FaArrowLeft style={{ marginRight: "4px" }} /> Change method
               </button>
@@ -444,6 +644,7 @@ export default function InitiatePayment() {
                         }
                         title="Copy amount"
                         style={{ marginLeft: "0.5rem" }}
+                        data-track-id="initiatePayment.confirmStep.copy.cryptoAmount"
                       >
                         {copied.cryptoAmount ? <FaCheck /> : <FaCopy />}
                       </button>
@@ -487,6 +688,7 @@ export default function InitiatePayment() {
                                 className={styles.copyFieldBtn}
                                 onClick={() => handleCopy(v, "bankAcc")}
                                 title="Copy account number"
+                                data-track-id="initiatePayment.confirmStep.copy.bankAcc"
                               >
                                 {copied.bankAcc ? <FaCheck /> : <FaCopy />}
                               </button>
@@ -519,6 +721,7 @@ export default function InitiatePayment() {
                                 className={styles.copyFieldBtn}
                                 onClick={() => handleCopy(v, "cryptoWallet")}
                                 title="Copy wallet address"
+                                data-track-id="initiatePayment.confirmStep.copy.cryptoWallet"
                               >
                                 {copied.cryptoWallet ? <FaCheck /> : <FaCopy />}
                               </button>
@@ -528,6 +731,7 @@ export default function InitiatePayment() {
                                 className={styles.copyFieldBtn}
                                 onClick={() => handleCopy(v, "cryptoToken")}
                                 title="Copy token symbol"
+                                data-track-id="initiatePayment.confirmStep.copy.cryptoToken"
                               >
                                 {copied.cryptoToken ? <FaCheck /> : <FaCopy />}
                               </button>
@@ -537,6 +741,7 @@ export default function InitiatePayment() {
                                 className={styles.copyFieldBtn}
                                 onClick={() => handleCopy(v, "cryptoMemo")}
                                 title="Copy memo"
+                                data-track-id="initiatePayment.confirmStep.copy.cryptoMemo"
                               >
                                 {copied.cryptoMemo ? <FaCheck /> : <FaCopy />}
                               </button>
@@ -567,6 +772,7 @@ export default function InitiatePayment() {
                           senderName: e.target.value,
                         }))
                       }
+                      data-track-id="initiatePayment.confirmStep.bank.senderName"
                     />
                   </div>
                   <div className={styles.manualField}>
@@ -581,6 +787,7 @@ export default function InitiatePayment() {
                           bankName: e.target.value,
                         }))
                       }
+                      data-track-id="initiatePayment.confirmStep.bank.bankName"
                     />
                   </div>
                   <div className={styles.manualField}>
@@ -599,7 +806,19 @@ export default function InitiatePayment() {
                             return;
                           }
                           setBankReceiptFile(file);
+                          if (file) {
+                            tracker.action(
+                              "initiatePayment.bank.receipt.selected",
+                              {
+                                bookingId,
+                                sizeMB: parseFloat(
+                                  (file.size / (1024 * 1024)).toFixed(2),
+                                ),
+                              },
+                            );
+                          }
                         }}
+                        data-track-id="initiatePayment.confirmStep.bank.receipt"
                       />
                       <span className={styles.fileUploadBtn}>
                         {bankReceiptFile
@@ -612,6 +831,7 @@ export default function InitiatePayment() {
                         type="button"
                         className={styles.fileRemoveBtn}
                         onClick={() => setBankReceiptFile(null)}
+                        data-track-id="initiatePayment.confirmStep.bank.receipt.remove"
                       >
                         ✕ Remove
                       </button>
@@ -635,6 +855,7 @@ export default function InitiatePayment() {
                           txHash: e.target.value,
                         }))
                       }
+                      data-track-id="initiatePayment.confirmStep.crypto.txHash"
                     />
                   </div>
                   <div className={styles.manualField}>
@@ -653,6 +874,7 @@ export default function InitiatePayment() {
                           cryptoAmount: e.target.value,
                         }))
                       }
+                      data-track-id="initiatePayment.confirmStep.crypto.amount"
                     />
                   </div>
                   <div className={styles.manualField}>
@@ -671,7 +893,20 @@ export default function InitiatePayment() {
                             return;
                           }
                           setCryptoReceiptFile(file);
+                          if (file) {
+                            tracker.action(
+                              "initiatePayment.crypto.receipt.selected",
+                              {
+                                bookingId,
+                                token: selectedCryptoToken,
+                                sizeMB: parseFloat(
+                                  (file.size / (1024 * 1024)).toFixed(2),
+                                ),
+                              },
+                            );
+                          }
                         }}
+                        data-track-id="initiatePayment.confirmStep.crypto.receipt"
                       />
                       <span className={styles.fileUploadBtn}>
                         {cryptoReceiptFile
@@ -684,6 +919,7 @@ export default function InitiatePayment() {
                         type="button"
                         className={styles.fileRemoveBtn}
                         onClick={() => setCryptoReceiptFile(null)}
+                        data-track-id="initiatePayment.confirmStep.crypto.receipt.remove"
                       >
                         ✕ Remove
                       </button>
@@ -703,6 +939,7 @@ export default function InitiatePayment() {
               className={styles.payBtn}
               onClick={isBankTx ? confirmBankTransfer : confirmCrypto}
               disabled={confirming}
+              data-track-id="initiatePayment.confirmStep.confirm"
             >
               {confirming ? (
                 <>
@@ -734,7 +971,11 @@ export default function InitiatePayment() {
         <div className={styles.page}>
           <div className={styles.payWrap}>
             <div className={styles.payHeader}>
-              <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
+              <Link
+                to={`/bookings/${bookingId}`}
+                className={styles.backLink}
+                data-track-id="initiatePayment.pending.viewBooking"
+              >
                 <FaArrowLeft style={{ marginRight: "4px" }} /> View Booking
               </Link>
               <div className={styles.payBadge}>⏳ Pending Acceptance</div>
@@ -856,15 +1097,19 @@ export default function InitiatePayment() {
                 border: "1px solid var(--border)",
                 boxShadow: "none",
               }}
-              onClick={() =>
+              onClick={() => {
+                tracker.action("initiatePayment.pending.checkNow.clicked", {
+                  bookingId,
+                });
                 api
                   .get(`/bookings/${bookingId}`)
                   .then((r) => {
                     setBooking(r.data.data.booking);
                     setBookingStatus(r.data.data.booking.status);
                   })
-                  .catch(() => {})
-              }
+                  .catch(() => {});
+              }}
+              data-track-id="initiatePayment.pending.checkNow"
             >
               🔄 Check for Updates
             </button>
@@ -876,6 +1121,7 @@ export default function InitiatePayment() {
                 color: "var(--text-muted)",
                 textDecoration: "underline",
               }}
+              data-track-id="initiatePayment.pending.viewDetails"
             >
               View booking details while you wait →
             </Link>
@@ -890,7 +1136,11 @@ export default function InitiatePayment() {
       <div className={styles.page}>
         <div className={styles.payWrap}>
           <div className={styles.payHeader}>
-            <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
+            <Link
+              to={`/bookings/${bookingId}`}
+              className={styles.backLink}
+              data-track-id="initiatePayment.back"
+            >
               <FaArrowLeft style={{ marginRight: "4px" }} /> Back to Booking
             </Link>
             <div className={styles.payBadge}>
@@ -977,6 +1227,7 @@ export default function InitiatePayment() {
                   value={referralPercent}
                   onChange={(e) => handlePercentChange(Number(e.target.value))}
                   className={styles.referralSlider}
+                  data-track-id="initiatePayment.referral.slider"
                 />
                 <div className={styles.referralRow}>
                   <span className={styles.referralPercent}>
@@ -989,6 +1240,7 @@ export default function InitiatePayment() {
                     className={`${styles.referralToggleBtn} ${referralApplied ? styles.referralToggleOn : ""}`}
                     onClick={handleReferralToggle}
                     disabled={referralAmount === 0}
+                    data-track-id="initiatePayment.referral.toggle"
                   >
                     {referralApplied ? "Remove" : "Apply"}
                   </button>
@@ -1093,7 +1345,13 @@ export default function InitiatePayment() {
                   onClick={() => {
                     setMethod(m.id);
                     setError("");
+                    // ── ANALYTICS: method selected ────────────────────────
+                    tracker.action("initiatePayment.method.selected", {
+                      bookingId,
+                      method: m.id,
+                    });
                   }}
+                  data-track-id={`initiatePayment.method.${m.id}`}
                 >
                   <span className={styles.methodCardIcon}>{m.icon}</span>
                   <div>
@@ -1112,6 +1370,15 @@ export default function InitiatePayment() {
                 onAmountChange={(data) => {
                   setSelectedCryptoToken(data.token);
                   setConvertedCryptoAmount(data.amount);
+
+                  // ── ANALYTICS: crypto token/amount changed ────────────
+                  tracker.action("initiatePayment.crypto.rate.converted", {
+                    bookingId,
+                    token: data.token,
+                    fiatAmount: p.totalCharged,
+                    fiatCurrency: p.currency,
+                    cryptoAmount: data.amount,
+                  });
                 }}
               />
             )}
@@ -1135,6 +1402,7 @@ export default function InitiatePayment() {
             className={styles.payBtn}
             onClick={handlePrimary}
             disabled={paying}
+            data-track-id={`initiatePayment.pay.${method}`}
           >
             {paying ? (
               <>

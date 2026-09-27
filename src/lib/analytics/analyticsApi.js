@@ -54,6 +54,22 @@ export const analyticsApi = {
     api.get(
       `/admin/analytics/segments/${key}/users?page=${page}&limit=${limit}`,
     ),
+
+  /** GET /admin/analytics/funnel-builder?steps=...&days=...&role=...&includeDropoff=... */
+  funnelBuilder: (queryString) =>
+    api.get(`/admin/analytics/funnel-builder?${queryString}`), // ← ADD THIS
+
+  /** GET /admin/analytics/top-workers?... */
+  topWorkers: (queryString) =>
+    api.get(`/admin/analytics/top-workers?${queryString}`),
+
+  /** GET /admin/analytics/payment-funnel?days=30 */
+  paymentFunnel: (days = 30) =>
+    api.get(`/admin/analytics/payment-funnel?days=${days}`),
+
+  /** GET /admin/analytics/category-demand?days=30&sortBy=demand */
+  categoryDemand: (queryString) =>
+    api.get(`/admin/analytics/category-demand?${queryString}`),
 };
 
 export default analyticsApi;

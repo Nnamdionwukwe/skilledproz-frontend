@@ -15,6 +15,7 @@ import styles from "./Reviews.module.css";
 import WorkerLayout from "../layout/WorkerLayout";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
+import tracker from "../../lib/analytics/tracker";
 
 const PAGE_SIZE = 10;
 
@@ -99,6 +100,15 @@ export default function WorkerReviewsPage() {
   const receivedPages = Math.max(1, Math.ceil(receivedTotal / PAGE_SIZE));
   const givenPages = Math.max(1, Math.ceil(givenTotal / PAGE_SIZE));
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.workerReviews.view", {
+      role: user?.role || "GUEST",
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Fetch received ────────────────────────────────────────────────────
   useEffect(() => {
     if (!user?.id) {
@@ -115,6 +125,14 @@ export default function WorkerReviewsPage() {
         setReceivedTotal(data.total || 0);
         setAvgRating(data.avgRating || 0);
         setDistribution(data.distribution || {});
+
+        // ── ANALYTICS: received reviews loaded ──────────────────────────
+        tracker.track("workerReviews.received.loaded", {
+          page: receivedPage,
+          count: data.reviews?.length || 0,
+          total: data.total || 0,
+          avgRating: data.avgRating || 0,
+        });
       })
       .catch((err) => {
         setReceived([]);
@@ -123,6 +141,12 @@ export default function WorkerReviewsPage() {
           err.response?.data?.message ||
             "Could not load your reviews. Please try again.",
         );
+
+        // ── ANALYTICS: received reviews load failed ─────────────────────
+        tracker.track("workerReviews.received.load.failed", {
+          page: receivedPage,
+          reason: err.response?.data?.message || "unknown",
+        });
       })
       .finally(() => setReceivedLoading(false));
   }, [user?.id, receivedPage]);
@@ -139,12 +163,26 @@ export default function WorkerReviewsPage() {
         setGiven(data.reviews || []);
         setGivenTotal(data.total || 0);
         setGivenLoaded(true);
+
+        // ── ANALYTICS: given reviews loaded (initial) ───────────────────
+        tracker.track("workerReviews.given.loaded", {
+          page: 1,
+          count: data.reviews?.length || 0,
+          total: data.total || 0,
+          isInitialLoad: true,
+        });
       })
       .catch((err) => {
         setGivenError(
           err.response?.data?.message ||
             "Could not load your given reviews. Please try again.",
         );
+
+        // ── ANALYTICS: given reviews load failed ────────────────────────
+        tracker.track("workerReviews.given.load.failed", {
+          page: 1,
+          reason: err.response?.data?.message || "unknown",
+        });
       })
       .finally(() => setGivenLoading(false));
   }, [tab, user?.id, givenLoaded]);
@@ -162,12 +200,26 @@ export default function WorkerReviewsPage() {
         const data = res.data.data;
         setGiven(data.reviews || []);
         setGivenTotal(data.total || 0);
+
+        // ── ANALYTICS: given reviews loaded (pagination) ────────────────
+        tracker.track("workerReviews.given.loaded", {
+          page: givenPage,
+          count: data.reviews?.length || 0,
+          total: data.total || 0,
+          isInitialLoad: false,
+        });
       })
       .catch((err) => {
         setGivenError(
           err.response?.data?.message ||
             "Could not load your given reviews. Please try again.",
         );
+
+        // ── ANALYTICS: given reviews load failed ────────────────────────
+        tracker.track("workerReviews.given.load.failed", {
+          page: givenPage,
+          reason: err.response?.data?.message || "unknown",
+        });
       })
       .finally(() => setGivenLoading(false));
   }, [givenPage, givenLoaded, user?.id]);
@@ -203,7 +255,17 @@ export default function WorkerReviewsPage() {
             role="tab"
             aria-selected={tab === "received"}
             className={`${styles.tab} ${tab === "received" ? styles.tabActive : ""}`}
-            onClick={() => setTab("received")}
+            onClick={() => {
+              const prev = tab;
+              setTab("received");
+
+              // ── ANALYTICS: tab switched ─────────────────────────────
+              tracker.track("workerReviews.tab.switched", {
+                from: prev,
+                to: "received",
+              });
+            }}
+            data-track-id="workerReviews.tab.received"
           >
             <FiInbox size={15} />
             <span>Received</span>
@@ -216,7 +278,17 @@ export default function WorkerReviewsPage() {
             role="tab"
             aria-selected={tab === "given"}
             className={`${styles.tab} ${tab === "given" ? styles.tabActive : ""}`}
-            onClick={() => setTab("given")}
+            onClick={() => {
+              const prev = tab;
+              setTab("given");
+
+              // ── ANALYTICS: tab switched ─────────────────────────────
+              tracker.track("workerReviews.tab.switched", {
+                from: prev,
+                to: "given",
+              });
+            }}
+            data-track-id="workerReviews.tab.given"
           >
             <FiSend size={15} />
             <span>Given</span>
@@ -334,7 +406,12 @@ function ReceivedTab({
       )}
 
       {!loading && !error && pages > 1 && (
-        <Pagination page={page} pages={pages} setPage={setPage} />
+        <Pagination
+          page={page}
+          pages={pages}
+          setPage={setPage}
+          tabName="received"
+        />
       )}
     </>
   );
@@ -376,7 +453,12 @@ function GivenTab({ loading, error, reviews, total, page, pages, setPage }) {
       )}
 
       {!loading && !error && pages > 1 && (
-        <Pagination page={page} pages={pages} setPage={setPage} />
+        <Pagination
+          page={page}
+          pages={pages}
+          setPage={setPage}
+          tabName="given"
+        />
       )}
     </>
   );
@@ -488,14 +570,24 @@ function GivenCard({ review }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Pagination
 // ─────────────────────────────────────────────────────────────────────────────
-function Pagination({ page, pages, setPage }) {
+function Pagination({ page, pages, setPage, tabName }) {
   return (
     <div className={styles.pagination}>
       <button
         type="button"
         className={styles.pageBtn}
         disabled={page === 1}
-        onClick={() => setPage((p) => Math.max(1, p - 1))}
+        onClick={() => {
+          const prev = Math.max(1, page - 1);
+          setPage(prev);
+
+          // ── ANALYTICS: pagination prev ─────────────────────────────────
+          tracker.track(`workerReviews.${tabName}.pagination.prev`, {
+            fromPage: page,
+            toPage: prev,
+          });
+        }}
+        data-track-id={`workerReviews.${tabName}.pagination.prev`}
       >
         <FiArrowLeft size={14} /> Prev
       </button>
@@ -506,7 +598,17 @@ function Pagination({ page, pages, setPage }) {
         type="button"
         className={styles.pageBtn}
         disabled={page === pages}
-        onClick={() => setPage((p) => Math.min(pages, p + 1))}
+        onClick={() => {
+          const next = Math.min(pages, page + 1);
+          setPage(next);
+
+          // ── ANALYTICS: pagination next ─────────────────────────────────
+          tracker.track(`workerReviews.${tabName}.pagination.next`, {
+            fromPage: page,
+            toPage: next,
+          });
+        }}
+        data-track-id={`workerReviews.${tabName}.pagination.next`}
       >
         Next <FiArrowRight size={14} />
       </button>

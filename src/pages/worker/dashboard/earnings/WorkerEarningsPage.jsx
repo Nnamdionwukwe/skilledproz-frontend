@@ -22,6 +22,7 @@ import {
   CURRENCY_META,
 } from "../../../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../../../../components/common/DashboardCurrencySwitch";
+import tracker from "../../../../lib/analytics/tracker";
 
 const CRYPTO = ["USDC", "USDT"];
 
@@ -60,6 +61,15 @@ export default function WorkerEarningsPage() {
   const [activeCurrency, setActiveCurrency] = useState("ALL");
   const [page, setPage] = useState(1);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.workerEarnings.view", {
+      dashboardCurrency,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Resolved display currency for amounts
   function fmtAmt(amount, payCurrency) {
     const display =
@@ -79,10 +89,27 @@ export default function WorkerEarningsPage() {
     api;
     api
       .get(`/payments/earnings?${q}`)
-      .then((r) => setData(r.data.data))
-      .catch((e) =>
-        setError(e.response?.data?.message ?? "Failed to load earnings"),
-      )
+      .then((r) => {
+        setData(r.data.data);
+        // ── ANALYTICS: earnings data loaded ───────────────────────────────
+        tracker.track("workerEarnings.loaded", {
+          page,
+          activeCurrency,
+          hasDateFilter: !!(from || to),
+          transactionCount: r.data.data?.payments?.length || 0,
+          totalTransactions: r.data.data?.total || 0,
+          currenciesAvailable: r.data.data?.availableCurrencies?.length || 0,
+        });
+      })
+      .catch((e) => {
+        setError(e.response?.data?.message ?? "Failed to load earnings");
+        // ── ANALYTICS: earnings failed to load ────────────────────────────
+        tracker.track("workerEarnings.load.failed", {
+          page,
+          activeCurrency,
+          reason: e.response?.data?.message ?? "unknown",
+        });
+      })
       .finally(() => setLoading(false));
   }
 
@@ -199,7 +226,11 @@ export default function WorkerEarningsPage() {
               onClick={() => {
                 setActiveCurrency("ALL");
                 setPage(1);
+                tracker.track("workerEarnings.currency.filter", {
+                  currency: "ALL",
+                });
               }}
+              data-track-id="workerEarnings.currency.ALL"
             >
               All
             </button>
@@ -210,7 +241,11 @@ export default function WorkerEarningsPage() {
                 onClick={() => {
                   setActiveCurrency(c);
                   setPage(1);
+                  tracker.track("workerEarnings.currency.filter", {
+                    currency: c,
+                  });
                 }}
+                data-track-id={`workerEarnings.currency.${c}`}
               >
                 {CURRENCY_META[c]?.symbol || ""} {c}
               </button>
@@ -227,6 +262,15 @@ export default function WorkerEarningsPage() {
                 setFrom(e.target.value);
                 setPage(1);
               }}
+              onBlur={(e) => {
+                if (e.target.value) {
+                  tracker.track("workerEarnings.dateFilter.set", {
+                    type: "from",
+                    date: e.target.value,
+                  });
+                }
+              }}
+              data-track-id="workerEarnings.date.from"
             />
           </div>
           <div className={styles.filterGroup}>
@@ -239,17 +283,32 @@ export default function WorkerEarningsPage() {
                 setTo(e.target.value);
                 setPage(1);
               }}
+              onBlur={(e) => {
+                if (e.target.value) {
+                  tracker.track("workerEarnings.dateFilter.set", {
+                    type: "to",
+                    date: e.target.value,
+                  });
+                }
+              }}
+              data-track-id="workerEarnings.date.to"
             />
           </div>
           {(from || to || activeCurrency !== "ALL") && (
             <button
               className={styles.clearBtn}
               onClick={() => {
+                tracker.track("workerEarnings.filters.cleared", {
+                  hadFrom: !!from,
+                  hadTo: !!to,
+                  currency: activeCurrency,
+                });
                 setFrom("");
                 setTo("");
                 setActiveCurrency("ALL");
                 setPage(1);
               }}
+              data-track-id="workerEarnings.filters.clear"
             >
               Clear
             </button>
@@ -380,7 +439,14 @@ export default function WorkerEarningsPage() {
             <button
               className={styles.pageBtn}
               disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => {
+                setPage((p) => p - 1);
+                tracker.track("workerEarnings.pagination.prev", {
+                  fromPage: page,
+                  toPage: page - 1,
+                });
+              }}
+              data-track-id="workerEarnings.pagination.prev"
             >
               ← Prev
             </button>
@@ -390,7 +456,14 @@ export default function WorkerEarningsPage() {
             <button
               className={styles.pageBtn}
               disabled={page === pages}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => {
+                setPage((p) => p + 1);
+                tracker.track("workerEarnings.pagination.next", {
+                  fromPage: page,
+                  toPage: page + 1,
+                });
+              }}
+              data-track-id="workerEarnings.pagination.next"
             >
               Next →
             </button>

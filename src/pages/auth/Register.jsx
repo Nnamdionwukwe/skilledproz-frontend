@@ -5,6 +5,7 @@ import { Briefcase, HardHat, AlertCircle } from "lucide-react";
 import AuthLayout from "../../components/auth/AuthLayout";
 import { useAuthStore } from "../../store/authStore";
 import s from "../../components/auth/form.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -40,13 +41,32 @@ export default function Register() {
 
   const isGoogleSignup = !!(pending?.accessToken && pending?.googleProfile);
 
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.register.view", {
+      isGoogleSignup,
+      hasStoredRefCode: !!sessionStorage.getItem("pendingRefCode"),
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleContinue = async () => {
     if (!selected) return;
+
+    // ── ANALYTICS: role selected + continue clicked ─────────────────────
+    tracker.action("register.role.submitted", {
+      role: selected,
+      isGoogleSignup,
+    });
 
     // ── Google signup: create the account with the chosen role ──────────
     if (isGoogleSignup) {
       setLoading(true);
       setError("");
+      tracker.action("register.google.attempt", {
+        role: selected,
+      });
       try {
         const payload = {
           accessToken: pending.accessToken,
@@ -64,6 +84,10 @@ export default function Register() {
         if (!result?.user) {
           setError("Could not complete signup. Please try again.");
           setLoading(false);
+          tracker.action("register.google.failed", {
+            role: selected,
+            reason: "no_user_returned",
+          });
           return;
         }
 
@@ -71,6 +95,13 @@ export default function Register() {
           result.user.role === "WORKER"
             ? "/dashboard/worker"
             : "/dashboard/hirer";
+
+        tracker.action("register.google.success", {
+          role: result.user.role,
+          destination: dest,
+          hadRefCode: !!refCode,
+        });
+
         navigate(dest, { replace: true });
       } catch (err) {
         setError(
@@ -78,6 +109,10 @@ export default function Register() {
             "Could not create your account. Please try again.",
         );
         setLoading(false);
+        tracker.action("register.google.failed", {
+          role: selected,
+          reason: err?.response?.data?.message || "unknown",
+        });
       }
       return;
     }
@@ -86,6 +121,14 @@ export default function Register() {
     // Propagate the referral code so the email signup form can pick it up.
     const refCode = sessionStorage.getItem("pendingRefCode") || "";
     const suffix = refCode ? `?ref=${refCode}` : "";
+
+    tracker.action("register.email.roleSelected", {
+      role: selected,
+      destination:
+        selected === "HIRER" ? "/register/hirer" : "/register/worker",
+      hadRefCode: !!refCode,
+    });
+
     navigate(
       selected === "HIRER"
         ? `/register/hirer${suffix}`
@@ -141,8 +184,15 @@ export default function Register() {
           <button
             type="button"
             className={`${s.roleCard} ${selected === "HIRER" ? s.roleCardActive : ""}`}
-            onClick={() => setSelected("HIRER")}
+            onClick={() => {
+              setSelected("HIRER");
+              tracker.track("register.role.selected", {
+                role: "HIRER",
+                isGoogleSignup,
+              });
+            }}
             disabled={loading}
+            data-track-id="register.role.hirer"
           >
             <div className={s.roleIcon}>
               <Briefcase size={20} />
@@ -155,8 +205,15 @@ export default function Register() {
           <button
             type="button"
             className={`${s.roleCard} ${selected === "WORKER" ? s.roleCardActive : ""}`}
-            onClick={() => setSelected("WORKER")}
+            onClick={() => {
+              setSelected("WORKER");
+              tracker.track("register.role.selected", {
+                role: "WORKER",
+                isGoogleSignup,
+              });
+            }}
             disabled={loading}
+            data-track-id="register.role.worker"
           >
             <div className={s.roleIcon}>
               <HardHat size={20} />
@@ -172,6 +229,7 @@ export default function Register() {
           className={`${s.btn} ${s.btnPrimary}`}
           disabled={!selected || loading}
           onClick={handleContinue}
+          data-track-id="register.continue"
         >
           {loading && <span className={s.spinner} />}
           {loading
@@ -187,7 +245,11 @@ export default function Register() {
 
         <p className={s.footer}>
           Already have an account?{" "}
-          <Link to="/login" className={s.link}>
+          <Link
+            to="/login"
+            className={s.link}
+            data-track-id="register.login.link"
+          >
             Sign in
           </Link>
         </p>

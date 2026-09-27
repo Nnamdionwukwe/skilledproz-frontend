@@ -18,6 +18,7 @@ import AuthLayout from "../../components/auth/AuthLayout";
 import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 import g from "../../components/auth/GoogleSignInButton.module.css";
 import s from "../../components/auth/form.module.css";
+import tracker from "../../lib/analytics/tracker";
 
 const INIT = {
   firstName: "",
@@ -38,6 +39,16 @@ export default function RegisterHirer() {
   const [form, setForm] = useState(INIT);
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    tracker.track("page.registerHirer.view", {
+      hasRefFromUrl: !!params.get("ref"),
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -66,7 +77,25 @@ export default function RegisterHirer() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+
+    const isValid = validate();
+
+    tracker.action("registerHirer.submit.attempt", {
+      isValid,
+      hasPhone: !!form.phone,
+      hasCountry: !!form.country,
+      hasCity: !!form.city,
+      hasReferralCode: !!form.referralCode?.trim(),
+      errorFields: Object.keys(errors).filter((k) => errors[k]),
+    });
+
+    if (!isValid) {
+      tracker.action("registerHirer.validation.failed", {
+        errorFields: Object.keys(errors).filter((k) => errors[k]),
+      });
+      return;
+    }
+
     try {
       await register({
         firstName: form.firstName,
@@ -81,10 +110,24 @@ export default function RegisterHirer() {
           ? { referralCode: form.referralCode.trim().toUpperCase() }
           : {}),
       });
+
+      tracker.action("registerHirer.success", {
+        hasPhone: !!form.phone,
+        hasCountry: !!form.country,
+        hasCity: !!form.city,
+        hasReferralCode: !!form.referralCode?.trim(),
+        emailDomain: form.email.split("@")[1] || null,
+      });
+
       navigate("/verify-email");
     } catch (err) {
       setErrors({
         api: err?.response?.data?.message || "Registration failed.",
+      });
+
+      tracker.action("registerHirer.failed", {
+        reason: err?.response?.data?.message || "unknown",
+        emailDomain: form.email.split("@")[1] || null,
       });
     }
   };
@@ -92,7 +135,14 @@ export default function RegisterHirer() {
   return (
     <AuthLayout>
       <div className={`${s.container} ${s.containerWide}`}>
-        <button className={s.backBtn} onClick={() => navigate("/register")}>
+        <button
+          className={s.backBtn}
+          onClick={() => {
+            tracker.track("registerHirer.back.clicked");
+            navigate("/register");
+          }}
+          data-track-id="registerHirer.back"
+        >
           <ArrowLeft size={15} /> Back
         </button>
         <div className={s.header}>
@@ -132,6 +182,12 @@ export default function RegisterHirer() {
                   placeholder="John"
                   value={form.firstName}
                   onChange={onChange}
+                  onFocus={() => {
+                    if (!form.firstName) {
+                      tracker.track("registerHirer.form.started");
+                    }
+                  }}
+                  data-track-id="registerHirer.firstName"
                 />
               </div>
               {errors.firstName && (
@@ -150,6 +206,7 @@ export default function RegisterHirer() {
                   placeholder="Doe"
                   value={form.lastName}
                   onChange={onChange}
+                  data-track-id="registerHirer.lastName"
                 />
               </div>
               {errors.lastName && (
@@ -171,6 +228,7 @@ export default function RegisterHirer() {
                 placeholder="you@example.com"
                 value={form.email}
                 onChange={onChange}
+                data-track-id="registerHirer.email"
               />
             </div>
             {errors.email && <span className={s.errMsg}>{errors.email}</span>}
@@ -194,6 +252,7 @@ export default function RegisterHirer() {
                 placeholder="+234 801 234 5678"
                 value={form.phone}
                 onChange={onChange}
+                data-track-id="registerHirer.phone"
               />
             </div>
           </div>
@@ -212,6 +271,7 @@ export default function RegisterHirer() {
                   placeholder="Nigeria"
                   value={form.country}
                   onChange={onChange}
+                  data-track-id="registerHirer.country"
                 />
               </div>
             </div>
@@ -228,6 +288,7 @@ export default function RegisterHirer() {
                   placeholder="Lagos"
                   value={form.city}
                   onChange={onChange}
+                  data-track-id="registerHirer.city"
                 />
               </div>
             </div>
@@ -250,6 +311,7 @@ export default function RegisterHirer() {
                 onChange={onChange}
                 style={{ textTransform: "uppercase", letterSpacing: "0.1em" }}
                 maxLength={12}
+                data-track-id="registerHirer.referralCode"
               />
             </div>
           </div>
@@ -272,12 +334,20 @@ export default function RegisterHirer() {
                   value={form.password}
                   onChange={onChange}
                   style={{ paddingRight: 40 }}
+                  data-track-id="registerHirer.password"
                 />
                 <button
                   type="button"
                   className={s.iconRight}
-                  onClick={() => setShowPw(!showPw)}
+                  onClick={() => {
+                    const next = !showPw;
+                    setShowPw(next);
+                    tracker.track("registerHirer.password.toggled", {
+                      visible: next,
+                    });
+                  }}
                   tabIndex={-1}
+                  data-track-id="registerHirer.showPassword"
                 >
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -298,6 +368,7 @@ export default function RegisterHirer() {
                   placeholder="Repeat password"
                   value={form.confirmPassword}
                   onChange={onChange}
+                  data-track-id="registerHirer.confirmPassword"
                 />
               </div>
               {errors.confirmPassword && (
@@ -312,13 +383,23 @@ export default function RegisterHirer() {
               name="agree"
               checked={form.agree}
               onChange={onChange}
+              data-track-id="registerHirer.agree"
             />
             I agree to the{" "}
-            <Link to="/terms" className={s.link} style={{ marginLeft: 3 }}>
+            <Link
+              to="/terms"
+              className={s.link}
+              style={{ marginLeft: 3 }}
+              data-track-id="registerHirer.terms.link"
+            >
               Terms
             </Link>{" "}
             and{" "}
-            <Link to="/privacy" className={s.link}>
+            <Link
+              to="/privacy"
+              className={s.link}
+              data-track-id="registerHirer.privacy.link"
+            >
               Privacy Policy
             </Link>
           </label>
@@ -329,6 +410,7 @@ export default function RegisterHirer() {
             className={`${s.btn} ${s.btnPrimary}`}
             disabled={isLoading}
             style={{ marginTop: 2 }}
+            data-track-id="registerHirer.submit"
           >
             {isLoading && <span className={s.spinner} />}
             {isLoading ? "Creating account…" : "Create Hirer Account"}
@@ -337,7 +419,11 @@ export default function RegisterHirer() {
 
         <p className={s.footer}>
           Already have an account?{" "}
-          <Link to="/login" className={s.link}>
+          <Link
+            to="/login"
+            className={s.link}
+            data-track-id="registerHirer.login.link"
+          >
             Sign in
           </Link>
         </p>

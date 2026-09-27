@@ -20,6 +20,9 @@ import {
 } from "react-icons/fa";
 import styles from "./Feedback.module.css";
 
+// ── ANALYTICS ─────────────────────────────────────────────────────────────
+import tracker from "../../lib/analytics/tracker";
+
 const FEEDBACK_TYPES = [
   { id: "praise", label: "Praise", icon: <FaSmile />, color: "#10B981" },
   {
@@ -76,27 +79,88 @@ export default function FeedbackButton({
   const hasPrefilledName = Boolean(userName);
   const hasPrefilledEmail = Boolean(email);
 
+  // ── ANALYTICS: track modal open/close ────────────────────────────────────
+  const openModal = () => {
+    setIsOpen(true);
+    tracker.action("feedback.modal.opened", {
+      position: buttonPosition,
+      color: buttonColor,
+      hasPrefilledName,
+      hasPrefilledEmail,
+    });
+  };
+
+  const closeModal = () => {
+    // If user closes before completing, log where they dropped off
+    if (status !== "success") {
+      tracker.track("feedback.modal.abandoned", {
+        droppedAtStep: step,
+        feedbackType: formData.type || null,
+        hasRating: formData.rating > 0,
+        hasTitle: !!formData.title,
+        hasDescription: formData.description.length > 10,
+      });
+    }
+    setIsOpen(false);
+  };
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleTypeSelect = (typeId) => {
+    handleInputChange("type", typeId);
+    // ── ANALYTICS: which category do users pick? ───────────────────────────
+    tracker.track("feedback.type.selected", { type: typeId });
+  };
+
+  const handleRatingSelect = (rating) => {
+    handleInputChange("rating", rating);
+    // ── ANALYTICS: satisfaction signal ─────────────────────────────────────
+    tracker.track("feedback.rating.selected", {
+      rating,
+      feedbackType: formData.type || null,
+    });
+  };
+
   const handleNext = () => {
     if (step < 3) {
-      setStep(step + 1);
+      const nextStep = step + 1;
+      setStep(nextStep);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      // ── ANALYTICS: step progression ──────────────────────────────────────
+      tracker.track("feedback.step.advanced", {
+        from: step,
+        to: nextStep,
+      });
     }
   };
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1);
+      const prevStep = step - 1;
+      setStep(prevStep);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      // ── ANALYTICS: user went back (signal of hesitation) ────────────────
+      tracker.track("feedback.step.wentBack", {
+        from: step,
+        to: prevStep,
+      });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus("submitting");
+
+    // ── ANALYTICS: user is attempting to submit ─────────────────────────────
+    tracker.action("feedback.submit.attempt", {
+      type: formData.type,
+      rating: formData.rating,
+      titleLength: formData.title.length,
+      descriptionLength: formData.description.length,
+      hasEmail: !!formData.email,
+    });
 
     try {
       // Collect browser info
@@ -129,6 +193,16 @@ export default function FeedbackButton({
       setStatus("success");
       setMessage("Thank you! Your feedback helps us improve SkilledProz.");
 
+      // ── ANALYTICS: submission succeeded (domain event) ──────────────────
+      tracker.action("feedback.submitted", {
+        type: formData.type,
+        rating: formData.rating,
+        titleLength: formData.title.length,
+        descriptionLength: formData.description.length,
+        hasEmail: !!formData.email,
+        hasName: !!formData.name,
+      });
+
       setTimeout(() => {
         setIsOpen(false);
         setStatus("idle");
@@ -152,6 +226,11 @@ export default function FeedbackButton({
     } catch (err) {
       setStatus("error");
       setMessage("Something went wrong. Please try again.");
+      // ── ANALYTICS: submission failed ────────────────────────────────────
+      tracker.action("feedback.submit.failed", {
+        type: formData.type,
+        reason: err.message || "unknown",
+      });
     }
   };
 
@@ -186,14 +265,19 @@ export default function FeedbackButton({
       {buttonPosition === "fixed" ? (
         <button
           className={buttonClasses}
-          onClick={() => setIsOpen(true)}
+          onClick={openModal}
           aria-label="Give Feedback"
+          data-track-id="feedback.trigger.fixed"
         >
           {buttonIcon}
           <span className={styles.buttonText}>{buttonText}</span>
         </button>
       ) : (
-        <button className={buttonClasses} onClick={() => setIsOpen(true)}>
+        <button
+          className={buttonClasses}
+          onClick={openModal}
+          data-track-id="feedback.trigger.inline"
+        >
           {buttonIcon}
           {buttonText}
         </button>
@@ -203,13 +287,14 @@ export default function FeedbackButton({
       {isOpen && (
         <div
           className={`${styles.overlay} ${isOpenClass}`}
-          onClick={() => setIsOpen(false)}
+          onClick={closeModal}
         >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             {/* Close Button */}
             <button
               className={styles.closeBtn}
-              onClick={() => setIsOpen(false)}
+              onClick={closeModal}
+              data-track-id="feedback.modal.close"
             >
               <FaTimes />
             </button>
@@ -252,7 +337,14 @@ export default function FeedbackButton({
                 <p>{message}</p>
                 <button
                   className={styles.retryBtn}
-                  onClick={() => setStatus("idle")}
+                  onClick={() => {
+                    setStatus("idle");
+                    // ── ANALYTICS: retry after failure ────────────────────────
+                    tracker.track("feedback.submit.retried", {
+                      type: formData.type,
+                    });
+                  }}
+                  data-track-id="feedback.error.retry"
                 >
                   Try Again
                 </button>
@@ -278,7 +370,7 @@ export default function FeedbackButton({
                           key={type.id}
                           type="button"
                           className={`${styles.typeCard} ${formData.type === type.id ? styles.selected : ""}`}
-                          onClick={() => handleInputChange("type", type.id)}
+                          onClick={() => handleTypeSelect(type.id)}
                           style={{
                             borderColor:
                               formData.type === type.id
@@ -289,6 +381,7 @@ export default function FeedbackButton({
                                 ? `${type.color}15`
                                 : undefined,
                           }}
+                          data-track-id={`feedback.type.${type.id}`}
                         >
                           <span
                             className={styles.typeIcon}
@@ -309,9 +402,8 @@ export default function FeedbackButton({
                             key={rating.value}
                             type="button"
                             className={`${styles.ratingStar} ${formData.rating >= rating.value ? styles.active : ""}`}
-                            onClick={() =>
-                              handleInputChange("rating", rating.value)
-                            }
+                            onClick={() => handleRatingSelect(rating.value)}
+                            data-track-id={`feedback.rating.${rating.value}`}
                           >
                             <FaStar />
                             <span className={styles.ratingLabelSmall}>
@@ -328,6 +420,7 @@ export default function FeedbackButton({
                         className={styles.nextBtn}
                         onClick={handleNext}
                         disabled={!isStepValid()}
+                        data-track-id="feedback.step1.next"
                       >
                         Next <FaArrowRight />
                       </button>
@@ -358,7 +451,13 @@ export default function FeedbackButton({
                         onChange={(e) =>
                           handleInputChange("title", e.target.value)
                         }
+                        onFocus={() => {
+                          if (!formData.title) {
+                            tracker.track("feedback.step2.title.focused");
+                          }
+                        }}
                         required
+                        data-track-id="feedback.step2.title"
                       />
                     </div>
 
@@ -373,8 +472,14 @@ export default function FeedbackButton({
                         onChange={(e) =>
                           handleInputChange("description", e.target.value)
                         }
+                        onFocus={() => {
+                          if (!formData.description) {
+                            tracker.track("feedback.step2.description.focused");
+                          }
+                        }}
                         rows={4}
                         required
+                        data-track-id="feedback.step2.description"
                       />
                       <div className={styles.charCount}>
                         {formData.description.length} characters (minimum 10)
@@ -386,6 +491,7 @@ export default function FeedbackButton({
                         type="button"
                         className={styles.backBtn}
                         onClick={handleBack}
+                        data-track-id="feedback.step2.back"
                       >
                         Back
                       </button>
@@ -394,6 +500,7 @@ export default function FeedbackButton({
                         className={styles.nextBtn}
                         onClick={handleNext}
                         disabled={!isStepValid()}
+                        data-track-id="feedback.step2.next"
                       >
                         Next <FaArrowRight />
                       </button>
@@ -430,6 +537,7 @@ export default function FeedbackButton({
                           onChange={(e) =>
                             handleInputChange("name", e.target.value)
                           }
+                          data-track-id="feedback.step3.name"
                         />
                         {hasPrefilledName && (
                           <span className={styles.prefillIcon}>
@@ -462,6 +570,7 @@ export default function FeedbackButton({
                           onChange={(e) =>
                             handleInputChange("email", e.target.value)
                           }
+                          data-track-id="feedback.step3.email"
                         />
                         {hasPrefilledEmail && (
                           <span className={styles.prefillIcon}>
@@ -484,6 +593,7 @@ export default function FeedbackButton({
                         type="button"
                         className={styles.backBtn}
                         onClick={handleBack}
+                        data-track-id="feedback.step3.back"
                       >
                         Back
                       </button>
@@ -491,6 +601,7 @@ export default function FeedbackButton({
                         type="submit"
                         className={styles.submitBtn}
                         disabled={status === "submitting"}
+                        data-track-id="feedback.step3.submit"
                       >
                         {status === "submitting" ? (
                           <>

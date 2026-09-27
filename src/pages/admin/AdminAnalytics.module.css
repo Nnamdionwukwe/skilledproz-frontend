@@ -1063,3 +1063,967 @@
     transition: none;
   }
 }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FUNNEL BUILDER
+   Used by AdminFunnelBuilder.jsx
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Preset picker ─────────────────────────────────────────────────────────── */
+
+.funnelPresetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.875rem;
+}
+
+.funnelPresetCard {
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--text);
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.funnelPresetCard:hover {
+  border-color: var(--orange);
+  background: var(--orange-dim);
+  transform: translateY(-1px);
+}
+
+.funnelPresetTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.funnelPresetBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.funnelPresetArrow {
+  color: var(--text-muted);
+}
+
+.funnelPresetTitle {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.funnelPresetDesc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.funnelPresetSteps {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+.funnelCustomCta {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+}
+
+.funnelCustomBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.funnelCustomBtn:hover {
+  border-color: var(--orange);
+  border-style: solid;
+  color: var(--orange);
+}
+
+/* ── Controls bar ─────────────────────────────────────────────────────────── */
+
+.funnelControls {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.funnelControlGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.funnelControlGroupEnd {
+  margin-left: auto;
+}
+
+.funnelControlLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.funnelToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.funnelToggleLabel input {
+  accent-color: var(--orange);
+  cursor: pointer;
+}
+
+.funnelAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s;
+}
+
+.funnelAddBtn:hover:not(:disabled) {
+  background: var(--orange);
+  color: #fff;
+}
+
+.funnelAddBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Error box ────────────────────────────────────────────────────────────── */
+
+.funnelError {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  color: var(--red);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* ── Summary cards ────────────────────────────────────────────────────────── */
+
+.funnelSummary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.funnelSummaryCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.funnelSummaryLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.funnelSummaryValue {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.funnelSummarySub {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+/* ── Funnel visualization ─────────────────────────────────────────────────── */
+
+.funnelViz {
+  display: flex;
+  flex-direction: column;
+}
+
+.funnelRow {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.funnelRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0.75rem;
+}
+
+.funnelRailDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.funnelRailLine {
+  flex: 1;
+  width: 1px;
+  background: var(--border);
+  margin-top: 0.25rem;
+  margin-bottom: -0.25rem;
+}
+
+.funnelStepBody {
+  padding: 0.75rem 0 1.25rem;
+  min-width: 0;
+}
+
+.funnelStepHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.funnelStepMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.funnelStepLabel {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.funnelStepCode {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, "SF Mono", monospace;
+  background: var(--bg-card);
+  padding: 1px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.funnelStepRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.funnelStepCount {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.funnelRemoveBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.funnelRemoveBtn:hover {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.funnelBarWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.funnelBarTrack {
+  flex: 1;
+  height: 10px;
+  background: var(--bg-card);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.funnelBarFillNew {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--orange-hover));
+  border-radius: 5px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 3px;
+}
+
+.funnelBarPct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Drop-off row ─────────────────────────────────────────────────────────── */
+
+.funnelDropoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.funnelDropoffLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.funnelDropoffLeft strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.funnelDropoffWarn .funnelDropoffLeft strong {
+  color: var(--red);
+}
+
+.funnelDropoffPct {
+  margin-left: 0.25rem;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.funnelDropoffToggle {
+  background: transparent;
+  border: none;
+  color: var(--orange);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-body);
+  padding: 0;
+}
+
+.funnelDropoffToggle:hover {
+  text-decoration: underline;
+}
+
+/* ── Drop-off user drawer ─────────────────────────────────────────────────── */
+
+.funnelDropoffDrawer {
+  grid-column: 2;
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.funnelDropoffDrawerHeader {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.funnelDropoffDrawerHeader code {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.6875rem;
+  color: var(--text-dim);
+}
+
+.funnelDropoffUser {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.1s;
+}
+
+.funnelDropoffUser:hover {
+  background: var(--bg-panel);
+}
+
+.funnelDropoffAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.funnelDropoffAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.funnelDropoffUserInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.funnelDropoffUserName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.funnelDropoffUserMeta {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funnelDropoffUserTime {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Event picker modal ───────────────────────────────────────────────────── */
+
+.funnelPickerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  animation: fadeUp 0.2s ease both;
+}
+
+.funnelPickerModal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeUp 0.25s ease both;
+}
+
+.funnelPickerHeader {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.funnelEventPicker {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.funnelEventPickerHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.funnelEventSearch {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.funnelEventSearch:focus {
+  border-color: var(--orange);
+}
+
+.funnelEventPickerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.funnelEventGroup {
+  margin-bottom: 0.5rem;
+}
+
+.funnelEventGroupLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0.5rem 0.625rem 0.25rem;
+}
+
+.funnelEventOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.4375rem 0.625rem;
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.1s;
+}
+
+.funnelEventOption:hover {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+
+.funnelEventOption code {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.75rem;
+}
+
+.funnelEventNoResults {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────── */
+
+.funnelSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.funnelSkeletonRow {
+  height: 72px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.04) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .funnelControls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .funnelControlGroupEnd {
+    margin-left: 0;
+  }
+  .funnelStepHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .funnelStepRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .funnelSummaryValue {
+    font-size: 1.25rem;
+  }
+  .funnelDropoff {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TOP WORKERS LEADERBOARD
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.numCell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rankBadge {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: inline-block;
+  min-width: 24px;
+  text-align: center;
+}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PAYMENT FUNNEL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.methodGridNew {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.875rem;
+}
+
+.methodCardNew {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.125rem;
+}
+
+.methodCardNewTop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+}
+
+.methodCardNewIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.methodCardNewLabel {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.methodCardNewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.methodCardNewValue {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.methodCardNewLabelSmall {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* ── Time-to-payment ──────────────────────────────────────────────────────── */
+
+.timingStats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.timingStatBox {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.timingStatLabel {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.timingStatValue {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.timingBuckets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timingBucketRow {
+  display: grid;
+  grid-template-columns: 100px 1fr 50px;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timingBucketLabel {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.timingBucketTrack {
+  height: 10px;
+  background: var(--bg-card);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.timingBucketFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--orange-hover));
+  border-radius: 5px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 3px;
+}
+
+.timingBucketCount {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CATEGORY DEMAND REPORT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.375rem 0.625rem;
+  min-width: 200px;
+}
+
+.searchIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.75rem;
+  font-family: var(--font-body);
+  flex: 1;
+  min-width: 0;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.demandLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.demandLegendItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.demandLegendItem .pill {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+/* ── Digest button — auto-width, icon + label ──────────────────────────────── */
+
+.digestBtn {
+  height: 30px;
+  padding: 0 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s,
+    opacity 0.15s;
+  white-space: nowrap;
+}
+
+.digestBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: var(--orange-dim);
+}
+
+.digestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.digestBtn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* ── Mobile: shrink text, keep icon ────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .digestBtn {
+    padding: 0 0.625rem;
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .digestBtn span {
+    display: none;
+  }
+  .digestBtn {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .digestBtn {
+    transition: none;
+  }
+}

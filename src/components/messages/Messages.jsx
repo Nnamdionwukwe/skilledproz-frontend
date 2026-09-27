@@ -16,6 +16,7 @@ import {
   FiArrowLeft,
   FiChevronDown,
 } from "react-icons/fi";
+import tracker from "../../lib/analytics/tracker";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -128,14 +129,31 @@ function TranslateButton({ text }) {
   async function translate(langCode) {
     setShowPicker(false);
     setLoading(true);
+
+    // ── ANALYTICS: translation attempt ───────────────────────────────────
+    tracker.action("messages.translate.attempt", {
+      targetLang: langCode,
+      textLength: text?.length || 0,
+    });
+
     try {
       const res = await api.post("/translate", {
         text,
         targetLang: langCode,
       });
       setTranslated(res.data.data.translated);
+
+      // ── ANALYTICS: translation succeeded ─────────────────────────────
+      tracker.action("messages.translate.success", {
+        targetLang: langCode,
+      });
     } catch {
       setTranslated("Translation failed.");
+
+      // ── ANALYTICS: translation failed ────────────────────────────────
+      tracker.action("messages.translate.failed", {
+        targetLang: langCode,
+      });
     } finally {
       setLoading(false);
     }
@@ -149,9 +167,14 @@ function TranslateButton({ text }) {
           <span>{translated}</span>
           <button
             className={styles.translateDismiss}
-            onClick={() => setTranslated(null)}
+            onClick={() => {
+              setTranslated(null);
+              // ── ANALYTICS: translation dismissed ─────────────────────
+              tracker.track("messages.translate.dismissed");
+            }}
             type="button"
             aria-label="Dismiss translation"
+            data-track-id="messages.translate.dismiss"
           >
             <FiX size={12} />
           </button>
@@ -160,11 +183,16 @@ function TranslateButton({ text }) {
         <div className={styles.translateRelative}>
           <button
             className={styles.translateBtn}
-            onClick={() => setShowPicker((v) => !v)}
+            onClick={() => {
+              setShowPicker((v) => !v);
+              // ── ANALYTICS: translation picker toggled ────────────────
+              tracker.track("messages.translate.picker.toggled");
+            }}
             disabled={loading}
             title="Translate message"
             type="button"
             aria-label="Translate message"
+            data-track-id="messages.translate.open"
           >
             {loading ? "…" : <FiGlobe size={14} />}
           </button>
@@ -176,6 +204,7 @@ function TranslateButton({ text }) {
                   className={styles.langOption}
                   onClick={() => translate(l.code)}
                   type="button"
+                  data-track-id={`messages.translate.lang.${l.code}`}
                 >
                   {l.label}
                 </button>
@@ -237,6 +266,17 @@ export default function Messages() {
   const justSentRef = useRef(false);
   const initialLoadRef = useRef(true);
   const lastSeenMessageIdRef = useRef(null);
+
+  // ── ANALYTICS: page view on mount ────────────────────────────────────────
+  useEffect(() => {
+    tracker.track("page.messages.view", {
+      role: user?.role || "GUEST",
+      cameWithConvoId: !!initialConvoId,
+      cameWithUserId: !!initialWithId,
+      referrer: document.referrer || null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Scroll handler — drives the jump button visibility only ──
   const handleMessagesScroll = useCallback(() => {
@@ -316,7 +356,12 @@ export default function Messages() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     isAtBottomRef.current = true;
     setShowJumpButton(false);
-  }, []);
+
+    // ── ANALYTICS: jump to bottom clicked ────────────────────────────────
+    tracker.track("messages.jumpToBottom.clicked", {
+      conversationId: activeConvoId,
+    });
+  }, [activeConvoId]);
 
   // ── Auto-switch to "chat" view on mobile whenever a chat is active ──
   useEffect(() => {
@@ -330,7 +375,11 @@ export default function Messages() {
   useEffect(() => {
     if (!lightboxSrc) return;
     function onKey(e) {
-      if (e.key === "Escape") setLightboxSrc(null);
+      if (e.key === "Escape") {
+        setLightboxSrc(null);
+        // ── ANALYTICS: lightbox closed via escape ──────────────────────
+        tracker.track("messages.lightbox.closed", { via: "escape" });
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -429,6 +478,15 @@ export default function Messages() {
       return;
     }
 
+    // ── ANALYTICS: conversation opened ───────────────────────────────────
+    const convo = conversations.find((c) => c.id === activeConvoId);
+    const other = convo?.users?.find((u) => u.userId !== user?.id)?.user;
+    tracker.track("messages.conversation.opened", {
+      conversationId: activeConvoId,
+      hasBooking: !!convo?.booking,
+      otherRole: other?.role || null,
+    });
+
     loadMessages(activeConvoId);
     api.patch(`/messages/${activeConvoId}/read`).catch(() => {});
     setConversations((prev) =>
@@ -471,6 +529,11 @@ export default function Messages() {
     initialLoadRef.current = true;
     lastSeenMessageIdRef.current = null;
     setShowJumpButton(false);
+
+    // ── ANALYTICS: conversation selected from sidebar ────────────────────
+    tracker.action("messages.conversation.selected", {
+      conversationId: convoId,
+    });
   };
 
   const handleMobileBack = () => {
@@ -510,6 +573,13 @@ export default function Messages() {
 
     const receiverId = resolveReceiver();
     if (!receiverId) return;
+
+    // ── ANALYTICS: message send attempt ──────────────────────────────────
+    tracker.action("messages.send.attempt", {
+      conversationId: activeConvoId || null,
+      contentLength: content.length,
+      isNewConversation: !activeConvoId,
+    });
 
     const tempId = `temp-${Date.now()}`;
     setSendingMessage({
@@ -559,8 +629,23 @@ export default function Messages() {
           ),
         );
       }
-    } catch {
+
+      // ── ANALYTICS: message sent successfully ──────────────────────────
+      tracker.action("messages.sent", {
+        conversationId: conversationId || activeConvoId,
+        messageId: message.id,
+        contentLength: content.length,
+        isNewConversation: !activeConvoId,
+      });
+    } catch (err) {
       setSendingMessage(null);
+
+      // ── ANALYTICS: message send failed ────────────────────────────────
+      tracker.action("messages.send.failed", {
+        conversationId: activeConvoId || null,
+        contentLength: content.length,
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setSending(false);
     }
@@ -572,6 +657,14 @@ export default function Messages() {
 
     const receiverId = resolveReceiver();
     if (!receiverId) return;
+
+    // ── ANALYTICS: file upload attempt ───────────────────────────────────
+    tracker.action("messages.file.upload.attempt", {
+      conversationId: activeConvoId || null,
+      fileName: file.name,
+      fileType: file.type,
+      fileSizeKB: Math.round(file.size / 1024),
+    });
 
     setUploadingFile(true);
     try {
@@ -601,8 +694,21 @@ export default function Messages() {
           return [...prev, message];
         });
       }
-    } catch {
-      /* silent */
+
+      // ── ANALYTICS: file upload succeeded ─────────────────────────────
+      tracker.action("messages.file.uploaded", {
+        conversationId: conversationId || activeConvoId,
+        messageId: message.id,
+        fileType: file.type,
+        fileSizeKB: Math.round(file.size / 1024),
+      });
+    } catch (err) {
+      // ── ANALYTICS: file upload failed ────────────────────────────────
+      tracker.action("messages.file.upload.failed", {
+        conversationId: activeConvoId || null,
+        fileType: file.type,
+        reason: err.response?.data?.message || "unknown",
+      });
     } finally {
       setUploadingFile(false);
       e.target.value = "";
@@ -685,7 +791,22 @@ export default function Messages() {
               className={styles.searchInput}
               placeholder="Search conversations..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                // ── ANALYTICS: search started (once) ──────────────────────
+                if (!searchQuery && e.target.value.length === 1) {
+                  tracker.track("messages.search.started");
+                }
+              }}
+              onBlur={(e) => {
+                if (e.target.value.length > 0) {
+                  tracker.action("messages.search.committed", {
+                    queryLength: e.target.value.length,
+                    resultCount: filteredConvos.length,
+                  });
+                }
+              }}
+              data-track-id="messages.search.input"
             />
           </div>
 
@@ -718,6 +839,7 @@ export default function Messages() {
                     } ${isUnread ? styles.convoItemUnread : ""}`}
                     onClick={() => selectConversation(convo.id)}
                     type="button"
+                    data-track-id={`messages.convo.${convo.id}`}
                   >
                     <div className={styles.convoAvatarWrap}>
                       <Avatar user={other} size="md" />
@@ -785,6 +907,7 @@ export default function Messages() {
                   onClick={handleMobileBack}
                   type="button"
                   aria-label="Back to conversations"
+                  data-track-id="messages.mobile.back"
                 >
                   <FiArrowLeft size={18} />
                 </button>
@@ -804,7 +927,11 @@ export default function Messages() {
                   </>
                 )}
                 {otherProfileUrl && (
-                  <Link to={otherProfileUrl} className={styles.viewProfileBtn}>
+                  <Link
+                    to={otherProfileUrl}
+                    className={styles.viewProfileBtn}
+                    data-track-id="messages.viewProfile"
+                  >
                     View Profile →
                   </Link>
                 )}
@@ -893,9 +1020,17 @@ export default function Messages() {
                                         src={msg.fileUrl}
                                         alt="attachment"
                                         className={styles.messageImage}
-                                        onClick={() =>
-                                          setLightboxSrc(msg.fileUrl)
-                                        }
+                                        onClick={() => {
+                                          setLightboxSrc(msg.fileUrl);
+                                          // ── ANALYTICS: image opened ─────
+                                          tracker.action(
+                                            "messages.image.opened",
+                                            {
+                                              messageId: msg.id,
+                                              conversationId: activeConvoId,
+                                            },
+                                          );
+                                        }}
                                         role="button"
                                         tabIndex={0}
                                         onKeyDown={(e) => {
@@ -923,6 +1058,16 @@ export default function Messages() {
                                         target="_blank"
                                         rel="noreferrer"
                                         className={styles.fileAttachment}
+                                        onClick={() =>
+                                          tracker.action(
+                                            "messages.file.downloaded",
+                                            {
+                                              messageId: msg.id,
+                                              conversationId: activeConvoId,
+                                            },
+                                          )
+                                        }
+                                        data-track-id={`messages.file.download.${msg.id}`}
                                       >
                                         <FiPaperclip size={13} />
                                         <span>
@@ -984,6 +1129,7 @@ export default function Messages() {
                     onClick={handleJumpToBottom}
                     aria-label="Scroll to latest message"
                     title="Scroll to latest"
+                    data-track-id="messages.jumpToBottom"
                   >
                     <FiChevronDown size={20} />
                   </button>
@@ -1007,6 +1153,7 @@ export default function Messages() {
                     disabled={uploadingFile}
                     title="Send image or video"
                     aria-label="Send image or video"
+                    data-track-id="messages.attach"
                   >
                     {uploadingFile ? (
                       <span className={styles.spinner} />
@@ -1029,7 +1176,13 @@ export default function Messages() {
                         Math.min(e.target.scrollHeight, 120) + "px";
                     }}
                     onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      if (!newMessage) {
+                        tracker.track("messages.input.focused");
+                      }
+                    }}
                     rows={1}
+                    data-track-id="messages.input"
                   />
                   <button
                     className={`${styles.sendBtn} ${
@@ -1039,6 +1192,7 @@ export default function Messages() {
                     disabled={!newMessage.trim() || sending}
                     type="button"
                     aria-label="Send message"
+                    data-track-id="messages.send"
                   >
                     {sending ? (
                       <span className={styles.spinner} />
@@ -1060,7 +1214,11 @@ export default function Messages() {
       {lightboxSrc && (
         <div
           className={styles.lightboxOverlay}
-          onClick={() => setLightboxSrc(null)}
+          onClick={() => {
+            setLightboxSrc(null);
+            // ── ANALYTICS: lightbox closed via overlay ──────────────────
+            tracker.track("messages.lightbox.closed", { via: "overlay" });
+          }}
           role="dialog"
           aria-modal="true"
           aria-label="Image preview"
@@ -1068,8 +1226,13 @@ export default function Messages() {
           <button
             type="button"
             className={styles.lightboxClose}
-            onClick={() => setLightboxSrc(null)}
+            onClick={() => {
+              setLightboxSrc(null);
+              // ── ANALYTICS: lightbox closed via button ──────────────────
+              tracker.track("messages.lightbox.closed", { via: "closeBtn" });
+            }}
             aria-label="Close image"
+            data-track-id="messages.lightbox.close"
           >
             <FiX size={24} />
           </button>
