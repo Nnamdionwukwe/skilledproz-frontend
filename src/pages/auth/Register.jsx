@@ -1,5 +1,5 @@
 // src/pages/auth/Register.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Briefcase, HardHat, AlertCircle } from "lucide-react";
 import AuthLayout from "../../components/auth/AuthLayout";
