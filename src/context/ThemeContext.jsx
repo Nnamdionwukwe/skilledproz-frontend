@@ -86,21 +86,30 @@ export function ThemeProvider({ children }) {
     [updateUser],
   );
 
-  // ── changeLanguage: set cookie → reload. That's it. ──────────────────────
+  // ── changeLanguage: set cookie → save to DB → reload. ────────────────────
+  // Critical: we must await the backend PATCH BEFORE calling
+  // window.location.replace(). Otherwise the reload aborts the in-flight
+  // request and the DB never receives the new language.
   const changeLanguage = useCallback(
-    (lang) => {
-      // Save preference
+    async (lang) => {
+      // Save preference locally
       localStorage.setItem("sp_lang", lang);
       setLanguage(lang);
 
       // Set GT cookie (/en/en = English, /en/fr = French, etc.)
       setGTCookie(lang);
 
-      // Fire-and-forget DB save
-      api
-        .patch("/settings/profile", { language: lang })
-        .then(() => updateUser?.({ language: lang }))
-        .catch(() => {});
+      // Save to DB before reloading. Race against a 2s timeout so a slow
+      // or unreachable backend can't block the reload forever.
+      try {
+        await Promise.race([
+          api.patch("/settings/profile", { language: lang }),
+          new Promise((resolve) => setTimeout(resolve, 2000)),
+        ]);
+        updateUser?.({ language: lang });
+      } catch {
+        // Non-fatal — the UI already switched and the cookie is set
+      }
 
       // Reload — GT reads cookie fresh on every page load
       window.location.replace(window.location.pathname);

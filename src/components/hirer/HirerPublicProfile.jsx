@@ -227,15 +227,6 @@ export default function HirerPublicProfile() {
                 <h1 className={styles.heroName}>
                   {hirerUser.firstName} {hirerUser.lastName}
                 </h1>
-
-                {/* Verified shield icon next to name */}
-                {/* {isVerified && (
-                  <ShieldCheck
-                    size={18}
-                    className={styles.verifiedIcon}
-                    title="Identity Verified"
-                  />
-                )} */}
               </div>
 
               {/* Verification badges under the name */}
