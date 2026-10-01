@@ -1417,7 +1417,7 @@ export default function UserProfile() {
             </div>
 
             <div className={s.certFsControls}>
-              <a
+              {/* <a
                 href={avatarViewer.url}
                 target="_blank"
                 rel="noreferrer"
@@ -1426,8 +1426,8 @@ export default function UserProfile() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink size={14} />
-              </a>
-              <a
+              </a> */}
+              {/* <a
                 href={avatarViewer.url}
                 download
                 className={s.certFsBtn}
@@ -1435,7 +1435,7 @@ export default function UserProfile() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <Maximize2 size={14} />
-              </a>
+              </a> */}
               <button
                 type="button"
                 className={s.certFsCloseBtn}
