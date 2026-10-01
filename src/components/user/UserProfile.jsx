@@ -144,8 +144,8 @@ function classifyFile(url) {
   return "other";
 }
 
-/* ── Avatar with upload support ──────────────────────────── */
-function AvatarBlock({ user, isOwn, onAvatarChange }) {
+/* ── Avatar with viewer + change ──────────────────────────── */
+function AvatarBlock({ user, onAvatarChange }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [hover, setHover] = useState(false);
@@ -170,8 +170,6 @@ function AvatarBlock({ user, isOwn, onAvatarChange }) {
 
   const openViewer = () => {
     if (!user?.avatar) return;
-    // Use a custom event so the parent component can render the lightbox
-    // without prop-drilling. Simpler than exposing a setter.
     window.dispatchEvent(
       new CustomEvent("sp:view-avatar", {
         detail: {
@@ -182,64 +180,50 @@ function AvatarBlock({ user, isOwn, onAvatarChange }) {
     );
   };
 
-  // Own profile → click opens change-photo picker.
-  // Other profile → click opens the full-screen image viewer.
-  const handleClick = () => {
-    if (isOwn) fileRef.current?.click();
-    else openViewer();
+  const handleChangeClick = (e) => {
+    e.stopPropagation();
+    fileRef.current?.click();
   };
 
   return (
     <div
-      className={`${s.avatarWrap} ${isOwn ? s.avatarOwn : ""} ${!isOwn ? s.avatarClickable : ""}`}
+      className={s.avatarWrap}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={handleClick}
-      role={!isOwn ? "button" : undefined}
-      tabIndex={!isOwn ? 0 : undefined}
-      onKeyDown={
-        !isOwn
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                openViewer();
-              }
-            }
-          : undefined
-      }
-      aria-label={!isOwn ? `View ${user.firstName}'s profile photo` : undefined}
     >
-      {user?.avatar ? (
-        <img src={user.avatar} alt={user.firstName} className={s.avatarImg} />
-      ) : (
-        <div className={s.avatarFallback}>{initials(user)}</div>
-      )}
+      {/* Clickable image → opens full-screen viewer */}
+      <div
+        className={`${s.avatarImgWrap} ${user?.avatar ? s.avatarClickable : ""}`}
+        onClick={user?.avatar ? openViewer : undefined}
+        role={user?.avatar ? "button" : undefined}
+        tabIndex={user?.avatar ? 0 : undefined}
+        onKeyDown={
+          user?.avatar
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openViewer();
+                }
+              }
+            : undefined
+        }
+        aria-label={user?.avatar ? "View profile photo full size" : undefined}
+      >
+        {user?.avatar ? (
+          <img src={user.avatar} alt={user.firstName} className={s.avatarImg} />
+        ) : (
+          <div className={s.avatarFallback}>{initials(user)}</div>
+        )}
 
-      {/* Own-profile upload overlay */}
-      {isOwn && (hover || uploading) && (
-        <div className={s.avatarOverlay}>
-          {uploading ? (
-            <Loader2 size={20} className={s.spin} />
-          ) : (
-            <>
-              <Camera size={18} />
-              <span>Change</span>
-            </>
-          )}
-        </div>
-      )}
+        {hover && user?.avatar && (
+          <div className={s.avatarOverlay}>
+            <Maximize2 size={18} />
+            <span>View</span>
+          </div>
+        )}
+      </div>
 
-      {/* Other-profile view overlay — only when avatar exists */}
-      {!isOwn && hover && user?.avatar && (
-        <div className={s.avatarOverlay}>
-          <Maximize2 size={18} />
-          <span>View</span>
-        </div>
-      )}
-
-      {/* Online dot */}
-      {!isOwn && <span className={s.onlineDot} />}
-
+      {/* Hidden file input */}
       <input
         ref={fileRef}
         type="file"
@@ -247,6 +231,22 @@ function AvatarBlock({ user, isOwn, onAvatarChange }) {
         style={{ display: "none" }}
         onChange={handleFile}
       />
+
+      {/* Camera badge — opens file picker */}
+      <button
+        type="button"
+        className={s.avatarChangeBtn}
+        onClick={handleChangeClick}
+        disabled={uploading}
+        aria-label="Change profile photo"
+        title="Change profile photo"
+      >
+        {uploading ? (
+          <Loader2 size={14} className={s.spin} />
+        ) : (
+          <Camera size={14} />
+        )}
+      </button>
     </div>
   );
 }
@@ -617,11 +617,8 @@ export default function UserProfile() {
             <div className={s.heroCard}>
               <div className={s.heroBg} />
 
-              <AvatarBlock
-                user={user}
-                isOwn={isOwn}
-                onAvatarChange={handleAvatarChange}
-              />
+              <AvatarBlock user={user} onAvatarChange={handleAvatarChange} />
+
               <div className={s.heroInfo}>
                 <div className={s.heroNameRow}>
                   <h1 className={s.heroName}>
