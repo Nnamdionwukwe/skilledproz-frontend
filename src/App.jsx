@@ -143,6 +143,7 @@ import AdminFunnelBuilder from "./pages/admin/AdminFunnelBuilder.jsx";
 import AdminTopWorkers from "./pages/admin/AdminTopWorkers.jsx";
 import AdminPaymentFunnel from "./pages/admin/AdminPaymentFunnel.jsx";
 import AdminCategoryDemand from "./pages/admin/AdminCategoryDemand.jsx";
+import VideoCallPage from "./components/booking/VideoCallPage.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1115,6 +1116,15 @@ export default function App() {
             </RequireAuth>
           }
         />
+        <Route
+          path="/call/:bookingId"
+          element={
+            <RequireAuth>
+              <VideoCallPage />
+            </RequireAuth>
+          }
+        />
+
         <Route
           path="/bookings/:bookingId/pay"
           element={

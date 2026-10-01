@@ -1,0 +1,231 @@
+/* src/pages/booking/VideoCallPage.module.css */
+
+.page {
+  position: fixed;
+  inset: 0;
+  background: #0a0a0a;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  z-index: 9998;
+  animation: fadeIn 0.2s ease;
+}
+
+.pageFullscreen {
+  /* Overrides for a truly full-screen experience — hides browser chrome
+     when combined with the Fullscreen API. We just make the container fill. */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.topLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.liveTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.topTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.topRight {
+  display: flex;
+  gap: 8px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* ── Stage (iframe container) ─────────────────────────────────────────── */
+.stage {
+  flex: 1;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* ── Control bar (bottom) ─────────────────────────────────────────────── */
+.controlBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 20px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.controlPlaceholder {
+  flex: 1;
+  max-width: 180px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.endBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.endBtn:hover {
+  background: #dc2626;
+  transform: scale(1.02);
+}
+
+.endBtn:active {
+  transform: scale(0.98);
+}
+
+/* ── Center / loading / error states ──────────────────────────────────── */
+.centerBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--orange, #f97316);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.centerText {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.centerSub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.primaryBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--orange, #f97316);
+  color: #000;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .topBar {
+    padding: 10px 14px;
+  }
+  .topTitle {
+    font-size: 13px;
+  }
+  .controlBar {
+    gap: 8px;
+    padding: 12px 14px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .controlPlaceholder {
+    min-height: 36px;
+    max-width: 100px;
+  }
+  .endBtn {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+}
