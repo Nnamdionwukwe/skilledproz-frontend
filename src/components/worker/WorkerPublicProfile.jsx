@@ -6,7 +6,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
-import { ShieldCheck, CheckCircle2 } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import {
   FiStar,
   FiCheckCircle,
@@ -162,6 +162,7 @@ export default function WorkerPublicProfile() {
   const { user: viewerUser } = useAuthStore();
 
   const [lightbox, setLightbox] = useState(null);
+  const [avatarLightbox, setAvatarLightbox] = useState(null);
 
   const Layout = viewerUser?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
@@ -242,15 +243,21 @@ export default function WorkerPublicProfile() {
 
   // ── Escape key closes the lightbox ────────────────────────────────────────
   useEffect(() => {
-    if (!lightbox) return;
+    if (!lightbox && !avatarLightbox) return;
     const onKey = (e) => {
       if (e.key === "Escape") {
-        setLightbox(null);
-        // ── ANALYTICS: lightbox closed via Escape ───────────────────────
-        tracker.track("workerProfile.lightbox.closed", {
-          via: "escape",
-          type: lightbox.type,
-        });
+        if (avatarLightbox) {
+          setAvatarLightbox(null);
+          tracker.track("workerProfile.avatarLightbox.closed", {
+            via: "escape",
+          });
+        } else {
+          setLightbox(null);
+          tracker.track("workerProfile.lightbox.closed", {
+            via: "escape",
+            type: lightbox.type,
+          });
+        }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -260,7 +267,7 @@ export default function WorkerPublicProfile() {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [lightbox]);
+  }, [lightbox, avatarLightbox]);
 
   if (loading)
     return (
@@ -284,6 +291,7 @@ export default function WorkerPublicProfile() {
   const { user, categories, portfolio, certifications, availability } = worker;
 
   const hasVideo = !!worker.videoIntroUrl;
+  const isVerified = worker.verificationStatus === "VERIFIED";
 
   const availDay = (day) =>
     availability.find((a) => a.dayOfWeek === day && a.isAvailable);
@@ -321,27 +329,60 @@ export default function WorkerPublicProfile() {
         <div className={styles.hero}>
           <div className={styles.heroInner}>
             <div className={styles.avatarWrap}>
-              <div className={styles.avatar}>
+              <button
+                type="button"
+                className={`${styles.avatar} ${
+                  user.avatar ? styles.avatarClickable : ""
+                }`}
+                onClick={() => {
+                  if (user.avatar) {
+                    setAvatarLightbox(user.avatar);
+                    tracker.action("workerProfile.avatar.opened", {
+                      workerId: userId,
+                    });
+                  }
+                }}
+                disabled={!user.avatar}
+                aria-label={
+                  user.avatar
+                    ? `View ${user.firstName || "profile"}'s photo full screen`
+                    : undefined
+                }
+                title={user.avatar ? "View full photo" : undefined}
+              >
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.firstName} />
+                  <>
+                    <img src={user.avatar} alt={user.firstName} />
+                    <span className={styles.avatarExpandBadge}>
+                      <FiMaximize2 size={11} />
+                    </span>
+                  </>
                 ) : (
                   <span>
                     {user.firstName?.[0]}
                     {user.lastName?.[0]}
                   </span>
                 )}
-                {worker.verificationStatus === "VERIFIED" && (
-                  <ShieldCheck size={30} className={styles.verifiedDot} />
-                )}
-              </div>
-              {worker.isAvailable && <div className={styles.onlineDot} />}
+              </button>
             </div>
 
             <div className={styles.heroInfo}>
               <div className={styles.heroTop}>
-                <div>
+                <div className={styles.heroNameBlock}>
                   <h1 className={styles.name}>
                     {user.firstName} {user.lastName}
+                    {isVerified && (
+                      <span
+                        className={styles.verifiedBadge}
+                        title="Verified worker"
+                        aria-label="Verified worker"
+                      >
+                        <ShieldCheck size={14} />
+                        {/* <span className={styles.verifiedBadgeLabel}>
+                          Verified Worker
+                        </span> */}
+                      </span>
+                    )}
                   </h1>
                   <p className={styles.workerTitle}>{worker.title}</p>
                 </div>
@@ -741,7 +782,7 @@ export default function WorkerPublicProfile() {
             </section>
           )}
 
-          {/* Video Intro — NEW TAB */}
+          {/* Video Intro */}
           {tab === "video" && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
@@ -912,6 +953,44 @@ export default function WorkerPublicProfile() {
           )}
         </div>
       </div>
+
+      {/* ── FULLSCREEN AVATAR VIEWER ── */}
+      {avatarLightbox && (
+        <div
+          className={styles.avatarLightboxOverlay}
+          onClick={() => {
+            setAvatarLightbox(null);
+            tracker.track("workerProfile.avatarLightbox.closed", {
+              via: "overlay",
+            });
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Profile photo"
+        >
+          <button
+            type="button"
+            className={styles.avatarLightboxCloseBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              setAvatarLightbox(null);
+              tracker.track("workerProfile.avatarLightbox.closed", {
+                via: "closeBtn",
+              });
+            }}
+            aria-label="Close photo"
+            data-track-id="workerProfile.avatarLightbox.close"
+          >
+            <FiX size={22} />
+          </button>
+          <img
+            src={avatarLightbox}
+            alt={`${user.firstName || ""} ${user.lastName || ""}`.trim()}
+            className={styles.avatarLightboxImg}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* ── FULLSCREEN LIGHTBOX ── */}
       {lightbox && (

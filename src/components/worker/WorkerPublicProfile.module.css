@@ -1404,3 +1404,231 @@
     transform: none;
   }
 }
+/* ═══════════════════════════════════════════════════════════════
+   HERO NAME + VERIFIED BADGE
+   ═══════════════════════════════════════════════════════════════ */
+
+.heroNameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  /* keep the existing font/size from earlier in the file */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  word-break: break-word;
+}
+
+/* Verified pill sitting right next to the name */
+.verifiedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: var(--green-dim, rgba(34, 197, 94, 0.12));
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: var(--green, #22c55e);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.verifiedBadge svg {
+  flex-shrink: 0;
+}
+
+.verifiedBadgeLabel {
+  /* hides the text on very small screens to keep the name readable */
+  display: inline;
+}
+
+@media (max-width: 480px) {
+  .verifiedBadgeLabel {
+    display: none;
+  }
+  .verifiedBadge {
+    padding: 3px 6px;
+  }
+}
+
+/* Hide the old overlapping shield — kept for backwards compatibility
+   in case the class is referenced elsewhere. */
+.verifiedDot {
+  display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CLICKABLE AVATAR + EXPAND BADGE
+   ═══════════════════════════════════════════════════════════════ */
+
+.avatar {
+  padding: 0;
+  font-family: inherit;
+  cursor: default;
+  position: relative;
+}
+
+.avatarClickable {
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.avatarClickable:hover {
+  transform: scale(1.03);
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+}
+
+.avatarClickable:active {
+  transform: scale(0.98);
+}
+
+.avatarClickable:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+
+.avatarExpandBadge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-panel);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FULLSCREEN AVATAR VIEWER
+   ═══════════════════════════════════════════════════════════════ */
+
+.avatarLightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3001;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  animation: avatarLightboxFadeIn 0.2s ease;
+  cursor: zoom-out;
+}
+
+.avatarLightboxImg {
+  max-width: min(80vw, 80vh);
+  max-height: min(80vh, 80vw);
+  width: auto;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: 50%;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  background: var(--bg-panel);
+  animation: avatarLightboxZoomIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block;
+  cursor: default;
+}
+
+.avatarLightboxCloseBtn {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+  z-index: 1;
+}
+
+.avatarLightboxCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.06);
+}
+
+.avatarLightboxCloseBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@keyframes avatarLightboxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes avatarLightboxZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .avatarLightboxOverlay {
+    padding: 0.75rem;
+  }
+  .avatarLightboxImg {
+    max-width: 88vw;
+    max-height: 88vw;
+    border-radius: 50%;
+  }
+  .avatarLightboxCloseBtn {
+    width: 40px;
+    height: 40px;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+  .avatarExpandBadge {
+    width: 18px;
+    height: 18px;
+    right: -3px;
+    bottom: -3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarLightboxOverlay,
+  .avatarLightboxImg {
+    animation: none;
+  }
+  .avatarClickable:hover,
+  .avatarLightboxCloseBtn:hover {
+    transform: none;
+  }
+}
