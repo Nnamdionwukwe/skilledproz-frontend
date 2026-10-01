@@ -33,6 +33,7 @@ import {
   RefreshCw,
   Settings,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -633,6 +634,15 @@ export default function UserProfile() {
                         {wp.completedJobs ?? wp.totalJobs ?? 0}
                       </span>
                       <span className={s.statLabel}>jobs done</span>
+                    </div>
+                  </div>
+
+                  {/* ── Response Rate ── */}
+                  <div className={s.statItem}>
+                    <Zap size={15} className={s.statIcon} />
+                    <div>
+                      <span className={s.statVal}>{wp.responseRate ?? 0}%</span>
+                      <span className={s.statLabel}>response rate</span>
                     </div>
                   </div>
 

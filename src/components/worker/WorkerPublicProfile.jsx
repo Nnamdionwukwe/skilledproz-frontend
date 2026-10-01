@@ -32,6 +32,8 @@ import {
   FiVideo,
   FiX,
   FiMaximize2,
+  FiClock,
+  FiGlobe,
 } from "react-icons/fi";
 import VideoIntroSection from "./VideoIntroSection";
 import ReportButton from "../../pages/reports/ReportButton";
@@ -50,6 +52,107 @@ const isImageUrl = (url) => {
   if (!url) return false;
   const clean = url.split("?")[0].toLowerCase();
   return /\.(jpg|jpeg|png|webp|gif)$/.test(clean);
+};
+
+/* ── Relative time formatter ─────────────────────────────────────────────── */
+function timeAgo(date) {
+  if (!date) return "—";
+  const diff = Date.now() - new Date(date).getTime();
+  const d = Math.floor(diff / 86400000);
+  if (d < 1) return "Today";
+  if (d < 30) return `${d}d ago`;
+  const m = Math.floor(d / 30);
+  if (m < 12) return `${m}mo ago`;
+  return `${Math.floor(m / 12)}y ago`;
+}
+
+/* ── Language code → display name ────────────────────────────────────────── */
+const LANGUAGE_NAMES = {
+  af: "Afrikaans",
+  sq: "Albanian",
+  am: "Amharic",
+  ar: "Arabic",
+  hy: "Armenian",
+  az: "Azerbaijani",
+  eu: "Basque",
+  be: "Belarusian",
+  bn: "Bengali",
+  bs: "Bosnian",
+  bg: "Bulgarian",
+  ca: "Catalan",
+  zh: "Chinese",
+  "zh-TW": "Chinese (Trad.)",
+  hr: "Croatian",
+  cs: "Czech",
+  da: "Danish",
+  nl: "Dutch",
+  en: "English",
+  et: "Estonian",
+  tl: "Filipino",
+  fi: "Finnish",
+  fr: "French",
+  gl: "Galician",
+  ka: "Georgian",
+  de: "German",
+  el: "Greek",
+  gu: "Gujarati",
+  ht: "Haitian Creole",
+  ha: "Hausa",
+  iw: "Hebrew",
+  hi: "Hindi",
+  hu: "Hungarian",
+  is: "Icelandic",
+  ig: "Igbo",
+  id: "Indonesian",
+  ga: "Irish",
+  it: "Italian",
+  ja: "Japanese",
+  kn: "Kannada",
+  kk: "Kazakh",
+  km: "Khmer",
+  ko: "Korean",
+  ky: "Kyrgyz",
+  lo: "Lao",
+  lv: "Latvian",
+  lt: "Lithuanian",
+  mk: "Macedonian",
+  ms: "Malay",
+  ml: "Malayalam",
+  mt: "Maltese",
+  mi: "Maori",
+  mr: "Marathi",
+  mn: "Mongolian",
+  my: "Myanmar",
+  ne: "Nepali",
+  no: "Norwegian",
+  fa: "Persian",
+  pl: "Polish",
+  pt: "Portuguese",
+  pa: "Punjabi",
+  ro: "Romanian",
+  ru: "Russian",
+  sm: "Samoan",
+  sr: "Serbian",
+  si: "Sinhala",
+  sk: "Slovak",
+  sl: "Slovenian",
+  so: "Somali",
+  es: "Spanish",
+  sw: "Swahili",
+  sv: "Swedish",
+  tg: "Tajik",
+  ta: "Tamil",
+  te: "Telugu",
+  th: "Thai",
+  tr: "Turkish",
+  uk: "Ukrainian",
+  ur: "Urdu",
+  uz: "Uzbek",
+  vi: "Vietnamese",
+  cy: "Welsh",
+  xh: "Xhosa",
+  yo: "Yoruba",
+  zu: "Zulu",
 };
 
 export default function WorkerPublicProfile() {
@@ -296,6 +399,16 @@ export default function WorkerPublicProfile() {
                   value={`${worker.responseRate}%`}
                   label="response"
                 />
+                {user.lastSeen && (
+                  <>
+                    <div className={styles.statDivider} />
+                    <Stat
+                      icon={<FiClock size={12} />}
+                      value={timeAgo(user.lastSeen)}
+                      label="last seen"
+                    />
+                  </>
+                )}
               </div>
 
               {/* Contact info */}
@@ -331,6 +444,14 @@ export default function WorkerPublicProfile() {
                 {user.gender && (
                   <span className={styles.contactItem}>
                     <FiUser size={12} /> <span>{user.gender}</span>
+                  </span>
+                )}
+                {user.language && (
+                  <span className={styles.contactItem}>
+                    <FiGlobe size={12} />{" "}
+                    <span>
+                      {LANGUAGE_NAMES[user.language] || user.language}
+                    </span>
                   </span>
                 )}
               </div>
