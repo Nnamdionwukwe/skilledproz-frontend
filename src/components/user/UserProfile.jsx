@@ -50,26 +50,55 @@ function initials(u) {
 }
 
 function ProBadge({ isOwn }) {
-  const { features } = useSubscription();
-  if (!isOwn || !features?.proBadge) return null;
-  return (
-    <span
-      style={{
-        fontSize: "0.65rem",
-        background: "var(--orange)",
-        color: "var(--bg)",
-        padding: "0.15rem 0.5rem",
-        borderRadius: "100px",
-        fontWeight: 800,
-        letterSpacing: "0.04em",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "4px",
-      }}
-    >
-      <Sparkles size={10} /> PRO
-    </span>
-  );
+  const { isEnterprise, isProTier } = useSubscription();
+
+  // Only show a badge on your own profile
+  if (!isOwn) return null;
+
+  // Enterprise badge takes precedence over Pro
+  if (isEnterprise) {
+    return (
+      <span
+        style={{
+          fontSize: "0.65rem",
+          background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
+          color: "#fff",
+          padding: "0.15rem 0.5rem",
+          borderRadius: "100px",
+          fontWeight: 800,
+          letterSpacing: "0.04em",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+        }}
+      >
+        <Sparkles size={10} /> ENTERPRISE
+      </span>
+    );
+  }
+
+  if (isProTier) {
+    return (
+      <span
+        style={{
+          fontSize: "0.65rem",
+          background: "var(--orange)",
+          color: "var(--bg)",
+          padding: "0.15rem 0.5rem",
+          borderRadius: "100px",
+          fontWeight: 800,
+          letterSpacing: "0.04em",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+        }}
+      >
+        <Sparkles size={10} /> PRO
+      </span>
+    );
+  }
+
+  return null;
 }
 
 function timeAgo(date) {
