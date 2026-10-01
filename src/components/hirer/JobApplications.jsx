@@ -411,11 +411,18 @@ function ApplicationCard({
         </div>
       )}
 
-      {/* Interview video call — offered to the hirer while the application
-          is still pending. Lets them meet the worker face-to-face before
+      {/* Interview section — offered to the hirer while the application is
+          still pending. Lets them meet the worker face-to-face before
           committing to a hire. */}
       {!decided && (
-        <div className={styles.interviewRow}>
+        <div className={styles.interviewSection}>
+          <div className={styles.interviewHeader}>
+            <p className={styles.interviewTitle}>Interview this worker</p>
+            <p className={styles.interviewSub}>
+              Start a quick face-to-face video call before you decide. You can
+              also send the room link as a message.
+            </p>
+          </div>
           <InterviewCallButton
             jobPostId={jobId}
             workerId={worker?.id}

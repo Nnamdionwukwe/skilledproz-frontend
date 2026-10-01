@@ -839,3 +839,284 @@
   animation: spin 0.7s linear infinite;
   display: inline-block;
 }
+/* ── Interview section ────────────────────────────────────────────────── */
+
+.interviewSection {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.interviewHeader {
+  margin-bottom: 10px;
+}
+
+.interviewTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 2px;
+}
+
+.interviewSub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Responsive: tablet & small-desktop ──────────────────────────────── */
+@media (max-width: 1024px) {
+  .page {
+    padding: 1.5rem;
+  }
+
+  .jobSummary {
+    padding: 1.25rem 1.25rem;
+  }
+
+  .summaryRight {
+    gap: 1.5rem;
+  }
+}
+
+/* ── Responsive: mobile (≤ 768px) ────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page {
+    padding: 1rem 0.75rem 2rem;
+    max-width: 100%;
+  }
+
+  .backBtn {
+    padding: 0 0 1rem;
+    font-size: 0.825rem;
+  }
+
+  .jobSummary {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .summaryLeft {
+    gap: 0.75rem;
+  }
+
+  .summaryIcon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.3rem;
+  }
+
+  .summaryTitle {
+    font-size: 1rem;
+  }
+
+  .summaryMeta {
+    font-size: 0.75rem;
+  }
+
+  .summaryRight {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .appCount {
+    padding: 0.5rem 0;
+  }
+
+  .appCountNum {
+    font-size: 1.4rem;
+  }
+
+  .appCountLabel {
+    font-size: 0.65rem;
+  }
+
+  .appSectionTitle {
+    font-size: 0.82rem;
+  }
+
+  .appCard {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .appTop {
+    gap: 0.75rem;
+    margin-bottom: 0.875rem;
+    flex-wrap: wrap;
+  }
+
+  .workerAvatar {
+    width: 40px;
+    height: 40px;
+    font-size: 0.8rem;
+  }
+
+  .workerName {
+    font-size: 0.9rem;
+  }
+
+  .workerTitle,
+  .workerLocation {
+    font-size: 0.75rem;
+  }
+
+  .appStatusBadge {
+    font-size: 0.68rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .workerStats {
+    gap: 0.75rem 1rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .workerStat {
+    font-size: 0.75rem;
+  }
+
+  .statStars {
+    font-size: 0.7rem;
+  }
+
+  .appMessage {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .appMessageText {
+    font-size: 0.82rem;
+  }
+
+  .appMessageLabel {
+    font-size: 0.65rem;
+  }
+
+  .appDate {
+    font-size: 0.68rem;
+  }
+
+  .appActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+    padding-top: 0.75rem;
+  }
+
+  .viewProfileBtn {
+    font-size: 0.78rem;
+    align-self: flex-start;
+  }
+
+  .decisionBtns {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .rejectBtn,
+  .acceptBtn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .interviewSection {
+    margin-top: 10px;
+    padding-top: 12px;
+  }
+
+  .interviewTitle {
+    font-size: 0.75rem;
+  }
+
+  .interviewSub {
+    font-size: 0.72rem;
+  }
+
+  .acceptedNote {
+    font-size: 0.78rem;
+    padding: 0.55rem 0.75rem;
+  }
+}
+
+/* ── Responsive: small mobile (≤ 420px) ──────────────────────────────── */
+@media (max-width: 420px) {
+  .page {
+    padding: 0.75rem 0.5rem 1.5rem;
+  }
+
+  .jobSummary {
+    padding: 0.75rem;
+  }
+
+  .summaryIcon {
+    width: 38px;
+    height: 38px;
+    font-size: 1.15rem;
+  }
+
+  .summaryTitle {
+    font-size: 0.95rem;
+  }
+
+  .appCountNum {
+    font-size: 1.25rem;
+  }
+
+  .appCard {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .workerAvatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+
+  .workerName {
+    font-size: 0.85rem;
+  }
+
+  .appSectionTitle {
+    font-size: 0.75rem;
+  }
+
+  .workerStats {
+    gap: 0.5rem 0.75rem;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .statVal {
+    font-size: 0.75rem;
+  }
+
+  .rejectBtn,
+  .acceptBtn {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .interviewTitle {
+    font-size: 0.72rem;
+  }
+
+  .interviewSub {
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
+  .acceptedNote {
+    font-size: 0.75rem;
+  }
+}
