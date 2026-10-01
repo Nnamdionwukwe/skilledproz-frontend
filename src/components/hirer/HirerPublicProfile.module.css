@@ -577,3 +577,53 @@
     font-size: 22px;
   }
 }
+/* ── Icon alignment in inline rows ── */
+.companyName,
+.companySize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.jobLocation {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Empty state icons ── */
+.empty span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ── Message button — center the icon ── */
+.msgBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+/* ── Apply button — center icon + text ── */
+.applyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

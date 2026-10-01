@@ -1,6 +1,27 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ShieldCheck, Award, CheckCircle2 } from "lucide-react";
+import {
+  ShieldCheck,
+  Award,
+  CheckCircle2,
+  Building2,
+  Users,
+  Phone,
+  Mail,
+  IdCard,
+  Languages,
+  Globe,
+  MapPin,
+  Calendar,
+  MessageCircle,
+  Pencil,
+  ClipboardList,
+  Star,
+  Hand,
+  Lock,
+  Search,
+  ArrowLeft,
+} from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import styles from "./HirerPublicProfile.module.css";
@@ -234,11 +255,13 @@ export default function HirerPublicProfile() {
               )}
 
               {profile.companyName && (
-                <p className={styles.companyName}>🏢 {profile.companyName}</p>
+                <p className={styles.companyName}>
+                  <Building2 size={13} /> {profile.companyName}
+                </p>
               )}
               {profile.companySize && (
                 <p className={styles.companySize}>
-                  👥 {profile.companySize} employees
+                  <Users size={12} /> {profile.companySize} employees
                 </p>
               )}
 
@@ -255,7 +278,7 @@ export default function HirerPublicProfile() {
                     }
                     data-track-id="hirerProfile.contact.phone"
                   >
-                    📱 <span>{hirerUser.phone}</span>
+                    <Phone size={12} /> <span>{hirerUser.phone}</span>
                   </a>
                 )}
                 {hirerUser.email && (
@@ -269,17 +292,17 @@ export default function HirerPublicProfile() {
                     }
                     data-track-id="hirerProfile.contact.email"
                   >
-                    ✉️ <span>{hirerUser.email}</span>
+                    <Mail size={12} /> <span>{hirerUser.email}</span>
                   </a>
                 )}
                 {hirerUser.gender && (
                   <span className={styles.contactItem}>
-                    🪪 <span>{hirerUser.gender}</span>
+                    <IdCard size={12} /> <span>{hirerUser.gender}</span>
                   </span>
                 )}
                 {hirerUser.language && (
                   <span className={styles.contactItem}>
-                    🗣 <span>{hirerUser.language}</span>
+                    <Languages size={12} /> <span>{hirerUser.language}</span>
                   </span>
                 )}
                 {profile.website && (
@@ -296,7 +319,7 @@ export default function HirerPublicProfile() {
                     }
                     data-track-id="hirerProfile.contact.website"
                   >
-                    🌐{" "}
+                    <Globe size={12} />{" "}
                     <span>{profile.website.replace(/^https?:\/\//, "")}</span>
                   </a>
                 )}
@@ -305,14 +328,14 @@ export default function HirerPublicProfile() {
               <div className={styles.metaRow}>
                 {(hirerUser.city || hirerUser.country) && (
                   <span className={styles.metaItem}>
-                    📍{" "}
+                    <MapPin size={12} />{" "}
                     {[hirerUser.city, hirerUser.country]
                       .filter(Boolean)
                       .join(", ")}
                   </span>
                 )}
                 <span className={styles.metaItem}>
-                  🗓️ Member since{" "}
+                  <Calendar size={12} /> Member since{" "}
                   {new Date(hirerUser.createdAt).toLocaleDateString("en-GB", {
                     month: "short",
                     year: "numeric",
@@ -354,7 +377,7 @@ export default function HirerPublicProfile() {
                 }}
                 data-track-id="hirerProfile.message"
               >
-                💬
+                <MessageCircle size={16} />
               </button>
             </div>
           )}
@@ -366,7 +389,7 @@ export default function HirerPublicProfile() {
                 className={styles.editBtn}
                 data-track-id="hirerProfile.edit"
               >
-                ✏️ Edit Profile
+                <Pencil size={13} /> Edit Profile
               </Link>
             </div>
           )}
@@ -402,7 +425,9 @@ export default function HirerPublicProfile() {
             <div className={styles.jobsGrid}>
               {jobPosts.length === 0 ? (
                 <div className={styles.empty}>
-                  <span>📋</span>
+                  <span>
+                    <ClipboardList size={28} />
+                  </span>
                   <p>No open jobs at the moment.</p>
                 </div>
               ) : (
@@ -431,7 +456,7 @@ export default function HirerPublicProfile() {
                       </span>
                       {job.address && (
                         <span className={styles.jobLocation}>
-                          📍 {job.address.split(",")[0]}
+                          <MapPin size={11} /> {job.address.split(",")[0]}
                         </span>
                       )}
                     </div>
@@ -488,7 +513,9 @@ export default function HirerPublicProfile() {
                                   Applying...
                                 </>
                               ) : (
-                                "✋ Apply Now"
+                                <>
+                                  <Hand size={14} /> Apply Now
+                                </>
                               )}
                             </button>
                           </>
@@ -523,7 +550,9 @@ export default function HirerPublicProfile() {
             <div className={styles.reviewsList}>
               {reviews.length === 0 ? (
                 <div className={styles.empty}>
-                  <span>⭐</span>
+                  <span>
+                    <Star size={28} />
+                  </span>
                   <p>No reviews yet.</p>
                 </div>
               ) : (
@@ -584,7 +613,7 @@ function ProfileError({ msg }) {
     <div className={styles.page}>
       <div className={styles.notFound}>
         <span style={{ fontSize: "2.5rem" }}>
-          {msg?.includes("private") ? "🔒" : "🔍"}
+          {msg?.includes("private") ? <Lock size={40} /> : <Search size={40} />}
         </span>
         <h2>
           {msg?.includes("private") ? "Private Profile" : "Hirer not found"}
@@ -595,7 +624,7 @@ function ProfileError({ msg }) {
           className={styles.backLink}
           data-track-id="hirerProfile.notFound.backToSearch"
         >
-          ← Back to Search
+          <ArrowLeft size={13} /> Back to Search
         </Link>
       </div>
     </div>
