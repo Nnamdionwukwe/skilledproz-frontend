@@ -1,13 +1,13 @@
 /* ══════════════════════════════════════════════════
    UserProfile.module.css
    Dark industrial — sharp orange accents
-   Mobile-first, safe-area aware, all phone sizes
+   Mobile-first, safe-area aware, edge-to-edge on every screen
 ══════════════════════════════════════════════════ */
 
 /* ── Page shell ──────────────────────────────────── */
 .page {
   min-height: 100vh;
-  min-height: 100dvh; /* dynamic viewport — handles mobile URL bar */
+  min-height: 100dvh;
   background: var(--bg);
   padding: 32px 24px 64px;
   padding-top: max(32px, env(safe-area-inset-top));
@@ -18,7 +18,10 @@
   margin: 0 auto;
   box-sizing: border-box;
   animation: fadeUp 0.4s ease both;
-  overflow-x: hidden;
+  /* IMPORTANT: `overflow-x: hidden` was clipping child horizontal
+     scroll strips on mobile. `clip` prevents page-level horizontal
+     scroll but allows descendants to define their own overflow. */
+  overflow-x: clip;
 }
 
 @keyframes fadeUp {
@@ -106,6 +109,7 @@
   gap: 14px;
   position: sticky;
   top: 24px;
+  min-width: 0;
 }
 
 /* ── Hero card ────────────────────────────────────── */
@@ -120,6 +124,7 @@
   align-items: center;
   gap: 14px;
   overflow: hidden;
+  min-width: 0;
 }
 
 .heroBg {
@@ -208,6 +213,7 @@
   text-align: center;
   max-width: 100%;
   overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .heroNameRow {
@@ -215,6 +221,8 @@
   align-items: center;
   gap: 7px;
   max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .heroName {
@@ -224,7 +232,9 @@
   color: var(--text);
   letter-spacing: -0.5px;
   overflow-wrap: anywhere;
+  word-break: break-word;
   line-height: 1.2;
+  min-width: 0;
 }
 
 .verifiedIcon {
@@ -252,6 +262,7 @@
   color: var(--text-dim);
   font-style: italic;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .ratingRow {
@@ -318,6 +329,7 @@
   padding: 6px 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .statItem {
@@ -344,6 +356,8 @@
   font-weight: 700;
   color: var(--text);
   overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .statLabel {
@@ -361,6 +375,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .infoRow {
@@ -371,6 +386,7 @@
   color: var(--text-dim);
   min-width: 0;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .infoIcon {
@@ -387,6 +403,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .cardLabel {
@@ -460,6 +477,7 @@
   padding-bottom: 0;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  min-width: 0;
 }
 .tabBar::-webkit-scrollbar {
   display: none;
@@ -480,6 +498,7 @@
   white-space: nowrap;
   min-height: 44px;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .tabBtn:hover {
@@ -510,6 +529,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .bioText {
@@ -518,6 +538,7 @@
   line-height: 1.7;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Empty card */
@@ -566,6 +587,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 }
 
 .availDays {
@@ -587,6 +609,7 @@
   font-weight: 600;
   color: var(--text-muted);
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .dayActive {
@@ -648,6 +671,7 @@
   transition:
     transform 0.18s,
     border-color 0.18s;
+  min-width: 0;
 }
 
 .portfolioCard:hover {
@@ -682,6 +706,7 @@
   color: var(--text);
   margin-bottom: 4px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .portfolioDesc {
@@ -689,6 +714,7 @@
   color: var(--text-muted);
   line-height: 1.4;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Certifications */
@@ -737,12 +763,14 @@
   color: var(--text);
   margin-bottom: 3px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .certIssuer {
   font-size: 13px;
   color: var(--text-dim);
   margin-bottom: 3px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .certDate {
   font-size: 12px;
@@ -1084,6 +1112,7 @@
   color: var(--text);
   margin-bottom: 2px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .reviewerRole {
   font-size: 11px;
@@ -1095,6 +1124,7 @@
   color: var(--text-dim);
   margin-bottom: 2px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .reviewDate {
   font-size: 11px;
@@ -1120,6 +1150,7 @@
   padding-left: 12px;
   margin: 0;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ── Lightbox ── */
@@ -1190,12 +1221,14 @@
   color: var(--text);
   margin-bottom: 8px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .lightboxDesc {
   font-size: 14px;
   color: var(--text-dim);
   line-height: 1.7;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Cert lightbox */
@@ -1223,6 +1256,7 @@
   font-size: 14px;
   color: var(--text-dim);
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .lightboxCertDates {
   display: flex;
@@ -1273,19 +1307,20 @@
 
 /* ══════════════════════════════════════════════════
    RESPONSIVE — tablet and below (≤ 860px)
+   Edge-to-edge, single-column, horizontal-scroll strips
 ══════════════════════════════════════════════════ */
 @media (max-width: 860px) {
   .page {
-    padding: 16px 12px 80px;
-    padding-top: max(16px, env(safe-area-inset-top));
+    padding: 12px 8px 80px;
+    padding-top: max(12px, env(safe-area-inset-top));
     padding-bottom: max(80px, env(safe-area-inset-bottom));
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
   }
 
   .layout {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 
   .sidebar {
@@ -1294,7 +1329,7 @@
   }
 
   .heroCard {
-    padding: 20px 16px 16px;
+    padding: 20px 14px 16px;
     border-radius: 14px;
   }
 
@@ -1315,7 +1350,7 @@
     font-size: 18px;
   }
 
-  /* Stats — horizontal scroll strip */
+  /* Stats — horizontal scroll strip, edge-to-edge */
   .statsCard {
     flex-direction: row;
     overflow-x: auto;
@@ -1324,6 +1359,14 @@
     scrollbar-width: none;
     border-radius: 12px;
     -webkit-overflow-scrolling: touch;
+    /* Extend past page padding so the strip reaches the true
+       screen edges and no content clips on the right. */
+    margin-left: -8px;
+    margin-right: -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    scroll-padding-left: 8px;
+    scroll-padding-right: 8px;
   }
   .statsCard::-webkit-scrollbar {
     display: none;
@@ -1370,9 +1413,11 @@
     padding: 4px 10px;
     max-width: 100%;
   }
-  .infoRow > a {
+  .infoRow > a,
+  .infoRow > span {
     max-width: 100%;
     overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .infoIcon {
     display: none;
@@ -1387,9 +1432,16 @@
     gap: 0;
   }
 
+  /* Tab bar — edge-to-edge scroll, no clipping */
   .tabBar {
     margin-bottom: 14px;
     -webkit-overflow-scrolling: touch;
+    margin-left: -8px;
+    margin-right: -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    scroll-padding-left: 8px;
+    scroll-padding-right: 8px;
   }
 
   .tabBtn {
@@ -1439,7 +1491,7 @@
     grid-template-columns: 1fr;
   }
   .editPage {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 
   .reviewCard {
@@ -1462,11 +1514,11 @@
 ══════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .page {
-    padding: 12px 10px 80px;
-    padding-top: max(12px, env(safe-area-inset-top));
+    padding: 10px 6px 80px;
+    padding-top: max(10px, env(safe-area-inset-top));
     padding-bottom: max(80px, env(safe-area-inset-bottom));
-    padding-left: max(10px, env(safe-area-inset-left));
-    padding-right: max(10px, env(safe-area-inset-right));
+    padding-left: max(6px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
   }
 
   .heroCard {
@@ -1576,6 +1628,53 @@
     width: 100%;
     justify-content: center;
   }
+
+  /* ── Break long strings so nothing overflows the card ── */
+  .heroName,
+  .heroTitle,
+  .statVal,
+  .infoRow,
+  .bioText,
+  .certName,
+  .certIssuer,
+  .portfolioTitle,
+  .portfolioDesc,
+  .reviewerName,
+  .reviewBooking,
+  .reviewComment,
+  .lightboxTitle,
+  .lightboxDesc,
+  .lightboxCertMeta {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+  }
+
+  .infoRow > a,
+  .infoRow > span {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  /* Match strips to the 6px page padding */
+  .statsCard {
+    margin-left: -6px;
+    margin-right: -6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    scroll-padding-left: 6px;
+    scroll-padding-right: 6px;
+  }
+
+  .tabBar {
+    margin-left: -6px;
+    margin-right: -6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    scroll-padding-left: 6px;
+    scroll-padding-right: 6px;
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -1583,8 +1682,8 @@
 ══════════════════════════════════════════════════ */
 @media (max-width: 360px) {
   .page {
-    padding-left: max(8px, env(safe-area-inset-left));
-    padding-right: max(8px, env(safe-area-inset-right));
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(4px, env(safe-area-inset-right));
   }
 
   .heroName {
@@ -1619,6 +1718,25 @@
     font-size: 11px;
     padding: 3px 9px;
   }
+
+  /* Match the 4px page padding at this breakpoint */
+  .statsCard {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    scroll-padding-left: 4px;
+    scroll-padding-right: 4px;
+  }
+
+  .tabBar {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    scroll-padding-left: 4px;
+    scroll-padding-right: 4px;
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -1650,6 +1768,7 @@
     animation: none;
   }
 }
+
 /* ══════════════════════════════════════════════════
    SKELETON LOADER
 ══════════════════════════════════════════════════ */
@@ -1680,7 +1799,6 @@
   }
 }
 
-/* Base skeleton shapes */
 .skelAvatar {
   width: 88px;
   height: 88px;
@@ -1733,7 +1851,6 @@
   border-radius: 20px;
 }
 
-/* Width modifiers */
 .skelW25 {
   width: 25%;
 }
@@ -1768,7 +1885,6 @@
   width: 100%;
 }
 
-/* Stat text column */
 .skelStatText {
   display: flex;
   flex-direction: column;
@@ -1777,18 +1893,17 @@
   min-width: 0;
 }
 
-/* Reviews skeleton adjustments */
 .reviewCard .skelLine + .skelLine {
   margin-top: 8px;
 }
 
-/* Reduced motion — no shimmer for users who disabled animation */
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after {
     animation: none;
     background: none;
   }
 }
+
 /* ─────────────────────────────────────────────────────────────────────────
    FULL-SCREEN CERT DOCUMENT VIEWER
    Used by CertMediaViewer in UserProfile.jsx
