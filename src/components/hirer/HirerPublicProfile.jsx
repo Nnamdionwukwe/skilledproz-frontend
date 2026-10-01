@@ -13,6 +13,7 @@ import {
   Globe,
   MapPin,
   Calendar,
+  Clock,
   MessageCircle,
   Pencil,
   ClipboardList,
@@ -342,6 +343,11 @@ export default function HirerPublicProfile() {
                     year: "numeric",
                   })}
                 </span>
+                {hirerUser.lastSeen && (
+                  <span className={styles.metaItem}>
+                    <Clock size={12} /> Last seen {timeAgo(hirerUser.lastSeen)}
+                  </span>
+                )}
               </div>
 
               <div className={styles.statsRow}>
