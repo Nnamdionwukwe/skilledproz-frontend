@@ -144,6 +144,7 @@ import AdminTopWorkers from "./pages/admin/AdminTopWorkers.jsx";
 import AdminPaymentFunnel from "./pages/admin/AdminPaymentFunnel.jsx";
 import AdminCategoryDemand from "./pages/admin/AdminCategoryDemand.jsx";
 import VideoCallPage from "./components/booking/VideoCallPage.jsx";
+import IncomingCallBanner from "./components/video/IncomingCallBanner.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -213,6 +214,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <RouteTracker />
+
+      {/* Global incoming call banner — appears on every route */}
+      <IncomingCallBanner />
 
       <div id="google_translate_element" style={{ display: "none" }} />
       <Routes>
