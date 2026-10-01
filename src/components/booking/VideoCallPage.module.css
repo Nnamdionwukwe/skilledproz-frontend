@@ -1,5 +1,9 @@
-/* src/pages/booking/VideoCallPage.module.css */
+/* src/pages/booking/VideoCallPage.module.css
+   SkilledProz in-app video call page.
+   Brand chrome sits above/below the call stage — the user only ever sees
+   SkilledProz colors, logo, and language. */
 
+/* ── Page shell ────────────────────────────────────────────────────────── */
 .page {
   position: fixed;
   inset: 0;
@@ -12,8 +16,8 @@
 }
 
 .pageFullscreen {
-  /* Overrides for a truly full-screen experience — hides browser chrome
-     when combined with the Fullscreen API. We just make the container fill. */
+  /* Container already fills the viewport — this class is a hook for
+     future enhancements (e.g. true Fullscreen API). */
 }
 
 @keyframes fadeIn {
@@ -30,40 +34,90 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.4);
+  gap: 12px;
+  padding: 10px 20px;
+  background: linear-gradient(180deg, #111 0%, #0d0d0d 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .topLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  min-width: 0;
+}
+
+.logo {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.topMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.topUser {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .liveTag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 1px;
+  flex-shrink: 0;
 }
 
-.topTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: pulseDot 1.6s infinite;
+}
+
+@keyframes pulseDot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }
 
 .topRight {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .iconBtn {
@@ -88,7 +142,7 @@
   border-color: rgba(255, 255, 255, 0.24);
 }
 
-/* ── Stage (iframe container) ─────────────────────────────────────────── */
+/* ── Stage (iframe) ───────────────────────────────────────────────────── */
 .stage {
   flex: 1;
   position: relative;
@@ -104,41 +158,64 @@
   display: block;
 }
 
-/* ── Control bar (bottom) ─────────────────────────────────────────────── */
+/* ── Bottom control bar ───────────────────────────────────────────────── */
 .controlBar {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-  background: rgba(0, 0, 0, 0.6);
+  padding: 14px 20px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, #111 0%, #0d0d0d 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.controlSide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.controlSide:last-child {
+  justify-content: flex-end;
+}
+
+.controlLogo {
+  height: 22px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
-.controlPlaceholder {
-  flex: 1;
-  max-width: 180px;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.controlBrand {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.3px;
 }
 
 .controlHint {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
-  text-align: center;
+  text-align: right;
   margin: 0;
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* End Call button — SkilledProz orange, unmistakable */
 .endBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 12px 26px;
   border-radius: 999px;
   background: #ef4444;
   color: #fff;
@@ -148,28 +225,41 @@
   cursor: pointer;
   transition:
     background 0.15s,
-    transform 0.15s;
+    transform 0.15s,
+    box-shadow 0.15s;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  flex-shrink: 0;
 }
 
 .endBtn:hover {
   background: #dc2626;
-  transform: scale(1.02);
+  transform: scale(1.03);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
 }
 
 .endBtn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
-/* ── Center / loading / error states ──────────────────────────────────── */
+/* ── Loading / error / ended states ──────────────────────────────────── */
 .centerBox {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   height: 100%;
   padding: 24px;
   text-align: center;
+}
+
+.centerLogo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  opacity: 0.95;
 }
 
 .spinner {
@@ -196,7 +286,7 @@
 }
 
 .primaryBtn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   border-radius: 8px;
   background: var(--orange, #f97316);
   color: #000;
@@ -205,27 +295,53 @@
   border: none;
   cursor: pointer;
   margin-top: 8px;
+  transition: background 0.15s;
 }
 
-/* ── Mobile ────────────────────────────────────────────────────────────── */
+.primaryBtn:hover {
+  background: #ea580c;
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .topBar {
-    padding: 10px 14px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .logo {
+    height: 26px;
   }
   .topTitle {
     font-size: 13px;
   }
+  .topUser {
+    font-size: 10px;
+  }
+  .liveTag {
+    padding: 2px 8px;
+    font-size: 9px;
+  }
+  .iconBtn {
+    width: 30px;
+    height: 30px;
+  }
+
   .controlBar {
     gap: 8px;
-    padding: 12px 14px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 10px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
-  .controlPlaceholder {
-    min-height: 36px;
-    max-width: 100px;
+  .controlLogo {
+    height: 20px;
+  }
+  .controlBrand {
+    display: none; /* logo alone is enough on small screens */
+  }
+  .controlHint {
+    display: none;
   }
   .endBtn {
-    padding: 10px 20px;
+    padding: 11px 22px;
     font-size: 13px;
   }
 }
