@@ -1650,6 +1650,7 @@
     animation: none;
   }
 }
+
 /* ══════════════════════════════════════════════════
    SKELETON LOADER
 ══════════════════════════════════════════════════ */
@@ -1789,6 +1790,7 @@
     background: none;
   }
 }
+
 /* ─────────────────────────────────────────────────────────────────────────
    FULL-SCREEN CERT DOCUMENT VIEWER
    Used by CertMediaViewer in UserProfile.jsx
