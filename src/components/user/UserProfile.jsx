@@ -517,6 +517,7 @@ export default function UserProfile() {
     );
 
   const wp = user.workerProfile;
+  const hp = user.hirerProfile;
   const tabs = TABS[user.role] ?? ["About"];
 
   return (
@@ -546,8 +547,8 @@ export default function UserProfile() {
                   <h1 className={s.heroName}>
                     {user.firstName} {user.lastName}
                   </h1>
-                  {(wp?.verificationStatus === "VERIFIED" ||
-                    user.workerProfile?.verificationStatus === "VERIFIED") && (
+                  {(wp?.verificationStatus ?? hp?.verificationStatus) ===
+                    "VERIFIED" && (
                     <ShieldCheck
                       size={16}
                       className={s.verifiedIcon}
@@ -559,13 +560,17 @@ export default function UserProfile() {
                 {/* Pro badge */}
                 <ProBadge isOwn={isOwn} />
 
-                {/* Verified text badge under name */}
-                {wp?.verificationStatus === "VERIFIED" && (
+                {/* Verified text badge under name — Worker or Hirer */}
+                {(wp?.verificationStatus ?? hp?.verificationStatus) ===
+                  "VERIFIED" && (
                   <div
                     className={`${s.badge} ${s.badgeGreen}`}
                     style={{ fontSize: "0.65rem", padding: "2px 8px" }}
                   >
-                    <ShieldCheck size={10} /> Verified Worker
+                    <ShieldCheck size={10} />
+                    {user.role === "WORKER"
+                      ? " Verified Worker"
+                      : " Verified Hirer"}
                   </div>
                 )}
 
@@ -882,7 +887,7 @@ export default function UserProfile() {
                   </div>
                 )}
 
-                {/* Verification badges */}
+                {/* Verification badges — works for both workers and hirers */}
                 <div className={s.badgeRow}>
                   <div
                     className={`${s.badge} ${user.isEmailVerified ? s.badgeGreen : s.badgeGray}`}
@@ -890,11 +895,16 @@ export default function UserProfile() {
                     <CheckCircle2 size={13} />
                     Email {user.isEmailVerified ? "Verified" : "Unverified"}
                   </div>
-                  {wp?.verificationStatus === "VERIFIED" && (
+
+                  {/* ID Verified — worker or hirer */}
+                  {(wp?.verificationStatus ?? hp?.verificationStatus) ===
+                    "VERIFIED" && (
                     <div className={`${s.badge} ${s.badgeOrange}`}>
                       <ShieldCheck size={13} /> ID Verified
                     </div>
                   )}
+
+                  {/* Background Checked — worker only (hirers don't have this field) */}
                   {wp?.backgroundCheck === true && (
                     <div className={`${s.badge} ${s.badgeBlue}`}>
                       <Award size={13} /> Background Checked
