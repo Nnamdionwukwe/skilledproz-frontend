@@ -29,6 +29,16 @@ import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
 import tracker from "../../lib/analytics/tracker";
 
+/* ── Compact currency formatter for the spent stat ──────────────────────── */
+function formatSpent(amount) {
+  const n = Number(amount) || 0;
+  if (n === 0) return "0";
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 10_000) return `${Math.round(n / 1_000)}K`;
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
 function timeAgo(date) {
   if (!date) return "—";
   const diff = Date.now() - new Date(date).getTime();
@@ -338,6 +348,13 @@ export default function HirerPublicProfile() {
                 <div className={styles.stat}>
                   <span className={styles.statNum}>{stats.totalHires}</span>
                   <span className={styles.statLabel}>hires</span>
+                </div>
+                <div className={styles.statDivider} />
+                <div className={styles.stat}>
+                  <span className={styles.statNum}>
+                    {formatSpent(stats.totalSpent)}
+                  </span>
+                  <span className={styles.statLabel}>total spent</span>
                 </div>
                 <div className={styles.statDivider} />
                 <div className={styles.stat}>
