@@ -269,3 +269,63 @@
     flex-direction: column;
   }
 }
+/* ── Room actions (expand / new tab / end) ──────────────────────────── */
+.callRoomActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text, #fff);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* ── Expanded mode ───────────────────────────────────────────────────── */
+.callRoomExpanded {
+  position: fixed !important;
+  inset: 24px !important;
+  z-index: 9999;
+  margin: 0 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.callRoomExpanded .callIframeWrap {
+  height: calc(100vh - 160px) !important;
+}
+
+/* ── Mobile — iframe is cramped, prefer opening in new tab ──────────── */
+@media (max-width: 640px) {
+  .callRoomActions {
+    gap: 4px;
+  }
+  .iconBtn {
+    width: 24px;
+    height: 24px;
+  }
+  .callRoomExpanded {
+    inset: 0 !important;
+  }
+  .callRoomExpanded .callIframeWrap {
+    height: calc(100vh - 120px) !important;
+  }
+}

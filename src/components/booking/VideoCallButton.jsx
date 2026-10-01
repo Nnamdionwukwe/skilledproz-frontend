@@ -3,16 +3,33 @@ import api from "../../lib/api";
 import styles from "./VideoCallButton.module.css";
 import {
   FaVideo,
-  FaPhone,
   FaCheckCircle,
   FaTimesCircle,
   FaPhoneSlash,
   FaCircle,
   FaSpinner,
   FaExclamationTriangle,
+  FaExternalLinkAlt,
+  FaExpand,
+  FaCompress,
 } from "react-icons/fa";
 
-// Poll interval in ms — 5 seconds is enough for real-time feel without hammering
+// ─────────────────────────────────────────────────────────────────────────────
+// VideoCallButton
+//
+// Self-hosted video calling. The backend returns a `callUrl` pointing to our
+// own MiroTalk P2P server (call.skilledproz.com). This component:
+//
+//   1. Renders a "Video Call" button in the booking sidebar
+//   2. Polls for incoming calls every 5s
+//   3. On receiving one, shows Accept / Decline UI
+//   4. On accept, embeds the call inline (with option to expand to new tab)
+//   5. On end, notifies the backend and tears down the call
+//
+// The MiroTalk iframe handles all WebRTC internally. We only manage the
+// booking-side state machine (PENDING → ACTIVE → ENDED).
+// ─────────────────────────────────────────────────────────────────────────────
+
 const POLL_MS = 5000;
 
 export default function VideoCallButton({
@@ -23,59 +40,71 @@ export default function VideoCallButton({
   workerId,
 }) {
   const [call, setCall] = useState(null);
+  const [callUrl, setCallUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [inCall, setInCall] = useState(false);
   const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const inCallRef = useRef(false);
-  inCallRef.current = inCall;
 
   const isInvolved = userId === hirerId || userId === workerId;
   const canCall =
     isInvolved &&
     ["PENDING", "ACCEPTED", "IN_PROGRESS"].includes(bookingStatus);
 
+  // ── Initial fetch — get any existing call state for this booking ────────
   useEffect(() => {
     if (!canCall) return;
     api
       .get(`/video-calls/${bookingId}`)
       .then((r) => {
-        if (r.data.data.call) setCall(r.data.data.call);
+        if (r.data.data.call) {
+          setCall(r.data.data.call);
+          setCallUrl(r.data.data.callUrl);
+        }
       })
       .catch(() => {});
   }, [bookingId, canCall]);
 
+  // ── Polling — detect incoming / accepted / ended transitions ────────────
   useEffect(() => {
     if (!canCall) return;
 
     const id = setInterval(async () => {
+      // Don't poll when the user is actively in the call — the backend
+      // state is already what we expect, and polling during WebRTC wastes
+      // bandwidth. Also don't poll if the call has already ended.
       if (inCallRef.current) return;
+      if (call?.status === "ENDED" || call?.status === "DECLINED") return;
 
       try {
         const r = await api.get(`/video-calls/${bookingId}`);
-        const updated = r.data.data.call;
+        const { call: updated, callUrl: url } = r.data.data;
         if (!updated) return;
 
+        // Only trigger a re-render if the status actually changed.
         setCall((prev) => {
           if (!prev) return updated;
           if (prev.status === updated.status) return prev;
           return updated;
         });
 
+        if (url) setCallUrl(url);
+
+        // If the other party accepted, join the call immediately.
         if (updated.status === "ACTIVE") {
           inCallRef.current = true;
-          setInCall(true);
           clearInterval(id);
         }
       } catch {
-        // silent fail – keep polling
+        // silent fail — keep polling
       }
     }, POLL_MS);
 
     return () => clearInterval(id);
-  }, [canCall, bookingId]);
+  }, [canCall, bookingId, call?.status]);
 
-  if (!canCall) return null;
+  // ── Actions ─────────────────────────────────────────────────────────────
 
   async function handleInitiate() {
     setLoading(true);
@@ -83,6 +112,7 @@ export default function VideoCallButton({
     try {
       const res = await api.post(`/video-calls/${bookingId}/initiate`);
       setCall(res.data.data.call);
+      setCallUrl(res.data.data.callUrl);
     } catch (e) {
       setError(e.response?.data?.message || "Failed to start call");
     } finally {
@@ -92,11 +122,12 @@ export default function VideoCallButton({
 
   async function handleAccept() {
     setLoading(true);
+    setError("");
     try {
-      await api.patch(`/video-calls/${bookingId}/accept`);
-      setCall((prev) => ({ ...prev, status: "ACTIVE" }));
+      const res = await api.patch(`/video-calls/${bookingId}/accept`);
+      setCall(res.data.data.call);
+      if (res.data.data.callUrl) setCallUrl(res.data.data.callUrl);
       inCallRef.current = true;
-      setInCall(true);
     } catch {
       setError("Failed to accept call");
     } finally {
@@ -105,26 +136,34 @@ export default function VideoCallButton({
   }
 
   async function handleDecline() {
+    setLoading(true);
     try {
       await api.patch(`/video-calls/${bookingId}/decline`);
       setCall((prev) => ({ ...prev, status: "DECLINED" }));
     } catch {
       setError("Failed to decline call");
+    } finally {
+      setLoading(false);
     }
   }
 
   async function handleEnd() {
+    // Best-effort — even if the API call fails, remove the UI so the user
+    // isn't stuck looking at a dead iframe.
     try {
       await api.patch(`/video-calls/${bookingId}/end`);
-      setCall((prev) => ({ ...prev, status: "ENDED" }));
-      inCallRef.current = false;
-      setInCall(false);
     } catch {
-      setError("Failed to end call");
+      // silent
     }
+    setCall((prev) => ({ ...prev, status: "ENDED" }));
+    inCallRef.current = false;
+    setExpanded(false);
   }
 
-  // ── Incoming call (receiver) ──
+  // ── Guard ──────────────────────────────────────────────────────────────
+  if (!canCall) return null;
+
+  // ── Incoming call (receiver) ────────────────────────────────────────────
   if (call?.status === "PENDING" && call?.receiverId === userId) {
     return (
       <div className={styles.incomingWrap}>
@@ -148,46 +187,92 @@ export default function VideoCallButton({
               <FaSpinner className={styles.spinner} />
             ) : (
               <>
-                <FaCheckCircle style={{ marginRight: "4px" }} /> Accept
+                <FaCheckCircle style={{ marginRight: 4 }} /> Accept
               </>
             )}
           </button>
-          <button className={styles.declineBtn} onClick={handleDecline}>
-            <FaTimesCircle style={{ marginRight: "4px" }} /> Decline
+          <button
+            className={styles.declineBtn}
+            onClick={handleDecline}
+            disabled={loading}
+          >
+            <FaTimesCircle style={{ marginRight: 4 }} /> Decline
           </button>
         </div>
         {error && (
           <p className={styles.error}>
-            <FaExclamationTriangle style={{ marginRight: "6px" }} /> {error}
+            <FaExclamationTriangle style={{ marginRight: 6 }} /> {error}
           </p>
         )}
       </div>
     );
   }
 
-  // ── Waiting (initiator) ──
+  // ── Waiting (initiator) ─────────────────────────────────────────────────
   if (call?.status === "PENDING" && call?.initiatorId === userId) {
     return (
       <div className={styles.waitingWrap}>
         <FaSpinner className={styles.spinner} />
-        <span className={styles.waitingText}>
-          Calling... waiting for answer
-        </span>
+        <span className={styles.waitingText}>Calling… waiting for answer</span>
         <button className={styles.cancelCallBtn} onClick={handleEnd}>
-          <FaTimesCircle style={{ marginRight: "4px" }} /> Cancel
+          <FaTimesCircle style={{ marginRight: 4 }} /> Cancel
         </button>
       </div>
     );
   }
 
-  // ── Active call ──
-  if (inCall || call?.status === "ACTIVE") {
+  // ── Active call — embed the MiroTalk room ───────────────────────────────
+  if (call?.status === "ACTIVE" && callUrl) {
     return (
-      <VideoCallRoom roomId={call?.roomId} userId={userId} onEnd={handleEnd} />
+      <div
+        className={`${styles.callRoom} ${expanded ? styles.callRoomExpanded : ""}`}
+      >
+        <div className={styles.callRoomHeader}>
+          <span className={styles.callLive}>
+            <FaCircle size={8} color="#ef4444" /> LIVE
+          </span>
+          <span className={styles.callTitle}>Video Consultation</span>
+          <div className={styles.callRoomActions}>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => setExpanded((v) => !v)}
+              title={expanded ? "Collapse" : "Expand"}
+            >
+              {expanded ? <FaCompress size={12} /> : <FaExpand size={12} />}
+            </button>
+            <a
+              href={callUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.iconBtn}
+              title="Open in new tab"
+            >
+              <FaExternalLinkAlt size={12} />
+            </a>
+            <button className={styles.endCallBtn} onClick={handleEnd}>
+              <FaPhoneSlash style={{ marginRight: 4 }} /> End
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.callIframeWrap}>
+          <iframe
+            src={callUrl}
+            allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
+            className={styles.callIframe}
+            title="Video Call"
+          />
+        </div>
+
+        <p className={styles.callHint}>
+          Room ID: <code className={styles.roomCode}>{call.roomId}</code>
+        </p>
+      </div>
     );
   }
 
-  // ── Ended / Declined ──
+  // ── Ended / Declined ────────────────────────────────────────────────────
   if (call?.status === "ENDED" || call?.status === "DECLINED") {
     return (
       <div className={styles.endedWrap}>
@@ -210,7 +295,7 @@ export default function VideoCallButton({
             <FaSpinner className={styles.spinner} />
           ) : (
             <>
-              <FaVideo style={{ marginRight: "6px" }} /> Call Again
+              <FaVideo style={{ marginRight: 6 }} /> Call Again
             </>
           )}
         </button>
@@ -218,7 +303,7 @@ export default function VideoCallButton({
     );
   }
 
-  // ── Idle ──
+  // ── Idle — no call in progress ──────────────────────────────────────────
   return (
     <div className={styles.wrap}>
       <button
@@ -230,43 +315,16 @@ export default function VideoCallButton({
           <FaSpinner className={styles.spinner} />
         ) : (
           <>
-            <FaVideo style={{ marginRight: "6px" }} /> Video Call
+            <FaVideo style={{ marginRight: 6 }} /> Video Call
           </>
         )}
       </button>
       <p className={styles.hint}>Start a video call before or during the job</p>
       {error && (
         <p className={styles.error}>
-          <FaExclamationTriangle style={{ marginRight: "6px" }} /> {error}
+          <FaExclamationTriangle style={{ marginRight: 6 }} /> {error}
         </p>
       )}
-    </div>
-  );
-}
-
-function VideoCallRoom({ roomId, userId, onEnd }) {
-  return (
-    <div className={styles.callRoom}>
-      <div className={styles.callRoomHeader}>
-        <span className={styles.callLive}>
-          <FaCircle size={10} color="#ef4444" /> LIVE
-        </span>
-        <span className={styles.callTitle}>Video Consultation</span>
-        <button className={styles.endCallBtn} onClick={onEnd}>
-          <FaPhoneSlash style={{ marginRight: "4px" }} /> End
-        </button>
-      </div>
-      <div className={styles.callIframeWrap}>
-        <iframe
-          src={`https://meet.jit.si/${roomId}?userInfo.displayName="${encodeURIComponent(userId)}"`}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
-          className={styles.callIframe}
-          title="Video Call"
-        />
-      </div>
-      <p className={styles.callHint}>
-        Room ID: <code className={styles.roomCode}>{roomId}</code>
-      </p>
     </div>
   );
 }
