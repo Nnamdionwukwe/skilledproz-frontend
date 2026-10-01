@@ -498,7 +498,7 @@ function CertMediaViewer({ src, title, kind, onClose }) {
 export default function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user: me } = useAuthStore();
+  const { user: me, updateUser } = useAuthStore();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -555,10 +555,20 @@ export default function UserProfile() {
     return () => window.removeEventListener("sp:view-avatar", onViewAvatar);
   }, []);
 
-  const handleAvatarChange = (url) => setUser((u) => ({ ...u, avatar: url }));
+  const handleAvatarChange = (url) => {
+    // Update local state so this page reflects the change immediately
+    setUser((u) => ({ ...u, avatar: url }));
+    // Update the global auth store so the header, sidebar, and every
+    // other page pick up the new avatar instantly — no reload needed.
+    updateUser?.({ avatar: url });
+  };
 
   const handleProfileSaved = (updated) => {
     setUser((u) => ({ ...u, ...updated }));
+    // Also push the update into the global auth store so any component
+    // reading `useAuthStore` (header, sidebar, dropdowns) re-renders
+    // with the new data instantly.
+    updateUser?.(updated);
     setEditing(false);
   };
 
@@ -1417,25 +1427,6 @@ export default function UserProfile() {
             </div>
 
             <div className={s.certFsControls}>
-              {/* <a
-                href={avatarViewer.url}
-                target="_blank"
-                rel="noreferrer"
-                className={s.certFsBtn}
-                title="Open in new tab"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink size={14} />
-              </a> */}
-              {/* <a
-                href={avatarViewer.url}
-                download
-                className={s.certFsBtn}
-                title="Download"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Maximize2 size={14} />
-              </a> */}
               <button
                 type="button"
                 className={s.certFsCloseBtn}
