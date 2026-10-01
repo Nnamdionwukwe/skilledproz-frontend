@@ -627,3 +627,106 @@
   justify-content: center;
   gap: 6px;
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   VERIFIED BADGES — inline with hero typography
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Name + shield icon row ────────────────────────────────────────────────── */
+.nameRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.verifiedIcon {
+  color: var(--orange);
+  flex-shrink: 0;
+  /* Slight upward nudge so the shield aligns visually with the cap-height
+     of the name (optically centered rather than geometrically). */
+  transform: translateY(-1px);
+}
+
+/* ── Badge pills — consistent height, aligned with companyName row ────────── */
+.badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.badgeVerified,
+.badgeChecked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Match the visual weight of companyName/companySize (12-13px) */
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  /* Same vertical rhythm as other pill-like elements */
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.badgeVerified {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--green, #16a34a);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.badgeChecked {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+/* The icons inside badges should sit tight with the text */
+.badgeVerified svg,
+.badgeChecked svg {
+  flex-shrink: 0;
+  /* Optical alignment: nudge up 0.5px so icons don't look sagged */
+  transform: translateY(-0.5px);
+}
+
+/* ── Hero info — enforce a consistent vertical rhythm ─────────────────────── */
+/* Every direct child of .heroInfo gets the same margin-bottom so pills,
+   company name, location, etc. all sit on the same grid. */
+.heroInfo > * {
+  margin-bottom: 4px;
+}
+.heroInfo > *:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Small screens — shrink the name/shield gap slightly ──────────────────── */
+@media (max-width: 480px) {
+  .nameRow {
+    gap: 5px;
+  }
+  .verifiedIcon {
+    width: 16px;
+    height: 16px;
+  }
+  .badgeVerified,
+  .badgeChecked {
+    font-size: 10px;
+    height: 18px;
+    padding: 0 7px;
+  }
+}
+
+/* ── Reduced motion — no transforms if user prefers ───────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .verifiedIcon,
+  .badgeVerified svg,
+  .badgeChecked svg {
+    transform: none;
+  }
+}
