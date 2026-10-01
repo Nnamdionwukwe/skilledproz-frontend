@@ -60,3 +60,49 @@
     font-size: 12px;
   }
 }
+/* Add this to src/components/video/InterviewCallButton.module.css */
+
+/* Middle button — "Message link" — carries more weight than "Copy" but
+   less than "Start". Uses the brand orange but as an outline, not a fill. */
+.messageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.messageBtn:hover {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.55);
+  transform: translateY(-1px);
+}
+
+.messageBtn:active {
+  transform: translateY(0);
+}
+
+/* Mobile — make all three buttons fill evenly */
+@media (max-width: 640px) {
+  .startBtn,
+  .messageBtn,
+  .copyBtn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .wrap {
+    gap: 6px;
+  }
+}

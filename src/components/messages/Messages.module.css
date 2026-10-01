@@ -1088,3 +1088,39 @@
     height: 38px;
   }
 }
+/* ── Clickable URLs inside message bubbles ──────────────────────────── */
+
+/* Inside "my" (orange) bubbles, links need to contrast against the fill. */
+.bubbleMine .messageLink {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.bubbleMine .messageLink:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Inside "their" (neutral) bubbles, use the brand accent color. */
+.bubbleTheirs .messageLink {
+  color: var(--orange, #f97316);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.bubbleTheirs .messageLink:hover {
+  color: #ea580c;
+  text-decoration-thickness: 2px;
+}
+
+/* Belt-and-suspenders: a generic rule in case a bubble has a different
+   parent class. Keeps links visually distinct no matter where they appear. */
+.messageLink {
+  word-break: break-all;
+}

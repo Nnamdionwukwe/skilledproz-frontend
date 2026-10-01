@@ -2,28 +2,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Interview video call — lightweight, no booking required.
 //
-// Flow:
-//   1. Hirer clicks "Start Interview Call" on an application card.
-//   2. We build a deterministic room ID from (jobPostId, workerId) so both
-//      parties always land in the same room if they click the same link.
-//   3. Opens call.skilledproz.com/<roomId> in a new tab.
-//   4. Hirer can copy the URL and message it to the worker via the existing
-//      message thread — or use MiroTalk's own share UI once inside.
+// Three actions:
+//   • Start Interview Call  → opens the room in a new tab
+//   • Message link          → opens the messages thread with the worker,
+//                             with the room URL pre-filled in the composer
+//   • Copy link             → copies the room URL to clipboard
 //
-// This is intentionally separate from the booking-based video call system:
-// no VideoCall row, no incoming-call banner, no ringing. It's a link, and
-// links are the most flexible way to invite someone to a call.
+// Room id is deterministic from (jobPostId, workerId) so both parties always
+// land in the same room. No backend state, no ringing, no booking required.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
-import { FaVideo, FaCheck, FaExternalLinkAlt } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { FaVideo, FaCheck, FaLink, FaCommentDots } from "react-icons/fa";
 import styles from "./InterviewCallButton.module.css";
 
 const CALL_BASE_URL = "https://call.skilledproz.com";
 
 function buildRoomId(jobPostId, workerId) {
-  // Deterministic — same pair always maps to the same room. Sanitized to
-  // a URL-safe slug so MiroTalk accepts it as-is.
   const safeJob = String(jobPostId || "").replace(/[^a-zA-Z0-9-]/g, "");
   const safeWorker = String(workerId || "").replace(/[^a-zA-Z0-9-]/g, "");
   return `interview-${safeJob}-${safeWorker}`.slice(0, 60);
@@ -35,6 +31,7 @@ export default function InterviewCallButton({
   workerName = "",
   jobTitle = "",
 }) {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
   if (!jobPostId || !workerId) return null;
@@ -57,6 +54,29 @@ export default function InterviewCallButton({
     }
   }
 
+  // Opens the messages thread with this worker and pre-fills the composer
+  // with a friendly invite and the interview room URL.
+  function handleMessage() {
+    const draft = [
+      `Hi ${workerName || "there"},`,
+      "",
+      jobTitle
+        ? `I'd like to do a quick video interview for "${jobTitle}".`
+        : "I'd like to do a quick video interview.",
+      "",
+      `Join here when you're free: ${roomUrl}`,
+      "",
+      "— sent from SkilledProz",
+    ].join("\n");
+
+    const params = new URLSearchParams({
+      with: workerId,
+      draft,
+    });
+
+    navigate(`/messages?${params.toString()}`);
+  }
+
   return (
     <div className={styles.wrap}>
       <button
@@ -74,6 +94,15 @@ export default function InterviewCallButton({
 
       <button
         type="button"
+        className={styles.messageBtn}
+        onClick={handleMessage}
+        title="Send the room link in a message"
+      >
+        <FaCommentDots /> Message link
+      </button>
+
+      <button
+        type="button"
         className={styles.copyBtn}
         onClick={handleCopy}
         title="Copy invite link"
@@ -84,7 +113,7 @@ export default function InterviewCallButton({
           </>
         ) : (
           <>
-            <FaExternalLinkAlt /> Copy link
+            <FaLink /> Copy link
           </>
         )}
       </button>

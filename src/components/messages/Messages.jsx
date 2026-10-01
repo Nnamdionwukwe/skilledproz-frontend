@@ -86,6 +86,74 @@ function formatDateDivider(dateStr) {
   });
 }
 
+// ─── URL detection + linkification ─────────────────────────────────────────
+
+// Matches http(s)://... and www.... URLs, plus bare call.skilledproz.com
+// links. Stops at whitespace and common trailing punctuation so we don't
+// swallow sentence-ending periods or commas.
+const URL_REGEX =
+  /((?:https?:\/\/|www\.)[^\s<>()"']+[^\s<>()"'.,;:!?]|\b(?:call|api|app)\.skilledproz\.com\/[^\s<>()"',;!?]+)/gi;
+
+/**
+ * Splits `text` into an array of React nodes, converting any URL-shaped
+ * substrings into clickable <a> tags.
+ *
+ * Returns plain string when there are no URLs, so the caller can short-
+ * circuit styling if needed.
+ */
+function linkify(text) {
+  if (!text || typeof text !== "string") return text;
+
+  // Fast path — nothing URL-shaped
+  if (!/https?:\/\/|www\.|\.skilledproz\.com/i.test(text)) {
+    return text;
+  }
+
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  // Reset regex state — global flags carry lastIndex between calls
+  URL_REGEX.lastIndex = 0;
+
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    const start = match.index;
+    const end = URL_REGEX.lastIndex;
+
+    // Push the plain text before the URL
+    if (start > lastIndex) {
+      parts.push(text.slice(lastIndex, start));
+    }
+
+    let url = match[0];
+    // Ensure a scheme so it opens correctly from an <a>
+    const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+
+    parts.push(
+      <a
+        key={`url-${key++}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.messageLink}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {url}
+      </a>,
+    );
+
+    lastIndex = end;
+  }
+
+  // Push any remaining plain text after the last URL
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length ? parts : text;
+}
+
 // ─── WhatsApp-style double tick ─────────────────────────────────────────────
 
 function DoubleTick({ read }) {
@@ -227,6 +295,7 @@ export default function Messages() {
   // ── Initial URL state ──
   const initialConvoId = searchParams.get("convo");
   const initialWithId = searchParams.get("with");
+  const initialDraft = searchParams.get("draft"); // ← ADDED
 
   const [conversations, setConversations] = useState([]);
   const [activeConvoId, setActiveConvoId] = useState(initialConvoId || null);
@@ -235,7 +304,8 @@ export default function Messages() {
 
   const [messages, setMessages] = useState([]);
   const [sendingMessage, setSendingMessage] = useState(null);
-  const [newMessage, setNewMessage] = useState("");
+  // Seed the composer from the URL draft, if present
+  const [newMessage, setNewMessage] = useState(initialDraft || ""); // ← CHANGED
   const [sending, setSending] = useState(false);
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -422,7 +492,11 @@ export default function Messages() {
     if (existing) {
       setActiveConvoId(existing.id);
       setWithUserId(null);
-      setSearchParams({ convo: existing.id }, { replace: true });
+      // Preserve the draft param when rewriting the URL so the composer
+      // keeps its pre-filled text. ← ADDED
+      const next = { convo: existing.id };
+      if (initialDraft) next.draft = initialDraft;
+      setSearchParams(next, { replace: true });
       return;
     }
 
@@ -453,6 +527,18 @@ export default function Messages() {
       cancelled = true;
     };
   }, [withUserId, conversations, setSearchParams]);
+
+  // ── Consume the initial draft: seed the composer, then strip from URL ──
+  // `newMessage` was already seeded from `initialDraft` in useState above.
+  // Here we just clean the URL so refresh doesn't re-inject the same draft
+  // after the user has edited or sent it. ← ADDED
+  useEffect(() => {
+    if (!initialDraft) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("draft");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Load messages for the active conversation
@@ -1079,7 +1165,7 @@ export default function Messages() {
                                     {(!msg.fileUrl ||
                                       (!isMedia && !isVideo)) && (
                                       <p className={styles.bubbleText}>
-                                        {msg.content}
+                                        {linkify(msg.content)}
                                       </p>
                                     )}
 
