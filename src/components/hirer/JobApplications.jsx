@@ -3,27 +3,52 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import HirerLayout from "../layout/HirerLayout";
 import api from "../../lib/api";
 import styles from "./HirerJobs.module.css";
+import {
+  FaArrowLeft,
+  FaMapMarkerAlt,
+  FaStar,
+  FaRegStar,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaClock,
+  FaBriefcase,
+  FaTrophy,
+  FaMoneyBillWave,
+  FaInbox,
+  FaExclamationTriangle,
+  FaClipboardList,
+  FaQuoteLeft,
+} from "react-icons/fa";
+import InterviewCallButton from "../video/InterviewCallButton";
 
-function Stars({ rating }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Small helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Stars({ rating = 0, total = 5 }) {
+  const rounded = Math.round(rating);
   return (
-    <span className={styles.stars}>
-      {[1, 2, 3, 4, 5].map((s) => (
-        <span
-          key={s}
-          className={s <= Math.round(rating) ? styles.starOn : styles.starOff}
-        >
-          ★
-        </span>
-      ))}
+    <span className={styles.stars} aria-label={`${rating} out of 5`}>
+      {Array.from({ length: total }).map((_, i) =>
+        i < rounded ? (
+          <FaStar key={i} className={styles.starOn} />
+        ) : (
+          <FaRegStar key={i} className={styles.starOff} />
+        ),
+      )}
     </span>
   );
 }
 
 const APP_STATUS = {
-  PENDING: { label: "Pending", cls: "appPending" },
-  ACCEPTED: { label: "Accepted", cls: "appAccepted" },
-  REJECTED: { label: "Rejected", cls: "appRejected" },
+  PENDING: { label: "Pending", cls: "appPending", Icon: FaClock },
+  ACCEPTED: { label: "Accepted", cls: "appAccepted", Icon: FaCheckCircle },
+  REJECTED: { label: "Rejected", cls: "appRejected", Icon: FaTimesCircle },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function JobApplications() {
   const { id } = useParams();
@@ -89,7 +114,7 @@ export default function JobApplications() {
           className={styles.backBtn}
           onClick={() => navigate("/dashboard/hirer/post-job")}
         >
-          ← Back to Jobs
+          <FaArrowLeft /> Back to Jobs
         </button>
 
         {/* Job summary */}
@@ -103,7 +128,7 @@ export default function JobApplications() {
             <div className={styles.jobSummary}>
               <div className={styles.summaryLeft}>
                 <span className={styles.summaryIcon}>
-                  {job.category?.icon || "📋"}
+                  {job.category?.icon || <FaClipboardList />}
                 </span>
                 <div>
                   <h2 className={styles.summaryTitle}>{job.title}</h2>
@@ -145,14 +170,20 @@ export default function JobApplications() {
         {/* Alerts */}
         {error && (
           <div className={styles.errorBox}>
-            <span>⚠️</span> {error}
-            <button onClick={() => setError("")}>×</button>
+            <FaExclamationTriangle />
+            <span>{error}</span>
+            <button onClick={() => setError("")} aria-label="Dismiss">
+              ×
+            </button>
           </div>
         )}
         {success && (
           <div className={styles.successBox}>
-            <span>✅</span> {success}
-            <button onClick={() => setSuccess("")}>×</button>
+            <FaCheckCircle />
+            <span>{success}</span>
+            <button onClick={() => setSuccess("")} aria-label="Dismiss">
+              ×
+            </button>
           </div>
         )}
 
@@ -169,7 +200,9 @@ export default function JobApplications() {
           </div>
         ) : applications.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>📭</span>
+            <span className={styles.emptyIcon}>
+              <FaInbox />
+            </span>
             <p className={styles.emptyTitle}>No applications yet</p>
             <p className={styles.emptySub}>
               Workers haven't applied to this job yet. Share it to get more
@@ -192,6 +225,8 @@ export default function JobApplications() {
                     <ApplicationCard
                       key={app.id}
                       app={app}
+                      jobId={id}
+                      jobTitle={job?.title}
                       updating={updating}
                       onAccept={() => handleDecision(app.id, "ACCEPTED")}
                       onReject={() => handleDecision(app.id, "REJECTED")}
@@ -216,6 +251,8 @@ export default function JobApplications() {
                     <ApplicationCard
                       key={app.id}
                       app={app}
+                      jobId={id}
+                      jobTitle={job?.title}
                       updating={updating}
                       decided
                       delay={i * 0.06}
@@ -231,8 +268,14 @@ export default function JobApplications() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Card
+// ─────────────────────────────────────────────────────────────────────────────
+
 function ApplicationCard({
   app,
+  jobId,
+  jobTitle,
   updating,
   onAccept,
   onReject,
@@ -242,6 +285,7 @@ function ApplicationCard({
   const { worker } = app;
   const wp = worker?.workerProfile;
   const statusInfo = APP_STATUS[app.status] || APP_STATUS.PENDING;
+  const StatusIcon = statusInfo.Icon;
 
   return (
     <div className={styles.appCard} style={{ animationDelay: `${delay}s` }}>
@@ -265,13 +309,14 @@ function ApplicationCard({
             <p className={styles.workerTitle}>{wp?.title || "Worker"}</p>
             {(worker?.city || worker?.country) && (
               <p className={styles.workerLocation}>
-                📍 {[worker.city, worker.country].filter(Boolean).join(", ")}
+                <FaMapMarkerAlt />{" "}
+                {[worker.city, worker.country].filter(Boolean).join(", ")}
               </p>
             )}
           </div>
         </div>
         <span className={`${styles.appStatusBadge} ${styles[statusInfo.cls]}`}>
-          {statusInfo.label}
+          <StatusIcon /> {statusInfo.label}
         </span>
       </div>
 
@@ -279,10 +324,7 @@ function ApplicationCard({
       <div className={styles.workerStats}>
         {wp?.avgRating > 0 && (
           <div className={styles.workerStat}>
-            <span className={styles.statStars}>
-              {"★".repeat(Math.round(wp.avgRating))}
-              {"☆".repeat(5 - Math.round(wp.avgRating))}
-            </span>
+            <Stars rating={wp.avgRating} />
             <span className={styles.statVal}>{wp.avgRating.toFixed(1)}</span>
             {wp.totalReviews > 0 && (
               <span className={styles.statMuted}>({wp.totalReviews})</span>
@@ -291,13 +333,13 @@ function ApplicationCard({
         )}
         {wp?.completedJobs > 0 && (
           <div className={styles.workerStat}>
-            <span className={styles.statLabel}>✅</span>
+            <FaBriefcase className={styles.statLabel} />
             <span className={styles.statVal}>{wp.completedJobs} jobs done</span>
           </div>
         )}
         {wp?.hourlyRate && (
           <div className={styles.workerStat}>
-            <span className={styles.statLabel}>💰</span>
+            <FaMoneyBillWave className={styles.statLabel} />
             <span className={styles.statVal}>
               {wp.currency} {wp.hourlyRate?.toLocaleString()}/hr
             </span>
@@ -305,7 +347,7 @@ function ApplicationCard({
         )}
         {wp?.yearsExperience > 0 && (
           <div className={styles.workerStat}>
-            <span className={styles.statLabel}>🏆</span>
+            <FaTrophy className={styles.statLabel} />
             <span className={styles.statVal}>{wp.yearsExperience} yrs exp</span>
           </div>
         )}
@@ -314,7 +356,9 @@ function ApplicationCard({
       {/* Application message */}
       {app.message && (
         <div className={styles.appMessage}>
-          <p className={styles.appMessageLabel}>Cover note</p>
+          <p className={styles.appMessageLabel}>
+            <FaQuoteLeft className={styles.quoteIcon} /> Cover note
+          </p>
           <p className={styles.appMessageText}>"{app.message}"</p>
         </div>
       )}
@@ -367,10 +411,24 @@ function ApplicationCard({
         </div>
       )}
 
+      {/* Interview video call — offered to the hirer while the application
+          is still pending. Lets them meet the worker face-to-face before
+          committing to a hire. */}
+      {!decided && (
+        <div className={styles.interviewRow}>
+          <InterviewCallButton
+            jobPostId={jobId}
+            workerId={worker?.id}
+            workerName={`${worker?.firstName || ""} ${worker?.lastName || ""}`.trim()}
+            jobTitle={jobTitle}
+          />
+        </div>
+      )}
+
       {/* Decided state */}
       {decided && app.status === "ACCEPTED" && (
         <div className={styles.acceptedNote}>
-          ✅ Accepted —{" "}
+          <FaCheckCircle /> Accepted —{" "}
           <Link
             to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
             className={styles.bookLink}

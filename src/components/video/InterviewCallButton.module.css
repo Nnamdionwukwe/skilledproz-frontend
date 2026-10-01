@@ -1,0 +1,62 @@
+/* src/components/video/InterviewCallButton.module.css */
+
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.startBtn,
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.startBtn {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+.startBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.35);
+}
+
+.startBtn:active {
+  transform: translateY(0);
+}
+
+.copyBtn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #fff);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.copyBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 640px) {
+  .startBtn,
+  .copyBtn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
