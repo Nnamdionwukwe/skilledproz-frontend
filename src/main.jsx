@@ -11,22 +11,34 @@ import { CurrencyProvider } from "./context/CurrencyContext";
 import { useAuthStore } from "./store/authStore";
 import { initAutoTrack } from "./lib/analytics/autoTrack";
 
+// Global shell components — mounted once at the top of the app so they
+// persist across every route transition and can use react-router hooks.
 import IncomingCallBanner from "./components/video/IncomingCallBanner";
 import RouteTracker from "./lib/analytics/RouteTracker.jsx";
 
+// Google OAuth client ID (same one used by the backend)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+// ── Analytics: attach global click / scroll / error listeners once ──────────
 initAutoTrack();
 
+// Waits for Zustand to rehydrate from localStorage before
+// mounting anything that makes authenticated API calls.
 function HydratedApp() {
   const isHydrated = useAuthStore((s) => s.isHydrated);
   if (!isHydrated) return null;
 
   return (
     <SubscriptionProvider>
+      {/* Router lives here so global components can use useNavigate / useLocation */}
       <BrowserRouter>
+        {/* 🔔 Global incoming-call banner — appears on every route */}
         <IncomingCallBanner />
+
+        {/* 📊 Route tracking for analytics */}
         <RouteTracker />
+
+        {/* The route table — App.jsx is a pure <Routes> component */}
         <App />
       </BrowserRouter>
     </SubscriptionProvider>
