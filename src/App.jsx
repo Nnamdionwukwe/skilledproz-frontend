@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 
 // Auth pages
@@ -134,7 +134,6 @@ import WorkerRefundsPage from "./pages/worker/refunds/components/WorkerRefundsPa
 import CreateBookingFromJob from "./components/hirer/CreateBookingFromJob.jsx";
 import PostDetail from "./pages/feed/PostDetail.jsx";
 import AdminRefunds from "./pages/admin/AdminRefunds.jsx";
-import RouteTracker from "./lib/analytics/RouteTracker.jsx";
 import AdminUserCoverage from "./pages/admin/AdminUserCoverage.jsx";
 import AdminSegments from "./pages/admin/AdminSegments.jsx";
 import AdminLiveFeed from "./pages/admin/AdminLiveFeed.jsx";
@@ -144,7 +143,6 @@ import AdminTopWorkers from "./pages/admin/AdminTopWorkers.jsx";
 import AdminPaymentFunnel from "./pages/admin/AdminPaymentFunnel.jsx";
 import AdminCategoryDemand from "./pages/admin/AdminCategoryDemand.jsx";
 import VideoCallPage from "./components/booking/VideoCallPage.jsx";
-import IncomingCallBanner from "./components/video/IncomingCallBanner.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -210,14 +208,11 @@ function RoleRedirect() {
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
+// NOTE: BrowserRouter, IncomingCallBanner, and RouteTracker now live in
+// main.jsx. This component is a pure route table — no shell, no globals.
 export default function App() {
   return (
-    <BrowserRouter>
-      <RouteTracker />
-
-      {/* Global incoming call banner — appears on every route */}
-      <IncomingCallBanner />
-
+    <>
       <div id="google_translate_element" style={{ display: "none" }} />
       <Routes>
         {/* ── Root ── */}
@@ -521,14 +516,6 @@ export default function App() {
             </RequireAdmin>
           }
         />
-        {/* <Route
-          path="/admin/Posts"
-          element={
-            <RequireAdmin>
-              <AdminPosts />
-            </RequireAdmin>
-          }
-        /> */}
         <Route
           path="/admin/reviews"
           element={
@@ -858,16 +845,6 @@ export default function App() {
             </RequireWorker>
           }
         />
-        {/* <Route
-          path="/dashboard/worker/featured"
-          element={
-            <RequireWorker>
-              <RequireAuth>
-                <FeaturedBoost />
-              </RequireAuth>
-            </RequireWorker>
-          }
-        /> */}
 
         {/* ════════════════════════════════════════
             HIRER ROUTES
@@ -982,16 +959,6 @@ export default function App() {
             </RequireHirer>
           }
         />
-        {/* <Route
-          path="/dashboard/hirer/featured"
-          element={
-            <RequireHirer>
-              <RequireAuth>
-                <FeaturedBoost />
-              </RequireAuth>
-            </RequireHirer>
-          }
-        /> */}
         <Route
           path="/dashboard/hirer/wallet"
           element={
@@ -1083,7 +1050,7 @@ export default function App() {
           }
         />
 
-        {/* ── Refrreals (both roles) ── */}
+        {/* ── Referrals (both roles) ── */}
         <Route
           path="/referrals"
           element={
@@ -1229,14 +1196,6 @@ export default function App() {
         {/* ── Subscriptions / Featured (shared success pages) ── */}
         <Route path="/subscription/verify" element={<SubscriptionSuccess />} />
         <Route path="/subscription/success" element={<SubscriptionSuccess />} />
-        {/* <Route
-          path="/featured/success"
-          element={
-            <RequireAuth>
-              <FeaturedSuccess />
-            </RequireAuth>
-          }
-        /> */}
 
         <Route
           path="/insurance/success"
@@ -1269,6 +1228,6 @@ export default function App() {
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
