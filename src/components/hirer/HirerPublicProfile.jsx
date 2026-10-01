@@ -350,12 +350,12 @@ export default function HirerPublicProfile() {
                   <span className={styles.statLabel}>hires</span>
                 </div>
                 <div className={styles.statDivider} />
-                <div className={styles.stat}>
+                {/* <div className={styles.stat}>
                   <span className={styles.statNum}>
                     {formatSpent(stats.totalSpent)}
                   </span>
                   <span className={styles.statLabel}>total spent</span>
-                </div>
+                </div> */}
                 <div className={styles.statDivider} />
                 <div className={styles.stat}>
                   <span className={styles.statNum}>{stats.openJobs}</span>
