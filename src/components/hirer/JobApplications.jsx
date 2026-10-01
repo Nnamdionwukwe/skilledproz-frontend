@@ -18,6 +18,8 @@ import {
   FaExclamationTriangle,
   FaClipboardList,
   FaQuoteLeft,
+  FaTimes,
+  FaExpand,
 } from "react-icons/fa";
 import InterviewCallButton from "../video/InterviewCallButton";
 
@@ -60,6 +62,9 @@ export default function JobApplications() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // ── Full-screen avatar viewer ──
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
@@ -78,6 +83,16 @@ export default function JobApplications() {
     };
     fetchAll();
   }, [id]);
+
+  // ── Escape closes the lightbox ──
+  useEffect(() => {
+    if (!lightboxSrc) return;
+    function onKey(e) {
+      if (e.key === "Escape") setLightboxSrc(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxSrc]);
 
   const handleDecision = async (applicationId, status) => {
     setUpdating(applicationId);
@@ -230,6 +245,7 @@ export default function JobApplications() {
                       updating={updating}
                       onAccept={() => handleDecision(app.id, "ACCEPTED")}
                       onReject={() => handleDecision(app.id, "REJECTED")}
+                      onAvatarClick={setLightboxSrc}
                       delay={i * 0.06}
                     />
                   ))}
@@ -255,6 +271,7 @@ export default function JobApplications() {
                       jobTitle={job?.title}
                       updating={updating}
                       decided
+                      onAvatarClick={setLightboxSrc}
                       delay={i * 0.06}
                     />
                   ))}
@@ -264,6 +281,32 @@ export default function JobApplications() {
           </>
         )}
       </div>
+
+      {/* ── Full-screen avatar viewer ───────────────────────────────── */}
+      {lightboxSrc && (
+        <div
+          className={styles.lightboxOverlay}
+          onClick={() => setLightboxSrc(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Profile photo"
+        >
+          <button
+            type="button"
+            className={styles.lightboxClose}
+            onClick={() => setLightboxSrc(null)}
+            aria-label="Close photo"
+          >
+            <FaTimes size={22} />
+          </button>
+          <img
+            src={lightboxSrc}
+            alt=""
+            className={styles.lightboxImage}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </HirerLayout>
   );
 }
@@ -279,6 +322,7 @@ function ApplicationCard({
   updating,
   onAccept,
   onReject,
+  onAvatarClick,
   decided,
   delay,
 }) {
@@ -287,21 +331,44 @@ function ApplicationCard({
   const statusInfo = APP_STATUS[app.status] || APP_STATUS.PENDING;
   const StatusIcon = statusInfo.Icon;
 
+  const hasAvatar = !!worker?.avatar;
+
   return (
     <div className={styles.appCard} style={{ animationDelay: `${delay}s` }}>
       {/* Worker info */}
       <div className={styles.appTop}>
         <div className={styles.workerLeft}>
-          <div className={styles.workerAvatar}>
-            {worker?.avatar ? (
-              <img src={worker.avatar} alt="" />
+          {/* Avatar — clickable when a photo exists, opens the lightbox */}
+          <button
+            type="button"
+            className={`${styles.workerAvatar} ${
+              hasAvatar ? styles.workerAvatarClickable : ""
+            }`}
+            onClick={() => {
+              if (hasAvatar && onAvatarClick) onAvatarClick(worker.avatar);
+            }}
+            disabled={!hasAvatar}
+            aria-label={
+              hasAvatar
+                ? `View ${worker?.firstName || "worker"}'s photo full screen`
+                : undefined
+            }
+            title={hasAvatar ? "View full photo" : undefined}
+          >
+            {hasAvatar ? (
+              <>
+                <img src={worker.avatar} alt="" />
+                <span className={styles.avatarExpandBadge}>
+                  <FaExpand size={9} />
+                </span>
+              </>
             ) : (
               <span>
                 {worker?.firstName?.[0]}
                 {worker?.lastName?.[0]}
               </span>
             )}
-          </div>
+          </button>
           <div>
             <p className={styles.workerName}>
               {worker?.firstName} {worker?.lastName}
