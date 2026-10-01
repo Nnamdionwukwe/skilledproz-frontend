@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { ShieldCheck, Award, CheckCircle2 } from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import styles from "./HirerPublicProfile.module.css";
@@ -171,6 +172,14 @@ export default function HirerPublicProfile() {
   const { profile, jobPosts, reviews, stats } = data;
   const hirerUser = profile.user;
 
+  // ── Verification status — check hirer profile OR worker profile ──────────
+  const verificationStatus =
+    hirerUser.hirerProfile?.verificationStatus ??
+    hirerUser.workerProfile?.verificationStatus ??
+    null;
+  const isVerified = verificationStatus === "VERIFIED";
+  const isBackgroundChecked = hirerUser.workerProfile?.backgroundCheck === true;
+
   return (
     <Layout>
       <div className={styles.page}>
@@ -192,18 +201,37 @@ export default function HirerPublicProfile() {
               )}
             </div>
 
-            <h1 className={styles.name}>
-              {hirerUser.verificationStatus === "VERIFIED" && (
-                <span className={styles.verifiedBadge} title="Verified">
-                  ✓
-                </span>
-              )}
-            </h1>
-
             <div className={styles.heroInfo}>
-              <h1 className={styles.heroName}>
-                {hirerUser.firstName} {hirerUser.lastName}
-              </h1>
+              <div className={styles.nameRow}>
+                <h1 className={styles.heroName}>
+                  {hirerUser.firstName} {hirerUser.lastName}
+                </h1>
+
+                {/* Verified shield icon next to name */}
+                {isVerified && (
+                  <ShieldCheck
+                    size={18}
+                    className={styles.verifiedIcon}
+                    title="Identity Verified"
+                  />
+                )}
+              </div>
+
+              {/* Verification badges under the name */}
+              {(isVerified || isBackgroundChecked) && (
+                <div className={styles.badges}>
+                  {isVerified && (
+                    <span className={styles.badgeVerified}>
+                      <ShieldCheck size={11} /> Verified Hirer
+                    </span>
+                  )}
+                  {isBackgroundChecked && (
+                    <span className={styles.badgeChecked}>
+                      <Award size={11} /> Background Checked
+                    </span>
+                  )}
+                </div>
+              )}
 
               {profile.companyName && (
                 <p className={styles.companyName}>🏢 {profile.companyName}</p>
