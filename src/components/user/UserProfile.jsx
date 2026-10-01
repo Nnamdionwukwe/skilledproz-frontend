@@ -168,12 +168,46 @@ function AvatarBlock({ user, isOwn, onAvatarChange }) {
     }
   };
 
+  const openViewer = () => {
+    if (!user?.avatar) return;
+    // Use a custom event so the parent component can render the lightbox
+    // without prop-drilling. Simpler than exposing a setter.
+    window.dispatchEvent(
+      new CustomEvent("sp:view-avatar", {
+        detail: {
+          url: user.avatar,
+          name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        },
+      }),
+    );
+  };
+
+  // Own profile → click opens change-photo picker.
+  // Other profile → click opens the full-screen image viewer.
+  const handleClick = () => {
+    if (isOwn) fileRef.current?.click();
+    else openViewer();
+  };
+
   return (
     <div
-      className={`${s.avatarWrap} ${isOwn ? s.avatarOwn : ""}`}
-      onMouseEnter={() => isOwn && setHover(true)}
+      className={`${s.avatarWrap} ${isOwn ? s.avatarOwn : ""} ${!isOwn ? s.avatarClickable : ""}`}
+      onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={() => isOwn && fileRef.current?.click()}
+      onClick={handleClick}
+      role={!isOwn ? "button" : undefined}
+      tabIndex={!isOwn ? 0 : undefined}
+      onKeyDown={
+        !isOwn
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openViewer();
+              }
+            }
+          : undefined
+      }
+      aria-label={!isOwn ? `View ${user.firstName}'s profile photo` : undefined}
     >
       {user?.avatar ? (
         <img src={user.avatar} alt={user.firstName} className={s.avatarImg} />
@@ -181,7 +215,7 @@ function AvatarBlock({ user, isOwn, onAvatarChange }) {
         <div className={s.avatarFallback}>{initials(user)}</div>
       )}
 
-      {/* Upload overlay */}
+      {/* Own-profile upload overlay */}
       {isOwn && (hover || uploading) && (
         <div className={s.avatarOverlay}>
           {uploading ? (
@@ -192,6 +226,14 @@ function AvatarBlock({ user, isOwn, onAvatarChange }) {
               <span>Change</span>
             </>
           )}
+        </div>
+      )}
+
+      {/* Other-profile view overlay — only when avatar exists */}
+      {!isOwn && hover && user?.avatar && (
+        <div className={s.avatarOverlay}>
+          <Maximize2 size={18} />
+          <span>View</span>
         </div>
       )}
 
@@ -470,6 +512,7 @@ export default function UserProfile() {
 
   const [lightbox, setLightbox] = useState(null);
   const [certMedia, setCertMedia] = useState(null); // { src, title, kind }
+  const [avatarViewer, setAvatarViewer] = useState(null); // { url, name }
 
   const Layout = me?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
@@ -504,6 +547,13 @@ export default function UserProfile() {
       .catch(() => setReviews([]))
       .finally(() => setReviewsLoading(false));
   }, [tab, profileId, user?.role]);
+
+  // Listen for avatar-viewer events dispatched by AvatarBlock
+  useEffect(() => {
+    const onViewAvatar = (e) => setAvatarViewer(e.detail);
+    window.addEventListener("sp:view-avatar", onViewAvatar);
+    return () => window.removeEventListener("sp:view-avatar", onViewAvatar);
+  }, []);
 
   const handleAvatarChange = (url) => setUser((u) => ({ ...u, avatar: url }));
 
@@ -1352,6 +1402,63 @@ export default function UserProfile() {
           kind={certMedia.kind}
           onClose={() => setCertMedia(null)}
         />
+      )}
+
+      {/* ── FULL-SCREEN AVATAR VIEWER ── */}
+      {avatarViewer && (
+        <div
+          className={s.certFsBackdrop}
+          onClick={() => setAvatarViewer(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${avatarViewer.name}'s profile photo`}
+        >
+          <div className={s.certFsTopBar} onClick={(e) => e.stopPropagation()}>
+            <div className={s.certFsTitle}>
+              <Camera size={14} />
+              <span>{avatarViewer.name}</span>
+            </div>
+
+            <div className={s.certFsControls}>
+              <a
+                href={avatarViewer.url}
+                target="_blank"
+                rel="noreferrer"
+                className={s.certFsBtn}
+                title="Open in new tab"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink size={14} />
+              </a>
+              <a
+                href={avatarViewer.url}
+                download
+                className={s.certFsBtn}
+                title="Download"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Maximize2 size={14} />
+              </a>
+              <button
+                type="button"
+                className={s.certFsCloseBtn}
+                onClick={() => setAvatarViewer(null)}
+                title="Close (Esc)"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className={s.certFsStage} onClick={(e) => e.stopPropagation()}>
+            <img
+              src={avatarViewer.url}
+              alt={avatarViewer.name}
+              className={s.certFsImage}
+              draggable={false}
+            />
+          </div>
+        </div>
       )}
     </Layout>
   );

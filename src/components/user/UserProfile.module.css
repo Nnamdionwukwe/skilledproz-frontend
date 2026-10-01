@@ -2104,3 +2104,19 @@
     transition: none;
   }
 }
+/* ── Avatar clickable cursor for other profiles ────────────────────── */
+.avatarClickable {
+  cursor: zoom-in;
+}
+
+.avatarClickable:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+
+/* Avatar click for other-profile viewer opens full-screen — ensure the
+   image in the viewer respects the same containment as certs */
+.certFsImage {
+  max-width: min(100%, 720px);
+  max-height: 80dvh;
+}
