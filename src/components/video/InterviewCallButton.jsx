@@ -89,7 +89,7 @@ export default function InterviewCallButton({
             : "Start interview call"
         }
       >
-        <FaVideo /> Start Interview Call
+        <FaVideo /> Start Interview
       </button>
 
       <button
