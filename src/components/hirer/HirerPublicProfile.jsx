@@ -243,7 +243,7 @@ export default function HirerPublicProfile() {
                 <div className={styles.badges}>
                   {isVerified && (
                     <span className={styles.badgeVerified}>
-                      <ShieldCheck size={11} /> Verified Hirer
+                      <ShieldCheck size={16} /> Verified Hirer
                     </span>
                   )}
                   {isBackgroundChecked && (
