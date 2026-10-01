@@ -112,7 +112,7 @@ export default function JobApplications() {
         {/* Back */}
         <button
           className={styles.backBtn}
-          onClick={() => navigate("/dashboard/hirer/post-job")}
+          onClick={() => navigate("/dashboard/hirer/jobs-management")}
         >
           <FaArrowLeft /> Back to Jobs
         </button>
