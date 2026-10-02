@@ -2,21 +2,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Incoming banner for CONVERSATION voice calls.
 //
-// Mounted at the app root (main.jsx) as a sibling of <App />.
-// Polls /voice-calls/incoming every 5s and shows a banner only when the
-// returned call has callType === "voice".
+// Mounted at the app root (main.jsx). Polls /voice-calls/incoming every 5s
+// and shows a banner when the returned call is callType === "voice".
 //
 // Scope: voice calls initiated from the Messages tab.
 //        Video calls (booking OR conversation) have their own banners.
 //
-// Accept → navigate to /messages?convo=<conversationId> so the receiver
-//          lands in the conversation and the VoiceCallPanel takes over.
+// Accept → hand off to VoiceCallContext.openCall(), which opens the
+//          full-screen call UI. No navigation. The call survives any
+//          subsequent route changes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
+import { useVoiceCall } from "../../context/VoiceCallContext";
 import styles from "./VoiceCallBanner.module.css";
 import {
   FaPhone,
@@ -27,6 +28,7 @@ import {
 
 const POLL_MS = 5000;
 
+// Never show the banner on auth or the call room itself.
 const SUPPRESSED_PREFIXES = [
   "/login",
   "/signup",
@@ -35,13 +37,13 @@ const SUPPRESSED_PREFIXES = [
   "/reset-password",
   "/verify-email",
   "/auth/google/callback",
-  "/messages", // VoiceCallPanel handles it inline when you're already there
+  "/call/",
 ];
 
 export default function VoiceCallBanner() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { accessToken, user, isHydrated } = useAuthStore();
+  const { openCall, call: activeCall } = useVoiceCall();
 
   const [incoming, setIncoming] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -52,10 +54,15 @@ export default function VoiceCallBanner() {
     location.pathname.startsWith(p),
   );
 
-  // ── Poll for incoming voice calls ──────────────────────────────────────
+  // ── Poll for incoming voice calls ─────────────────────────────────────
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (suppressed) {
+      setIncoming(null);
+      return;
+    }
+    // If a call is already open, don't stack another banner on top.
+    if (activeCall) {
       setIncoming(null);
       return;
     }
@@ -73,8 +80,6 @@ export default function VoiceCallBanner() {
 
         if (cancelled) return;
 
-        // Only handle voice calls — the video banner polls the same
-        // endpoint and filters for callType === "video".
         if (call && call.callType === "voice") {
           setIncoming((prev) => (prev?.id === call.id ? prev : call));
         } else {
@@ -93,24 +98,28 @@ export default function VoiceCallBanner() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [isHydrated, accessToken, user, suppressed]);
+  }, [isHydrated, accessToken, user, suppressed, activeCall]);
 
-  // ── Accept ─────────────────────────────────────────────────────────────
+  // ── Accept ────────────────────────────────────────────────────────────
   async function handleAccept() {
     if (!incoming) return;
     setLoading(true);
     try {
-      await api.patch(`/voice-calls/${incoming.conversationId}/accept`);
+      const res = await api.patch(
+        `/voice-calls/${incoming.conversationId}/accept`,
+      );
+      const data = res.data.data;
+      // Hand off to the global provider — it opens full-screen.
+      openCall(data.call, data.callUrl);
       setIncoming(null);
-      navigate(`/messages?convo=${incoming.conversationId}`);
     } catch {
-      // keep the banner up so they can retry
+      // keep the banner up so the user can retry
     } finally {
       setLoading(false);
     }
   }
 
-  // ── Decline ────────────────────────────────────────────────────────────
+  // ── Decline ───────────────────────────────────────────────────────────
   async function handleDecline() {
     if (!incoming) return;
     setLoading(true);
@@ -124,7 +133,7 @@ export default function VoiceCallBanner() {
     }
   }
 
-  // ── Render guard ───────────────────────────────────────────────────────
+  // ── Render guard ──────────────────────────────────────────────────────
   if (!incoming || suppressed) return null;
 
   const callerName = incoming.initiator

@@ -1,0 +1,163 @@
+/* src/components/video/VoiceCallMini.module.css */
+
+.widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 260px;
+  z-index: 9999; /* above the iframe (9997) */
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(34, 197, 94, 0.06);
+  color: #fff;
+  animation: miniIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes miniIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.iconBtn,
+.endBtn,
+.acceptBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.iconBtn {
+  width: 32px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.iconBtnOn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0a0a0a;
+}
+
+.endBtn {
+  width: 32px;
+  background: #ef4444;
+  color: #fff;
+}
+
+.endBtn:hover {
+  background: #dc2626;
+}
+
+.acceptBtn {
+  padding: 0 14px;
+  background: #22c55e;
+  color: #fff;
+}
+
+.acceptBtn:hover {
+  background: #16a34a;
+}
+
+.iconBtn:disabled,
+.endBtn:disabled,
+.acceptBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 640px) {
+  .widget {
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}

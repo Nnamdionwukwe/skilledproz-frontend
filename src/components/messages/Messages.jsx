@@ -20,6 +20,7 @@ import {
 } from "react-icons/fi";
 import tracker from "../../lib/analytics/tracker";
 import VoiceCallPanel from "../video/VoiceCallPanel";
+import { useVoiceCall } from "../../context/VoiceCallContext";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -773,13 +774,20 @@ export default function Messages() {
   // Voice call initiation (from the toolbar button)
   // ─────────────────────────────────────────────────────────────────────────
 
+  // at the top:
+
+  // inside the component:
+  const { startCall } = useVoiceCall();
+
   const handleStartVoiceCall = async () => {
     if (!activeConvoId || startingVoiceCall) return;
     setStartingVoiceCall(true);
     try {
-      await api.post(`/voice-calls/${activeConvoId}/initiate`, {
+      const res = await api.post(`/voice-calls/${activeConvoId}/initiate`, {
         callType: "voice",
       });
+      const data = res.data.data;
+      startCall(data.call, data.callUrl);
       tracker.action("messages.voiceCall.initiated", {
         conversationId: activeConvoId,
       });
