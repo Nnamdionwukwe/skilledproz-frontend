@@ -273,3 +273,51 @@
     height: 36px;
   }
 }
+/* ─── Visible MiroTalk iframe (required for mic permission) ─────────── */
+
+.frameWrap {
+  position: fixed;
+  bottom: 96px; /* sits just above the branded panel */
+  right: 20px;
+  width: 300px;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+  z-index: 9998; /* just below the panel (9999) */
+  animation: frameIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto; /* must be interactive so the user can click into it */
+}
+
+@keyframes frameIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* ─── Mobile: iframe goes full width under the panel ─────────────────── */
+@media (max-width: 640px) {
+  .frameWrap {
+    bottom: auto;
+    top: 16px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    height: 160px;
+  }
+}

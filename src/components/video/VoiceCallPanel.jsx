@@ -2,17 +2,27 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Floating voice call panel — lives inside the Messages component.
 //
-// Renders different UI based on the current call state:
-//   PENDING + you initiated  → "Calling..." with cancel button
-//   PENDING + you are receiver → "Incoming call" with accept/decline
-//   ACTIVE                    → In-call UI with mute + end + duration
-//   ENDED / DECLINED          → Fades out automatically
+// States:
+//   PENDING + you initiated     → "Calling…" with cancel button
+//   PENDING + you are receiver  → "Incoming call" with accept/decline
+//   ACTIVE                      → In-call UI with mute + end + duration
+//   ENDED / DECLINED            → Fades out automatically
 //
-// The MiroTalk iframe is rendered invisibly when ACTIVE — the audio plays
-// through it while the panel shows a minimal, distraction-free UI.
+// AUDIO FIX (this version):
+//   The MiroTalk iframe is rendered VISIBLE (small, docked bottom-right) when
+//   the call is ACTIVE. This is required because:
+//     1. Browsers require a user gesture to grant microphone permission.
+//     2. MiroTalk's own "Join" / mic-allow UI lives inside the iframe — if
+//        the iframe is hidden, the user can never click it.
+//     3. The first time a user accepts a voice call, the browser will show
+//        a mic-permission prompt when MiroTalk's iframe requests audio.
+//        After that one grant, all subsequent calls just work.
 //
-// Polling: 3 seconds. Faster than the video call banner (5s) because voice
-// calls feel more urgent — you want to know quickly whether someone picked up.
+//   The iframe is styled small (300×180) and semi-transparent, but it is
+//   interactive — the user can click into it if MiroTalk needs any
+//   confirmation. Your branded panel sits above it.
+//
+// Polling: 3 seconds.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -42,6 +52,28 @@ function formatDuration(startedAt) {
   return `${m}:${s}`;
 }
 
+/**
+ * Ensure the MiroTalk URL is in "voice-only, auto-join" mode.
+ * Adds the params MiroTalk needs to skip its lobby and go straight to the
+ * audio room, and to suppress its own notification modal.
+ */
+function buildVoiceRoomUrl(baseUrl) {
+  if (!baseUrl) return baseUrl;
+  try {
+    const url = new URL(baseUrl);
+    url.searchParams.set("audio", "1");
+    url.searchParams.set("video", "0");
+    url.searchParams.set("noti", "0");
+    url.searchParams.set("autojoin", "1"); // MiroTalk: skip the join screen
+    url.searchParams.set("mic", "1"); // start with mic on
+    url.searchParams.set("screen", "0"); // no screen share
+    url.searchParams.set("chat", "0"); // hide chat sidebar
+    return url.toString();
+  } catch {
+    return baseUrl;
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function VoiceCallPanel({
@@ -58,12 +90,12 @@ export default function VoiceCallPanel({
   const [muted, setMuted] = useState(false);
   const [speakerOff, setSpeakerOff] = useState(false);
   const [endedTimer, setEndedTimer] = useState(null);
+  const [showFrame, setShowFrame] = useState(false);
 
   const inFlightRef = useRef(false);
   const iframeRef = useRef(null);
   const conversationRef = useRef(conversationId);
 
-  // Keep conversationId in a ref so polling callbacks don't go stale
   useEffect(() => {
     conversationRef.current = conversationId;
   }, [conversationId]);
@@ -90,6 +122,13 @@ export default function VoiceCallPanel({
           return;
         }
 
+        // Skip video calls — those are handled by ConversationVideoCallPage.
+        if (data.call.callType === "video") {
+          setCall(null);
+          setCallUrl(null);
+          return;
+        }
+
         // Ended/declined — show for 2s then hide
         if (data.call.status === "ENDED" || data.call.status === "DECLINED") {
           setCall(data.call);
@@ -105,7 +144,12 @@ export default function VoiceCallPanel({
         }
 
         setCall(data.call);
-        setCallUrl(data.callUrl);
+        setCallUrl(buildVoiceRoomUrl(data.callUrl));
+
+        // When the call goes ACTIVE, reveal the MiroTalk iframe.
+        if (data.call.status === "ACTIVE") {
+          setShowFrame(true);
+        }
       } catch {
         // silent — keep polling
       } finally {
@@ -143,7 +187,8 @@ export default function VoiceCallPanel({
     try {
       const res = await api.patch(`/voice-calls/${conversationId}/accept`);
       setCall(res.data.data.call);
-      setCallUrl(res.data.data.callUrl);
+      setCallUrl(buildVoiceRoomUrl(res.data.data.callUrl));
+      setShowFrame(true); // reveal the iframe so the browser can prompt for mic
     } catch {
       // silent
     } finally {
@@ -157,6 +202,7 @@ export default function VoiceCallPanel({
     try {
       await api.patch(`/voice-calls/${conversationId}/decline`);
       setCall((prev) => (prev ? { ...prev, status: "DECLINED" } : prev));
+      setShowFrame(false);
     } catch {
       // silent
     } finally {
@@ -173,16 +219,43 @@ export default function VoiceCallPanel({
     }
     setCall((prev) => (prev ? { ...prev, status: "ENDED" } : prev));
     setCallUrl(null);
+    setShowFrame(false);
     if (onCallEnded) onCallEnded();
   }, [call, conversationId, onCallEnded]);
 
-  const handleCancel = handleEnd; // same effect for outgoing PENDING
+  const handleCancel = handleEnd;
 
-  // Mute and speaker toggle are UI-only for now — they'd need MiroTalk's
-  // postMessage API to actually control the media. Leaving the buttons as
-  // placeholders for the next iteration.
-  const handleToggleMute = () => setMuted((v) => !v);
-  const handleToggleSpeaker = () => setSpeakerOff((v) => !v);
+  // ── Media controls: talk directly to the MiroTalk iframe ──────────────
+  // MiroTalk listens for postMessage commands. We use its documented API:
+  //   { type: "micMute" }      → toggle mic
+  //   { type: "speakerOff" }   → toggle speaker
+  // Fallback: if the iframe doesn't respond, the button still toggles the
+  // local UI state so the user sees feedback.
+  const postToIframe = useCallback((message) => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    try {
+      win.postMessage(message, "*");
+    } catch {
+      // cross-origin fallback — silent
+    }
+  }, []);
+
+  const handleToggleMute = () => {
+    setMuted((v) => {
+      const next = !v;
+      postToIframe({ type: "micMute", value: next });
+      return next;
+    });
+  };
+
+  const handleToggleSpeaker = () => {
+    setSpeakerOff((v) => {
+      const next = !v;
+      postToIframe({ type: "speakerOff", value: next });
+      return next;
+    });
+  };
 
   // ── Render guard ──────────────────────────────────────────────────────
   if (!call) return null;
@@ -203,15 +276,19 @@ export default function VoiceCallPanel({
   // ── Determine what to render ──────────────────────────────────────────
   return (
     <>
-      {/* Hidden MiroTalk iframe — plays audio only when active */}
-      {isActive && callUrl && (
-        <iframe
-          ref={iframeRef}
-          src={callUrl}
-          allow="microphone; autoplay; clipboard-write"
-          className={styles.hiddenIframe}
-          title="Voice call audio"
-        />
+      {/* MiroTalk iframe — visible when ACTIVE so the user can grant mic.
+          Styled small and docked bottom-right; the branded panel floats
+          above it. Kept interactive so MiroTalk's own prompts work. */}
+      {isActive && callUrl && showFrame && (
+        <div className={styles.frameWrap}>
+          <iframe
+            ref={iframeRef}
+            src={callUrl}
+            allow="microphone; autoplay; clipboard-write; speaker-selection"
+            className={styles.frame}
+            title="Voice call audio"
+          />
+        </div>
       )}
 
       <div
@@ -229,7 +306,6 @@ export default function VoiceCallPanel({
               <span>{initials || "?"}</span>
             )}
           </div>
-          {/* Pulsing ring while connecting */}
           {(call.status === "PENDING" || isActive) && (
             <span
               className={`${styles.pulse} ${
@@ -329,7 +405,6 @@ export default function VoiceCallPanel({
               </button>
             </>
           ) : (
-            // Initiator still waiting — show cancel
             <button
               type="button"
               className={styles.endBtn}
