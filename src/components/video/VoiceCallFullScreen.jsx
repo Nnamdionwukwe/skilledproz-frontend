@@ -1,13 +1,13 @@
 // src/components/video/VoiceCallFullScreen.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Full-screen voice call UI. Shown when:
-//   • You just clicked 📞 (caller, call is PENDING)
-//   • You just accepted an incoming call (receiver)
-//   • You clicked "Expand" on the mini widget
+// Full-screen voice-call UI. Shown when context.mode === "fullscreen".
 //
-// The MiroTalk iframe lives behind this overlay (owned by VoiceCallProvider).
-// The URL is already built with a pre-filled display name, so the iframe
-// lands directly in the room — no manual "Join" click.
+//   PENDING + you are caller   → "Calling…", cancel button
+//   PENDING + you are receiver → accept / decline buttons
+//   ACTIVE                     → duration, mute, end, speaker
+//
+// The MiroTalk-free WebRTC session is managed by <VoiceCallProvider>. This
+// component is purely UI.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
@@ -20,8 +20,6 @@ import {
   FaPhoneSlash,
   FaMicrophone,
   FaMicrophoneSlash,
-  FaVolumeUp,
-  FaVolumeMute,
   FaCompress,
   FaSpinner,
 } from "react-icons/fa";
@@ -36,13 +34,10 @@ function formatDuration(startedAt) {
   return `${m}:${s}`;
 }
 
-export default function VoiceCallFullScreen({ iframeRef }) {
+export default function VoiceCallFullScreen({ rtc }) {
   const { user } = useAuthStore();
-  const { call, updateCall, endCall, minimize, setCallUrl } = useVoiceCall();
-
+  const { call, updateCall, endCall, minimize } = useVoiceCall();
   const [duration, setDuration] = useState("00:00");
-  const [muted, setMuted] = useState(false);
-  const [speakerOff, setSpeakerOff] = useState(false);
   const [busy, setBusy] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
 
@@ -51,7 +46,7 @@ export default function VoiceCallFullScreen({ iframeRef }) {
   const isInitiator = call?.initiatorId === user?.id;
   const isReceiver = call?.receiverId === user?.id;
 
-  // ── Load the other user's info for display ────────────────────────────
+  // Load the other user's profile for the avatar + name.
   useEffect(() => {
     if (!call?.conversationId) return;
     let cancelled = false;
@@ -62,7 +57,7 @@ export default function VoiceCallFullScreen({ iframeRef }) {
         const other = convo?.users?.find((u) => u.userId !== user?.id);
         if (!cancelled) setOtherUser(other?.user || null);
       } catch {
-        // silent
+        /* noop */
       }
     })();
     return () => {
@@ -70,31 +65,28 @@ export default function VoiceCallFullScreen({ iframeRef }) {
     };
   }, [call?.conversationId, user?.id]);
 
-  // ── Duration ticker ───────────────────────────────────────────────────
+  // Duration ticker.
   useEffect(() => {
     if (!isActive) {
       setDuration("00:00");
       return;
     }
     setDuration(formatDuration(call.startedAt));
-    const id = setInterval(() => {
-      setDuration(formatDuration(call.startedAt));
-    }, 1000);
+    const id = setInterval(
+      () => setDuration(formatDuration(call.startedAt)),
+      1000,
+    );
     return () => clearInterval(id);
   }, [isActive, call?.startedAt]);
 
-  // ── Actions ───────────────────────────────────────────────────────────
   async function handleAccept() {
     if (!call) return;
     setBusy(true);
     try {
       const res = await api.patch(`/voice-calls/${call.conversationId}/accept`);
       updateCall(res.data.data.call);
-      // The provider will rebuild the URL with the display name and swap
-      // in a fresh iframe — the user lands directly in the room.
-      if (res.data.data.callUrl) setCallUrl(res.data.data.callUrl);
     } catch {
-      // silent — banner stays up
+      /* noop */
     } finally {
       setBusy(false);
     }
@@ -106,7 +98,7 @@ export default function VoiceCallFullScreen({ iframeRef }) {
     try {
       await api.patch(`/voice-calls/${call.conversationId}/decline`);
     } catch {
-      // silent
+      /* noop */
     } finally {
       setBusy(false);
       endCall();
@@ -118,33 +110,9 @@ export default function VoiceCallFullScreen({ iframeRef }) {
     try {
       await api.patch(`/voice-calls/${call.conversationId}/end`);
     } catch {
-      // silent
+      /* noop */
     }
     endCall();
-  }
-
-  function postToIframe(message) {
-    const win = iframeRef?.current?.contentWindow;
-    if (!win) return;
-    try {
-      win.postMessage(message, "*");
-    } catch {
-      // silent
-    }
-  }
-
-  function handleToggleMute() {
-    setMuted((v) => {
-      postToIframe({ type: "micMute", value: !v });
-      return !v;
-    });
-  }
-
-  function handleToggleSpeaker() {
-    setSpeakerOff((v) => {
-      postToIframe({ type: "speakerOff", value: !v });
-      return !v;
-    });
   }
 
   if (!call) return null;
@@ -157,7 +125,6 @@ export default function VoiceCallFullScreen({ iframeRef }) {
 
   return (
     <div className={styles.overlay} role="dialog" aria-label="Voice call">
-      {/* ── Top bar ─────────────────────────────────────────────────── */}
       <div className={styles.topBar}>
         <img src="/skilledproz.PNG" alt="SkilledProz" className={styles.logo} />
         <span className={styles.brand}>SkilledProz Voice Call</span>
@@ -170,14 +137,13 @@ export default function VoiceCallFullScreen({ iframeRef }) {
         <button
           className={styles.minimizeBtn}
           onClick={minimize}
-          title="Minimize — continue browsing"
+          title="Minimize — keep browsing"
           aria-label="Minimize call"
         >
           <FaCompress size={14} />
         </button>
       </div>
 
-      {/* ── Center: avatar + status ─────────────────────────────────── */}
       <div className={styles.center}>
         <div className={styles.avatarWrap}>
           <div className={styles.avatar}>
@@ -207,6 +173,8 @@ export default function VoiceCallFullScreen({ iframeRef }) {
                 : ""}
         </p>
 
+        {rtc?.error && <p className={styles.error}>{rtc.error}</p>}
+
         {isActive && (
           <p className={styles.hint}>
             You can minimize this call and keep browsing — the audio stays on.
@@ -214,17 +182,18 @@ export default function VoiceCallFullScreen({ iframeRef }) {
         )}
       </div>
 
-      {/* ── Bottom: controls ─────────────────────────────────────────── */}
       <div className={styles.controls}>
         {isActive && (
           <>
             <button
-              className={`${styles.circleBtn} ${muted ? styles.circleBtnOn : ""}`}
-              onClick={handleToggleMute}
-              title={muted ? "Unmute" : "Mute"}
-              aria-label={muted ? "Unmute" : "Mute"}
+              className={`${styles.circleBtn} ${
+                rtc?.isMuted ? styles.circleBtnOn : ""
+              }`}
+              onClick={rtc?.toggleMute}
+              title={rtc?.isMuted ? "Unmute" : "Mute"}
+              aria-label={rtc?.isMuted ? "Unmute" : "Mute"}
             >
-              {muted ? (
+              {rtc?.isMuted ? (
                 <FaMicrophoneSlash size={20} />
               ) : (
                 <FaMicrophone size={20} />
@@ -238,19 +207,6 @@ export default function VoiceCallFullScreen({ iframeRef }) {
               aria-label="End call"
             >
               <FaPhoneSlash size={22} />
-            </button>
-
-            <button
-              className={`${styles.circleBtn} ${speakerOff ? styles.circleBtnOn : ""}`}
-              onClick={handleToggleSpeaker}
-              title={speakerOff ? "Speaker on" : "Speaker off"}
-              aria-label={speakerOff ? "Speaker on" : "Speaker off"}
-            >
-              {speakerOff ? (
-                <FaVolumeMute size={20} />
-              ) : (
-                <FaVolumeUp size={20} />
-              )}
             </button>
           </>
         )}

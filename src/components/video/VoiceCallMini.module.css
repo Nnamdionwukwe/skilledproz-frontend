@@ -5,7 +5,7 @@
   bottom: 20px;
   right: 20px;
   width: 260px;
-  z-index: 9999; /* above the iframe (9997) */
+  z-index: 9999;
   background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
   border: 1px solid rgba(34, 197, 94, 0.35);
   border-radius: 14px;
@@ -108,7 +108,6 @@
 .iconBtn:hover {
   background: rgba(255, 255, 255, 0.12);
 }
-
 .iconBtnOn {
   background: rgba(255, 255, 255, 0.9);
   color: #0a0a0a;
@@ -119,7 +118,6 @@
   background: #ef4444;
   color: #fff;
 }
-
 .endBtn:hover {
   background: #dc2626;
 }
@@ -129,7 +127,6 @@
   background: #22c55e;
   color: #fff;
 }
-
 .acceptBtn:hover {
   background: #16a34a;
 }
@@ -144,14 +141,11 @@
 .spinner {
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
-
-/* ── Mobile ── */
 
 @media (max-width: 640px) {
   .widget {

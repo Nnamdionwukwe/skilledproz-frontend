@@ -3,20 +3,17 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999; /* above the iframe (9998) */
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   background: linear-gradient(
     180deg,
-    rgba(10, 10, 10, 0.92) 0%,
-    rgba(0, 0, 0, 0.96) 100%
+    rgba(10, 10, 10, 0.94) 0%,
+    rgba(0, 0, 0, 0.97) 100%
   );
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
   color: #fff;
-  pointer-events: auto;
 }
-
-/* ── Top bar ────────────────────────────────────────────────────────── */
 
 .topBar {
   display: flex;
@@ -44,20 +41,20 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.8px;
-  color: #f87171;
+  color: #4ade80;
 }
 
 .liveDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ef4444;
-  box-shadow: 0 0 8px #ef4444;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
   animation: livePulse 1.4s ease-in-out infinite;
 }
 
@@ -90,8 +87,6 @@
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
-
-/* ── Center ────────────────────────────────────────────────────────── */
 
 .center {
   flex: 1;
@@ -164,7 +159,6 @@
   font-size: 26px;
   font-weight: 700;
   margin: 8px 0 4px;
-  letter-spacing: 0.2px;
 }
 
 .status {
@@ -174,6 +168,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.error {
+  font-size: 13px;
+  color: #f87171;
+  margin-top: 12px;
+  max-width: 320px;
+}
+
 .hint {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.45);
@@ -181,8 +182,6 @@
   margin: 12px 0 0;
   line-height: 1.5;
 }
-
-/* ── Controls ──────────────────────────────────────────────────────── */
 
 .controls {
   display: flex;
@@ -259,14 +258,11 @@
 .spinner {
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
-
-/* ── Mobile ────────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
   .avatarWrap,

@@ -786,8 +786,7 @@ export default function Messages() {
       const res = await api.post(`/voice-calls/${activeConvoId}/initiate`, {
         callType: "voice",
       });
-      const data = res.data.data;
-      startCall(data.call, data.callUrl);
+      startCall(res.data.data.call);
       tracker.action("messages.voiceCall.initiated", {
         conversationId: activeConvoId,
       });

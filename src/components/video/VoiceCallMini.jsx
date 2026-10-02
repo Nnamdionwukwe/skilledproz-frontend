@@ -1,11 +1,7 @@
 // src/components/video/VoiceCallMini.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Minimized voice call widget — docks bottom-right. The user can keep
-// browsing the app while the audio keeps flowing (the MiroTalk iframe is
-// repositioned behind this widget by VoiceCallProvider).
-//
-// The URL is owned by VoiceCallProvider and already includes a display-name
-// param, so MiroTalk never shows the join screen.
+// Minimized voice-call widget. Docked bottom-right. The user can keep
+// browsing the platform while the audio keeps flowing.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
@@ -31,12 +27,10 @@ function formatDuration(startedAt) {
   return `${m}:${s}`;
 }
 
-export default function VoiceCallMini({ iframeRef }) {
+export default function VoiceCallMini({ rtc }) {
   const { user } = useAuthStore();
-  const { call, updateCall, endCall, expand, setCallUrl } = useVoiceCall();
-
+  const { call, updateCall, endCall, expand } = useVoiceCall();
   const [duration, setDuration] = useState("00:00");
-  const [muted, setMuted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
 
@@ -44,7 +38,6 @@ export default function VoiceCallMini({ iframeRef }) {
   const isPending = call?.status === "PENDING";
   const isReceiver = call?.receiverId === user?.id;
 
-  // ── Other user info ───────────────────────────────────────────────────
   useEffect(() => {
     if (!call?.conversationId) return;
     let cancelled = false;
@@ -55,7 +48,7 @@ export default function VoiceCallMini({ iframeRef }) {
         const other = convo?.users?.find((u) => u.userId !== user?.id);
         if (!cancelled) setOtherUser(other?.user || null);
       } catch {
-        // silent
+        /* noop */
       }
     })();
     return () => {
@@ -63,16 +56,16 @@ export default function VoiceCallMini({ iframeRef }) {
     };
   }, [call?.conversationId, user?.id]);
 
-  // ── Duration ticker ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isActive) {
       setDuration("00:00");
       return;
     }
     setDuration(formatDuration(call.startedAt));
-    const id = setInterval(() => {
-      setDuration(formatDuration(call.startedAt));
-    }, 1000);
+    const id = setInterval(
+      () => setDuration(formatDuration(call.startedAt)),
+      1000,
+    );
     return () => clearInterval(id);
   }, [isActive, call?.startedAt]);
 
@@ -82,9 +75,8 @@ export default function VoiceCallMini({ iframeRef }) {
     try {
       const res = await api.patch(`/voice-calls/${call.conversationId}/accept`);
       updateCall(res.data.data.call);
-      if (res.data.data.callUrl) setCallUrl(res.data.data.callUrl);
     } catch {
-      // silent
+      /* noop */
     } finally {
       setBusy(false);
     }
@@ -95,26 +87,9 @@ export default function VoiceCallMini({ iframeRef }) {
     try {
       await api.patch(`/voice-calls/${call.conversationId}/end`);
     } catch {
-      // silent
+      /* noop */
     }
     endCall();
-  }
-
-  function postToIframe(msg) {
-    const win = iframeRef?.current?.contentWindow;
-    if (!win) return;
-    try {
-      win.postMessage(msg, "*");
-    } catch {
-      // silent
-    }
-  }
-
-  function handleToggleMute() {
-    setMuted((v) => {
-      postToIframe({ type: "micMute", value: !v });
-      return !v;
-    });
   }
 
   if (!call) return null;
@@ -131,7 +106,6 @@ export default function VoiceCallMini({ iframeRef }) {
       role="dialog"
       aria-label="Voice call (minimized)"
     >
-      {/* ── Header: avatar + name + status ─────────────────────────── */}
       <div className={styles.header}>
         <div className={styles.avatar}>
           {otherUser?.avatar ? (
@@ -152,17 +126,16 @@ export default function VoiceCallMini({ iframeRef }) {
         </div>
       </div>
 
-      {/* ── Actions ─────────────────────────────────────────────────── */}
       <div className={styles.actions}>
         {isActive ? (
           <>
             <button
-              className={`${styles.iconBtn} ${muted ? styles.iconBtnOn : ""}`}
-              onClick={handleToggleMute}
-              title={muted ? "Unmute" : "Mute"}
-              aria-label={muted ? "Unmute" : "Mute"}
+              className={`${styles.iconBtn} ${rtc?.isMuted ? styles.iconBtnOn : ""}`}
+              onClick={rtc?.toggleMute}
+              title={rtc?.isMuted ? "Unmute" : "Mute"}
+              aria-label={rtc?.isMuted ? "Unmute" : "Mute"}
             >
-              {muted ? (
+              {rtc?.isMuted ? (
                 <FaMicrophoneSlash size={14} />
               ) : (
                 <FaMicrophone size={14} />
@@ -179,7 +152,7 @@ export default function VoiceCallMini({ iframeRef }) {
             <button
               className={styles.iconBtn}
               onClick={expand}
-              title="Expand to full screen"
+              title="Expand"
               aria-label="Expand call"
             >
               <FaExpand size={14} />
@@ -214,7 +187,7 @@ export default function VoiceCallMini({ iframeRef }) {
           <button
             className={styles.endBtn}
             onClick={handleEnd}
-            title="Cancel call"
+            title="Cancel"
             aria-label="Cancel call"
           >
             <FaPhoneSlash size={14} />

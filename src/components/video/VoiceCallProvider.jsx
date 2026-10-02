@@ -1,112 +1,61 @@
 // src/components/video/VoiceCallProvider.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// The persistent voice-call widget. Mounted ONCE at the app root.
+// Persistent voice-call widget. Mounted once at the app root.
 //
-// Responsibilities:
-//   • Owns the single MiroTalk <iframe>. It must never unmount during a call
-//     or the WebRTC session dies.
-//   • Polls /voice-calls/:conversationId every 3s while a call is active.
-//   • Builds the MiroTalk URL with a pre-filled display name so users skip
-//     the join/lobby screen and land directly in the room.
-//   • Renders <VoiceCallFullScreen /> or <VoiceCallMini /> based on mode.
-//   • Positions the iframe (full-screen, or docked in the mini widget).
+// Owns:
+//   • useVoiceCallWebRTC (the peer connection + signaling)
+//   • Polling /voice-calls/:conversationId for state changes (accept, end, etc.)
+//   • A hidden <audio> element that plays the remote stream
+//   • Switching between full-screen and mini UI based on context.mode
 //
-// Because this lives at the root, the call survives navigation. The user
-// can minimize the call, go to /dashboard, click around, and the audio
-// keeps flowing.
+// Because it lives at the root, the call survives navigation.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { useVoiceCall } from "../../context/VoiceCallContext";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
+import useVoiceCallWebRTC from "../../hooks/useVoiceCallWebRTC";
 import VoiceCallFullScreen from "./VoiceCallFullScreen";
 import VoiceCallMini from "./VoiceCallMini";
-import styles from "./VoiceCallProvider.module.css";
 
 const POLL_MS = 3000;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// buildVoiceRoomUrl
-//
-// MiroTalk's join screen appears ONLY when the `name` URL parameter is missing
-// or empty. Passing a non-empty name drops the user straight into the room.
-//
-// MiroTalk's documented join parameters:
-//   ?room=<roomId>          — required in some forks even if in the path
-//   &name=<displayName>     — pre-fills the participant name, SKIPS the prompt
-//   &audio=1|0              — mic on/off
-//   &video=1|0              — camera on/off
-//   &notify=0               — suppress the "share this room" notification
-//   &chat=0|1               — show/hide chat sidebar
-//   &screen=0|1             — allow screen share
-//   &hide=1                 — hide the top bar (some versions)
-//   &left=1                 — hide the bottom-left toolbar (some versions)
-//
-// If HOST_PROTECTED=true is set on the MiroTalk server, a valid `token` is
-// ALSO required — otherwise MiroTalk will still show the lobby. In that case
-// the backend must generate the JWT. We don't currently enable this.
-// ─────────────────────────────────────────────────────────────────────────────
-function buildVoiceRoomUrl(baseUrl, displayName) {
-  if (!baseUrl) return baseUrl;
-  try {
-    const url = new URL(baseUrl);
-
-    // Ensure the room id is set as a query param — some forks require it
-    // in addition to the path segment.
-    const pathRoom = url.pathname.split("/").filter(Boolean).pop();
-    if (pathRoom) url.searchParams.set("room", pathRoom);
-
-    // THE KEY FIX: a non-empty name skips the join screen entirely.
-    url.searchParams.set(
-      "name",
-      (displayName && displayName.trim()) || "SkilledProz User",
-    );
-
-    // Audio-only defaults.
-    url.searchParams.set("audio", "1");
-    url.searchParams.set("video", "0");
-
-    // Correct parameter name is `notify` (not `noti`).
-    url.searchParams.set("notify", "0");
-
-    // Strip the extra UI we don't want in a voice call.
-    url.searchParams.set("chat", "0");
-    url.searchParams.set("screen", "0");
-
-    return url.toString();
-  } catch {
-    return baseUrl;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function VoiceCallProvider() {
-  const { accessToken, user, isHydrated } = useAuthStore();
-  const { call, callUrl, mode, updateCall, endCall, setCallUrl } =
-    useVoiceCall();
+  const { user, accessToken, isHydrated } = useAuthStore();
+  const { call, mode, updateCall, endCall } = useVoiceCall();
 
-  const iframeRef = useRef(null);
+  const audioRef = useRef(null);
   const inFlightRef = useRef(false);
-  const lastConversationRef = useRef(null);
 
-  // Compute the display name once per session.
-  const displayName = useMemo(() => {
-    const first = user?.firstName || "";
-    const last = user?.lastName || "";
-    const full = `${first} ${last}`.trim();
-    return full || user?.email || "SkilledProz User";
-  }, [user?.firstName, user?.lastName, user?.email]);
+  const isActive = call?.status === "ACTIVE";
+  const isInitiator = call?.initiatorId === user?.id;
 
-  // ── Poll the backend while a call is present ──────────────────────────
+  // WebRTC only spins up when the call is ACTIVE.
+  const rtc = useVoiceCallWebRTC({
+    conversationId: isActive ? call?.conversationId : null,
+    isInitiator,
+  });
+
+  // Attach remote stream to the hidden <audio> element.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (rtc.remoteStream) {
+      el.srcObject = rtc.remoteStream;
+      el.play().catch((e) => console.warn("[voice] autoplay blocked:", e));
+    } else {
+      el.srcObject = null;
+    }
+  }, [rtc.remoteStream]);
+
+  // Poll for status changes.
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (!call?.conversationId) return;
 
     let cancelled = false;
     const conversationId = call.conversationId;
-    lastConversationRef.current = conversationId;
 
     async function poll() {
       if (inFlightRef.current) return;
@@ -120,24 +69,13 @@ export default function VoiceCallProvider() {
           endCall();
           return;
         }
-
-        // Remote ended/declined → shut down
         if (data.call.status === "ENDED" || data.call.status === "DECLINED") {
           endCall();
           return;
         }
-
-        // Sync status changes (PENDING → ACTIVE, etc.)
         updateCall(data.call);
-
-        // Only rebuild the URL if the backend gave us a fresh one. When the
-        // call goes ACTIVE, we want the iframe to mount with the display
-        // name already baked in.
-        if (data.callUrl && data.callUrl !== callUrl) {
-          setCallUrl(buildVoiceRoomUrl(data.callUrl, displayName));
-        }
       } catch {
-        // silent — keep polling
+        /* noop */
       } finally {
         inFlightRef.current = false;
       }
@@ -150,45 +88,17 @@ export default function VoiceCallProvider() {
       clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHydrated, accessToken, user?.id, call?.conversationId, displayName]);
+  }, [isHydrated, accessToken, user?.id, call?.conversationId]);
 
-  // ── Normalize the URL when the caller hands off ────────────────────────
-  // The caller's startCall() passes the raw backend URL. The receiver's
-  // openCall() also passes the raw backend URL. In both cases, rebuild it
-  // here with the display name so the iframe never shows the join screen.
-  useEffect(() => {
-    if (!callUrl) return;
-    // Skip if it already has a name param baked in by us.
-    if (callUrl.includes("name=")) return;
-    setCallUrl(buildVoiceRoomUrl(callUrl, displayName));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callUrl, displayName]);
-
-  // ── Nothing to render if there's no call ──────────────────────────────
   if (!call || mode === "hidden") return null;
 
-  const isActive = call.status === "ACTIVE";
-
-  // We render ONE iframe. Its wrapper is positioned by CSS based on mode.
-  // When the mode changes we DON'T remount the iframe — we just move it.
   return (
-    <div className={styles.root} data-mode={mode}>
-      {/* The single, persistent MiroTalk iframe. */}
-      {isActive && callUrl && (
-        <div className={styles.iframeWrap} data-mode={mode}>
-          <iframe
-            ref={iframeRef}
-            src={callUrl}
-            allow="microphone; autoplay; clipboard-write; speaker-selection"
-            className={styles.iframe}
-            title="Voice call audio"
-          />
-        </div>
-      )}
+    <>
+      {/* Hidden audio sink — plays the remote peer's voice */}
+      <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
 
-      {mode === "fullscreen" && <VoiceCallFullScreen iframeRef={iframeRef} />}
-
-      {mode === "mini" && <VoiceCallMini iframeRef={iframeRef} />}
-    </div>
+      {mode === "fullscreen" && <VoiceCallFullScreen rtc={rtc} />}
+      {mode === "mini" && <VoiceCallMini rtc={rtc} />}
+    </>
   );
 }
