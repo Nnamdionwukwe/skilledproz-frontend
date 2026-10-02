@@ -143,6 +143,7 @@ import AdminTopWorkers from "./pages/admin/AdminTopWorkers.jsx";
 import AdminPaymentFunnel from "./pages/admin/AdminPaymentFunnel.jsx";
 import AdminCategoryDemand from "./pages/admin/AdminCategoryDemand.jsx";
 import VideoCallPage from "./components/booking/VideoCallPage.jsx";
+import ConversationVideoCallPage from "./components/booking/ConversationVideoCallPage.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1189,6 +1190,16 @@ export default function App() {
           element={
             <RequireAuth>
               <MyReports />
+            </RequireAuth>
+          }
+        />
+
+        {/* Conversation-scoped video calls (from the messages tab) */}
+        <Route
+          path="/messages/call/:conversationId"
+          element={
+            <RequireAuth>
+              <ConversationVideoCallPage />
             </RequireAuth>
           }
         />

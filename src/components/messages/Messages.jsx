@@ -1247,12 +1247,24 @@ export default function Messages() {
                   <button
                     type="button"
                     className={styles.attachBtn}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!activeConvoId) return;
-                      tracker.action("messages.videoCall.initiated", {
-                        conversationId: activeConvoId,
-                      });
-                      navigate(`/messages/call/${activeConvoId}`);
+                      try {
+                        // Initiate the call first — same endpoint as voice
+                        // (server stores one call per conversation)
+                        await api.post(
+                          `/voice-calls/${activeConvoId}/initiate`,
+                        );
+                        tracker.action("messages.videoCall.initiated", {
+                          conversationId: activeConvoId,
+                        });
+                        navigate(`/messages/call/${activeConvoId}`);
+                      } catch (err) {
+                        console.error(
+                          "Video call initiate failed:",
+                          err.message,
+                        );
+                      }
                     }}
                     disabled={!activeConvoId}
                     title="Start video call"
