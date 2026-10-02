@@ -9,22 +9,14 @@
 //   • Expose the local stream (for muting) and remote stream (for playback)
 //   • Clean up all media + sockets on unmount
 //
-// Usage:
-//   const rtc = useVoiceCallWebRTC({
-//     conversationId: "abc-123",
-//     isInitiator: true,
-//   });
-//   // rtc.remoteStream, rtc.localStream, rtc.status,
-//   // rtc.isMuted, rtc.toggleMute(), rtc.error
-//
-// Only one instance per active call. Pass conversationId=null to disable.
+// IMPORTANT: When remote tracks arrive, we REPLACE the remoteStream object
+// with a new MediaStream instance. This forces React to see a new reference
+// and re-run the provider's effect that attaches the audio element.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getVoiceSocket } from "../lib/voiceSocket";
 
-// Public STUN servers. Media flows peer-to-peer. For the ~5% of users behind
-// symmetric NATs, we'd need a TURN server — add one later if needed.
 const ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
@@ -34,17 +26,16 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [status, setStatus] = useState("idle");
-  // idle | requesting-mic | connecting | connected | disconnected | failed
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState(null);
 
   const pcRef = useRef(null);
   const socketRef = useRef(null);
   const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
   const pendingIceRef = useRef([]);
   const startedRef = useRef(false);
 
-  // ── Cleanup ────────────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
     if (pcRef.current) {
       try {
@@ -59,6 +50,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
     }
+    remoteStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
     setStatus("idle");
@@ -67,10 +59,9 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
     startedRef.current = false;
   }, []);
 
-  // ── Main effect ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!conversationId) return;
-    if (startedRef.current) return; // StrictMode double-mount guard
+    if (startedRef.current) return;
     startedRef.current = true;
 
     let cancelled = false;
@@ -79,7 +70,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
       try {
         setStatus("requesting-mic");
 
-        // 1. Get the mic. ONE prompt per browser session.
+        // ── 1. Microphone ─────────────────────────────────────────────
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -97,35 +88,67 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         localStreamRef.current = stream;
         setLocalStream(stream);
 
-        // 2. RTCPeerConnection.
+        // ── 2. Peer connection ────────────────────────────────────────
         const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         pcRef.current = pc;
 
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+        // Add mic tracks with direction="sendrecv" (explicit).
+        stream.getTracks().forEach((track) => {
+          try {
+            pc.addTrack(track, stream);
+          } catch (e) {
+            console.warn("[voice] addTrack failed:", e);
+          }
+        });
 
-        // 3. Remote stream container.
-        const remote = new MediaStream();
-        setRemoteStream(remote);
-
+        // ── 3. Remote tracks → rebuild MediaStream every time ────────
+        //    The key fix: replace the MediaStream object on each new
+        //    track. React's state diffing will see a new ref and re-run
+        //    the provider's useEffect, which sets the audio element's
+        //    srcObject fresh.
         pc.ontrack = (event) => {
-          event.streams[0].getTracks().forEach((track) => {
-            if (!remote.getTracks().includes(track)) {
-              remote.addTrack(track);
-            }
-          });
+          console.log(
+            "[voice] ontrack:",
+            event.track.kind,
+            event.streams.length,
+          );
+
+          // Build a fresh MediaStream containing all known remote tracks.
+          const incoming = event.streams[0];
+          const current = remoteStreamRef.current;
+          const next = new MediaStream();
+
+          const tracks = current
+            ? [...current.getTracks(), ...incoming.getTracks()]
+            : [...incoming.getTracks()];
+
+          // De-dupe by track id.
+          const seen = new Set();
+          for (const t of tracks) {
+            if (seen.has(t.id)) continue;
+            seen.add(t.id);
+            next.addTrack(t);
+          }
+
+          remoteStreamRef.current = next;
+          setRemoteStream(next);
         };
 
-        // 4. ICE candidates — relay through the socket.
+        // ── 4. ICE candidates ─────────────────────────────────────────
         pc.onicecandidate = (event) => {
-          if (!event.candidate) return;
+          if (!event.candidate) {
+            console.log("[voice] ICE gathering complete");
+            return;
+          }
           socketRef.current?.emit("voice:ice", {
             conversationId,
             candidate: event.candidate.toJSON(),
           });
         };
 
-        // 5. Connection state.
+        // ── 5. Connection state ───────────────────────────────────────
         pc.onconnectionstatechange = () => {
+          console.log("[voice] connectionState:", pc.connectionState);
           const s = pc.connectionState;
           if (s === "connected") setStatus("connected");
           else if (s === "connecting") setStatus("connecting");
@@ -133,7 +156,15 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
           else if (s === "failed") setStatus("failed");
         };
 
-        // 6. Socket signaling.
+        pc.oniceconnectionstatechange = () => {
+          console.log("[voice] iceConnectionState:", pc.iceConnectionState);
+        };
+
+        pc.onsignalingstatechange = () => {
+          console.log("[voice] signalingState:", pc.signalingState);
+        };
+
+        // ── 6. Signaling socket ───────────────────────────────────────
         const socket = getVoiceSocket();
         if (!socket) {
           setError("Could not connect to signaling server");
@@ -144,6 +175,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
 
         const joinRoom = () => {
           socket.emit("voice:join", { conversationId }, (resp) => {
+            console.log("[voice] join response:", resp);
             if (!resp?.ok) {
               setError(resp?.error || "Failed to join call room");
               setStatus("failed");
@@ -154,8 +186,8 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         if (socket.connected) joinRoom();
         else socket.once("connect", joinRoom);
 
-        // ── Socket event handlers ─────────────────────────────────────
         const onPeerJoined = async () => {
+          console.log("[voice] peer-joined, isInitiator:", isInitiator);
           if (!isInitiator || !pcRef.current) return;
           if (pcRef.current.signalingState !== "stable") return;
           try {
@@ -165,12 +197,14 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
             });
             await pcRef.current.setLocalDescription(offer);
             socket.emit("voice:offer", { conversationId, sdp: offer });
+            console.log("[voice] sent offer");
           } catch (err) {
             console.error("[voice] createOffer failed:", err);
           }
         };
 
         const onOffer = async ({ sdp }) => {
+          console.log("[voice] received offer");
           const pcLocal = pcRef.current;
           if (!pcLocal) return;
           try {
@@ -178,6 +212,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
             const answer = await pcLocal.createAnswer();
             await pcLocal.setLocalDescription(answer);
             socket.emit("voice:answer", { conversationId, sdp: answer });
+            console.log("[voice] sent answer");
 
             for (const c of pendingIceRef.current) {
               try {
@@ -193,6 +228,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         };
 
         const onAnswer = async ({ sdp }) => {
+          console.log("[voice] received answer");
           const pcLocal = pcRef.current;
           if (!pcLocal) return;
           try {
@@ -229,6 +265,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         };
 
         const onPeerLeft = () => {
+          console.log("[voice] peer left");
           setStatus("disconnected");
         };
 
@@ -238,7 +275,6 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         socket.on("voice:ice", onIce);
         socket.on("voice:peer-left", onPeerLeft);
 
-        // Store handlers so the cleanup can remove them.
         socketRef.current.__voiceHandlers = {
           onPeerJoined,
           onOffer,
@@ -284,7 +320,6 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
-  // ── Mute / unmute ─────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
     const stream = localStreamRef.current;
     if (!stream) return;

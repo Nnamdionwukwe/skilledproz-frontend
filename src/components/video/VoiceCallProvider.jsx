@@ -4,11 +4,17 @@
 //
 // Owns:
 //   • useVoiceCallWebRTC (the peer connection + signaling)
-//   • Polling /voice-calls/:conversationId for state changes (accept, end, etc.)
+//   • Polling /voice-calls/:conversationId for state changes
 //   • A hidden <audio> element that plays the remote stream
 //   • Switching between full-screen and mini UI based on context.mode
 //
-// Because it lives at the root, the call survives navigation.
+// AUDIO PLAYBACK NOTES:
+//   1. The <audio> element is positioned off-screen, NOT display:none.
+//      Some browsers (Safari especially) refuse to play fully-hidden media.
+//   2. We re-attach srcObject whenever the remote stream changes AND on
+//      every addtrack event — belt and braces to survive async track arrival.
+//   3. If autoplay is blocked (no user gesture yet), we retry on the next
+//      click anywhere on the page.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef } from "react";
@@ -31,25 +37,60 @@ export default function VoiceCallProvider() {
   const isActive = call?.status === "ACTIVE";
   const isInitiator = call?.initiatorId === user?.id;
 
-  // WebRTC only spins up when the call is ACTIVE.
   const rtc = useVoiceCallWebRTC({
     conversationId: isActive ? call?.conversationId : null,
     isInitiator,
   });
 
-  // Attach remote stream to the hidden <audio> element.
+  // ── Attach remote stream to <audio> ────────────────────────────────────
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
-    if (rtc.remoteStream) {
-      el.srcObject = rtc.remoteStream;
-      el.play().catch((e) => console.warn("[voice] autoplay blocked:", e));
-    } else {
-      el.srcObject = null;
+
+    const attach = () => {
+      if (!rtc.remoteStream) {
+        el.srcObject = null;
+        return;
+      }
+      // Only reset srcObject if it changed — resetting mid-playback can
+      // cause a brief audio glitch.
+      if (el.srcObject !== rtc.remoteStream) {
+        el.srcObject = rtc.remoteStream;
+      }
+      const p = el.play();
+      if (p && typeof p.catch === "function") {
+        p.catch((e) => {
+          console.warn("[voice] autoplay blocked:", e.message);
+          // Retry once on the next user gesture anywhere on the page.
+          const resume = () => {
+            el.play().catch(() => {});
+            window.removeEventListener("click", resume);
+            window.removeEventListener("keydown", resume);
+          };
+          window.addEventListener("click", resume, { once: true });
+          window.addEventListener("keydown", resume, { once: true });
+        });
+      }
+    };
+
+    attach();
+
+    // Listen for tracks arriving on the remote stream AFTER this effect ran.
+    // This is the primary fix for the "silent call" symptom.
+    const stream = rtc.remoteStream;
+    if (stream) {
+      const onAddTrack = () => {
+        console.log("[voice] remote addtrack — re-attaching audio");
+        attach();
+      };
+      stream.addEventListener("addtrack", onAddTrack);
+      return () => {
+        stream.removeEventListener("addtrack", onAddTrack);
+      };
     }
   }, [rtc.remoteStream]);
 
-  // Poll for status changes.
+  // ── Poll for status changes ────────────────────────────────────────────
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (!call?.conversationId) return;
@@ -94,8 +135,27 @@ export default function VoiceCallProvider() {
 
   return (
     <>
-      {/* Hidden audio sink — plays the remote peer's voice */}
-      <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
+      {/*
+        Hidden audio sink — must NOT be display:none.
+        Placing it 1×1 off-screen keeps it "visible" to the browser so
+        autoplay policies treat it like any other media element.
+      */}
+      <audio
+        ref={audioRef}
+        autoPlay
+        playsInline
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          width: 1,
+          height: 1,
+          opacity: 0.01,
+          pointerEvents: "none",
+          top: 0,
+          left: 0,
+          border: 0,
+        }}
+      />
 
       {mode === "fullscreen" && <VoiceCallFullScreen rtc={rtc} />}
       {mode === "mini" && <VoiceCallMini rtc={rtc} />}
