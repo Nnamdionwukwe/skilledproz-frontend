@@ -19,7 +19,6 @@ import {
   FiPhone,
 } from "react-icons/fi";
 import tracker from "../../lib/analytics/tracker";
-import VoiceCallPanel from "../video/VoiceCallPanel";
 import { useVoiceCall } from "../../context/VoiceCallContext";
 
 const LANGUAGES = [
@@ -1337,12 +1336,6 @@ export default function Messages() {
           )}
         </div>
       </div>
-
-      {/* ── Floating voice call panel — persists across conversation switches ── */}
-      <VoiceCallPanel
-        conversationId={activeConvoId || null}
-        otherUser={activeOther}
-      />
 
       {/* Fullscreen image viewer */}
       {lightboxSrc && (
