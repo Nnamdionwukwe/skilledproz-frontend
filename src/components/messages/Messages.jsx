@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
@@ -15,8 +15,11 @@ import {
   FiX,
   FiArrowLeft,
   FiChevronDown,
+  FiVideo,
+  FiPhone,
 } from "react-icons/fi";
 import tracker from "../../lib/analytics/tracker";
+import VoiceCallPanel from "../video/VoiceCallPanel";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -88,23 +91,12 @@ function formatDateDivider(dateStr) {
 
 // ─── URL detection + linkification ─────────────────────────────────────────
 
-// Matches http(s)://... and www.... URLs, plus bare call.skilledproz.com
-// links. Stops at whitespace and common trailing punctuation so we don't
-// swallow sentence-ending periods or commas.
 const URL_REGEX =
   /((?:https?:\/\/|www\.)[^\s<>()"']+[^\s<>()"'.,;:!?]|\b(?:call|api|app)\.skilledproz\.com\/[^\s<>()"',;!?]+)/gi;
 
-/**
- * Splits `text` into an array of React nodes, converting any URL-shaped
- * substrings into clickable <a> tags.
- *
- * Returns plain string when there are no URLs, so the caller can short-
- * circuit styling if needed.
- */
 function linkify(text) {
   if (!text || typeof text !== "string") return text;
 
-  // Fast path — nothing URL-shaped
   if (!/https?:\/\/|www\.|\.skilledproz\.com/i.test(text)) {
     return text;
   }
@@ -114,20 +106,17 @@ function linkify(text) {
   let match;
   let key = 0;
 
-  // Reset regex state — global flags carry lastIndex between calls
   URL_REGEX.lastIndex = 0;
 
   while ((match = URL_REGEX.exec(text)) !== null) {
     const start = match.index;
     const end = URL_REGEX.lastIndex;
 
-    // Push the plain text before the URL
     if (start > lastIndex) {
       parts.push(text.slice(lastIndex, start));
     }
 
     let url = match[0];
-    // Ensure a scheme so it opens correctly from an <a>
     const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
 
     parts.push(
@@ -146,7 +135,6 @@ function linkify(text) {
     lastIndex = end;
   }
 
-  // Push any remaining plain text after the last URL
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex));
   }
@@ -198,7 +186,6 @@ function TranslateButton({ text }) {
     setShowPicker(false);
     setLoading(true);
 
-    // ── ANALYTICS: translation attempt ───────────────────────────────────
     tracker.action("messages.translate.attempt", {
       targetLang: langCode,
       textLength: text?.length || 0,
@@ -211,14 +198,12 @@ function TranslateButton({ text }) {
       });
       setTranslated(res.data.data.translated);
 
-      // ── ANALYTICS: translation succeeded ─────────────────────────────
       tracker.action("messages.translate.success", {
         targetLang: langCode,
       });
     } catch {
       setTranslated("Translation failed.");
 
-      // ── ANALYTICS: translation failed ────────────────────────────────
       tracker.action("messages.translate.failed", {
         targetLang: langCode,
       });
@@ -237,7 +222,6 @@ function TranslateButton({ text }) {
             className={styles.translateDismiss}
             onClick={() => {
               setTranslated(null);
-              // ── ANALYTICS: translation dismissed ─────────────────────
               tracker.track("messages.translate.dismissed");
             }}
             type="button"
@@ -253,7 +237,6 @@ function TranslateButton({ text }) {
             className={styles.translateBtn}
             onClick={() => {
               setShowPicker((v) => !v);
-              // ── ANALYTICS: translation picker toggled ────────────────
               tracker.track("messages.translate.picker.toggled");
             }}
             disabled={loading}
@@ -290,12 +273,13 @@ function TranslateButton({ text }) {
 export default function Messages() {
   const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   // ── Initial URL state ──
   const initialConvoId = searchParams.get("convo");
   const initialWithId = searchParams.get("with");
-  const initialDraft = searchParams.get("draft"); // ← ADDED
+  const initialDraft = searchParams.get("draft");
 
   const [conversations, setConversations] = useState([]);
   const [activeConvoId, setActiveConvoId] = useState(initialConvoId || null);
@@ -304,13 +288,13 @@ export default function Messages() {
 
   const [messages, setMessages] = useState([]);
   const [sendingMessage, setSendingMessage] = useState(null);
-  // Seed the composer from the URL draft, if present
-  const [newMessage, setNewMessage] = useState(initialDraft || ""); // ← CHANGED
+  const [newMessage, setNewMessage] = useState(initialDraft || "");
   const [sending, setSending] = useState(false);
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [startingVoiceCall, setStartingVoiceCall] = useState(false);
 
   // ── Mobile view: "list" or "chat" ──
   const [mobileView, setMobileView] = useState(() => {
@@ -362,11 +346,6 @@ export default function Messages() {
   }, []);
 
   // ── Detect new incoming messages ──
-  // Silent: never auto-scrolls on incoming messages. Only:
-  //  - first load of a conversation → jump to bottom (invisible, no animation)
-  //  - user just sent → scroll to their own message
-  //  - user is already at the bottom → scroll smoothly to keep them there
-  //  - otherwise → do nothing; the user will see the message when they scroll
   useEffect(() => {
     if (messages.length === 0) {
       lastSeenMessageIdRef.current = null;
@@ -401,7 +380,6 @@ export default function Messages() {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       });
     }
-    // else: silent — no scroll, no badge, no visible indicator
   }, [messages]);
 
   // ── Optimistic bubble → scroll to show it ──
@@ -427,7 +405,6 @@ export default function Messages() {
     isAtBottomRef.current = true;
     setShowJumpButton(false);
 
-    // ── ANALYTICS: jump to bottom clicked ────────────────────────────────
     tracker.track("messages.jumpToBottom.clicked", {
       conversationId: activeConvoId,
     });
@@ -447,7 +424,6 @@ export default function Messages() {
     function onKey(e) {
       if (e.key === "Escape") {
         setLightboxSrc(null);
-        // ── ANALYTICS: lightbox closed via escape ──────────────────────
         tracker.track("messages.lightbox.closed", { via: "escape" });
       }
     }
@@ -492,8 +468,6 @@ export default function Messages() {
     if (existing) {
       setActiveConvoId(existing.id);
       setWithUserId(null);
-      // Preserve the draft param when rewriting the URL so the composer
-      // keeps its pre-filled text. ← ADDED
       const next = { convo: existing.id };
       if (initialDraft) next.draft = initialDraft;
       setSearchParams(next, { replace: true });
@@ -504,8 +478,6 @@ export default function Messages() {
 
     const fetchUser = async () => {
       try {
-        // Single universal endpoint — works for hirers, workers, and admins.
-        // No 404 for the wrong role; always returns the user if they exist.
         const res = await api.get(`/users/${withUserId}`);
         if (cancelled) return;
 
@@ -528,10 +500,7 @@ export default function Messages() {
     };
   }, [withUserId, conversations, setSearchParams]);
 
-  // ── Consume the initial draft: seed the composer, then strip from URL ──
-  // `newMessage` was already seeded from `initialDraft` in useState above.
-  // Here we just clean the URL so refresh doesn't re-inject the same draft
-  // after the user has edited or sent it. ← ADDED
+  // ── Consume the initial draft ──
   useEffect(() => {
     if (!initialDraft) return;
     const next = new URLSearchParams(searchParams);
@@ -564,7 +533,6 @@ export default function Messages() {
       return;
     }
 
-    // ── ANALYTICS: conversation opened ───────────────────────────────────
     const convo = conversations.find((c) => c.id === activeConvoId);
     const other = convo?.users?.find((u) => u.userId !== user?.id)?.user;
     tracker.track("messages.conversation.opened", {
@@ -616,7 +584,6 @@ export default function Messages() {
     lastSeenMessageIdRef.current = null;
     setShowJumpButton(false);
 
-    // ── ANALYTICS: conversation selected from sidebar ────────────────────
     tracker.action("messages.conversation.selected", {
       conversationId: convoId,
     });
@@ -660,7 +627,6 @@ export default function Messages() {
     const receiverId = resolveReceiver();
     if (!receiverId) return;
 
-    // ── ANALYTICS: message send attempt ──────────────────────────────────
     tracker.action("messages.send.attempt", {
       conversationId: activeConvoId || null,
       contentLength: content.length,
@@ -716,7 +682,6 @@ export default function Messages() {
         );
       }
 
-      // ── ANALYTICS: message sent successfully ──────────────────────────
       tracker.action("messages.sent", {
         conversationId: conversationId || activeConvoId,
         messageId: message.id,
@@ -726,7 +691,6 @@ export default function Messages() {
     } catch (err) {
       setSendingMessage(null);
 
-      // ── ANALYTICS: message send failed ────────────────────────────────
       tracker.action("messages.send.failed", {
         conversationId: activeConvoId || null,
         contentLength: content.length,
@@ -744,7 +708,6 @@ export default function Messages() {
     const receiverId = resolveReceiver();
     if (!receiverId) return;
 
-    // ── ANALYTICS: file upload attempt ───────────────────────────────────
     tracker.action("messages.file.upload.attempt", {
       conversationId: activeConvoId || null,
       fileName: file.name,
@@ -781,7 +744,6 @@ export default function Messages() {
         });
       }
 
-      // ── ANALYTICS: file upload succeeded ─────────────────────────────
       tracker.action("messages.file.uploaded", {
         conversationId: conversationId || activeConvoId,
         messageId: message.id,
@@ -789,7 +751,6 @@ export default function Messages() {
         fileSizeKB: Math.round(file.size / 1024),
       });
     } catch (err) {
-      // ── ANALYTICS: file upload failed ────────────────────────────────
       tracker.action("messages.file.upload.failed", {
         conversationId: activeConvoId || null,
         fileType: file.type,
@@ -805,6 +766,27 @@ export default function Messages() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Voice call initiation (from the toolbar button)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleStartVoiceCall = async () => {
+    if (!activeConvoId || startingVoiceCall) return;
+    setStartingVoiceCall(true);
+    try {
+      await api.post(`/voice-calls/${activeConvoId}/initiate`);
+      // The VoiceCallPanel polls every 3 seconds and will pick up the
+      // PENDING state on the next tick. No explicit refresh needed here.
+      tracker.action("messages.voiceCall.initiated", {
+        conversationId: activeConvoId,
+      });
+    } catch (err) {
+      console.error("Voice call initiate failed:", err.message);
+    } finally {
+      setStartingVoiceCall(false);
     }
   };
 
@@ -879,7 +861,6 @@ export default function Messages() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                // ── ANALYTICS: search started (once) ──────────────────────
                 if (!searchQuery && e.target.value.length === 1) {
                   tracker.track("messages.search.started");
                 }
@@ -1108,7 +1089,6 @@ export default function Messages() {
                                         className={styles.messageImage}
                                         onClick={() => {
                                           setLightboxSrc(msg.fileUrl);
-                                          // ── ANALYTICS: image opened ─────
                                           tracker.action(
                                             "messages.image.opened",
                                             {
@@ -1206,8 +1186,6 @@ export default function Messages() {
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Jump-to-bottom — appears when the user scrolls up.
-                    No badge, no count — just a way back to the newest message. */}
                 {showJumpButton && (
                   <button
                     type="button"
@@ -1246,6 +1224,42 @@ export default function Messages() {
                     ) : (
                       <FiPaperclip size={16} />
                     )}
+                  </button>
+
+                  {/* ── Voice call button ── */}
+                  <button
+                    type="button"
+                    className={styles.attachBtn}
+                    onClick={handleStartVoiceCall}
+                    disabled={!activeConvoId || startingVoiceCall}
+                    title="Start voice call"
+                    aria-label="Start voice call"
+                    data-track-id="messages.voiceCall.start"
+                  >
+                    {startingVoiceCall ? (
+                      <span className={styles.spinner} />
+                    ) : (
+                      <FiPhone size={16} />
+                    )}
+                  </button>
+
+                  {/* ── Video call button ── */}
+                  <button
+                    type="button"
+                    className={styles.attachBtn}
+                    onClick={() => {
+                      if (!activeConvoId) return;
+                      tracker.action("messages.videoCall.initiated", {
+                        conversationId: activeConvoId,
+                      });
+                      navigate(`/messages/call/${activeConvoId}`);
+                    }}
+                    disabled={!activeConvoId}
+                    title="Start video call"
+                    aria-label="Start video call"
+                    data-track-id="messages.videoCall.start"
+                  >
+                    <FiVideo size={16} />
                   </button>
                 </div>
 
@@ -1296,13 +1310,18 @@ export default function Messages() {
         </div>
       </div>
 
+      {/* ── Floating voice call panel — persists across conversation switches ── */}
+      <VoiceCallPanel
+        conversationId={activeConvoId || null}
+        otherUser={activeOther}
+      />
+
       {/* Fullscreen image viewer */}
       {lightboxSrc && (
         <div
           className={styles.lightboxOverlay}
           onClick={() => {
             setLightboxSrc(null);
-            // ── ANALYTICS: lightbox closed via overlay ──────────────────
             tracker.track("messages.lightbox.closed", { via: "overlay" });
           }}
           role="dialog"
@@ -1314,7 +1333,6 @@ export default function Messages() {
             className={styles.lightboxClose}
             onClick={() => {
               setLightboxSrc(null);
-              // ── ANALYTICS: lightbox closed via button ──────────────────
               tracker.track("messages.lightbox.closed", { via: "closeBtn" });
             }}
             aria-label="Close image"
