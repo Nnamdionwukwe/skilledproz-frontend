@@ -3,6 +3,9 @@
 // Minimized voice call widget — docks bottom-right. The user can keep
 // browsing the app while the audio keeps flowing (the MiroTalk iframe is
 // repositioned behind this widget by VoiceCallProvider).
+//
+// The URL is owned by VoiceCallProvider and already includes a display-name
+// param, so MiroTalk never shows the join screen.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
@@ -30,7 +33,7 @@ function formatDuration(startedAt) {
 
 export default function VoiceCallMini({ iframeRef }) {
   const { user } = useAuthStore();
-  const { call, updateCall, endCall, expand } = useVoiceCall();
+  const { call, updateCall, endCall, expand, setCallUrl } = useVoiceCall();
 
   const [duration, setDuration] = useState("00:00");
   const [muted, setMuted] = useState(false);
@@ -79,6 +82,7 @@ export default function VoiceCallMini({ iframeRef }) {
     try {
       const res = await api.patch(`/voice-calls/${call.conversationId}/accept`);
       updateCall(res.data.data.call);
+      if (res.data.data.callUrl) setCallUrl(res.data.data.callUrl);
     } catch {
       // silent
     } finally {

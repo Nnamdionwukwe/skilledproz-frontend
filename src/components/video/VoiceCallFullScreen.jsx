@@ -6,8 +6,8 @@
 //   • You clicked "Expand" on the mini widget
 //
 // The MiroTalk iframe lives behind this overlay (owned by VoiceCallProvider).
-// The user clicks "Join" once to grant mic permission; after that the call
-// stays connected even if they minimize.
+// The URL is already built with a pre-filled display name, so the iframe
+// lands directly in the room — no manual "Join" click.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
@@ -38,7 +38,7 @@ function formatDuration(startedAt) {
 
 export default function VoiceCallFullScreen({ iframeRef }) {
   const { user } = useAuthStore();
-  const { call, callUrl, updateCall, endCall, minimize } = useVoiceCall();
+  const { call, updateCall, endCall, minimize, setCallUrl } = useVoiceCall();
 
   const [duration, setDuration] = useState("00:00");
   const [muted, setMuted] = useState(false);
@@ -90,6 +90,9 @@ export default function VoiceCallFullScreen({ iframeRef }) {
     try {
       const res = await api.patch(`/voice-calls/${call.conversationId}/accept`);
       updateCall(res.data.data.call);
+      // The provider will rebuild the URL with the display name and swap
+      // in a fresh iframe — the user lands directly in the room.
+      if (res.data.data.callUrl) setCallUrl(res.data.data.callUrl);
     } catch {
       // silent — banner stays up
     } finally {
@@ -154,7 +157,7 @@ export default function VoiceCallFullScreen({ iframeRef }) {
 
   return (
     <div className={styles.overlay} role="dialog" aria-label="Voice call">
-      {/* ── Top bar ────────────────────────────────────────────────── */}
+      {/* ── Top bar ─────────────────────────────────────────────────── */}
       <div className={styles.topBar}>
         <img src="/skilledproz.PNG" alt="SkilledProz" className={styles.logo} />
         <span className={styles.brand}>SkilledProz Voice Call</span>
@@ -211,7 +214,7 @@ export default function VoiceCallFullScreen({ iframeRef }) {
         )}
       </div>
 
-      {/* ── Bottom: controls ────────────────────────────────────────── */}
+      {/* ── Bottom: controls ─────────────────────────────────────────── */}
       <div className={styles.controls}>
         {isActive && (
           <>
