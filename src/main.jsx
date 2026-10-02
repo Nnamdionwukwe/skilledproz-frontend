@@ -16,6 +16,7 @@ import { initAutoTrack } from "./lib/analytics/autoTrack";
 import IncomingCallBanner from "./components/video/IncomingCallBanner";
 import RouteTracker from "./lib/analytics/RouteTracker.jsx";
 import VoiceCallBanner from "./components/video/VoiceCallBanner.jsx";
+import ConversationVideoCallBanner from "./components/video/ConversationVideoCallBanner.jsx";
 
 // Google OAuth client ID (same one used by the backend)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -35,6 +36,7 @@ function HydratedApp() {
       <BrowserRouter>
         {/* 🔔 Global incoming-call banner — appears on every route */}
         <IncomingCallBanner />
+        <ConversationVideoCallBanner /> {/* conversation video calls */}
         <VoiceCallBanner /> {/* conversation voice calls */}
         {/* 📊 Route tracking for analytics */}
         <RouteTracker />
