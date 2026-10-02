@@ -1,25 +1,25 @@
-// src/components/video/IncomingCallBanner.jsx
+// src/components/video/VoiceCallBanner.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Global incoming-call banner.
+// Incoming banner for CONVERSATION voice calls.
 //
-// Mounted once at the app root (main.jsx) as a sibling of <App />.
-// Polls GET /video-calls/incoming every 5s on EVERY page.
+// Mounted at the app root (main.jsx) as a sibling of <App />.
+// Polls /voice-calls/incoming every 5s and shows a banner only when the
+// returned call has callType === "voice".
 //
-// Re-ring behavior:
-//   - When the user Declines, the server flips the call to DECLINED.
-//   - The next poll sees no PENDING call → banner hides automatically.
-//   - When the caller initiates again, the server flips the same call back
-//     to PENDING. The next poll sees a PENDING call → banner shows again.
-//   → We don't need a "dismissed" flag. Server state is the single truth.
+// Scope: voice calls initiated from the Messages tab.
+//        Video calls (booking OR conversation) have their own banners.
+//
+// Accept → navigate to /messages?convo=<conversationId> so the receiver
+//          lands in the conversation and the VoiceCallPanel takes over.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
-import styles from "./IncomingCallBanner.module.css";
+import styles from "./VoiceCallBanner.module.css";
 import {
-  FaVideo,
+  FaPhone,
   FaCheckCircle,
   FaTimesCircle,
   FaSpinner,
@@ -35,10 +35,10 @@ const SUPPRESSED_PREFIXES = [
   "/reset-password",
   "/verify-email",
   "/auth/google/callback",
-  "/call/",
+  "/messages", // VoiceCallPanel handles it inline when you're already there
 ];
 
-export default function IncomingCallBanner() {
+export default function VoiceCallBanner() {
   const navigate = useNavigate();
   const location = useLocation();
   const { accessToken, user, isHydrated } = useAuthStore();
@@ -52,7 +52,7 @@ export default function IncomingCallBanner() {
     location.pathname.startsWith(p),
   );
 
-  // ── Poll for incoming calls ────────────────────────────────────────────
+  // ── Poll for incoming voice calls ──────────────────────────────────────
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (suppressed) {
@@ -67,24 +67,16 @@ export default function IncomingCallBanner() {
       inFlightRef.current = true;
 
       try {
-        const res = await api.get("/video-calls/incoming");
-        const { call } = res.data.data || {};
+        const res = await api.get("/voice-calls/incoming");
+        const data = res.data.data || {};
+        const call = data.call;
 
         if (cancelled) return;
 
-        // The backend only returns a call when the current user is the
-        // receiver AND the call is PENDING. If it returns null, hide.
-        // If it returns a call, show it — regardless of whether we've
-        // seen this same call.id before.
-        if (call) {
-          // Re-render only if the incoming payload actually changed.
-          setIncoming((prev) => {
-            if (!prev) return call;
-            if (prev.id === call.id && prev.status === call.status) {
-              return prev;
-            }
-            return call;
-          });
+        // Only handle voice calls — the video banner polls the same
+        // endpoint and filters for callType === "video".
+        if (call && call.callType === "voice") {
+          setIncoming((prev) => (prev?.id === call.id ? prev : call));
         } else {
           setIncoming(null);
         }
@@ -108,11 +100,11 @@ export default function IncomingCallBanner() {
     if (!incoming) return;
     setLoading(true);
     try {
-      await api.patch(`/video-calls/${incoming.bookingId}/accept`);
+      await api.patch(`/voice-calls/${incoming.conversationId}/accept`);
       setIncoming(null);
-      navigate(`/call/${incoming.bookingId}`);
+      navigate(`/messages?convo=${incoming.conversationId}`);
     } catch {
-      // Keep the banner up so they can retry.
+      // keep the banner up so they can retry
     } finally {
       setLoading(false);
     }
@@ -123,10 +115,7 @@ export default function IncomingCallBanner() {
     if (!incoming) return;
     setLoading(true);
     try {
-      await api.patch(`/video-calls/${incoming.bookingId}/decline`);
-      // Hide immediately for responsiveness — the next poll will confirm
-      // the server-side DECLINED status and keep it hidden until the
-      // caller initiates again.
+      await api.patch(`/voice-calls/${incoming.conversationId}/decline`);
       setIncoming(null);
     } catch {
       // silent
@@ -138,9 +127,13 @@ export default function IncomingCallBanner() {
   // ── Render guard ───────────────────────────────────────────────────────
   if (!incoming || suppressed) return null;
 
-  const subtitle = incoming.booking?.title
-    ? `Regarding: ${incoming.booking.title}`
-    : "SkilledProz video consultation";
+  const callerName = incoming.initiator
+    ? `${incoming.initiator.firstName || ""} ${incoming.initiator.lastName || ""}`.trim()
+    : "";
+
+  const subtitle = callerName
+    ? `${callerName} is calling you`
+    : "SkilledProz voice call";
 
   return (
     <div className={styles.overlay} role="alert" aria-live="assertive">
@@ -148,11 +141,11 @@ export default function IncomingCallBanner() {
         <div className={styles.pulseRing} aria-hidden="true" />
 
         <div className={styles.iconWrap}>
-          <FaVideo size={26} color="#fff" />
+          <FaPhone size={26} color="#fff" />
         </div>
 
         <div className={styles.body}>
-          <p className={styles.title}>Incoming Video Call</p>
+          <p className={styles.title}>Incoming Voice Call</p>
           <p className={styles.subtitle}>{subtitle}</p>
         </div>
 
@@ -161,7 +154,7 @@ export default function IncomingCallBanner() {
             className={styles.acceptBtn}
             onClick={handleAccept}
             disabled={loading}
-            aria-label="Accept call"
+            aria-label="Accept voice call"
           >
             {loading ? (
               <FaSpinner className={styles.spinner} size={16} />
@@ -177,7 +170,7 @@ export default function IncomingCallBanner() {
             className={styles.declineBtn}
             onClick={handleDecline}
             disabled={loading}
-            aria-label="Decline call"
+            aria-label="Decline voice call"
           >
             <FaTimesCircle size={16} />
             <span>Decline</span>

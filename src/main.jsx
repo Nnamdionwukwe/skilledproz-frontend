@@ -15,6 +15,7 @@ import { initAutoTrack } from "./lib/analytics/autoTrack";
 // persist across every route transition and can use react-router hooks.
 import IncomingCallBanner from "./components/video/IncomingCallBanner";
 import RouteTracker from "./lib/analytics/RouteTracker.jsx";
+import VoiceCallBanner from "./components/video/VoiceCallBanner.jsx";
 
 // Google OAuth client ID (same one used by the backend)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -34,10 +35,9 @@ function HydratedApp() {
       <BrowserRouter>
         {/* 🔔 Global incoming-call banner — appears on every route */}
         <IncomingCallBanner />
-
+        <VoiceCallBanner /> {/* conversation voice calls */}
         {/* 📊 Route tracking for analytics */}
         <RouteTracker />
-
         {/* The route table — App.jsx is a pure <Routes> component */}
         <App />
       </BrowserRouter>

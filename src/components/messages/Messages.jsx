@@ -777,9 +777,9 @@ export default function Messages() {
     if (!activeConvoId || startingVoiceCall) return;
     setStartingVoiceCall(true);
     try {
-      await api.post(`/voice-calls/${activeConvoId}/initiate`);
-      // The VoiceCallPanel polls every 3 seconds and will pick up the
-      // PENDING state on the next tick. No explicit refresh needed here.
+      await api.post(`/voice-calls/${activeConvoId}/initiate`, {
+        callType: "voice",
+      });
       tracker.action("messages.voiceCall.initiated", {
         conversationId: activeConvoId,
       });
@@ -1210,6 +1210,7 @@ export default function Messages() {
                 />
 
                 <div className={styles.inputToolbar}>
+                  {/* Attach file */}
                   <button
                     type="button"
                     className={styles.attachBtn}
@@ -1249,29 +1250,37 @@ export default function Messages() {
                     className={styles.attachBtn}
                     onClick={async () => {
                       if (!activeConvoId) return;
+                      setStartingVoiceCall(true);
                       try {
-                        // Initiate the call first — same endpoint as voice
-                        // (server stores one call per conversation)
+                        // Initiate the call as a VIDEO call
                         await api.post(
                           `/voice-calls/${activeConvoId}/initiate`,
+                          { callType: "video" },
                         );
                         tracker.action("messages.videoCall.initiated", {
                           conversationId: activeConvoId,
                         });
+                        // Navigate to the full-screen video page
                         navigate(`/messages/call/${activeConvoId}`);
                       } catch (err) {
                         console.error(
                           "Video call initiate failed:",
                           err.message,
                         );
+                      } finally {
+                        setStartingVoiceCall(false);
                       }
                     }}
-                    disabled={!activeConvoId}
+                    disabled={!activeConvoId || startingVoiceCall}
                     title="Start video call"
                     aria-label="Start video call"
                     data-track-id="messages.videoCall.start"
                   >
-                    <FiVideo size={16} />
+                    {startingVoiceCall ? (
+                      <span className={styles.spinner} />
+                    ) : (
+                      <FiVideo size={16} />
+                    )}
                   </button>
                 </div>
 

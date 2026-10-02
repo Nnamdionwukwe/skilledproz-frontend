@@ -1,17 +1,17 @@
 // src/pages/booking/ConversationVideoCallPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Full-screen video call page for conversation-scoped calls.
+// Full-screen video call page for conversation-scoped video calls.
 //
 // Route: /messages/call/:conversationId
 //
-// Reuses the same VoiceCall record and MiroTalk room as the voice call panel,
-// but with video enabled (no audio=1/video=0 params on the iframe URL).
+// The backend already builds the URL with video=1 for video calls (see
+// buildVoiceCallUrl in src/services/voiceCall.service.js). We just use it
+// directly here.
 //
 // Flow:
-//   1. GET /voice-calls/:conversationId → { call, callUrl }
-//   2. Strip audio=1/video=0 from callUrl → back to default MiroTalk room
-//   3. Render full-screen iframe with SkilledProz chrome
-//   4. On end → PATCH /voice-calls/:conversationId/end → navigate back to /messages
+//   1. GET /voice-calls/:conversationId → { call, callUrl, callType }
+//   2. Render full-screen iframe with SkilledProz chrome
+//   3. On end → PATCH /voice-calls/:conversationId/end → back to /messages
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -26,20 +26,6 @@ import {
   FaCompress,
   FaExternalLinkAlt,
 } from "react-icons/fa";
-
-function buildVideoRoomUrl(baseUrl) {
-  if (!baseUrl) return baseUrl;
-  try {
-    const url = new URL(baseUrl);
-    // Strip the audio-only overrides so MiroTalk prompts for camera too
-    url.searchParams.delete("audio");
-    url.searchParams.delete("video");
-    url.searchParams.set("noti", "0");
-    return url.toString();
-  } catch {
-    return baseUrl;
-  }
-}
 
 export default function ConversationVideoCallPage() {
   const { conversationId } = useParams();
@@ -61,13 +47,12 @@ export default function ConversationVideoCallPage() {
       const data = res.data.data;
 
       if (!data?.call) {
-        // No call → redirect back to messages
         navigate(`/messages?convo=${conversationId}`, { replace: true });
         return;
       }
 
       setCall(data.call);
-      setCallUrl(buildVideoRoomUrl(data.callUrl));
+      setCallUrl(data.callUrl); // ← backend already built it with video=1
       inCallRef.current = data.call.status === "ACTIVE";
 
       if (data.call.status === "ENDED" || data.call.status === "DECLINED") {
@@ -84,7 +69,7 @@ export default function ConversationVideoCallPage() {
     loadCall();
   }, [loadCall]);
 
-  // Poll for remote end
+  // ── Poll for remote end ────────────────────────────────────────────────
   useEffect(() => {
     if (!inCallRef.current) return;
 
@@ -126,6 +111,7 @@ export default function ConversationVideoCallPage() {
     if (callUrl) window.open(callUrl, "_blank", "noopener,noreferrer");
   }
 
+  // ── Render guards ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className={styles.page}>
