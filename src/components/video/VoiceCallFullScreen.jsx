@@ -8,6 +8,11 @@
 //
 // The MiroTalk-free WebRTC session is managed by <VoiceCallProvider>. This
 // component is purely UI.
+//
+// 🔧 DEBUG OVERLAY (temporary): a small state panel at the bottom of the
+// screen shows the current WebRTC state. It works on phones where DevTools
+// aren't available — just take a photo of both screens during a call.
+// Remove the <VoiceCallDebugPanel /> JSX once audio is confirmed working.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from "react";
@@ -32,6 +37,84 @@ function formatDuration(startedAt) {
   const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const s = String(elapsed % 60).padStart(2, "0");
   return `${m}:${s}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Debug panel — shows live WebRTC state. Temporary.
+// ─────────────────────────────────────────────────────────────────────────────
+function VoiceCallDebugPanel({ rtc, call, user }) {
+  const isInitiator = call?.initiatorId === user?.id;
+  const localTracks = rtc?.localStream?.getAudioTracks?.() || [];
+  const remoteTracks = rtc?.remoteStream?.getAudioTracks?.() || [];
+
+  // Sample the audio element state every 500 ms so we can see if it's playing.
+  const [audioSnapshot, setAudioSnapshot] = useState(null);
+  useEffect(() => {
+    const tick = () => {
+      const el = document.querySelector("audio");
+      if (el) {
+        setAudioSnapshot({
+          hasSrcObject: !!el.srcObject,
+          tracks: el.srcObject?.getAudioTracks?.().length || 0,
+          paused: el.paused,
+          muted: el.muted,
+          volume: el.volume,
+          readyState: el.readyState,
+        });
+      } else {
+        setAudioSnapshot(null);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, []);
+
+  const line = (label, value) =>
+    `${label.padEnd(12)} ${value === undefined ? "—" : value}`;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 8,
+        right: 8,
+        bottom: 8,
+        zIndex: 99999,
+        background: "rgba(0, 0, 0, 0.85)",
+        color: "#7CFC00",
+        fontFamily: "ui-monospace, Menlo, monospace",
+        fontSize: 10,
+        lineHeight: 1.4,
+        padding: "8px 10px",
+        borderRadius: 8,
+        whiteSpace: "pre",
+        pointerEvents: "none",
+        maxHeight: 200,
+        overflow: "auto",
+      }}
+    >
+      {[
+        line("role", isInitiator ? "caller" : "receiver"),
+        line("call.status", call?.status),
+        line("rtc.status", rtc?.status),
+        line("local tracks", localTracks.length),
+        line("remote tracks", remoteTracks.length),
+        line("isMuted", rtc?.isMuted),
+        line("rtc.error", rtc?.error || "none"),
+        "---",
+        line("audio el", audioSnapshot ? "found" : "NONE"),
+        audioSnapshot ? line("  srcObj", audioSnapshot.hasSrcObject) : null,
+        audioSnapshot ? line("  tracks", audioSnapshot.tracks) : null,
+        audioSnapshot ? line("  paused", audioSnapshot.paused) : null,
+        audioSnapshot ? line("  muted", audioSnapshot.muted) : null,
+        audioSnapshot ? line("  volume", audioSnapshot.volume) : null,
+        audioSnapshot ? line("  readyState", audioSnapshot.readyState) : null,
+      ]
+        .filter(Boolean)
+        .join("\n")}
+    </div>
+  );
 }
 
 export default function VoiceCallFullScreen({ rtc }) {
@@ -253,6 +336,10 @@ export default function VoiceCallFullScreen({ rtc }) {
           </button>
         )}
       </div>
+
+      {/* 🔧 TEMPORARY DEBUG OVERLAY — remove once audio is verified working.
+          Shows live WebRTC state on-screen, works on phones without DevTools. */}
+      <VoiceCallDebugPanel rtc={rtc} call={call} user={user} />
     </div>
   );
 }
