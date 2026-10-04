@@ -17,7 +17,11 @@
 import { io } from "socket.io-client";
 import { useAuthStore } from "../store/authStore";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://api.skilledproz.com";
+// VITE_API_URL includes "/api" for HTTP requests, but the socket.io
+// namespace lives at the server root — strip the trailing "/api".
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "https://api.skilledproz.com"
+).replace(/\/api\/?$/, "");
 
 let socket = null;
 
