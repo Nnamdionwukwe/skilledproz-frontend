@@ -2,26 +2,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Socket.IO client for the voice-call signaling namespace.
 //
-// The backend exposes a dedicated namespace at <API_URL>/voice-calls which
-// relays WebRTC offers, answers, and ICE candidates between the two
-// participants of a call.
-//
-// Usage:
-//   const socket = getVoiceSocket();
-//   socket.emit("voice:join", { conversationId }, (resp) => { ... });
-//
-// There's exactly ONE socket per browser tab. Calling getVoiceSocket() a
-// second time returns the same instance.
+// NOTE: VITE_API_URL is set to "https://api.skilledproz.com/api" (with /api)
+// for the HTTP client. But the Socket.IO namespace lives at the server root:
+//   ✅ https://api.skilledproz.com/voice-calls
+//   ❌ https://api.skilledproz.com/api/voice-calls
+// So we strip a trailing "/api" from VITE_API_URL before building the
+// socket URL.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { io } from "socket.io-client";
 import { useAuthStore } from "../store/authStore";
 
-// VITE_API_URL includes "/api" for HTTP requests, but the socket.io
-// namespace lives at the server root — strip the trailing "/api".
-const API_BASE = (
-  import.meta.env.VITE_API_URL || "https://api.skilledproz.com"
-).replace(/\/api\/?$/, "");
+const RAW_API_URL =
+  import.meta.env.VITE_API_URL || "https://api.skilledproz.com";
+
+// Strip a trailing "/api" or "/api/" so the socket connects to the server
+// root (where the namespace is registered), not to /api/voice-calls.
+const SOCKET_BASE = RAW_API_URL.replace(/\/api\/?$/, "");
 
 let socket = null;
 
@@ -38,7 +35,10 @@ export function getVoiceSocket() {
     return null;
   }
 
-  socket = io(`${API_BASE}/voice-calls`, {
+  const url = `${SOCKET_BASE}/voice-calls`;
+  console.log("[voiceSocket] connecting to:", url);
+
+  socket = io(url, {
     auth: { token },
     transports: ["websocket"],
     reconnection: true,
