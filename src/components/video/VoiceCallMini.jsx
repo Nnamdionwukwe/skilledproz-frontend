@@ -4,7 +4,7 @@
 // browsing the platform while the audio keeps flowing.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useVoiceCall } from "../../context/VoiceCallContext";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -38,17 +38,28 @@ export default function VoiceCallMini({ rtc }) {
   const isPending = call?.status === "PENDING";
   const isReceiver = call?.receiverId === user?.id;
 
+  const fetchedForRef = useRef(null);
+
+  // Same fix as VoiceCallFullScreen — use the list endpoint and filter
+  // client-side, because /api/conversations/:id doesn't exist on the backend.
   useEffect(() => {
-    if (!call?.conversationId) return;
+    const convoId = call?.conversationId;
+    if (!convoId) return;
+    if (fetchedForRef.current === convoId) return;
+    fetchedForRef.current = convoId;
+
     let cancelled = false;
     (async () => {
       try {
-        const res = await api.get(`/conversations/${call.conversationId}`);
-        const convo = res.data.data?.conversation;
+        const res = await api.get("/messages/conversations", {
+          params: { page: 1, limit: 100, _t: Date.now() },
+        });
+        const list = res.data.data?.conversations || [];
+        const convo = list.find((c) => c.id === convoId);
         const other = convo?.users?.find((u) => u.userId !== user?.id);
         if (!cancelled) setOtherUser(other?.user || null);
-      } catch {
-        /* noop */
+      } catch (err) {
+        console.warn("[voice] conversation fetch failed:", err?.message);
       }
     })();
     return () => {

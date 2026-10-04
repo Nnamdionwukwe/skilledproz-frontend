@@ -15,7 +15,7 @@
 // Remove the <VoiceCallDebugPanel /> JSX once audio is confirmed working.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useVoiceCall } from "../../context/VoiceCallContext";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -47,7 +47,6 @@ function VoiceCallDebugPanel({ rtc, call, user }) {
   const localTracks = rtc?.localStream?.getAudioTracks?.() || [];
   const remoteTracks = rtc?.remoteStream?.getAudioTracks?.() || [];
 
-  // Sample the audio element state every 500 ms so we can see if it's playing.
   const [audioSnapshot, setAudioSnapshot] = useState(null);
   useEffect(() => {
     const tick = () => {
@@ -129,18 +128,31 @@ export default function VoiceCallFullScreen({ rtc }) {
   const isInitiator = call?.initiatorId === user?.id;
   const isReceiver = call?.receiverId === user?.id;
 
+  // Guard so the fetch doesn't re-fire on every re-render of the parent.
+  const fetchedForRef = useRef(null);
+
   // Load the other user's profile for the avatar + name.
+  // Uses /api/messages/conversations (list endpoint) since there's no
+  // GET /api/conversations/:id on the backend.
   useEffect(() => {
-    if (!call?.conversationId) return;
+    const convoId = call?.conversationId;
+    if (!convoId) return;
+    if (fetchedForRef.current === convoId) return;
+    fetchedForRef.current = convoId;
+
     let cancelled = false;
     (async () => {
       try {
-        const res = await api.get(`/conversations/${call.conversationId}`);
-        const convo = res.data.data?.conversation;
+        const res = await api.get("/messages/conversations", {
+          params: { page: 1, limit: 100, _t: Date.now() },
+        });
+        const list = res.data.data?.conversations || [];
+        const convo = list.find((c) => c.id === convoId);
         const other = convo?.users?.find((u) => u.userId !== user?.id);
         if (!cancelled) setOtherUser(other?.user || null);
-      } catch {
-        /* noop */
+      } catch (err) {
+        // Non-fatal — the call still works without the avatar/name.
+        console.warn("[voice] conversation fetch failed:", err?.message);
       }
     })();
     return () => {
