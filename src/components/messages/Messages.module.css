@@ -1183,3 +1183,121 @@
 .messageLink {
   word-break: break-all;
 }
+/* ═══════════════════════════════════════════════════════════════
+   CALL CONFIRMATION MODAL
+   ═══════════════════════════════════════════════════════════════ */
+.callModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+  animation: callModalFade 0.15s ease both;
+}
+
+@keyframes callModalFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.callModal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 20px 20px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  animation: callModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes callModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.callModalIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  color: var(--orange);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  border: 1px solid var(--orange-glow);
+}
+
+.callModalTitle {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.callModalBody {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.callModalActions {
+  display: flex;
+  gap: 10px;
+}
+
+.callModalCancel,
+.callModalConfirm {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s,
+    opacity 0.15s;
+}
+
+.callModalCancel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.callModalCancel:hover {
+  background: var(--bg-input);
+  color: var(--text);
+}
+
+.callModalConfirm {
+  background: var(--orange);
+  color: var(--bg);
+  box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35);
+}
+.callModalConfirm:hover:not(:disabled) {
+  background: var(--orange-hover);
+  transform: translateY(-1px);
+}
+.callModalConfirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

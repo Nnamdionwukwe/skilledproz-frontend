@@ -296,6 +296,10 @@ export default function Messages() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [startingVoiceCall, setStartingVoiceCall] = useState(false);
 
+  // ── Call confirmation modal ──
+  // null = closed; "voice" or "video" = which call type is being confirmed.
+  const [pendingCallType, setPendingCallType] = useState(null);
+
   // ── Mobile view: "list" or "chat" ──
   const [mobileView, setMobileView] = useState(() => {
     if (typeof window === "undefined") return "list";
@@ -422,18 +426,21 @@ export default function Messages() {
     }
   }, [activeConvoId, withUserId, withUser]);
 
-  // ── Escape closes the fullscreen image viewer ──
+  // ── Escape closes the fullscreen image viewer AND the call modal ──
   useEffect(() => {
-    if (!lightboxSrc) return;
+    if (!lightboxSrc && !pendingCallType) return;
     function onKey(e) {
       if (e.key === "Escape") {
-        setLightboxSrc(null);
-        tracker.track("messages.lightbox.closed", { via: "escape" });
+        if (lightboxSrc) {
+          setLightboxSrc(null);
+          tracker.track("messages.lightbox.closed", { via: "escape" });
+        }
+        if (pendingCallType) setPendingCallType(null);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightboxSrc]);
+  }, [lightboxSrc, pendingCallType]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Conversations
@@ -774,30 +781,43 @@ export default function Messages() {
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Voice call initiation (from the toolbar button)
+  // Voice / video call initiation
   //
-  // RACE GUARD: rapid taps on the 📞 button (or StrictMode remounts, or a
-  // delayed click after the state flips) can fire a second initiate. The
-  // second initiate raced with the first and could reset an in-flight call
-  // back to PENDING. `initiatingVoiceRef` blocks that for 3 seconds.
+  // The toolbar buttons no longer dial directly — they open a confirmation
+  // modal. The user must tap "Call" in the modal before the API is hit.
+  //
+  // RACE GUARD: initiatingVoiceRef prevents a second initiate from firing
+  // while the first is still resolving.
   // ─────────────────────────────────────────────────────────────────────────
 
   const { startCall } = useVoiceCall();
 
-  const handleStartVoiceCall = async () => {
-    if (!activeConvoId || initiatingVoiceRef.current) return;
+  const confirmStartCall = async () => {
+    const callType = pendingCallType;
+    setPendingCallType(null);
+    if (!callType || !activeConvoId) return;
+    if (initiatingVoiceRef.current) return;
+
     initiatingVoiceRef.current = true;
     setStartingVoiceCall(true);
     try {
       const res = await api.post(`/voice-calls/${activeConvoId}/initiate`, {
-        callType: "voice",
+        callType,
       });
-      startCall(res.data.data.call);
-      tracker.action("messages.voiceCall.initiated", {
-        conversationId: activeConvoId,
-      });
+
+      if (callType === "voice") {
+        startCall(res.data.data.call);
+        tracker.action("messages.voiceCall.initiated", {
+          conversationId: activeConvoId,
+        });
+      } else {
+        tracker.action("messages.videoCall.initiated", {
+          conversationId: activeConvoId,
+        });
+        navigate(`/messages/call/${activeConvoId}`);
+      }
     } catch (err) {
-      console.error("Voice call initiate failed:", err.message);
+      console.error(`${callType} call initiate failed:`, err.message);
     } finally {
       setStartingVoiceCall(false);
       setTimeout(() => {
@@ -1243,58 +1263,30 @@ export default function Messages() {
                     )}
                   </button>
 
-                  {/* ── Voice call button ── */}
+                  {/* ── Voice call button — opens confirmation modal ── */}
                   <button
                     type="button"
                     className={styles.attachBtn}
-                    onClick={handleStartVoiceCall}
+                    onClick={() => setPendingCallType("voice")}
                     disabled={!activeConvoId || startingVoiceCall}
                     title="Start voice call"
                     aria-label="Start voice call"
                     data-track-id="messages.voiceCall.start"
                   >
-                    {startingVoiceCall ? (
-                      <span className={styles.spinner} />
-                    ) : (
-                      <FiPhone size={16} />
-                    )}
+                    <FiPhone size={16} />
                   </button>
 
-                  {/* ── Video call button ── */}
+                  {/* ── Video call button — opens confirmation modal ── */}
                   <button
                     type="button"
                     className={styles.attachBtn}
-                    onClick={async () => {
-                      if (!activeConvoId) return;
-                      setStartingVoiceCall(true);
-                      try {
-                        await api.post(
-                          `/voice-calls/${activeConvoId}/initiate`,
-                          { callType: "video" },
-                        );
-                        tracker.action("messages.videoCall.initiated", {
-                          conversationId: activeConvoId,
-                        });
-                        navigate(`/messages/call/${activeConvoId}`);
-                      } catch (err) {
-                        console.error(
-                          "Video call initiate failed:",
-                          err.message,
-                        );
-                      } finally {
-                        setStartingVoiceCall(false);
-                      }
-                    }}
+                    onClick={() => setPendingCallType("video")}
                     disabled={!activeConvoId || startingVoiceCall}
                     title="Start video call"
                     aria-label="Start video call"
                     data-track-id="messages.videoCall.start"
                   >
-                    {startingVoiceCall ? (
-                      <span className={styles.spinner} />
-                    ) : (
-                      <FiVideo size={16} />
-                    )}
+                    <FiVideo size={16} />
                   </button>
                 </div>
 
@@ -1344,6 +1336,62 @@ export default function Messages() {
           )}
         </div>
       </div>
+
+      {/* ── Call confirmation modal ── */}
+      {pendingCallType && (
+        <div
+          className={styles.callModalOverlay}
+          onClick={() => setPendingCallType(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm call"
+        >
+          <div
+            className={styles.callModal}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.callModalIcon}>
+              {pendingCallType === "video" ? (
+                <FiVideo size={26} />
+              ) : (
+                <FiPhone size={26} />
+              )}
+            </div>
+            <h3 className={styles.callModalTitle}>
+              Start {pendingCallType === "video" ? "video" : "voice"} call?
+            </h3>
+            <p className={styles.callModalBody}>
+              {activeOther
+                ? `${activeOther.firstName || ""} ${activeOther.lastName || ""}`.trim()
+                : "This user"}{" "}
+              will be notified and asked to accept.
+            </p>
+            <div className={styles.callModalActions}>
+              <button
+                type="button"
+                className={styles.callModalCancel}
+                onClick={() => setPendingCallType(null)}
+                data-track-id="messages.call.cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.callModalConfirm}
+                onClick={confirmStartCall}
+                disabled={startingVoiceCall}
+                data-track-id="messages.call.confirm"
+              >
+                {startingVoiceCall ? (
+                  <span className={styles.spinner} />
+                ) : (
+                  `Call`
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fullscreen image viewer */}
       {lightboxSrc && (

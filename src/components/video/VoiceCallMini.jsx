@@ -1,7 +1,8 @@
 // src/components/video/VoiceCallMini.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Minimized voice-call widget. Docked bottom-right. The user can keep
-// browsing the platform while the audio keeps flowing.
+// Minimized voice-call widget. Docked bottom-right by default. The user can
+// drag it anywhere on the screen. Once the call is ACTIVE, only the control
+// buttons are shown — the avatar + name header collapses.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
@@ -14,6 +15,7 @@ import {
   FaMicrophone,
   FaMicrophoneSlash,
   FaExpand,
+  FaGripVertical,
   FaSpinner,
 } from "react-icons/fa";
 
@@ -40,8 +42,72 @@ export default function VoiceCallMini({ rtc }) {
 
   const fetchedForRef = useRef(null);
 
-  // Same fix as VoiceCallFullScreen — use the list endpoint and filter
-  // client-side, because /api/conversations/:id doesn't exist on the backend.
+  // ── Draggable position ────────────────────────────────────────────────
+  // Position is tracked as {x, y} in viewport coordinates. Defaults to the
+  // bottom-right corner but can be dragged anywhere. Bound to viewport so
+  // the widget can't be dropped off-screen.
+  const [pos, setPos] = useState(null); // null = use CSS default
+  const draggingRef = useRef(false);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const widgetRef = useRef(null);
+
+  // Handle drag start (from the grip)
+  const handleDragStart = (e) => {
+    const el = widgetRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    draggingRef.current = true;
+    dragOffsetRef.current = {
+      x: point.clientX - rect.left,
+      y: point.clientY - rect.top,
+    };
+    // Set current position so the widget doesn't jump on first move.
+    setPos({ x: rect.left, y: rect.top });
+    e.preventDefault?.();
+  };
+
+  // Handle drag move + end (global listeners while dragging)
+  useEffect(() => {
+    if (!draggingRef.current) return;
+
+    const onMove = (e) => {
+      if (!draggingRef.current) return;
+      const point = e.touches ? e.touches[0] : e;
+      const el = widgetRef.current;
+      const w = el?.offsetWidth || 120;
+      const h = el?.offsetHeight || 60;
+
+      let x = point.clientX - dragOffsetRef.current.x;
+      let y = point.clientY - dragOffsetRef.current.y;
+
+      // Clamp to viewport with a small margin.
+      const margin = 8;
+      x = Math.max(margin, Math.min(window.innerWidth - w - margin, x));
+      y = Math.max(margin, Math.min(window.innerHeight - h - margin, y));
+
+      setPos({ x, y });
+      e.preventDefault?.();
+    };
+
+    const onEnd = () => {
+      draggingRef.current = false;
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [pos]);
+
+  // ── Load other user info ──────────────────────────────────────────────
   useEffect(() => {
     const convoId = call?.conversationId;
     if (!convoId) return;
@@ -67,6 +133,7 @@ export default function VoiceCallMini({ rtc }) {
     };
   }, [call?.conversationId, user?.id]);
 
+  // ── Duration ticker ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isActive) {
       setDuration("00:00");
@@ -111,31 +178,63 @@ export default function VoiceCallMini({ rtc }) {
   const initials =
     `${otherUser?.firstName?.[0] || ""}${otherUser?.lastName?.[0] || ""}`.toUpperCase();
 
+  // Inline style for drag position. When `pos` is null, CSS handles it.
+  const widgetStyle = pos
+    ? {
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
+        right: "auto",
+        bottom: "auto",
+      }
+    : undefined;
+
+  // When active, hide the header (avatar + name + timer) and show only
+  // the control buttons plus a slim timer badge.
+  const showHeader = !isActive;
+
   return (
     <div
-      className={styles.widget}
+      ref={widgetRef}
+      className={`${styles.widget} ${isActive ? styles.widgetCompact : ""}`}
       role="dialog"
       aria-label="Voice call (minimized)"
+      style={widgetStyle}
     >
-      <div className={styles.header}>
-        <div className={styles.avatar}>
-          {otherUser?.avatar ? (
-            <img src={otherUser.avatar} alt="" />
-          ) : (
-            <span>{initials || "?"}</span>
-          )}
+      {/* Drag grip — always visible, small handle on the left */}
+      <button
+        type="button"
+        className={styles.grip}
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
+        aria-label="Drag call widget"
+        title="Drag to move"
+      >
+        <FaGripVertical size={12} />
+      </button>
+
+      {showHeader ? (
+        <div className={styles.header}>
+          <div className={styles.avatar}>
+            {otherUser?.avatar ? (
+              <img src={otherUser.avatar} alt="" />
+            ) : (
+              <span>{initials || "?"}</span>
+            )}
+          </div>
+          <div className={styles.meta}>
+            <p className={styles.name}>{otherName}</p>
+            <p className={styles.status}>
+              {isPending && isReceiver ? "Incoming…" : "Calling…"}
+            </p>
+          </div>
         </div>
-        <div className={styles.meta}>
-          <p className={styles.name}>{otherName}</p>
-          <p className={styles.status}>
-            {isActive
-              ? duration
-              : isPending && isReceiver
-                ? "Incoming…"
-                : "Calling…"}
-          </p>
+      ) : (
+        // Compact: just show a live duration chip + mute indicator
+        <div className={styles.compactMeta}>
+          <span className={styles.compactDot} />
+          <span className={styles.compactTime}>{duration}</span>
         </div>
-      </div>
+      )}
 
       <div className={styles.actions}>
         {isActive ? (
@@ -147,9 +246,9 @@ export default function VoiceCallMini({ rtc }) {
               aria-label={rtc?.isMuted ? "Unmute" : "Mute"}
             >
               {rtc?.isMuted ? (
-                <FaMicrophoneSlash size={14} />
+                <FaMicrophoneSlash size={12} />
               ) : (
-                <FaMicrophone size={14} />
+                <FaMicrophone size={12} />
               )}
             </button>
             <button
@@ -158,7 +257,7 @@ export default function VoiceCallMini({ rtc }) {
               title="End call"
               aria-label="End call"
             >
-              <FaPhoneSlash size={14} />
+              <FaPhoneSlash size={12} />
             </button>
             <button
               className={styles.iconBtn}
@@ -166,7 +265,7 @@ export default function VoiceCallMini({ rtc }) {
               title="Expand"
               aria-label="Expand call"
             >
-              <FaExpand size={14} />
+              <FaExpand size={12} />
             </button>
           </>
         ) : isReceiver ? (
@@ -181,7 +280,7 @@ export default function VoiceCallMini({ rtc }) {
               {busy ? (
                 <FaSpinner className={styles.spinner} />
               ) : (
-                <FaPhoneSlash size={14} />
+                <FaPhoneSlash size={12} />
               )}
             </button>
             <button
@@ -201,7 +300,7 @@ export default function VoiceCallMini({ rtc }) {
             title="Cancel"
             aria-label="Cancel call"
           >
-            <FaPhoneSlash size={14} />
+            <FaPhoneSlash size={12} />
           </button>
         )}
       </div>
