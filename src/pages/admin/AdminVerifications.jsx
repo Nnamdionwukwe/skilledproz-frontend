@@ -1,3 +1,4 @@
+// src/pages/admin/AdminVerifications.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -68,19 +69,43 @@ function timeAgo(d) {
 }
 
 /**
- * Classify a URL by file type. Extend as needed.
+ * Classify a URL by file type. Handles both extension-based URLs and
+ * Cloudinary's path-segment URLs (/image/upload/, /video/upload/, /raw/upload/).
+ *
+ * Cloudinary PDFs live under /raw/upload/ and often have NO extension in the
+ * URL, so we can't rely on the extension alone. Similarly, `?format=pdf`
+ * query overrides extension detection.
+ *
  * Returns "image" | "video" | "pdf" | "other".
  */
 function classifyFile(url) {
   if (!url) return "other";
-  const u = url.split("?")[0].toLowerCase();
-  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(u))
+
+  const fullUrl = url.toLowerCase();
+  const [path] = fullUrl.split("?");
+
+  // 1. Explicit extension wins.
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(path))
     return "image";
-  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(u)) return "video";
-  if (/\.pdf$/.test(u)) return "pdf";
-  // Cloudinary often uses /image/upload/ or /video/upload/ segments
-  if (u.includes("/image/upload/")) return "image";
-  if (u.includes("/video/upload/")) return "video";
+  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(path)) return "video";
+  if (/\.pdf$/.test(path)) return "pdf";
+
+  // 2. Cloudinary path segments.
+  if (path.includes("/image/upload/")) return "image";
+  if (path.includes("/video/upload/")) return "video";
+  // Raw uploads are almost always PDFs when they land here, but they could
+  // be other docs. If we see .pdf anywhere in the full URL, treat as PDF;
+  // otherwise default to pdf — this is the common case.
+  if (path.includes("/raw/upload/")) {
+    if (fullUrl.includes(".pdf")) return "pdf";
+    return "pdf";
+  }
+
+  // 3. Query-string hints (?format=pdf etc.)
+  if (fullUrl.includes("format=pdf")) return "pdf";
+
+  // 4. Unknown. Some Cloudinary PDF URLs have no hint at all. Callers should
+  // fall back to <iframe> rendering for "other".
   return "other";
 }
 
@@ -157,11 +182,10 @@ function VerifBadge({ status }) {
 
 // ─── Full-Screen Media Viewer ─────────────────────────────────────────────────
 // Handles images (with zoom + rotate), videos (native player), pdfs (iframe),
-// and everything else (download prompt).
+// and everything else (attempts iframe, falls back to open-in-new-tab).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MediaViewer({ src, title, kind, onClose }) {
-  // kind: "image" | "video" | "pdf" | "other"
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
@@ -171,7 +195,7 @@ function MediaViewer({ src, title, kind, onClose }) {
     setRotation(0);
   }, [src]);
 
-  // Close on ESC
+  // Close on ESC, plus zoom/rotate keyboard shortcuts for images
   useEffect(() => {
     function onKey(e) {
       if (e.key === "Escape") onClose();
@@ -297,18 +321,40 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "pdf" && (
-          <iframe src={src} title={title} className={styles.fsPdf} />
+          <iframe
+            src={src}
+            title={title}
+            className={styles.fsPdf}
+            style={{ width: "100%", height: "100%", border: 0 }}
+          />
         )}
 
         {kind === "other" && (
+          // Attempt to render as a PDF via iframe. Many Cloudinary PDF URLs
+          // have no distinguishing marker — an iframe is the safest default
+          // and gracefully falls back to a download prompt if the browser
+          // can't preview.
           <div className={styles.fsOther}>
-            <FiFileText size={48} />
-            <p>Preview not available for this file type.</p>
+            <iframe
+              src={src}
+              title={title}
+              className={styles.fsPdf}
+              style={{ width: "100%", height: "100%", border: 0 }}
+            />
             <a
               href={src}
               target="_blank"
               rel="noreferrer"
               className={styles.fsOpenLink}
+              style={{
+                position: "absolute",
+                bottom: 16,
+                right: 16,
+                zIndex: 2,
+                background: "rgba(0,0,0,0.7)",
+                padding: "6px 12px",
+                borderRadius: 6,
+              }}
             >
               Open in new tab <FiExternalLink size={12} />
             </a>
@@ -425,10 +471,7 @@ function WorkerCard({ item, onAction, i }) {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [toast, setToast] = useState(null);
-
-  // Full-screen media state: { src, title, kind } | null
   const [media, setMedia] = useState(null);
-
   const [bgChecked, setBgChecked] = useState(item.backgroundCheck ?? false);
 
   const u = item.user || {};
@@ -457,7 +500,6 @@ function WorkerCard({ item, onAction, i }) {
     setMedia({ src, title, kind: classifyFile(src) });
   }
 
-  // PATCH /api/verification/admin/workers/:userId/review
   async function handleVerify() {
     setActing("verify");
     try {
@@ -490,7 +532,6 @@ function WorkerCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/workers/:userId/revoke
   async function handleRevoke(notes) {
     setActing("revoke");
     setRevokeOpen(false);
@@ -507,7 +548,6 @@ function WorkerCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/certifications/:certId/verify
   async function handleCertVerify(certId) {
     setActing(certId);
     try {
@@ -524,7 +564,6 @@ function WorkerCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/workers/:userId/background-check
   async function handleBgCheck(passed) {
     setActing("bgcheck");
     try {
@@ -1110,7 +1149,6 @@ function HirerCard({ item, onAction, i }) {
     setMedia({ src, title, kind: classifyFile(src) });
   }
 
-  // PATCH /api/verification/admin/hirers/:userId/review
   async function handleApprove() {
     setActing("approve");
     try {
@@ -1483,7 +1521,6 @@ function CertCard({ item, onAction, i }) {
     setMedia({ src, title, kind: classifyFile(src) });
   }
 
-  // PATCH /api/verification/admin/certifications/:certId/verify
   async function handleVerify() {
     setActing("verify");
     try {
@@ -1500,7 +1537,6 @@ function CertCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/certifications/:certId/reject
   async function handleReject(notes) {
     setActing("reject");
     setRejectOpen(false);
@@ -1703,8 +1739,8 @@ function ActivityRow({ item }) {
 export default function AdminVerifications() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tab = searchParams.get("tab") || "workers"; // workers | hirers | certs | activity
-  const sub = searchParams.get("sub") || "pending"; // pending | verified | rejected | unverified
+  const tab = searchParams.get("tab") || "workers";
+  const sub = searchParams.get("sub") || "pending";
   const page = parseInt(searchParams.get("page") || "1");
 
   const [items, setItems] = useState([]);
@@ -1729,7 +1765,6 @@ export default function AdminVerifications() {
     setTimeout(() => setPageToast(null), 3500);
   }
 
-  // ── Fetch stats ─────────────────────────────────────────────────────────────
   const fetchStats = useCallback(() => {
     api
       .get("/verification/admin/stats")
@@ -1741,7 +1776,6 @@ export default function AdminVerifications() {
     fetchStats();
   }, [fetchStats]);
 
-  // ── Fetch activity ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (tab !== "activity") return;
     setLoading(true);
@@ -1755,7 +1789,6 @@ export default function AdminVerifications() {
       .finally(() => setLoading(false));
   }, [tab]);
 
-  // ── Fetch queue ─────────────────────────────────────────────────────────────
   const fetchItems = useCallback(() => {
     if (tab === "activity") return;
     setLoading(true);
@@ -1788,7 +1821,6 @@ export default function AdminVerifications() {
     fetchItems();
   }, [fetchItems]);
 
-  // ── Handle card action ──────────────────────────────────────────────────────
   function handleAction(id, result) {
     if (
       result === "VERIFIED" ||
@@ -1813,7 +1845,6 @@ export default function AdminVerifications() {
     }
   }
 
-  // ── Stat card click → jump to that sub-tab ──────────────────────────────────
   function jumpTo(tabName, subName) {
     const p = new URLSearchParams();
     p.set("tab", tabName);
@@ -1822,7 +1853,6 @@ export default function AdminVerifications() {
     setSearchParams(p);
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   const workerStats = stats?.workers || {};
   const hirerStats = stats?.hirers || {};
   const certStats = stats?.certifications || {};
