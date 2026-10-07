@@ -5,7 +5,6 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import api from "../../lib/api";
 import styles from "./AdminVerifications.module.css";
 
-// ─── Icons (react-icons — Feather family) ─────────────────────────────────────
 import {
   FiClock,
   FiCheckCircle,
@@ -69,12 +68,13 @@ function timeAgo(d) {
 }
 
 /**
- * Classify a URL by file type. Handles both extension-based URLs and
- * Cloudinary's path-segment URLs (/image/upload/, /video/upload/, /raw/upload/).
+ * Classify a URL by file type. Handles:
+ *   - extension-based URLs (.pdf, .jpg, .mp4, ...)
+ *   - Cloudinary's path-segment URLs (/image/upload/, /video/upload/, /raw/upload/)
+ *   - Query-string hints (?format=pdf)
  *
  * Cloudinary PDFs live under /raw/upload/ and often have NO extension in the
- * URL, so we can't rely on the extension alone. Similarly, `?format=pdf`
- * query overrides extension detection.
+ * URL, so we can't rely on the extension alone.
  *
  * Returns "image" | "video" | "pdf" | "other".
  */
@@ -84,28 +84,17 @@ function classifyFile(url) {
   const fullUrl = url.toLowerCase();
   const [path] = fullUrl.split("?");
 
-  // 1. Explicit extension wins.
   if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(path))
     return "image";
   if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(path)) return "video";
   if (/\.pdf$/.test(path)) return "pdf";
 
-  // 2. Cloudinary path segments.
   if (path.includes("/image/upload/")) return "image";
   if (path.includes("/video/upload/")) return "video";
-  // Raw uploads are almost always PDFs when they land here, but they could
-  // be other docs. If we see .pdf anywhere in the full URL, treat as PDF;
-  // otherwise default to pdf — this is the common case.
-  if (path.includes("/raw/upload/")) {
-    if (fullUrl.includes(".pdf")) return "pdf";
-    return "pdf";
-  }
+  if (path.includes("/raw/upload/")) return "pdf";
 
-  // 3. Query-string hints (?format=pdf etc.)
   if (fullUrl.includes("format=pdf")) return "pdf";
 
-  // 4. Unknown. Some Cloudinary PDF URLs have no hint at all. Callers should
-  // fall back to <iframe> rendering for "other".
   return "other";
 }
 
@@ -181,23 +170,20 @@ function VerifBadge({ status }) {
 }
 
 // ─── Full-Screen Media Viewer ─────────────────────────────────────────────────
-// Handles images (with zoom + rotate), videos (native player), pdfs (iframe),
-// and everything else (attempts iframe so Cloudinary PDFs with no URL marker
-// still preview).
+// Handles images (zoom + rotate), videos (native player), PDFs (iframe), and
+// any unknown file type (tries iframe so Cloudinary PDFs with no marker still
+// render). Falls back to "Open in new tab" for anything a browser can't embed.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MediaViewer({ src, title, kind, onClose }) {
-  // kind: "image" | "video" | "pdf" | "other"
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Reset zoom/rotation whenever the source changes
   useEffect(() => {
     setZoom(1);
     setRotation(0);
   }, [src]);
 
-  // Close on ESC
   useEffect(() => {
     function onKey(e) {
       if (e.key === "Escape") onClose();
@@ -218,7 +204,6 @@ function MediaViewer({ src, title, kind, onClose }) {
 
   return (
     <div className={styles.fsBackdrop} onClick={onClose}>
-      {/* Top bar */}
       <div className={styles.fsTopBar} onClick={(e) => e.stopPropagation()}>
         <div className={styles.fsTitle}>
           {kind === "video" ? <FiPlay size={14} /> : <FiFileText size={14} />}
@@ -297,16 +282,13 @@ function MediaViewer({ src, title, kind, onClose }) {
         </div>
       </div>
 
-      {/* Media area */}
       <div className={styles.fsStage} onClick={(e) => e.stopPropagation()}>
         {kind === "image" && (
           <img
             src={src}
             alt={title}
             className={styles.fsImage}
-            style={{
-              transform: `scale(${zoom}) rotate(${rotation}deg)`,
-            }}
+            style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
             draggable={false}
           />
         )}
@@ -332,10 +314,9 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "other" && (
-          // Attempt to render as a PDF via iframe. Many Cloudinary PDF URLs
-          // have no distinguishing marker — an iframe is the safest default
-          // and gracefully falls back to a download prompt if the browser
-          // can't preview.
+          // Try to render as a PDF via iframe — many Cloudinary PDF URLs
+          // have no distinguishing marker. If the browser can't preview it,
+          // the "Open in new tab" button below is the fallback.
           <div className={styles.fsOther}>
             <iframe
               src={src}
@@ -473,10 +454,7 @@ function WorkerCard({ item, onAction, i }) {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [toast, setToast] = useState(null);
-
-  // Full-screen media state: { src, title, kind } | null
   const [media, setMedia] = useState(null);
-
   const [bgChecked, setBgChecked] = useState(item.backgroundCheck ?? false);
 
   const u = item.user || {};
@@ -505,7 +483,6 @@ function WorkerCard({ item, onAction, i }) {
     setMedia({ src, title, kind: classifyFile(src) });
   }
 
-  // PATCH /api/verification/admin/workers/:userId/review
   async function handleVerify() {
     setActing("verify");
     try {
@@ -538,7 +515,6 @@ function WorkerCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/workers/:userId/revoke
   async function handleRevoke(notes) {
     setActing("revoke");
     setRevokeOpen(false);
@@ -555,7 +531,6 @@ function WorkerCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/certifications/:certId/verify
   async function handleCertVerify(certId) {
     setActing(certId);
     try {
@@ -572,7 +547,6 @@ function WorkerCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/workers/:userId/background-check
   async function handleBgCheck(passed) {
     setActing("bgcheck");
     try {
@@ -600,7 +574,6 @@ function WorkerCard({ item, onAction, i }) {
     >
       <Toast toast={toast} />
 
-      {/* ── Card Header ── */}
       <div className={styles.cardHeader} onClick={() => setOpen((o) => !o)}>
         <div className={styles.cardAvatar}>
           {u.avatar ? (
@@ -653,10 +626,8 @@ function WorkerCard({ item, onAction, i }) {
         </div>
       </div>
 
-      {/* ── Expanded Detail ── */}
       {open && (
         <div className={styles.cardDetail}>
-          {/* Contact / location */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Contact &amp; Location</p>
             <div className={styles.fieldGrid}>
@@ -680,7 +651,6 @@ function WorkerCard({ item, onAction, i }) {
             </div>
           </div>
 
-          {/* Professional */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Professional</p>
             <div className={styles.fieldGrid}>
@@ -802,7 +772,6 @@ function WorkerCard({ item, onAction, i }) {
             </div>
           </div>
 
-          {/* Categories */}
           {categories.length > 0 && (
             <div className={styles.detailSection}>
               <p className={styles.sectionTitle}>Categories</p>
@@ -820,7 +789,6 @@ function WorkerCard({ item, onAction, i }) {
             </div>
           )}
 
-          {/* Submission data */}
           {(sub.idType ||
             sub.idNumber ||
             sub.dateOfBirth ||
@@ -859,7 +827,6 @@ function WorkerCard({ item, onAction, i }) {
             </div>
           )}
 
-          {/* Background check */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Background Check</p>
             <div className={styles.bgCheckRow}>
@@ -899,7 +866,6 @@ function WorkerCard({ item, onAction, i }) {
             </div>
           </div>
 
-          {/* Certifications */}
           {certs.length > 0 && (
             <div className={styles.detailSection}>
               <p className={styles.sectionTitle}>Certifications</p>
@@ -975,7 +941,6 @@ function WorkerCard({ item, onAction, i }) {
             </div>
           )}
 
-          {/* Documents — each is a full-screen-openable button */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Submitted Documents</p>
             {docs.length === 0 ? (
@@ -1012,7 +977,6 @@ function WorkerCard({ item, onAction, i }) {
             )}
           </div>
 
-          {/* Primary actions */}
           <div className={styles.actionBar}>
             {!isVerified && (
               <button
@@ -1084,7 +1048,6 @@ function WorkerCard({ item, onAction, i }) {
         </div>
       )}
 
-      {/* Modals */}
       {rejectOpen && (
         <ReasonModal
           title="Reject Verification"
@@ -1158,7 +1121,6 @@ function HirerCard({ item, onAction, i }) {
     setMedia({ src, title, kind: classifyFile(src) });
   }
 
-  // PATCH /api/verification/admin/hirers/:userId/review
   async function handleApprove() {
     setActing("approve");
     try {
@@ -1261,7 +1223,6 @@ function HirerCard({ item, onAction, i }) {
 
       {open && (
         <div className={styles.cardDetail}>
-          {/* Contact & Location */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Contact &amp; Location</p>
             <div className={styles.fieldGrid}>
@@ -1285,7 +1246,6 @@ function HirerCard({ item, onAction, i }) {
             </div>
           </div>
 
-          {/* Company details */}
           <div className={styles.detailSection}>
             <p className={styles.sectionTitle}>Company Details</p>
             <div className={styles.fieldGrid}>
@@ -1325,7 +1285,6 @@ function HirerCard({ item, onAction, i }) {
             </div>
           </div>
 
-          {/* Verification submission */}
           {(sub.verificationType ||
             sub.idType ||
             sub.idNumber ||
@@ -1373,7 +1332,6 @@ function HirerCard({ item, onAction, i }) {
             </div>
           )}
 
-          {/* Documents — full-screen openable */}
           {docs.length > 0 && (
             <div className={styles.detailSection}>
               <p className={styles.sectionTitle}>Submitted Documents</p>
@@ -1531,7 +1489,6 @@ function CertCard({ item, onAction, i }) {
     setMedia({ src, title, kind: classifyFile(src) });
   }
 
-  // PATCH /api/verification/admin/certifications/:certId/verify
   async function handleVerify() {
     setActing("verify");
     try {
@@ -1548,7 +1505,6 @@ function CertCard({ item, onAction, i }) {
     }
   }
 
-  // PATCH /api/verification/admin/certifications/:certId/reject
   async function handleReject(notes) {
     setActing("reject");
     setRejectOpen(false);
@@ -1751,8 +1707,8 @@ function ActivityRow({ item }) {
 export default function AdminVerifications() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tab = searchParams.get("tab") || "workers"; // workers | hirers | certs | activity
-  const sub = searchParams.get("sub") || "pending"; // pending | verified | rejected | unverified
+  const tab = searchParams.get("tab") || "workers";
+  const sub = searchParams.get("sub") || "pending";
   const page = parseInt(searchParams.get("page") || "1");
 
   const [items, setItems] = useState([]);
@@ -1777,7 +1733,6 @@ export default function AdminVerifications() {
     setTimeout(() => setPageToast(null), 3500);
   }
 
-  // ── Fetch stats ─────────────────────────────────────────────────────────────
   const fetchStats = useCallback(() => {
     api
       .get("/verification/admin/stats")
@@ -1789,7 +1744,6 @@ export default function AdminVerifications() {
     fetchStats();
   }, [fetchStats]);
 
-  // ── Fetch activity ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (tab !== "activity") return;
     setLoading(true);
@@ -1803,7 +1757,6 @@ export default function AdminVerifications() {
       .finally(() => setLoading(false));
   }, [tab]);
 
-  // ── Fetch queue ─────────────────────────────────────────────────────────────
   const fetchItems = useCallback(() => {
     if (tab === "activity") return;
     setLoading(true);
@@ -1836,7 +1789,6 @@ export default function AdminVerifications() {
     fetchItems();
   }, [fetchItems]);
 
-  // ── Handle card action ──────────────────────────────────────────────────────
   function handleAction(id, result) {
     if (
       result === "VERIFIED" ||
@@ -1861,7 +1813,6 @@ export default function AdminVerifications() {
     }
   }
 
-  // ── Stat card click → jump to that sub-tab ──────────────────────────────────
   function jumpTo(tabName, subName) {
     const p = new URLSearchParams();
     p.set("tab", tabName);
@@ -1870,7 +1821,6 @@ export default function AdminVerifications() {
     setSearchParams(p);
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   const workerStats = stats?.workers || {};
   const hirerStats = stats?.hirers || {};
   const certStats = stats?.certifications || {};
@@ -1896,7 +1846,6 @@ export default function AdminVerifications() {
       <div className={styles.page}>
         <Toast toast={pageToast} />
 
-        {/* ── Header ── */}
         <div className={styles.pageHeader}>
           <div>
             <p className={styles.eyebrow}>Trust &amp; Safety</p>
@@ -1920,7 +1869,6 @@ export default function AdminVerifications() {
           </button>
         </div>
 
-        {/* ── Stats Bar ── */}
         <div className={styles.statsGrid}>
           <StatCard
             icon={FiTool}
@@ -1960,7 +1908,6 @@ export default function AdminVerifications() {
           />
         </div>
 
-        {/* ── Top-level Tabs ── */}
         <div className={styles.filterBar}>
           <button
             type="button"
@@ -1992,7 +1939,6 @@ export default function AdminVerifications() {
           </button>
         </div>
 
-        {/* ── Sub-tabs ── */}
         {SUBTABS[tab]?.length > 0 && (
           <div className={styles.filterBar}>
             {SUBTABS[tab].map((s) => (
@@ -2009,7 +1955,6 @@ export default function AdminVerifications() {
           </div>
         )}
 
-        {/* ── Queue ── */}
         {loading ? (
           <div className={styles.skList}>
             {[1, 2, 3].map((i) => (
@@ -2086,7 +2031,6 @@ export default function AdminVerifications() {
           </div>
         )}
 
-        {/* ── Pagination ── */}
         {tab !== "activity" && pages > 1 && (
           <div className={styles.pager}>
             <button
