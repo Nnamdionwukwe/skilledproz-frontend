@@ -9,9 +9,13 @@
 //   • Expose the local stream (for muting) and remote stream (for playback)
 //   • Clean up all media + sockets on unmount
 //
-// IMPORTANT: When remote tracks arrive, we REPLACE the remoteStream object
-// with a new MediaStream instance. This forces React to see a new reference
-// and re-run the provider's effect that attaches the audio element.
+// IMPORTANT:
+//   • When remote tracks arrive, we REPLACE the remoteStream object with a
+//     new MediaStream instance. This forces React to see a new reference and
+//     re-run the provider's effect that attaches the audio element.
+//   • `isInitiator` is read from a ref inside socket handlers. The hook's
+//     useEffect only captures `conversationId`, so if it read the prop
+//     directly, it would read a stale value if the parent re-rendered.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -35,6 +39,14 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
   const remoteStreamRef = useRef(null);
   const pendingIceRef = useRef([]);
   const startedRef = useRef(false);
+
+  // Track isInitiator in a ref so the socket handlers always see the
+  // latest value, even though the useEffect that installs them only
+  // depends on `conversationId`.
+  const isInitiatorRef = useRef(isInitiator);
+  useEffect(() => {
+    isInitiatorRef.current = isInitiator;
+  }, [isInitiator]);
 
   const cleanup = useCallback(() => {
     if (pcRef.current) {
@@ -92,7 +104,6 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         pcRef.current = pc;
 
-        // Add mic tracks with direction="sendrecv" (explicit).
         stream.getTracks().forEach((track) => {
           try {
             pc.addTrack(track, stream);
@@ -101,11 +112,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
           }
         });
 
-        // ── 3. Remote tracks → rebuild MediaStream every time ────────
-        //    The key fix: replace the MediaStream object on each new
-        //    track. React's state diffing will see a new ref and re-run
-        //    the provider's useEffect, which sets the audio element's
-        //    srcObject fresh.
+        // ── 3. Remote tracks ──────────────────────────────────────────
         pc.ontrack = (event) => {
           console.log(
             "[voice] ontrack:",
@@ -113,7 +120,6 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
             event.streams.length,
           );
 
-          // Build a fresh MediaStream containing all known remote tracks.
           const incoming = event.streams[0];
           const current = remoteStreamRef.current;
           const next = new MediaStream();
@@ -122,7 +128,6 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
             ? [...current.getTracks(), ...incoming.getTracks()]
             : [...incoming.getTracks()];
 
-          // De-dupe by track id.
           const seen = new Set();
           for (const t of tracks) {
             if (seen.has(t.id)) continue;
@@ -186,10 +191,14 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         if (socket.connected) joinRoom();
         else socket.once("connect", joinRoom);
 
+        // ── Peer handlers ─────────────────────────────────────────────
         const onPeerJoined = async () => {
-          console.log("[voice] peer-joined, isInitiator:", isInitiator);
-          if (!isInitiator || !pcRef.current) return;
+          const initiating = isInitiatorRef.current;
+          console.log("[voice] peer-joined, isInitiator:", initiating);
+
+          if (!initiating || !pcRef.current) return;
           if (pcRef.current.signalingState !== "stable") return;
+
           try {
             setStatus("connecting");
             const offer = await pcRef.current.createOffer({
