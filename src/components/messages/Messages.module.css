@@ -4,7 +4,10 @@
 .shell {
   display: grid;
   grid-template-columns: 320px 1fr;
+  /* Use dvh so the shell shrinks with the mobile keyboard instead of
+     getting pushed under the platform header. */
   height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
   overflow: hidden;
   background: var(--bg);
 }
@@ -18,6 +21,7 @@
   border-right: 1px solid var(--border);
   background: var(--bg-panel);
   overflow: hidden;
+  min-height: 0;
 }
 
 .sidebarHeader {
@@ -74,6 +78,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 0.25rem 0;
+  min-height: 0;
 }
 
 .convoItem {
@@ -240,6 +245,8 @@
   min-width: 0;
   min-height: 0;
   height: 100%;
+  /* Keep the header visible at the top even when the pane is flexed. */
+  position: relative;
 }
 
 /* Empty state when no chat is active */
@@ -269,7 +276,10 @@
   color: var(--text-dim);
 }
 
-/* Chat header — pinned at the top of the pane */
+/* Chat header — a flex child, NOT sticky.
+   Because the pane is a flex column with min-height: 0, this header stays
+   at the top of the pane and never travels under the platform header,
+   even when the mobile keyboard opens and the visual viewport shrinks. */
 .chatHeader {
   display: flex;
   align-items: center;
@@ -278,8 +288,7 @@
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
+  /* No position:sticky — the layout already pins it. */
   z-index: 20;
 }
 
@@ -893,12 +902,11 @@
 @media (max-width: 768px) {
   .shell {
     grid-template-columns: 1fr;
+    /* Use dvh so the shell tracks the visual viewport (which shrinks when
+       the mobile keyboard opens). This is the core fix for the header
+       being pushed under the platform header. */
     height: calc(100vh - 64px);
-  }
-  @supports (height: 100dvh) {
-    .shell {
-      height: calc(100dvh - 64px);
-    }
+    height: calc(100dvh - 64px);
   }
 
   .backBtn {
@@ -923,8 +931,8 @@
   .chatHeader {
     padding: 0.75rem 1rem;
     gap: 0.625rem;
-    position: sticky;
-    top: 0;
+    /* No sticky — the pane's flex layout keeps this at the top. */
+    flex-shrink: 0;
     z-index: 20;
   }
 
