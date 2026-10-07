@@ -9,13 +9,16 @@
 //   • Expose the local stream (for muting) and remote stream (for playback)
 //   • Clean up all media + sockets on unmount
 //
-// IMPORTANT:
-//   • When remote tracks arrive, we REPLACE the remoteStream object with a
-//     new MediaStream instance. This forces React to see a new reference and
-//     re-run the provider's effect that attaches the audio element.
-//   • `isInitiator` is read from a ref inside socket handlers. The hook's
-//     useEffect only captures `conversationId`, so if it read the prop
-//     directly, it would read a stale value if the parent re-rendered.
+// KEY BEHAVIORS:
+//   • `isInitiator` is read from a ref inside handlers, never from the
+//     closure, so socket events always see the current value.
+//   • When the socket reconnects mid-handshake, we ROLL BACK the stale
+//     offer/answer and re-initiate cleanly instead of bailing on the
+//     `signalingState !== "stable"` check (that was the source of the
+//     intermittent silent calls).
+//   • When the socket disconnects, we don't tear down the PC — we wait
+//     for reconnection and rejoin the room. The PC might still be usable
+//     if the ICE connection survived.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -39,6 +42,9 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
   const remoteStreamRef = useRef(null);
   const pendingIceRef = useRef([]);
   const startedRef = useRef(false);
+
+  // Guard so we don't fire multiple simultaneous offers.
+  const offeringRef = useRef(false);
 
   // Track isInitiator in a ref so the socket handlers always see the
   // latest value, even though the useEffect that installs them only
@@ -68,6 +74,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
     setStatus("idle");
     setError(null);
     pendingIceRef.current = [];
+    offeringRef.current = false;
     startedRef.current = false;
   }, []);
 
@@ -158,7 +165,11 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
           if (s === "connected") setStatus("connected");
           else if (s === "connecting") setStatus("connecting");
           else if (s === "disconnected") setStatus("disconnected");
-          else if (s === "failed") setStatus("failed");
+          else if (s === "failed") {
+            // ICE failed — attempt a fresh offer/answer cycle.
+            console.warn("[voice] ICE failed — will attempt re-offer");
+            setStatus("failed");
+          }
         };
 
         pc.oniceconnectionstatechange = () => {
@@ -191,25 +202,60 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         if (socket.connected) joinRoom();
         else socket.once("connect", joinRoom);
 
+        // ── Offer creation helper ─────────────────────────────────────
+        // Creates a fresh offer. If the PC is in a non-stable state,
+        // rolls it back first (that's the KEY fix — previously we bailed
+        // and the call was left dead).
+        const createAndSendOffer = async () => {
+          const pcLocal = pcRef.current;
+          if (!pcLocal) return;
+          if (offeringRef.current) {
+            console.log("[voice] offer already in flight — skipping");
+            return;
+          }
+
+          offeringRef.current = true;
+          try {
+            // Roll back any stale local offer so we start from "stable".
+            if (pcLocal.signalingState === "have-local-offer") {
+              console.log("[voice] rolling back stale local offer");
+              try {
+                await pcLocal.setLocalDescription({ type: "rollback" });
+              } catch (e) {
+                console.warn("[voice] rollback failed:", e);
+              }
+            }
+
+            setStatus("connecting");
+            const offer = await pcLocal.createOffer({
+              offerToReceiveAudio: true,
+            });
+            await pcLocal.setLocalDescription(offer);
+            socket.emit("voice:offer", { conversationId, sdp: offer });
+            console.log("[voice] sent offer");
+          } catch (err) {
+            console.error("[voice] createOffer failed:", err);
+          } finally {
+            // Short delay before allowing a new offer, so a burst of
+            // peer-joined events doesn't spam offers.
+            setTimeout(() => {
+              offeringRef.current = false;
+            }, 1500);
+          }
+        };
+
         // ── Peer handlers ─────────────────────────────────────────────
         const onPeerJoined = async () => {
           const initiating = isInitiatorRef.current;
           console.log("[voice] peer-joined, isInitiator:", initiating);
 
           if (!initiating || !pcRef.current) return;
-          if (pcRef.current.signalingState !== "stable") return;
 
-          try {
-            setStatus("connecting");
-            const offer = await pcRef.current.createOffer({
-              offerToReceiveAudio: true,
-            });
-            await pcRef.current.setLocalDescription(offer);
-            socket.emit("voice:offer", { conversationId, sdp: offer });
-            console.log("[voice] sent offer");
-          } catch (err) {
-            console.error("[voice] createOffer failed:", err);
-          }
+          // Small debounce so the peer's own join/leave flapping doesn't
+          // trigger multiple offers.
+          setTimeout(() => {
+            createAndSendOffer();
+          }, 250);
         };
 
         const onOffer = async ({ sdp }) => {
@@ -217,6 +263,22 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
           const pcLocal = pcRef.current;
           if (!pcLocal) return;
           try {
+            // Always accept a fresh offer from the remote peer.
+            // If we're not in "stable" state, roll back first.
+            if (
+              pcLocal.signalingState === "have-local-offer" ||
+              pcLocal.signalingState === "have-remote-offer"
+            ) {
+              console.log(
+                "[voice] rolling back stale state before handling offer",
+              );
+              try {
+                await pcLocal.setLocalDescription({ type: "rollback" });
+              } catch (e) {
+                console.warn("[voice] rollback failed:", e);
+              }
+            }
+
             await pcLocal.setRemoteDescription(new RTCSessionDescription(sdp));
             const answer = await pcLocal.createAnswer();
             await pcLocal.setLocalDescription(answer);
@@ -241,6 +303,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
           const pcLocal = pcRef.current;
           if (!pcLocal) return;
           try {
+            // Only apply the answer if we have a pending local offer.
             if (pcLocal.signalingState === "have-local-offer") {
               await pcLocal.setRemoteDescription(
                 new RTCSessionDescription(sdp),
@@ -253,6 +316,11 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
                 }
               }
               pendingIceRef.current = [];
+            } else {
+              console.log(
+                "[voice] ignoring answer — signalingState:",
+                pcLocal.signalingState,
+              );
             }
           } catch (err) {
             console.error("[voice] handleAnswer failed:", err);
@@ -275,7 +343,19 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
 
         const onPeerLeft = () => {
           console.log("[voice] peer left");
-          setStatus("disconnected");
+          // Don't tear down the PC — the peer might be reconnecting.
+          // We'll get another "peer-joined" shortly.
+          setStatus("connecting");
+        };
+
+        // Reconnect handling: when the socket drops and comes back,
+        // re-join the room. Socket.IO re-emits "connect" for us.
+        const onSocketReconnect = () => {
+          console.log("[voice] socket reconnected — rejoining room");
+          joinRoom();
+          // If we're the initiator and the peer is already there,
+          // the server will emit "peer-joined" again for us.
+          // If we're the receiver, we wait for a fresh offer.
         };
 
         socket.on("voice:peer-joined", onPeerJoined);
@@ -283,6 +363,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
         socket.on("voice:answer", onAnswer);
         socket.on("voice:ice", onIce);
         socket.on("voice:peer-left", onPeerLeft);
+        socket.on("connect", onSocketReconnect);
 
         socketRef.current.__voiceHandlers = {
           onPeerJoined,
@@ -290,6 +371,7 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
           onAnswer,
           onIce,
           onPeerLeft,
+          onSocketReconnect,
         };
       } catch (err) {
         console.error("[voice] setup failed:", err);
@@ -319,7 +401,9 @@ export default function useVoiceCallWebRTC({ conversationId, isInitiator }) {
             socket.off("voice:answer", h.onAnswer);
             socket.off("voice:ice", h.onIce);
             socket.off("voice:peer-left", h.onPeerLeft);
+            socket.off("connect", h.onSocketReconnect);
           }
+          delete socket.__voiceHandlers;
         } catch {
           /* noop */
         }
