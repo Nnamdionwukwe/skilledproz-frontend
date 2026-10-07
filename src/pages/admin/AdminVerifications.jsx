@@ -98,6 +98,30 @@ function classifyFile(url) {
   return "other";
 }
 
+/**
+ * Build a URL that renders PDFs inline in the browser.
+ *
+ * Cloudinary raw URLs sometimes come back without a .pdf extension — the
+ * backend is supposed to force `format=pdf` on upload so the delivered URL
+ * ends in ".pdf" and Cloudinary serves `Content-Type: application/pdf`.
+ *
+ * For any URL that:
+ *   • lives under /raw/upload/ AND
+ *   • doesn't already end in .pdf
+ * we append ".pdf" to the path (before any query string) so the browser
+ * renders it inline instead of downloading it as octet-stream.
+ */
+function toViewableUrl(url) {
+  if (!url) return url;
+  const [path, query] = url.split("?");
+  const lower = path.toLowerCase();
+  const isRawPdf = lower.includes("/raw/upload/") || lower.endsWith(".pdf");
+  if (!isRawPdf) return url;
+  if (lower.endsWith(".pdf")) return url;
+  // Append .pdf to the path (before ?query).
+  return `${path}.pdf${query ? `?${query}` : ""}`;
+}
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function Toast({ toast }) {
@@ -170,14 +194,27 @@ function VerifBadge({ status }) {
 }
 
 // ─── Full-Screen Media Viewer ─────────────────────────────────────────────────
-// Handles images (zoom + rotate), videos (native player), PDFs (iframe), and
-// any unknown file type (tries iframe so Cloudinary PDFs with no marker still
-// render). Falls back to "Open in new tab" for anything a browser can't embed.
+// Images: zoom + rotate
+// Videos: native player
+// PDFs:   Google Docs viewer iframe (Cloudinary raw PDFs often block direct
+//         embedding, and the Docs viewer is a reliable cross-origin renderer)
+// Other:  attempt iframe, fall back to "Open in new tab"
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MediaViewer({ src, title, kind, onClose }) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+
+  // Normalise the PDF URL so it always ends in .pdf.
+  const viewableSrc = kind === "pdf" ? toViewableUrl(src) : src;
+
+  // For PDFs, use Google Docs Viewer. It fetches the file server-side and
+  // re-serves it with Content-Type: text/html, so the browser renders it
+  // inline without CORS or X-Frame-Options issues.
+  const pdfViewerSrc =
+    kind === "pdf"
+      ? `https://docs.google.com/viewer?url=${encodeURIComponent(viewableSrc)}&embedded=true`
+      : null;
 
   useEffect(() => {
     setZoom(1);
@@ -254,7 +291,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             </>
           )}
           <a
-            href={src}
+            href={viewableSrc}
             target="_blank"
             rel="noreferrer"
             className={styles.fsBtn}
@@ -263,7 +300,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             <FiMaximize2 size={14} />
           </a>
           <a
-            href={src}
+            href={viewableSrc}
             download
             className={styles.fsBtn}
             title="Download"
@@ -285,7 +322,7 @@ function MediaViewer({ src, title, kind, onClose }) {
       <div className={styles.fsStage} onClick={(e) => e.stopPropagation()}>
         {kind === "image" && (
           <img
-            src={src}
+            src={viewableSrc}
             alt={title}
             className={styles.fsImage}
             style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
@@ -295,7 +332,7 @@ function MediaViewer({ src, title, kind, onClose }) {
 
         {kind === "video" && (
           <video
-            src={src}
+            src={viewableSrc}
             className={styles.fsVideo}
             controls
             autoPlay
@@ -305,27 +342,32 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "pdf" && (
+          // Google Docs Viewer wraps the PDF in an HTML page with
+          // Content-Type: text/html, so it renders inline in the iframe
+          // without hitting Cloudinary's CORS / X-Frame-Options limits.
           <iframe
-            src={src}
+            src={pdfViewerSrc}
             title={title}
             className={styles.fsPdf}
             style={{ width: "100%", height: "100%", border: 0 }}
+            allowFullScreen
           />
         )}
 
         {kind === "other" && (
-          // Try to render as a PDF via iframe — many Cloudinary PDF URLs
-          // have no distinguishing marker. If the browser can't preview it,
-          // the "Open in new tab" button below is the fallback.
+          // Best-effort inline preview for unknown file types. If the URL
+          // is a raw Cloudinary PDF with no extension, we still route it
+          // through Google Docs Viewer for a shot at inline rendering.
           <div className={styles.fsOther}>
             <iframe
-              src={src}
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(toViewableUrl(src))}&embedded=true`}
               title={title}
               className={styles.fsPdf}
               style={{ width: "100%", height: "100%", border: 0 }}
+              allowFullScreen
             />
             <a
-              href={src}
+              href={toViewableUrl(src)}
               target="_blank"
               rel="noreferrer"
               className={styles.fsOpenLink}
