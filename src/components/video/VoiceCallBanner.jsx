@@ -1,6 +1,16 @@
 // src/components/video/VoiceCallBanner.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Incoming banner for CONVERSATION voice calls.
+//
+// Polls /voice-calls/incoming every 5s. On accept, PATCHes the call to ACTIVE
+// and then hands the call to the global VoiceCallContext via openCall() so
+// the WebRTC hook starts on the receiver's side.
+//
+// LOG PREFIX: [VCB] (Voice Call Banner)
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
 import { useVoiceCall } from "../../context/VoiceCallContext";
@@ -25,7 +35,12 @@ const SUPPRESSED_PREFIXES = [
   "/call/",
 ];
 
+function ts() {
+  return new Date().toISOString().slice(11, 23);
+}
+
 export default function VoiceCallBanner() {
+  const navigate = useNavigate();
   const location = useLocation();
   const { accessToken, user, isHydrated } = useAuthStore();
   const { openCall, call: activeCall } = useVoiceCall();
@@ -59,13 +74,18 @@ export default function VoiceCallBanner() {
         const data = res.data.data || {};
         const call = data.call;
         if (cancelled) return;
+
         if (call && call.callType === "voice") {
+          console.log(`[VCB ${ts()}] incoming voice call found`, {
+            callId: call.id,
+            conversationId: call.conversationId,
+          });
           setIncoming((prev) => (prev?.id === call.id ? prev : call));
         } else {
           setIncoming(null);
         }
       } catch {
-        /* noop */
+        /* silent */
       } finally {
         inFlightRef.current = false;
       }
@@ -86,10 +106,20 @@ export default function VoiceCallBanner() {
       const res = await api.patch(
         `/voice-calls/${incoming.conversationId}/accept`,
       );
-      openCall(res.data.data.call);
+      const updatedCall = res.data.data.call;
+      console.log(`[VCB ${ts()}] accepted — handing call to context`, {
+        callId: updatedCall?.id,
+        status: updatedCall?.status,
+        initiatorId: updatedCall?.initiatorId,
+        receiverId: updatedCall?.receiverId,
+      });
+      // CRITICAL: put the call into the global context so the
+      // VoiceCallProvider's WebRTC hook starts on the receiver's side.
+      openCall(updatedCall);
       setIncoming(null);
-    } catch {
-      /* noop */
+      navigate(`/messages?convo=${incoming.conversationId}`);
+    } catch (err) {
+      console.error(`[VCB ${ts()}] accept failed:`, err.message);
     } finally {
       setLoading(false);
     }
@@ -102,7 +132,7 @@ export default function VoiceCallBanner() {
       await api.patch(`/voice-calls/${incoming.conversationId}/decline`);
       setIncoming(null);
     } catch {
-      /* noop */
+      /* silent */
     } finally {
       setLoading(false);
     }
@@ -113,6 +143,7 @@ export default function VoiceCallBanner() {
   const callerName = incoming.initiator
     ? `${incoming.initiator.firstName || ""} ${incoming.initiator.lastName || ""}`.trim()
     : "";
+
   const subtitle = callerName
     ? `${callerName} is calling you`
     : "SkilledProz voice call";
@@ -121,13 +152,16 @@ export default function VoiceCallBanner() {
     <div className={styles.overlay} role="alert" aria-live="assertive">
       <div className={styles.card}>
         <div className={styles.pulseRing} aria-hidden="true" />
+
         <div className={styles.iconWrap}>
           <FaPhone size={26} color="#fff" />
         </div>
+
         <div className={styles.body}>
           <p className={styles.title}>Incoming Voice Call</p>
           <p className={styles.subtitle}>{subtitle}</p>
         </div>
+
         <div className={styles.actions}>
           <button
             className={styles.acceptBtn}
@@ -144,6 +178,7 @@ export default function VoiceCallBanner() {
               </>
             )}
           </button>
+
           <button
             className={styles.declineBtn}
             onClick={handleDecline}

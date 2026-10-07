@@ -2,29 +2,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Manages one WebRTC voice-call session.
 //
-// Responsibilities:
-//   • Request microphone access (one browser prompt per session)
-//   • Create and manage RTCPeerConnection
-//   • Exchange SDP offers/answers + ICE candidates over Socket.IO
-//   • Expose the local stream (for muting) and remote stream (for playback)
-//   • Clean up all media + sockets on unmount
+// LOG PREFIX: [WRTC] (WebRTC hook)
 //
-// isInitiator IS NOW A GETTER:
-//   We accept a `getIsInitiator` function instead of a boolean. The hook
-//   calls it synchronously inside socket handlers — so it always sees the
-//   CURRENT relationship between call.initiatorId and user.id, never a
-//   stale value from a previous render. This was the root cause of the
-//   caller's offer never being sent (which manifested as both sides being
-//   stuck at requesting-mic forever).
-//
-// STALE STATE ROLLBACK:
-//   On any fresh peer-joined or incoming offer, we roll back an
-//   in-progress local offer so we can create a clean one.
-//
-// SOCKET RECONNECT:
-//   When the socket reconnects mid-call, we re-join the room. If we're the
-//   initiator and the peer is already there, the server emits
-//   `voice:peer-joined` again, which triggers a new offer cycle.
+// IMPORTANT: This file now expects `getIsInitiator` to be a FUNCTION, not a
+// boolean. The function is called synchronously inside socket handlers, so
+// it always sees the CURRENT value of (call.initiatorId === user.id).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -34,6 +16,10 @@ const ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
 ];
+
+function ts() {
+  return new Date().toISOString().slice(11, 23);
+}
 
 export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
   const [localStream, setLocalStream] = useState(null);
@@ -50,15 +36,37 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
   const startedRef = useRef(false);
   const offeringRef = useRef(false);
 
-  // Keep the getter in a ref so handlers always see the latest version.
-  // The getter itself reads its inputs from refs, so even the first
-  // version stays valid.
+  // Keep the getter in a ref so handlers always call the latest version.
   const getIsInitiatorRef = useRef(getIsInitiator);
   useEffect(() => {
     getIsInitiatorRef.current = getIsInitiator;
   }, [getIsInitiator]);
 
+  // ── Diagnostic helper ────────────────────────────────────────────────
+  const safeInit = useCallback(() => {
+    try {
+      return getIsInitiatorRef.current?.() ?? null;
+    } catch (e) {
+      console.error(`[WRTC ${ts()}] getIsInitiator() threw:`, e.message);
+      return "ERROR";
+    }
+  }, []);
+
+  // Log whenever the getter returns a different value.
+  const lastInitRef = useRef(null);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const v = safeInit();
+      if (v !== lastInitRef.current) {
+        lastInitRef.current = v;
+        console.log(`[WRTC ${ts()}] isInitiator changed →`, v);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [safeInit]);
+
   const cleanup = useCallback(() => {
+    console.log(`[WRTC ${ts()}] cleanup()`);
     if (pcRef.current) {
       try {
         pcRef.current.getSenders().forEach((s) => s.track?.stop());
@@ -83,17 +91,28 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
   }, []);
 
   useEffect(() => {
-    if (!conversationId) return;
-    if (startedRef.current) return;
+    console.log(`[WRTC ${ts()}] useEffect fired`, {
+      conversationId,
+      started: startedRef.current,
+    });
+
+    if (!conversationId) {
+      console.log(`[WRTC ${ts()}] no conversationId — bailing`);
+      return;
+    }
+    if (startedRef.current) {
+      console.log(`[WRTC ${ts()}] already started — bailing`);
+      return;
+    }
     startedRef.current = true;
 
     let cancelled = false;
 
     async function start() {
       try {
+        console.log(`[WRTC ${ts()}] start() — requesting mic`);
         setStatus("requesting-mic");
 
-        // ── 1. Microphone ─────────────────────────────────────────────
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -103,7 +122,12 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
           video: false,
         });
 
+        console.log(`[WRTC ${ts()}] getUserMedia resolved`, {
+          audioTracks: stream.getAudioTracks().length,
+        });
+
         if (cancelled) {
+          console.log(`[WRTC ${ts()}] cancelled after getUserMedia`);
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -111,23 +135,24 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
         localStreamRef.current = stream;
         setLocalStream(stream);
 
-        // ── 2. Peer connection ────────────────────────────────────────
         const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         pcRef.current = pc;
+        console.log(`[WRTC ${ts()}] RTCPeerConnection created`);
 
         stream.getTracks().forEach((track) => {
           try {
             pc.addTrack(track, stream);
+            console.log(`[WRTC ${ts()}] added local track`, track.kind);
           } catch (e) {
-            console.warn("[voice] addTrack failed:", e);
+            console.warn(`[WRTC ${ts()}] addTrack failed:`, e);
           }
         });
 
-        // ── 3. Remote tracks ──────────────────────────────────────────
         pc.ontrack = (event) => {
           console.log(
-            "[voice] ontrack:",
+            `[WRTC ${ts()}] ontrack:`,
             event.track.kind,
+            "streams:",
             event.streams.length,
           );
 
@@ -150,42 +175,41 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
           setRemoteStream(next);
         };
 
-        // ── 4. ICE candidates ─────────────────────────────────────────
         pc.onicecandidate = (event) => {
           if (!event.candidate) {
-            console.log("[voice] ICE gathering complete");
+            console.log(`[WRTC ${ts()}] ICE gathering complete`);
             return;
           }
+          console.log(`[WRTC ${ts()}] emitting voice:ice`);
           socketRef.current?.emit("voice:ice", {
             conversationId,
             candidate: event.candidate.toJSON(),
           });
         };
 
-        // ── 5. Connection state ───────────────────────────────────────
         pc.onconnectionstatechange = () => {
-          console.log("[voice] connectionState:", pc.connectionState);
+          console.log(`[WRTC ${ts()}] connectionState:`, pc.connectionState);
           const s = pc.connectionState;
           if (s === "connected") setStatus("connected");
           else if (s === "connecting") setStatus("connecting");
           else if (s === "disconnected") setStatus("disconnected");
-          else if (s === "failed") {
-            console.warn("[voice] ICE failed — will attempt re-offer");
-            setStatus("failed");
-          }
+          else if (s === "failed") setStatus("failed");
         };
 
         pc.oniceconnectionstatechange = () => {
-          console.log("[voice] iceConnectionState:", pc.iceConnectionState);
+          console.log(
+            `[WRTC ${ts()}] iceConnectionState:`,
+            pc.iceConnectionState,
+          );
         };
 
         pc.onsignalingstatechange = () => {
-          console.log("[voice] signalingState:", pc.signalingState);
+          console.log(`[WRTC ${ts()}] signalingState:`, pc.signalingState);
         };
 
-        // ── 6. Signaling socket ───────────────────────────────────────
         const socket = getVoiceSocket();
         if (!socket) {
+          console.error(`[WRTC ${ts()}] getVoiceSocket() returned null`);
           setError("Could not connect to signaling server");
           setStatus("failed");
           return;
@@ -193,8 +217,9 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
         socketRef.current = socket;
 
         const joinRoom = () => {
+          console.log(`[WRTC ${ts()}] emitting voice:join`, { conversationId });
           socket.emit("voice:join", { conversationId }, (resp) => {
-            console.log("[voice] join response:", resp);
+            console.log(`[WRTC ${ts()}] voice:join response:`, resp);
             if (!resp?.ok) {
               setError(resp?.error || "Failed to join call room");
               setStatus("failed");
@@ -202,33 +227,50 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
           });
         };
 
-        if (socket.connected) joinRoom();
-        else socket.once("connect", joinRoom);
+        if (socket.connected) {
+          console.log(`[WRTC ${ts()}] socket already connected — joining now`);
+          joinRoom();
+        } else {
+          console.log(
+            `[WRTC ${ts()}] socket not connected — waiting for connect`,
+          );
+          socket.once("connect", () => {
+            console.log(`[WRTC ${ts()}] socket connected event — joining now`);
+            joinRoom();
+          });
+        }
 
-        // ── Offer creation ────────────────────────────────────────────
         const createAndSendOffer = async () => {
           const pcLocal = pcRef.current;
-          if (!pcLocal) return;
+          if (!pcLocal) {
+            console.log(`[WRTC ${ts()}] createAndSendOffer: no PC — bailing`);
+            return;
+          }
           if (offeringRef.current) {
-            console.log("[voice] offer already in flight — skipping");
+            console.log(
+              `[WRTC ${ts()}] createAndSendOffer: offer already in flight — bailing`,
+            );
             return;
           }
 
-          // SAFETY: only the initiator sends offers.
-          const initiating = getIsInitiatorRef.current();
+          const initiating = safeInit();
+          console.log(
+            `[WRTC ${ts()}] createAndSendOffer: isInitiator=`,
+            initiating,
+          );
           if (!initiating) {
-            console.log("[voice] skipping offer — not initiator");
+            console.log(`[WRTC ${ts()}] not initiator — NOT sending offer`);
             return;
           }
 
           offeringRef.current = true;
           try {
             if (pcLocal.signalingState === "have-local-offer") {
-              console.log("[voice] rolling back stale local offer");
+              console.log(`[WRTC ${ts()}] rolling back stale local offer`);
               try {
                 await pcLocal.setLocalDescription({ type: "rollback" });
               } catch (e) {
-                console.warn("[voice] rollback failed:", e);
+                console.warn(`[WRTC ${ts()}] rollback failed:`, e);
               }
             }
 
@@ -236,11 +278,12 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
             const offer = await pcLocal.createOffer({
               offerToReceiveAudio: true,
             });
+            console.log(`[WRTC ${ts()}] createOffer succeeded`);
             await pcLocal.setLocalDescription(offer);
             socket.emit("voice:offer", { conversationId, sdp: offer });
-            console.log("[voice] sent offer");
+            console.log(`[WRTC ${ts()}] ✅ sent offer`);
           } catch (err) {
-            console.error("[voice] createOffer failed:", err);
+            console.error(`[WRTC ${ts()}] createOffer failed:`, err);
           } finally {
             setTimeout(() => {
               offeringRef.current = false;
@@ -248,21 +291,32 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
           }
         };
 
-        // ── Peer handlers ─────────────────────────────────────────────
         const onPeerJoined = async () => {
-          const initiating = getIsInitiatorRef.current();
-          console.log("[voice] peer-joined — initiating:", initiating);
+          const initiating = safeInit();
+          console.log(
+            `[WRTC ${ts()}] 🎯 voice:peer-joined — isInitiator=`,
+            initiating,
+          );
 
-          if (!initiating || !pcRef.current) return;
+          if (!initiating) {
+            console.log(
+              `[WRTC ${ts()}] peer-joined but NOT initiator — doing nothing`,
+            );
+            return;
+          }
+          if (!pcRef.current) {
+            console.log(`[WRTC ${ts()}] peer-joined but no PC — doing nothing`);
+            return;
+          }
 
-          // Small debounce so a burst of events doesn't spam offers.
+          console.log(`[WRTC ${ts()}] scheduling offer in 250ms`);
           setTimeout(() => {
             createAndSendOffer();
           }, 250);
         };
 
         const onOffer = async ({ sdp }) => {
-          console.log("[voice] received offer");
+          console.log(`[WRTC ${ts()}] 📥 received offer`);
           const pcLocal = pcRef.current;
           if (!pcLocal) return;
           try {
@@ -271,12 +325,12 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
               pcLocal.signalingState === "have-remote-offer"
             ) {
               console.log(
-                "[voice] rolling back stale state before handling offer",
+                `[WRTC ${ts()}] rolling back stale state before offer`,
               );
               try {
                 await pcLocal.setLocalDescription({ type: "rollback" });
               } catch (e) {
-                console.warn("[voice] rollback failed:", e);
+                console.warn(`[WRTC ${ts()}] rollback failed:`, e);
               }
             }
 
@@ -284,7 +338,7 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
             const answer = await pcLocal.createAnswer();
             await pcLocal.setLocalDescription(answer);
             socket.emit("voice:answer", { conversationId, sdp: answer });
-            console.log("[voice] sent answer");
+            console.log(`[WRTC ${ts()}] ✅ sent answer`);
 
             for (const c of pendingIceRef.current) {
               try {
@@ -295,12 +349,12 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
             }
             pendingIceRef.current = [];
           } catch (err) {
-            console.error("[voice] handleOffer failed:", err);
+            console.error(`[WRTC ${ts()}] handleOffer failed:`, err);
           }
         };
 
         const onAnswer = async ({ sdp }) => {
-          console.log("[voice] received answer");
+          console.log(`[WRTC ${ts()}] 📥 received answer`);
           const pcLocal = pcRef.current;
           if (!pcLocal) return;
           try {
@@ -316,14 +370,15 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
                 }
               }
               pendingIceRef.current = [];
+              console.log(`[WRTC ${ts()}] ✅ applied answer`);
             } else {
               console.log(
-                "[voice] ignoring answer — signalingState:",
+                `[WRTC ${ts()}] ignoring answer — signalingState:`,
                 pcLocal.signalingState,
               );
             }
           } catch (err) {
-            console.error("[voice] handleAnswer failed:", err);
+            console.error(`[WRTC ${ts()}] handleAnswer failed:`, err);
           }
         };
 
@@ -342,12 +397,12 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
         };
 
         const onPeerLeft = () => {
-          console.log("[voice] peer left");
+          console.log(`[WRTC ${ts()}] peer left`);
           setStatus("connecting");
         };
 
         const onSocketReconnect = () => {
-          console.log("[voice] socket reconnected — rejoining room");
+          console.log(`[WRTC ${ts()}] socket reconnect — rejoining room`);
           joinRoom();
         };
 
@@ -358,6 +413,8 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
         socket.on("voice:peer-left", onPeerLeft);
         socket.on("connect", onSocketReconnect);
 
+        console.log(`[WRTC ${ts()}] all socket handlers registered`);
+
         socketRef.current.__voiceHandlers = {
           onPeerJoined,
           onOffer,
@@ -367,7 +424,7 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
           onSocketReconnect,
         };
       } catch (err) {
-        console.error("[voice] setup failed:", err);
+        console.error(`[WRTC ${ts()}] setup failed:`, err);
         if (err.name === "NotAllowedError") {
           setError("Microphone permission denied. Enable it in your browser.");
         } else if (err.name === "NotFoundError") {
@@ -382,6 +439,7 @@ export default function useVoiceCallWebRTC({ conversationId, getIsInitiator }) {
     start();
 
     return () => {
+      console.log(`[WRTC ${ts()}] useEffect cleanup running`);
       cancelled = true;
       const socket = socketRef.current;
       if (socket) {

@@ -1,23 +1,7 @@
 // src/components/video/VoiceCallProvider.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Persistent voice-call widget. Mounted once at the app root.
-//
-// Ownership:
-//   • useVoiceCallWebRTC (the peer connection + signaling)
-//   • Polling /voice-calls/:conversationId for state changes
-//   • A hidden <audio> element that plays the remote stream
-//   • Switching between full-screen and mini UI based on context.mode
-//
-// THE FIX FOR SILENT CALLS:
-//   isInitiator is passed to the hook as a GETTER, not a value. The hook
-//   reads it synchronously inside socket handlers, so it always sees the
-//   CURRENT value of (call.initiatorId === user.id) — never a stale
-//   captured value from an earlier render. This is what made the caller's
-//   offer never get sent.
-//
-// STICKY ACTIVE:
-//   Once a call has been ACTIVE, we latch a flag so a racing poll can't
-//   tear down WebRTC. Cleared when call goes to null.
+// Persistent voice-call widget.
+// LOG PREFIX: [VCP] (Voice Call Provider)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -30,6 +14,10 @@ import VoiceCallMini from "./VoiceCallMini";
 
 const POLL_MS = 3000;
 
+function ts() {
+  return new Date().toISOString().slice(11, 23);
+}
+
 export default function VoiceCallProvider() {
   const { user, accessToken, isHydrated } = useAuthStore();
   const { call, mode, updateCall, endCall } = useVoiceCall();
@@ -39,7 +27,7 @@ export default function VoiceCallProvider() {
 
   const isActive = call?.status === "ACTIVE";
 
-  // ── Sticky active flag ─────────────────────────────────────────────────
+  // Sticky active flag
   const [everActive, setEverActive] = useState(false);
   useEffect(() => {
     if (isActive) setEverActive(true);
@@ -50,10 +38,7 @@ export default function VoiceCallProvider() {
 
   const effectiveActive = isActive || everActive;
 
-  // ── Synchronous isInitiator getter ────────────────────────────────────
-  // We pass a GETTER to the hook instead of a value. The getter reads the
-  // latest `call` and `user` from refs, so it's never stale. Every place
-  // the hook needs to know "am I the initiator right now" it calls this.
+  // Refs so the getter can read fresh values without re-creating itself.
   const callRef = useRef(call);
   const userRef = useRef(user);
   useEffect(() => {
@@ -69,25 +54,35 @@ export default function VoiceCallProvider() {
     return !!(c && u && c.initiatorId === u.id);
   }, []);
 
-  // Diagnostic — prints every time the effective initiator changes.
-  // Remove this in a follow-up once we're confident the fix holds.
+  // ── Diagnostics ───────────────────────────────────────────────────────
   useEffect(() => {
-    console.log(
-      "[voice] provider state — user.id:",
-      user?.id,
-      "call.initiatorId:",
-      call?.initiatorId,
-      "getIsInitiator():",
-      getIsInitiator(),
-    );
-  }, [user?.id, call?.initiatorId, getIsInitiator]);
+    console.log(`[VCP ${ts()}] state —`, {
+      userId: user?.id,
+      callStatus: call?.status,
+      callInitiatorId: call?.initiatorId,
+      callReceiverId: call?.receiverId,
+      isActive,
+      everActive,
+      effectiveActive,
+      getIsInitiator: getIsInitiator(),
+    });
+  }, [
+    user?.id,
+    call?.status,
+    call?.initiatorId,
+    call?.receiverId,
+    isActive,
+    everActive,
+    effectiveActive,
+    getIsInitiator,
+  ]);
 
   const rtc = useVoiceCallWebRTC({
     conversationId: effectiveActive ? call?.conversationId : null,
     getIsInitiator,
   });
 
-  // ── Attach remote stream to <audio> ────────────────────────────────────
+  // Attach remote stream to <audio>
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
@@ -98,12 +93,13 @@ export default function VoiceCallProvider() {
         return;
       }
       if (el.srcObject !== rtc.remoteStream) {
+        console.log(`[VCP ${ts()}] attaching remote stream to <audio>`);
         el.srcObject = rtc.remoteStream;
       }
       const p = el.play();
       if (p && typeof p.catch === "function") {
         p.catch((e) => {
-          console.warn("[voice] autoplay blocked:", e.message);
+          console.warn(`[VCP ${ts()}] autoplay blocked:`, e.message);
           const resume = () => {
             el.play().catch(() => {});
             window.removeEventListener("click", resume);
@@ -120,7 +116,7 @@ export default function VoiceCallProvider() {
     const stream = rtc.remoteStream;
     if (stream) {
       const onAddTrack = () => {
-        console.log("[voice] remote addtrack — re-attaching audio");
+        console.log(`[VCP ${ts()}] remote addtrack — re-attaching`);
         attach();
       };
       stream.addEventListener("addtrack", onAddTrack);
@@ -130,7 +126,7 @@ export default function VoiceCallProvider() {
     }
   }, [rtc.remoteStream]);
 
-  // ── Poll for status changes ────────────────────────────────────────────
+  // Poll for status changes
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (!call?.conversationId) return;
@@ -147,13 +143,18 @@ export default function VoiceCallProvider() {
         if (cancelled) return;
 
         if (!data?.call) {
+          console.log(`[VCP ${ts()}] poll: no call — endCall()`);
           endCall();
           return;
         }
         if (data.call.status === "ENDED" || data.call.status === "DECLINED") {
+          console.log(
+            `[VCP ${ts()}] poll: status=${data.call.status} — endCall()`,
+          );
           endCall();
           return;
         }
+        console.log(`[VCP ${ts()}] poll: status=${data.call.status}`);
         updateCall(data.call);
       } catch {
         /* noop */

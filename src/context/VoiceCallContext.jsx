@@ -1,14 +1,5 @@
 // src/context/VoiceCallContext.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Global voice-call state. Mounted once at the app root so the call survives
-// route changes.
-//
-//   hidden      — no call in progress
-//   fullscreen  — the large call UI
-//   mini        — small floating widget, user can browse the app
-//
-// The actual RTCPeerConnection and MiroTalk-free signaling live in
-// <VoiceCallProvider>, which reads from this context.
+// LOG PREFIX: [VCC] (Voice Call Context)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {
@@ -19,31 +10,81 @@ import {
   useMemo,
 } from "react";
 
+function ts() {
+  return new Date().toISOString().slice(11, 23);
+}
+
 const VoiceCallContext = createContext(null);
 
 export function VoiceCallProvider({ children }) {
-  const [call, setCall] = useState(null);
-  const [mode, setMode] = useState("hidden");
+  const [call, setCallState] = useState(null);
+  const [mode, setModeState] = useState("hidden");
 
-  const startCall = useCallback((nextCall) => {
-    setCall(nextCall);
-    setMode("fullscreen");
+  const setCall = useCallback((next) => {
+    console.log(
+      `[VCC ${ts()}] setCall →`,
+      next
+        ? {
+            id: next.id,
+            status: next.status,
+            initiatorId: next.initiatorId,
+            receiverId: next.receiverId,
+            callType: next.callType,
+          }
+        : null,
+    );
+    setCallState(next);
   }, []);
 
-  const openCall = useCallback((nextCall) => {
-    setCall(nextCall);
-    setMode("fullscreen");
-  }, []);
+  const startCall = useCallback(
+    (nextCall) => {
+      console.log(`[VCC ${ts()}] startCall()`, {
+        id: nextCall?.id,
+        initiatorId: nextCall?.initiatorId,
+      });
+      setCall(nextCall);
+      setModeState("fullscreen");
+    },
+    [setCall],
+  );
+
+  const openCall = useCallback(
+    (nextCall) => {
+      console.log(`[VCC ${ts()}] openCall()`, {
+        id: nextCall?.id,
+        initiatorId: nextCall?.initiatorId,
+      });
+      setCall(nextCall);
+      setModeState("fullscreen");
+    },
+    [setCall],
+  );
 
   const updateCall = useCallback((patch) => {
-    setCall((prev) => (prev ? { ...prev, ...patch } : prev));
+    setCallState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      if (prev.status !== next.status) {
+        console.log(`[VCC ${ts()}] status ${prev.status} → ${next.status}`);
+      }
+      return next;
+    });
   }, []);
 
-  const minimize = useCallback(() => setMode("mini"), []);
-  const expand = useCallback(() => setMode("fullscreen"), []);
+  const minimize = useCallback(() => {
+    console.log(`[VCC ${ts()}] minimize()`);
+    setModeState("mini");
+  }, []);
+
+  const expand = useCallback(() => {
+    console.log(`[VCC ${ts()}] expand()`);
+    setModeState("fullscreen");
+  }, []);
+
   const endCall = useCallback(() => {
-    setCall(null);
-    setMode("hidden");
+    console.log(`[VCC ${ts()}] endCall()`);
+    setCallState(null);
+    setModeState("hidden");
   }, []);
 
   const value = useMemo(
