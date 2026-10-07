@@ -2,28 +2,25 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Persistent voice-call widget. Mounted once at the app root.
 //
-// Owns:
+// Ownership:
 //   • useVoiceCallWebRTC (the peer connection + signaling)
 //   • Polling /voice-calls/:conversationId for state changes
 //   • A hidden <audio> element that plays the remote stream
 //   • Switching between full-screen and mini UI based on context.mode
 //
-// RACE SAFETY:
-//   Once a call has been observed ACTIVE, we latch a sticky flag so that a
-//   racing poll (or a duplicate initiate that briefly flips status back to
-//   PENDING) cannot tear down the WebRTC hook mid-call. The flag clears
-//   only when the call object itself is cleared (call ended / declined).
+// THE FIX FOR SILENT CALLS:
+//   isInitiator is passed to the hook as a GETTER, not a value. The hook
+//   reads it synchronously inside socket handlers, so it always sees the
+//   CURRENT value of (call.initiatorId === user.id) — never a stale
+//   captured value from an earlier render. This is what made the caller's
+//   offer never get sent.
 //
-// AUDIO PLAYBACK NOTES:
-//   1. The <audio> element is positioned off-screen, NOT display:none.
-//      Some browsers (Safari especially) refuse to play fully-hidden media.
-//   2. We re-attach srcObject whenever the remote stream changes AND on
-//      every addtrack event — belt and braces to survive async track arrival.
-//   3. If autoplay is blocked (no user gesture yet), we retry on the next
-//      click anywhere on the page.
+// STICKY ACTIVE:
+//   Once a call has been ACTIVE, we latch a flag so a racing poll can't
+//   tear down WebRTC. Cleared when call goes to null.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useVoiceCall } from "../../context/VoiceCallContext";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -41,12 +38,8 @@ export default function VoiceCallProvider() {
   const inFlightRef = useRef(false);
 
   const isActive = call?.status === "ACTIVE";
-  const isInitiator = call?.initiatorId === user?.id;
 
   // ── Sticky active flag ─────────────────────────────────────────────────
-  // Once we've seen the call go ACTIVE, remember it. If a racing poll (or
-  // a duplicate initiate) briefly reports PENDING, we keep the WebRTC hook
-  // alive. Cleared only when the call object is cleared.
   const [everActive, setEverActive] = useState(false);
   useEffect(() => {
     if (isActive) setEverActive(true);
@@ -57,10 +50,41 @@ export default function VoiceCallProvider() {
 
   const effectiveActive = isActive || everActive;
 
-  // WebRTC hook only spins up once we know the call is (or was) active.
+  // ── Synchronous isInitiator getter ────────────────────────────────────
+  // We pass a GETTER to the hook instead of a value. The getter reads the
+  // latest `call` and `user` from refs, so it's never stale. Every place
+  // the hook needs to know "am I the initiator right now" it calls this.
+  const callRef = useRef(call);
+  const userRef = useRef(user);
+  useEffect(() => {
+    callRef.current = call;
+  }, [call]);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const getIsInitiator = useCallback(() => {
+    const c = callRef.current;
+    const u = userRef.current;
+    return !!(c && u && c.initiatorId === u.id);
+  }, []);
+
+  // Diagnostic — prints every time the effective initiator changes.
+  // Remove this in a follow-up once we're confident the fix holds.
+  useEffect(() => {
+    console.log(
+      "[voice] provider state — user.id:",
+      user?.id,
+      "call.initiatorId:",
+      call?.initiatorId,
+      "getIsInitiator():",
+      getIsInitiator(),
+    );
+  }, [user?.id, call?.initiatorId, getIsInitiator]);
+
   const rtc = useVoiceCallWebRTC({
     conversationId: effectiveActive ? call?.conversationId : null,
-    isInitiator,
+    getIsInitiator,
   });
 
   // ── Attach remote stream to <audio> ────────────────────────────────────
@@ -151,11 +175,6 @@ export default function VoiceCallProvider() {
 
   return (
     <>
-      {/*
-        Hidden audio sink — must NOT be display:none.
-        Placing it 1×1 off-screen keeps it "visible" to the browser so
-        autoplay policies treat it like any other media element.
-      */}
       <audio
         ref={audioRef}
         autoPlay
