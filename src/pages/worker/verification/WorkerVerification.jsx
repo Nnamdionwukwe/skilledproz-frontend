@@ -1,41 +1,66 @@
-// src/pages/worker/verification/Verification.jsx
+// src/pages/hirer/verification/HirerVerification.jsx
 import { useState, useEffect } from "react";
+import HirerLayout from "../../../components/layout/HirerLayout";
+import api from "../../../lib/api";
+import styles from "../../../pages/worker/verification/Verification.module.css";
 import {
-  FiShield,
-  FiFileText,
-  FiUploadCloud,
-  FiAlertCircle,
   FiCheckCircle,
   FiClock,
   FiXCircle,
   FiUnlock,
+  FiBriefcase,
+  FiCreditCard,
+  FiUploadCloud,
+  FiFileText,
+  FiAlertTriangle,
   FiX,
 } from "react-icons/fi";
-import { ShieldCheck } from "lucide-react";
-import WorkerLayout from "../../../components/layout/WorkerLayout";
-import api from "../../../lib/api";
-import styles from "./Verification.module.css";
-
-const ID_TYPES = [
-  { value: "NATIONAL_ID", label: "National ID Card" },
-  { value: "PASSPORT", label: "International Passport" },
-  { value: "DRIVERS_LICENSE", label: "Driver's License" },
-  { value: "VOTERS_CARD", label: "Voter's Card" },
-  { value: "RESIDENCE_PERMIT", label: "Residence Permit" },
-  { value: "WORK_PERMIT", label: "Work Permit" },
-];
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
   "image/png",
   "image/webp",
+  "image/gif",
+  "image/bmp",
+  "image/avif",
+  "image/heic",
+  "image/heif",
   "application/pdf",
+  "application/x-pdf",
+  "application/acrobat",
+  "applications/vnd.pdf",
+  "text/pdf",
+  "text/x-pdf",
 ];
+
+const ALLOWED_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "bmp",
+  "avif",
+  "heic",
+  "heif",
+  "pdf",
+];
+
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
+function hasAllowedExtension(name) {
+  if (!name) return false;
+  const ext = name.split(".").pop().toLowerCase();
+  return ALLOWED_EXTENSIONS.includes(ext);
+}
 
 function validateFile(file) {
   if (!file) return "Please select a file.";
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+  const typeOk = file.type && ALLOWED_MIME_TYPES.includes(file.type);
+  const extOk = hasAllowedExtension(file.name);
+  if (!typeOk && !extOk) {
     return "Only JPG, PNG, WEBP, or PDF files are allowed.";
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -48,374 +73,414 @@ function StatusBadge({ status }) {
   const map = {
     UNVERIFIED: { label: "Unverified", cls: "badgeDefault" },
     PENDING: { label: "Pending Review", cls: "badgePending" },
-    VERIFIED: { label: "Verified ✓", cls: "badgeVerified" },
+    VERIFIED: { label: "Verified", cls: "badgeVerified" },
     REJECTED: { label: "Rejected", cls: "badgeRejected" },
   };
   const s = map[status] || map.UNVERIFIED;
-  return <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>;
-}
-
-function StatusIcon({ status }) {
-  if (status === "VERIFIED") return <ShieldCheck size={34} />;
-  if (status === "PENDING") return <FiClock size={32} />;
-  if (status === "REJECTED") return <FiXCircle size={32} />;
-  return <FiUnlock size={32} />;
-}
-
-function VerificationSkeleton() {
   return (
-    <div aria-busy="true" aria-live="polite">
-      <div className={styles.skStatusCard}>
-        <div className={`${styles.skBlock} ${styles.skStatusIcon}`} />
-        <div className={styles.skStatusBody}>
-          <div className={styles.skStatusRow}>
-            <div className={`${styles.skBlock} ${styles.skLabelSm}`} />
-            <div className={`${styles.skBlock} ${styles.skBadgePill}`} />
-          </div>
-          <div className={`${styles.skBlock} ${styles.skTextLine}`} />
-          <div className={`${styles.skBlock} ${styles.skTextShort}`} />
-        </div>
-      </div>
-      <div className={styles.skInfoBox}>
-        <div className={`${styles.skBlock} ${styles.skInfoTitle}`} />
-        <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
-        <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
-        <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
-      </div>
-      <div className={styles.skFormGrid}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={styles.skField}>
-            <div className={`${styles.skBlock} ${styles.skFieldLabel}`} />
-            <div className={`${styles.skBlock} ${styles.skFieldInput}`} />
-          </div>
-        ))}
-      </div>
-      <div className={`${styles.skBlock} ${styles.skDropzone}`} />
-      <div className={`${styles.skBlock} ${styles.skSubmitBtn}`} />
-    </div>
+    <span className={`${styles.badge} ${styles[s.cls]}`}>
+      {s.cls === "badgeVerified" && <FiCheckCircle size={11} />} {s.label}
+    </span>
   );
 }
 
-export default function WorkerVerification() {
+export default function HirerVerification() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [verType, setVerType] = useState("INDIVIDUAL");
 
   const [idType, setIdType] = useState("");
   const [idNumber, setIdNumber] = useState("");
-  const [dob, setDob] = useState("");
-  const [nationality, setNationality] = useState("");
-  const [idFile, setIdFile] = useState(null);
-  const [submittingId, setSubmittingId] = useState(false);
-  const [idSuccess, setIdSuccess] = useState("");
-  const [idError, setIdError] = useState("");
+
+  const [companyName, setCompanyName] = useState("");
+  const [companyReg, setCompanyReg] = useState("");
+  const [companyCountry, setCompanyCountry] = useState("");
+  const [website, setWebsite] = useState("");
+
+  const [docFile, setDocFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     api
-      .get("/verification/status")
+      .get("/verification/hirer/status")
       .then((res) => setStatus(res.data.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const refetchStatus = async () => {
-    const res = await api.get("/verification/status");
-    setStatus(res.data.data);
-  };
-
   const handleFileSelect = (file) => {
-    setIdError("");
+    setError("");
     if (!file) return;
     const err = validateFile(file);
     if (err) {
-      setIdError(err);
-      setIdFile(null);
+      setError(err);
+      setDocFile(null);
       return;
     }
-    setIdFile(file);
+    setDocFile(file);
   };
 
-  const handleIdSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIdError("");
-    setIdSuccess("");
-    if (!idType || !idNumber) {
-      setIdError("ID type and ID number are required.");
+    setError("");
+    setSuccess("");
+
+    if (!docFile) {
+      setError("Please upload a verification document.");
       return;
     }
-    if (!idFile) {
-      setIdError("Please upload your ID document.");
-      return;
-    }
-    const fileErr = validateFile(idFile);
-    if (fileErr) {
-      setIdError(fileErr);
-      return;
-    }
-    setSubmittingId(true);
-    const form = new FormData();
-    form.append("idType", idType);
-    form.append("idNumber", idNumber);
-    form.append("dateOfBirth", dob);
-    form.append("nationality", nationality);
-    form.append("file", idFile);
-    try {
-      await api.post("/verification/submit-id", form);
-      setIdSuccess(
-        "ID submitted successfully. We'll review within 24–48 hours.",
+    if (verType === "INDIVIDUAL" && (!idType || !idNumber)) {
+      setError(
+        "ID type and ID number are required for individual verification.",
       );
-      await refetchStatus();
+      return;
+    }
+    if (verType === "BUSINESS" && (!companyName || !companyReg)) {
+      setError("Company name and registration number are required.");
+      return;
+    }
+    const fileErr = validateFile(docFile);
+    if (fileErr) {
+      setError(fileErr);
+      return;
+    }
+
+    setSubmitting(true);
+    const form = new FormData();
+    form.append("verificationType", verType);
+    form.append("file", docFile);
+    if (verType === "INDIVIDUAL") {
+      form.append("idType", idType);
+      form.append("idNumber", idNumber);
+    } else {
+      form.append("companyName", companyName);
+      form.append("companyRegNumber", companyReg);
+      form.append("companyCountry", companyCountry);
+      form.append("website", website);
+    }
+
+    try {
+      await api.post("/verification/hirer/submit", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setSuccess(
+        "Verification submitted. Our team will review within 24–48 hours.",
+      );
+      const res = await api.get("/verification/hirer/status");
+      setStatus(res.data.data);
     } catch (err) {
-      setIdError(err.response?.data?.message || "Submission failed.");
+      setError(err.response?.data?.message || "Submission failed.");
     } finally {
-      setSubmittingId(false);
+      setSubmitting(false);
     }
   };
+
+  const currentStatus = status?.currentStatus || "UNVERIFIED";
+  const isVerified = currentStatus === "VERIFIED";
+  const isPending = currentStatus === "PENDING";
+
+  const StatusIcon = isVerified
+    ? FiCheckCircle
+    : isPending
+      ? FiClock
+      : currentStatus === "REJECTED"
+        ? FiXCircle
+        : FiUnlock;
+
+  const statusColor = isVerified
+    ? "var(--green)"
+    : isPending
+      ? "var(--orange)"
+      : currentStatus === "REJECTED"
+        ? "var(--red)"
+        : "var(--text-muted)";
 
   return (
-    <WorkerLayout>
+    <HirerLayout>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <div className={styles.badge2}>
-            <FiShield size={12} />
-            Identity Verification
-          </div>
-          <h1 className={styles.title}>Verification</h1>
+          <div className={styles.badge2}>Trust & Safety</div>
+          <h1 className={styles.title}>Account Verification</h1>
           <p className={styles.sub}>
-            Verified workers get more bookings and appear higher in search
-            results.
+            Verified hirers attract better workers and unlock higher booking
+            limits.
           </p>
         </div>
 
-        {loading ? (
-          <VerificationSkeleton />
-        ) : (
-          <>
-            {status && (
-              <div className={styles.statusCard}>
-                <div className={styles.statusLeft}>
-                  <div className={styles.statusIcon}>
-                    <StatusIcon status={status.verificationStatus} />
-                  </div>
-                  <div className={styles.statusInfo}>
-                    <div className={styles.statusRow}>
-                      <span className={styles.statusLabel}>
-                        Identity Status
-                      </span>
-                      <StatusBadge status={status.verificationStatus} />
-                    </div>
-                    <p className={styles.statusMsg}>{status.statusMessage}</p>
-                    {status.lastSubmittedAt && (
-                      <p className={styles.statusDate}>
-                        Submitted:{" "}
-                        {new Date(status.lastSubmittedAt).toLocaleDateString(
-                          "en-GB",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )}
-                      </p>
+        {!loading && status && (
+          <div className={styles.statusCard}>
+            <div className={styles.statusLeft}>
+              <div className={styles.statusIcon} style={{ color: statusColor }}>
+                <StatusIcon size={30} />
+              </div>
+              <div>
+                <div className={styles.statusRow}>
+                  <span className={styles.statusLabel}>Account Status</span>
+                  <StatusBadge status={currentStatus} />
+                </div>
+                <p className={styles.statusMsg}>{status.statusMessage}</p>
+                {status.latestSubmission?.submittedAt && (
+                  <p className={styles.statusDate}>
+                    Submitted:{" "}
+                    {new Date(
+                      status.latestSubmission.submittedAt,
+                    ).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+                {status.latestReview?.rejectionReason && (
+                  <p className={styles.rejectionReason}>
+                    Reason: {status.latestReview.rejectionReason}
+                  </p>
+                )}
+              </div>
+            </div>
+            {status.latestSubmission && (
+              <div className={styles.statusRight}>
+                <div className={styles.checkItem}>
+                  <span className={styles.checkIcon}>
+                    {status.latestSubmission.verificationType === "BUSINESS" ? (
+                      <FiBriefcase size={16} />
+                    ) : (
+                      <FiCreditCard size={16} />
                     )}
+                  </span>
+                  <span className={styles.checkLabel}>
+                    {status.latestSubmission.verificationType === "BUSINESS"
+                      ? `Business: ${status.latestSubmission.companyName || "—"}`
+                      : "Individual Verification"}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isVerified && !isPending && (
+          <div className={styles.tabContent}>
+            <div className={styles.infoBox}>
+              <h3 className={styles.infoTitle}>Why verify?</h3>
+              <ul className={styles.infoList}>
+                <li>Workers trust verified hirers and respond faster</li>
+                <li>Your profile shows a Verified badge in search</li>
+                <li>Unlock higher booking frequency and limits</li>
+                <li>Disputes are resolved faster for verified accounts</li>
+              </ul>
+            </div>
+
+            <div className={styles.typeSelector}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${verType === "INDIVIDUAL" ? styles.typeBtnActive : ""}`}
+                onClick={() => setVerType("INDIVIDUAL")}
+              >
+                <span className={styles.typeBtnIcon}>
+                  <FiCreditCard size={24} />
+                </span>
+                <span className={styles.typeBtnLabel}>Individual</span>
+                <span className={styles.typeBtnSub}>
+                  Personal ID verification
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${verType === "BUSINESS" ? styles.typeBtnActive : ""}`}
+                onClick={() => setVerType("BUSINESS")}
+              >
+                <span className={styles.typeBtnIcon}>
+                  <FiBriefcase size={24} />
+                </span>
+                <span className={styles.typeBtnLabel}>Business</span>
+                <span className={styles.typeBtnSub}>Company registration</span>
+              </button>
+            </div>
+
+            <form className={styles.form} onSubmit={handleSubmit}>
+              {verType === "INDIVIDUAL" ? (
+                <div className={styles.formGrid}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>ID Type *</label>
+                    <select
+                      className={styles.input}
+                      value={idType}
+                      onChange={(e) => setIdType(e.target.value)}
+                    >
+                      <option value="">Select ID type</option>
+                      <option value="NATIONAL_ID">National ID Card</option>
+                      <option value="PASSPORT">International Passport</option>
+                      <option value="DRIVERS_LICENSE">Driver's License</option>
+                      <option value="VOTERS_CARD">Voter's Card</option>
+                      <option value="RESIDENCE_PERMIT">Residence Permit</option>
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>ID Number *</label>
+                    <input
+                      className={styles.input}
+                      placeholder="e.g. A123456789"
+                      value={idNumber}
+                      onChange={(e) => setIdNumber(e.target.value)}
+                    />
                   </div>
                 </div>
-                <div className={styles.statusRight}>
-                  {status.backgroundCheck && (
-                    <div className={styles.checkItem}>
-                      <span className={styles.checkIcon}>
-                        <FiShield size={14} />
+              ) : (
+                <div className={styles.formGrid}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Company Name *</label>
+                    <input
+                      className={styles.input}
+                      placeholder="e.g. Acme Services Ltd"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      Registration Number *
+                    </label>
+                    <input
+                      className={styles.input}
+                      placeholder="e.g. RC1234567"
+                      value={companyReg}
+                      onChange={(e) => setCompanyReg(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      Country of Registration
+                    </label>
+                    <input
+                      className={styles.input}
+                      placeholder="e.g. Nigeria"
+                      value={companyCountry}
+                      onChange={(e) => setCompanyCountry(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Website</label>
+                    <input
+                      className={styles.input}
+                      placeholder="https://yourcompany.com"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Upload{" "}
+                  {verType === "BUSINESS"
+                    ? "CAC / Registration Document"
+                    : "ID Document"}{" "}
+                  *
+                </label>
+                <div
+                  className={`${styles.dropzone} ${docFile ? styles.dropzoneHasFile : ""}`}
+                  onClick={() =>
+                    document.getElementById("docFileInput").click()
+                  }
+                >
+                  <input
+                    id="docFileInput"
+                    type="file"
+                    accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp"
+                    style={{ display: "none" }}
+                    onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                  />
+                  {docFile ? (
+                    <div className={styles.fileSelected}>
+                      <span className={styles.fileIcon}>
+                        <FiFileText size={18} />
                       </span>
-                      <span className={styles.checkLabel}>
-                        Background Check Cleared
+                      <span className={styles.fileName}>{docFile.name}</span>
+                      <button
+                        type="button"
+                        className={styles.removeFile}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDocFile(null);
+                        }}
+                      >
+                        <FiX size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.dropzoneInner}>
+                      <span className={styles.dropzoneIcon}>
+                        <FiUploadCloud size={28} />
                       </span>
+                      <p className={styles.dropzoneText}>
+                        Click to upload or drag and drop
+                      </p>
+                      <p className={styles.dropzoneHint}>
+                        JPG, PNG or PDF — max 10MB
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
 
-            <div className={styles.tabContent}>
-              {status?.verificationStatus === "VERIFIED" ? (
-                <div className={styles.alreadyVerified}>
-                  <span className={styles.bigIcon}>
-                    <ShieldCheck size={50} />
-                  </span>
-                  <h3>Your identity is verified</h3>
-                  <p>Your profile shows the Verified badge to hirers.</p>
+              {error && (
+                <div className={styles.errorBox}>
+                  <FiAlertTriangle size={14} /> {error}
                 </div>
-              ) : status?.verificationStatus === "PENDING" ? (
-                <div className={styles.pendingBox}>
-                  <span className={styles.bigIcon}>
-                    <FiClock size={50} />
-                  </span>
-                  <h3>Verification under review</h3>
-                  <p>
-                    We&apos;ve received your documents and our team is reviewing
-                    them. This usually takes 24–48 hours.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className={styles.infoBox}>
-                    <h3 className={styles.infoTitle}>What you need</h3>
-                    <ul className={styles.infoList}>
-                      <li>
-                        A valid government-issued ID (National ID, Passport,
-                        etc.)
-                      </li>
-                      <li>A clear photo or scan of the document</li>
-                      <li>Your ID number must be visible and legible</li>
-                      <li>Accepted formats: JPG, PNG, PDF (max 10MB)</li>
-                    </ul>
-                  </div>
-
-                  <form className={styles.form} onSubmit={handleIdSubmit}>
-                    <div className={styles.formGrid}>
-                      <div className={styles.field}>
-                        <label className={styles.label}>ID Type *</label>
-                        <select
-                          className={styles.input}
-                          value={idType}
-                          onChange={(e) => setIdType(e.target.value)}
-                        >
-                          <option value="">Select ID type</option>
-                          {ID_TYPES.map((t) => (
-                            <option key={t.value} value={t.value}>
-                              {t.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className={styles.field}>
-                        <label className={styles.label}>ID Number *</label>
-                        <input
-                          className={styles.input}
-                          placeholder="e.g. A123456789"
-                          value={idNumber}
-                          onChange={(e) => setIdNumber(e.target.value)}
-                        />
-                      </div>
-
-                      <div className={styles.field}>
-                        <label className={styles.label}>Date of Birth</label>
-                        <input
-                          className={styles.input}
-                          type="date"
-                          value={dob}
-                          onChange={(e) => setDob(e.target.value)}
-                        />
-                      </div>
-
-                      <div className={styles.field}>
-                        <label className={styles.label}>Nationality</label>
-                        <input
-                          className={styles.input}
-                          placeholder="e.g. Nigerian"
-                          value={nationality}
-                          onChange={(e) => setNationality(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.field}>
-                      <label className={styles.label}>
-                        Upload ID Document *
-                      </label>
-                      <div
-                        className={`${styles.dropzone} ${
-                          idFile ? styles.dropzoneHasFile : ""
-                        }`}
-                        onClick={() =>
-                          document.getElementById("idFileInput")?.click()
-                        }
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            document.getElementById("idFileInput")?.click();
-                          }
-                        }}
-                      >
-                        <input
-                          id="idFileInput"
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,application/pdf"
-                          style={{ display: "none" }}
-                          onChange={(e) =>
-                            handleFileSelect(e.target.files?.[0])
-                          }
-                        />
-                        {idFile ? (
-                          <div className={styles.fileSelected}>
-                            <span className={styles.fileIcon}>
-                              <FiFileText size={18} />
-                            </span>
-                            <span className={styles.fileName}>
-                              {idFile.name}
-                            </span>
-                            <button
-                              type="button"
-                              className={styles.removeFile}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIdFile(null);
-                              }}
-                              aria-label="Remove file"
-                            >
-                              <FiX size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className={styles.dropzoneInner}>
-                            <span className={styles.dropzoneIcon}>
-                              <FiUploadCloud size={28} />
-                            </span>
-                            <p className={styles.dropzoneText}>
-                              Click to upload or drag and drop
-                            </p>
-                            <p className={styles.dropzoneHint}>
-                              JPG, PNG or PDF — max 10MB
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {idError && (
-                      <div className={styles.errorBox}>
-                        <FiAlertCircle size={15} />
-                        <span>{idError}</span>
-                      </div>
-                    )}
-                    {idSuccess && (
-                      <div className={styles.successBox}>
-                        <FiCheckCircle size={15} />
-                        <span>{idSuccess}</span>
-                      </div>
-                    )}
-
-                    <button
-                      className={styles.submitBtn}
-                      type="submit"
-                      disabled={submittingId}
-                    >
-                      {submittingId ? (
-                        <>
-                          <span className={styles.spinner} /> Submitting...
-                        </>
-                      ) : (
-                        "Submit for Verification"
-                      )}
-                    </button>
-                  </form>
-                </>
               )}
-            </div>
-          </>
+              {success && (
+                <div className={styles.successBox}>
+                  <FiCheckCircle size={14} /> {success}
+                </div>
+              )}
+
+              <button
+                className={styles.submitBtn}
+                type="submit"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <span className={styles.spinner} /> Submitting...
+                  </>
+                ) : (
+                  "Submit for Verification"
+                )}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {isVerified && (
+          <div className={styles.alreadyVerified}>
+            <span className={styles.bigIcon}>
+              <FiCheckCircle size={48} />
+            </span>
+            <h3>Your account is fully verified</h3>
+            <p>
+              Workers can see your Verified badge when browsing your profile.
+            </p>
+          </div>
+        )}
+
+        {isPending && (
+          <div className={styles.pendingBox}>
+            <span className={styles.bigIcon}>
+              <FiClock size={48} />
+            </span>
+            <h3>Verification under review</h3>
+            <p>
+              Your documents have been submitted and are being reviewed by our
+              team. This usually takes 24–48 hours. You'll receive a
+              notification once the review is complete.
+            </p>
+          </div>
         )}
       </div>
-    </WorkerLayout>
+    </HirerLayout>
   );
 }
