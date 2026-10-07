@@ -1,3 +1,4 @@
+// src/pages/admin/AdminVerifications.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -68,19 +69,43 @@ function timeAgo(d) {
 }
 
 /**
- * Classify a URL by file type. Extend as needed.
+ * Classify a URL by file type. Handles both extension-based URLs and
+ * Cloudinary's path-segment URLs (/image/upload/, /video/upload/, /raw/upload/).
+ *
+ * Cloudinary PDFs live under /raw/upload/ and often have NO extension in the
+ * URL, so we can't rely on the extension alone. Similarly, `?format=pdf`
+ * query overrides extension detection.
+ *
  * Returns "image" | "video" | "pdf" | "other".
  */
 function classifyFile(url) {
   if (!url) return "other";
-  const u = url.split("?")[0].toLowerCase();
-  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(u))
+
+  const fullUrl = url.toLowerCase();
+  const [path] = fullUrl.split("?");
+
+  // 1. Explicit extension wins.
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(path))
     return "image";
-  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(u)) return "video";
-  if (/\.pdf$/.test(u)) return "pdf";
-  // Cloudinary often uses /image/upload/ or /video/upload/ segments
-  if (u.includes("/image/upload/")) return "image";
-  if (u.includes("/video/upload/")) return "video";
+  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(path)) return "video";
+  if (/\.pdf$/.test(path)) return "pdf";
+
+  // 2. Cloudinary path segments.
+  if (path.includes("/image/upload/")) return "image";
+  if (path.includes("/video/upload/")) return "video";
+  // Raw uploads are almost always PDFs when they land here, but they could
+  // be other docs. If we see .pdf anywhere in the full URL, treat as PDF;
+  // otherwise default to pdf — this is the common case.
+  if (path.includes("/raw/upload/")) {
+    if (fullUrl.includes(".pdf")) return "pdf";
+    return "pdf";
+  }
+
+  // 3. Query-string hints (?format=pdf etc.)
+  if (fullUrl.includes("format=pdf")) return "pdf";
+
+  // 4. Unknown. Some Cloudinary PDF URLs have no hint at all. Callers should
+  // fall back to <iframe> rendering for "other".
   return "other";
 }
 
@@ -157,7 +182,8 @@ function VerifBadge({ status }) {
 
 // ─── Full-Screen Media Viewer ─────────────────────────────────────────────────
 // Handles images (with zoom + rotate), videos (native player), pdfs (iframe),
-// and everything else (download prompt).
+// and everything else (attempts iframe so Cloudinary PDFs with no URL marker
+// still preview).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MediaViewer({ src, title, kind, onClose }) {
@@ -297,18 +323,40 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "pdf" && (
-          <iframe src={src} title={title} className={styles.fsPdf} />
+          <iframe
+            src={src}
+            title={title}
+            className={styles.fsPdf}
+            style={{ width: "100%", height: "100%", border: 0 }}
+          />
         )}
 
         {kind === "other" && (
+          // Attempt to render as a PDF via iframe. Many Cloudinary PDF URLs
+          // have no distinguishing marker — an iframe is the safest default
+          // and gracefully falls back to a download prompt if the browser
+          // can't preview.
           <div className={styles.fsOther}>
-            <FiFileText size={48} />
-            <p>Preview not available for this file type.</p>
+            <iframe
+              src={src}
+              title={title}
+              className={styles.fsPdf}
+              style={{ width: "100%", height: "100%", border: 0 }}
+            />
             <a
               href={src}
               target="_blank"
               rel="noreferrer"
               className={styles.fsOpenLink}
+              style={{
+                position: "absolute",
+                bottom: 16,
+                right: 16,
+                zIndex: 2,
+                background: "rgba(0,0,0,0.7)",
+                padding: "6px 12px",
+                borderRadius: 6,
+              }}
             >
               Open in new tab <FiExternalLink size={12} />
             </a>
