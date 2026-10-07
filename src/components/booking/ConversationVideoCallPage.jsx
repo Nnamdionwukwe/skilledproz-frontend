@@ -1,22 +1,25 @@
 // src/pages/booking/ConversationVideoCallPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Full-screen video call page for conversation-scoped video calls.
+// Full-screen video call page for CONVERSATION-scoped video calls.
 //
 // Route: /messages/call/:conversationId
 //
-// The backend already builds the URL with video=1 for video calls (see
-// buildVoiceCallUrl in src/services/voiceCall.service.js). We just use it
-// directly here.
+// The backend tracks the call in the VoiceCall table with callType === "video"
+// but does NOT return a callUrl. We derive the MiroTalk room ID from the
+// conversation UUID — it's stable and identical for both participants, so
+// they always land in the same MiroTalk room.
 //
 // Flow:
-//   1. GET /voice-calls/:conversationId → { call, callUrl, callType }
-//   2. Render full-screen iframe with SkilledProz chrome
-//   3. On end → PATCH /voice-calls/:conversationId/end → back to /messages
+//   1. GET /voice-calls/:conversationId → { call, callType }
+//   2. Build https://call.skilledproz.com/skp-conv-<conversationId>?...
+//   3. Render full-screen iframe with SkilledProz chrome
+//   4. On end → PATCH /voice-calls/:conversationId/end → back to /messages
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../lib/api";
+import { useAuthStore } from "../../store/authStore";
 import styles from "./VideoCallPage.module.css";
 import {
   FaPhoneSlash,
@@ -27,9 +30,46 @@ import {
   FaExternalLinkAlt,
 } from "react-icons/fa";
 
+// MiroTalk base — same self-hosted instance used by booking video calls.
+const CALL_BASE_URL =
+  import.meta.env.VITE_CALL_BASE_URL || "https://call.skilledproz.com";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Build the MiroTalk URL for a conversation video call.
+//
+// The room ID is derived from the conversationId — both participants compute
+// the same URL and therefore land in the same MiroTalk room.
+//
+// URL params:
+//   audio=1  → mic on
+//   video=1  → camera on
+//   notify=0 → suppress the "share this room" modal
+//   chat=0   → hide the chat sidebar
+//   screen=0 → hide screen-share prompt
+//   name=... → pre-fill participant name (skips MiroTalk's join screen)
+// ─────────────────────────────────────────────────────────────────────────────
+function buildConversationVideoUrl(conversationId, displayName) {
+  if (!conversationId) return null;
+  try {
+    const roomId = `skp-conv-${conversationId}`;
+    const url = new URL(`${CALL_BASE_URL}/${roomId}`);
+    url.searchParams.set("audio", "1");
+    url.searchParams.set("video", "1");
+    url.searchParams.set("notify", "0");
+    url.searchParams.set("chat", "0");
+    url.searchParams.set("screen", "0");
+    if (displayName) url.searchParams.set("name", displayName);
+    return url.toString();
+  } catch (err) {
+    console.error("[video] failed to build room URL:", err);
+    return null;
+  }
+}
+
 export default function ConversationVideoCallPage() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const [call, setCall] = useState(null);
   const [callUrl, setCallUrl] = useState(null);
@@ -41,35 +81,59 @@ export default function ConversationVideoCallPage() {
   const pollRef = useRef(null);
   const inCallRef = useRef(false);
 
+  // ── Display name for MiroTalk's ?name= param ─────────────────────────
+  const displayName = useMemo(() => {
+    if (!user) return "";
+    const first = user.firstName || "";
+    const last = user.lastName || "";
+    if (first || last) return `${first} ${last}`.trim();
+    return user.name || user.email?.split("@")[0] || "";
+  }, [user]);
+
+  // ── Load the call row and build the room URL ─────────────────────────
   const loadCall = useCallback(async () => {
     try {
       const res = await api.get(`/voice-calls/${conversationId}`);
       const data = res.data.data;
 
       if (!data?.call) {
+        // No row exists — the caller's initiate never ran, or the row was
+        // cleaned up. Send the user back to the conversation.
+        console.warn(
+          "[video] no call row for conversation",
+          conversationId,
+          "— redirecting back to messages",
+        );
         navigate(`/messages?convo=${conversationId}`, { replace: true });
         return;
       }
 
-      setCall(data.call);
-      setCallUrl(data.callUrl); // ← backend already built it with video=1
-      inCallRef.current = data.call.status === "ACTIVE";
-
       if (data.call.status === "ENDED" || data.call.status === "DECLINED") {
         navigate(`/messages?convo=${conversationId}`, { replace: true });
+        return;
       }
+
+      // Row exists and isn't ended → render the room.
+      setCall(data.call);
+      setCallUrl(buildConversationVideoUrl(conversationId, displayName));
+      inCallRef.current = true;
     } catch (err) {
+      console.error(
+        "[video] load call failed:",
+        err?.response?.status,
+        err?.response?.data || err?.message,
+      );
       setError(err.response?.data?.message || "Failed to load call");
     } finally {
       setLoading(false);
     }
-  }, [conversationId, navigate]);
+  }, [conversationId, navigate, displayName]);
 
   useEffect(() => {
     loadCall();
   }, [loadCall]);
 
-  // ── Poll for remote end ────────────────────────────────────────────────
+  // ── Poll for remote end ──────────────────────────────────────────────
   useEffect(() => {
     if (!inCallRef.current) return;
 
@@ -87,7 +151,7 @@ export default function ConversationVideoCallPage() {
           }, 2000);
         }
       } catch {
-        // silent
+        /* silent */
       }
     }, 5000);
 
@@ -96,22 +160,36 @@ export default function ConversationVideoCallPage() {
     };
   }, [conversationId, navigate]);
 
+  // ── Prevent accidental navigation while on a call ────────────────────
+  useEffect(() => {
+    const onBeforeUnload = (e) => {
+      if (inCallRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
+  // ── End the call ─────────────────────────────────────────────────────
   async function handleEnd() {
     if (pollRef.current) clearInterval(pollRef.current);
     try {
       await api.patch(`/voice-calls/${conversationId}/end`);
     } catch {
-      // silent
+      /* silent — still navigate away */
     }
     inCallRef.current = false;
     navigate(`/messages?convo=${conversationId}`, { replace: true });
   }
 
+  // ── Open in a new tab ────────────────────────────────────────────────
   function handleOpenNewTab() {
     if (callUrl) window.open(callUrl, "_blank", "noopener,noreferrer");
   }
 
-  // ── Render guards ──────────────────────────────────────────────────────
+  // ── Render guards ────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className={styles.page}>
@@ -132,6 +210,11 @@ export default function ConversationVideoCallPage() {
     return (
       <div className={styles.page}>
         <div className={styles.centerBox}>
+          <img
+            src="/skilledproz.PNG"
+            alt="SkilledProz"
+            className={styles.centerLogo}
+          />
           <FaExclamationTriangle size={32} color="#ef4444" />
           <p className={styles.centerText}>{error || "Call unavailable"}</p>
           <button
@@ -149,6 +232,11 @@ export default function ConversationVideoCallPage() {
     return (
       <div className={styles.page}>
         <div className={styles.centerBox}>
+          <img
+            src="/skilledproz.PNG"
+            alt="SkilledProz"
+            className={styles.centerLogo}
+          />
           <FaPhoneSlash size={32} color="#ef4444" />
           <p className={styles.centerText}>The other party ended the call</p>
           <p className={styles.centerSub}>Returning to messages…</p>
@@ -157,6 +245,7 @@ export default function ConversationVideoCallPage() {
     );
   }
 
+  // ── Main call view ───────────────────────────────────────────────────
   return (
     <div
       className={`${styles.page} ${fullscreen ? styles.pageFullscreen : ""}`}
@@ -171,6 +260,9 @@ export default function ConversationVideoCallPage() {
           />
           <div className={styles.topMeta}>
             <span className={styles.topTitle}>SkilledProz Video Call</span>
+            {displayName && (
+              <span className={styles.topUser}>Signed in as {displayName}</span>
+            )}
           </div>
           <span className={styles.liveTag}>
             <span className={styles.liveDot} />
