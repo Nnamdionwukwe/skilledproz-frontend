@@ -329,6 +329,16 @@ export default function Messages() {
   // is still resolving. Cleared after a short cooldown.
   const initiatingVoiceRef = useRef(false);
 
+  // ── GLOBAL CALL STATE ────────────────────────────────────────────────
+  // `activeCall` is the call currently in the global voice-call context.
+  // When it's non-null, the user is already on (or dialing) a call, and
+  // we block all new dial attempts in this component.
+  const { startCall, call: activeCall } = useVoiceCall();
+
+  // Whether the user is currently in a call (as caller or receiver,
+  // any status: PENDING / ACTIVE / ENDING).
+  const isOnCall = !!activeCall;
+
   // ── ANALYTICS: page view on mount ────────────────────────────────────────
   useEffect(() => {
     tracker.track("page.messages.view", {
@@ -339,6 +349,11 @@ export default function Messages() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── If the user leaves this page mid-call, close the confirmation modal ──
+  useEffect(() => {
+    if (isOnCall && pendingCallType) setPendingCallType(null);
+  }, [isOnCall, pendingCallType]);
 
   // ── Scroll handler — drives the jump button visibility only ──
   const handleMessagesScroll = useCallback(() => {
@@ -783,19 +798,19 @@ export default function Messages() {
   // ─────────────────────────────────────────────────────────────────────────
   // Voice / video call initiation
   //
-  // The toolbar buttons no longer dial directly — they open a confirmation
-  // modal. The user must tap "Call" in the modal before the API is hit.
-  //
-  // RACE GUARD: initiatingVoiceRef prevents a second initiate from firing
-  // while the first is still resolving.
+  // Gated on isOnCall:
+  //   • If the user is already on a call, the buttons are disabled and
+  //     opening the modal is blocked. This prevents re-dialing while a
+  //     call is in flight.
+  //   • The RACE GUARD (initiatingVoiceRef) still prevents a double-tap
+  //     from firing two initiates in the same tick.
   // ─────────────────────────────────────────────────────────────────────────
-
-  const { startCall } = useVoiceCall();
 
   const confirmStartCall = async () => {
     const callType = pendingCallType;
     setPendingCallType(null);
     if (!callType || !activeConvoId) return;
+    if (isOnCall) return; // safety net
     if (initiatingVoiceRef.current) return;
 
     initiatingVoiceRef.current = true;
@@ -824,6 +839,12 @@ export default function Messages() {
         initiatingVoiceRef.current = false;
       }, 3000);
     }
+  };
+
+  // Opens the confirmation modal — but ONLY if the user isn't on a call.
+  const openCallConfirm = (type) => {
+    if (isOnCall) return;
+    setPendingCallType(type);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -864,6 +885,9 @@ export default function Messages() {
   );
 
   const hasActiveChat = !!(activeConvoId || withUserId || withUser);
+
+  // Call buttons are disabled when: no chat selected, or already on a call.
+  const callButtonsDisabled = !activeConvoId || startingVoiceCall || isOnCall;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -1263,27 +1287,35 @@ export default function Messages() {
                     )}
                   </button>
 
-                  {/* ── Voice call button — opens confirmation modal ── */}
+                  {/* ── Voice call button — disabled while on a call ── */}
                   <button
                     type="button"
                     className={styles.attachBtn}
-                    onClick={() => setPendingCallType("voice")}
-                    disabled={!activeConvoId || startingVoiceCall}
-                    title="Start voice call"
-                    aria-label="Start voice call"
+                    onClick={() => openCallConfirm("voice")}
+                    disabled={callButtonsDisabled}
+                    title={
+                      isOnCall ? "You're already on a call" : "Start voice call"
+                    }
+                    aria-label={
+                      isOnCall ? "You're already on a call" : "Start voice call"
+                    }
                     data-track-id="messages.voiceCall.start"
                   >
                     <FiPhone size={16} />
                   </button>
 
-                  {/* ── Video call button — opens confirmation modal ── */}
+                  {/* ── Video call button — disabled while on a call ── */}
                   <button
                     type="button"
                     className={styles.attachBtn}
-                    onClick={() => setPendingCallType("video")}
-                    disabled={!activeConvoId || startingVoiceCall}
-                    title="Start video call"
-                    aria-label="Start video call"
+                    onClick={() => openCallConfirm("video")}
+                    disabled={callButtonsDisabled}
+                    title={
+                      isOnCall ? "You're already on a call" : "Start video call"
+                    }
+                    aria-label={
+                      isOnCall ? "You're already on a call" : "Start video call"
+                    }
                     data-track-id="messages.videoCall.start"
                   >
                     <FiVideo size={16} />
@@ -1337,8 +1369,8 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* ── Call confirmation modal ── */}
-      {pendingCallType && (
+      {/* ── Call confirmation modal — only opens when not on a call ── */}
+      {pendingCallType && !isOnCall && (
         <div
           className={styles.callModalOverlay}
           onClick={() => setPendingCallType(null)}
