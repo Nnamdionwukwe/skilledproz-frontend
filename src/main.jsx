@@ -80,15 +80,13 @@ function HydratedApp() {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <HelmetProvider>
-        <ThemeProvider>
-          <CurrencyProvider>
-            <HydratedApp />
-          </CurrencyProvider>
-        </ThemeProvider>
-      </HelmetProvider>
-    </GoogleOAuthProvider>
-  </React.StrictMode>,
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <HelmetProvider>
+      <ThemeProvider>
+        <CurrencyProvider>
+          <HydratedApp />
+        </CurrencyProvider>
+      </ThemeProvider>
+    </HelmetProvider>
+  </GoogleOAuthProvider>,
 );
