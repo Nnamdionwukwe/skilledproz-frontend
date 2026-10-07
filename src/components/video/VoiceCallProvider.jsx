@@ -8,6 +8,12 @@
 //   • A hidden <audio> element that plays the remote stream
 //   • Switching between full-screen and mini UI based on context.mode
 //
+// RACE SAFETY:
+//   Once a call has been observed ACTIVE, we latch a sticky flag so that a
+//   racing poll (or a duplicate initiate that briefly flips status back to
+//   PENDING) cannot tear down the WebRTC hook mid-call. The flag clears
+//   only when the call object itself is cleared (call ended / declined).
+//
 // AUDIO PLAYBACK NOTES:
 //   1. The <audio> element is positioned off-screen, NOT display:none.
 //      Some browsers (Safari especially) refuse to play fully-hidden media.
@@ -17,7 +23,7 @@
 //      click anywhere on the page.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useVoiceCall } from "../../context/VoiceCallContext";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -37,8 +43,23 @@ export default function VoiceCallProvider() {
   const isActive = call?.status === "ACTIVE";
   const isInitiator = call?.initiatorId === user?.id;
 
+  // ── Sticky active flag ─────────────────────────────────────────────────
+  // Once we've seen the call go ACTIVE, remember it. If a racing poll (or
+  // a duplicate initiate) briefly reports PENDING, we keep the WebRTC hook
+  // alive. Cleared only when the call object is cleared.
+  const [everActive, setEverActive] = useState(false);
+  useEffect(() => {
+    if (isActive) setEverActive(true);
+  }, [isActive]);
+  useEffect(() => {
+    if (!call) setEverActive(false);
+  }, [call]);
+
+  const effectiveActive = isActive || everActive;
+
+  // WebRTC hook only spins up once we know the call is (or was) active.
   const rtc = useVoiceCallWebRTC({
-    conversationId: isActive ? call?.conversationId : null,
+    conversationId: effectiveActive ? call?.conversationId : null,
     isInitiator,
   });
 
@@ -52,8 +73,6 @@ export default function VoiceCallProvider() {
         el.srcObject = null;
         return;
       }
-      // Only reset srcObject if it changed — resetting mid-playback can
-      // cause a brief audio glitch.
       if (el.srcObject !== rtc.remoteStream) {
         el.srcObject = rtc.remoteStream;
       }
@@ -61,7 +80,6 @@ export default function VoiceCallProvider() {
       if (p && typeof p.catch === "function") {
         p.catch((e) => {
           console.warn("[voice] autoplay blocked:", e.message);
-          // Retry once on the next user gesture anywhere on the page.
           const resume = () => {
             el.play().catch(() => {});
             window.removeEventListener("click", resume);
@@ -75,8 +93,6 @@ export default function VoiceCallProvider() {
 
     attach();
 
-    // Listen for tracks arriving on the remote stream AFTER this effect ran.
-    // This is the primary fix for the "silent call" symptom.
     const stream = rtc.remoteStream;
     if (stream) {
       const onAddTrack = () => {

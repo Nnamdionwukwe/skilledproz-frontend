@@ -321,6 +321,10 @@ export default function Messages() {
   const initialLoadRef = useRef(true);
   const lastSeenMessageIdRef = useRef(null);
 
+  // RACE GUARD: prevents a second initiate from firing while the first
+  // is still resolving. Cleared after a short cooldown.
+  const initiatingVoiceRef = useRef(false);
+
   // ── ANALYTICS: page view on mount ────────────────────────────────────────
   useEffect(() => {
     tracker.track("page.messages.view", {
@@ -771,15 +775,18 @@ export default function Messages() {
 
   // ─────────────────────────────────────────────────────────────────────────
   // Voice call initiation (from the toolbar button)
+  //
+  // RACE GUARD: rapid taps on the 📞 button (or StrictMode remounts, or a
+  // delayed click after the state flips) can fire a second initiate. The
+  // second initiate raced with the first and could reset an in-flight call
+  // back to PENDING. `initiatingVoiceRef` blocks that for 3 seconds.
   // ─────────────────────────────────────────────────────────────────────────
 
-  // at the top:
-
-  // inside the component:
   const { startCall } = useVoiceCall();
 
   const handleStartVoiceCall = async () => {
-    if (!activeConvoId || startingVoiceCall) return;
+    if (!activeConvoId || initiatingVoiceRef.current) return;
+    initiatingVoiceRef.current = true;
     setStartingVoiceCall(true);
     try {
       const res = await api.post(`/voice-calls/${activeConvoId}/initiate`, {
@@ -793,6 +800,9 @@ export default function Messages() {
       console.error("Voice call initiate failed:", err.message);
     } finally {
       setStartingVoiceCall(false);
+      setTimeout(() => {
+        initiatingVoiceRef.current = false;
+      }, 3000);
     }
   };
 
@@ -1258,7 +1268,6 @@ export default function Messages() {
                       if (!activeConvoId) return;
                       setStartingVoiceCall(true);
                       try {
-                        // Initiate the call as a VIDEO call
                         await api.post(
                           `/voice-calls/${activeConvoId}/initiate`,
                           { callType: "video" },
@@ -1266,7 +1275,6 @@ export default function Messages() {
                         tracker.action("messages.videoCall.initiated", {
                           conversationId: activeConvoId,
                         });
-                        // Navigate to the full-screen video page
                         navigate(`/messages/call/${activeConvoId}`);
                       } catch (err) {
                         console.error(
