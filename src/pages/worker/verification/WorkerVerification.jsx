@@ -25,17 +25,54 @@ const ID_TYPES = [
   { value: "WORK_PERMIT", label: "Work Permit" },
 ];
 
+// Accept the MIME types we care about. Kept broad because some mobile
+// browsers report non-standard values (e.g. image/jpg, application/x-pdf).
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
   "image/png",
   "image/webp",
+  "image/gif",
+  "image/bmp",
+  "image/avif",
+  "image/heic",
+  "image/heif",
   "application/pdf",
+  "application/x-pdf",
+  "application/acrobat",
+  "applications/vnd.pdf",
+  "text/pdf",
+  "text/x-pdf",
 ];
+
+// Fallback: if file.type is missing (common on Android), check extension.
+const ALLOWED_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "bmp",
+  "avif",
+  "heic",
+  "heif",
+  "pdf",
+];
+
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
+function hasAllowedExtension(name) {
+  if (!name) return false;
+  const ext = name.split(".").pop().toLowerCase();
+  return ALLOWED_EXTENSIONS.includes(ext);
+}
 
 function validateFile(file) {
   if (!file) return "Please select a file.";
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+  const typeOk = file.type && ALLOWED_MIME_TYPES.includes(file.type);
+  const extOk = hasAllowedExtension(file.name);
+  if (!typeOk && !extOk) {
     return "Only JPG, PNG, WEBP, or PDF files are allowed.";
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -171,6 +208,9 @@ export default function WorkerVerification() {
     }
   };
 
+  // accept="*/*" removes ALL picker-level filtering so the file browser
+  // shows PDFs (and any other file) on every device. The real type check
+  // is done in validateFile() right after selection.
   return (
     <WorkerLayout>
       <div className={styles.page}>
@@ -341,7 +381,7 @@ export default function WorkerVerification() {
                         <input
                           id="idFileInput"
                           type="file"
-                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          accept="*/*"
                           style={{ display: "none" }}
                           onChange={(e) =>
                             handleFileSelect(e.target.files?.[0])
