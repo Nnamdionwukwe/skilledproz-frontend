@@ -1,7 +1,16 @@
 // src/components/video/VoiceCallProvider.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Persistent voice-call widget.
-// LOG PREFIX: [VCP] (Voice Call Provider)
+// Persistent voice-call widget. Mounted once at the app root.
+//
+// Responsibilities:
+//   • Spin up useVoiceCallWebRTC on BOTH sides of the call
+//   • Poll /voice-calls/:conversationId to keep context fresh
+//   • Play the remote audio stream via a hidden <audio> element
+//   • Render full-screen or mini UI based on context mode
+//
+// CRITICAL: this component is what runs the WebRTC hook. If it doesn't run
+// on the receiver's device, the receiver never joins the room and the
+// caller never gets a peer-joined event — the call stays silent.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -14,8 +23,11 @@ import VoiceCallMini from "./VoiceCallMini";
 
 const POLL_MS = 3000;
 
-function ts() {
-  return new Date().toISOString().slice(11, 23);
+const DEBUG_VOICE_CALL = true;
+function log(...args) {
+  if (!DEBUG_VOICE_CALL) return;
+  const ts = new Date().toISOString().slice(11, 23);
+  console.log(`[VCP ${ts}]`, ...args);
 }
 
 export default function VoiceCallProvider() {
@@ -27,7 +39,8 @@ export default function VoiceCallProvider() {
 
   const isActive = call?.status === "ACTIVE";
 
-  // Sticky active flag
+  // Sticky flag: once we've seen ACTIVE, keep the hook alive even if a
+  // racing poll briefly reports PENDING.
   const [everActive, setEverActive] = useState(false);
   useEffect(() => {
     if (isActive) setEverActive(true);
@@ -36,9 +49,9 @@ export default function VoiceCallProvider() {
     if (!call) setEverActive(false);
   }, [call]);
 
-  const effectiveActive = isActive || everActive;
-
-  // Refs so the getter can read fresh values without re-creating itself.
+  // Keep refs of the current call + user so the isInitiator getter always
+  // reads fresh values. This is what makes the callback safe across
+  // re-renders.
   const callRef = useRef(call);
   const userRef = useRef(user);
   useEffect(() => {
@@ -54,35 +67,37 @@ export default function VoiceCallProvider() {
     return !!(c && u && c.initiatorId === u.id);
   }, []);
 
-  // ── Diagnostics ───────────────────────────────────────────────────────
+  // The hook runs whenever we have a call AND its conversationId is set.
+  // We deliberately do NOT gate on isActive — a PENDING call still needs
+  // the caller to be connected so when the receiver joins they can be
+  // signalled. And on the receiver side, ACTIVE is what opens the
+  // conversationId, but we want the hook ready either way.
+  const hookConversationId = call?.conversationId || null;
+  const effectiveActive = isActive || everActive;
+
+  // ── Diagnostic: log state once per meaningful change ──────────────────
   useEffect(() => {
-    console.log(`[VCP ${ts()}] state —`, {
+    if (!call) return;
+    log("state", {
       userId: user?.id,
-      callStatus: call?.status,
-      callInitiatorId: call?.initiatorId,
-      callReceiverId: call?.receiverId,
+      callId: call.id,
+      callStatus: call.status,
+      initiatorId: call.initiatorId,
+      receiverId: call.receiverId,
+      conversationId: call.conversationId,
       isActive,
       everActive,
       effectiveActive,
       getIsInitiator: getIsInitiator(),
     });
-  }, [
-    user?.id,
-    call?.status,
-    call?.initiatorId,
-    call?.receiverId,
-    isActive,
-    everActive,
-    effectiveActive,
-    getIsInitiator,
-  ]);
+  }, [user?.id, call, isActive, everActive, effectiveActive, getIsInitiator]);
 
   const rtc = useVoiceCallWebRTC({
-    conversationId: effectiveActive ? call?.conversationId : null,
+    conversationId: hookConversationId,
     getIsInitiator,
   });
 
-  // Attach remote stream to <audio>
+  // ── Attach remote stream to <audio> ────────────────────────────────────
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
@@ -93,13 +108,13 @@ export default function VoiceCallProvider() {
         return;
       }
       if (el.srcObject !== rtc.remoteStream) {
-        console.log(`[VCP ${ts()}] attaching remote stream to <audio>`);
+        log("attaching remote stream to <audio>");
         el.srcObject = rtc.remoteStream;
       }
       const p = el.play();
       if (p && typeof p.catch === "function") {
         p.catch((e) => {
-          console.warn(`[VCP ${ts()}] autoplay blocked:`, e.message);
+          console.warn("[VCP] autoplay blocked:", e.message);
           const resume = () => {
             el.play().catch(() => {});
             window.removeEventListener("click", resume);
@@ -116,7 +131,7 @@ export default function VoiceCallProvider() {
     const stream = rtc.remoteStream;
     if (stream) {
       const onAddTrack = () => {
-        console.log(`[VCP ${ts()}] remote addtrack — re-attaching`);
+        log("remote addtrack — re-attaching");
         attach();
       };
       stream.addEventListener("addtrack", onAddTrack);
@@ -126,7 +141,7 @@ export default function VoiceCallProvider() {
     }
   }, [rtc.remoteStream]);
 
-  // Poll for status changes
+  // ── Poll for status changes ────────────────────────────────────────────
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (!call?.conversationId) return;
@@ -143,19 +158,29 @@ export default function VoiceCallProvider() {
         if (cancelled) return;
 
         if (!data?.call) {
-          console.log(`[VCP ${ts()}] poll: no call — endCall()`);
+          log("poll: no call row → endCall()");
           endCall();
           return;
         }
         if (data.call.status === "ENDED" || data.call.status === "DECLINED") {
-          console.log(
-            `[VCP ${ts()}] poll: status=${data.call.status} — endCall()`,
-          );
+          log(`poll: status=${data.call.status} → endCall()`);
           endCall();
           return;
         }
-        console.log(`[VCP ${ts()}] poll: status=${data.call.status}`);
-        updateCall(data.call);
+
+        // Only update if something actually changed. Prevents context
+        // churn from a poll that returns identical data.
+        const current = callRef.current;
+        const changed =
+          !current ||
+          current.status !== data.call.status ||
+          current.initiatorId !== data.call.initiatorId ||
+          current.receiverId !== data.call.receiverId;
+
+        if (changed) {
+          log("poll: status=", data.call.status);
+          updateCall(data.call);
+        }
       } catch {
         /* noop */
       } finally {
@@ -176,6 +201,8 @@ export default function VoiceCallProvider() {
 
   return (
     <>
+      {/* Hidden audio sink. Off-screen, not display:none — some browsers
+          refuse to play fully-hidden media. */}
       <audio
         ref={audioRef}
         autoPlay

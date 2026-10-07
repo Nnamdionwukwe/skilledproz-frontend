@@ -2,11 +2,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Incoming banner for CONVERSATION voice calls.
 //
-// Polls /voice-calls/incoming every 5s. On accept, PATCHes the call to ACTIVE
-// and then hands the call to the global VoiceCallContext via openCall() so
-// the WebRTC hook starts on the receiver's side.
+// The banner's ONLY job on Accept is:
+//   1. PATCH /voice-calls/:conversationId/accept
+//   2. Hand the resulting call object to the global VoiceCallContext
+//      via openCall()
+//   3. Navigate to /messages?convo=:conversationId
 //
-// LOG PREFIX: [VCB] (Voice Call Banner)
+// Step 2 is CRITICAL. Without it, the receiver's WebRTC hook never starts,
+// the receiver's socket never joins the room, the server never emits
+// voice:peer-joined to the caller, and no offer is ever created — the call
+// stays silent on both ends.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
@@ -35,8 +40,15 @@ const SUPPRESSED_PREFIXES = [
   "/call/",
 ];
 
-function ts() {
-  return new Date().toISOString().slice(11, 23);
+const DEBUG_VOICE_CALL = true;
+function log(...args) {
+  if (!DEBUG_VOICE_CALL) return;
+  const ts = new Date().toISOString().slice(11, 23);
+  console.log(`[VCB ${ts}]`, ...args);
+}
+function logErr(...args) {
+  const ts = new Date().toISOString().slice(11, 23);
+  console.error(`[VCB ${ts}]`, ...args);
 }
 
 export default function VoiceCallBanner() {
@@ -53,12 +65,14 @@ export default function VoiceCallBanner() {
     location.pathname.startsWith(p),
   );
 
+  // ── Poll for incoming voice calls ─────────────────────────────────────
   useEffect(() => {
     if (!isHydrated || !accessToken || !user) return;
     if (suppressed) {
       setIncoming(null);
       return;
     }
+    // If we're already on a call, don't stack a second banner on top.
     if (activeCall) {
       setIncoming(null);
       return;
@@ -76,9 +90,10 @@ export default function VoiceCallBanner() {
         if (cancelled) return;
 
         if (call && call.callType === "voice") {
-          console.log(`[VCB ${ts()}] incoming voice call found`, {
+          log("incoming voice call", {
             callId: call.id,
             conversationId: call.conversationId,
+            initiatorId: call.initiatorId,
           });
           setIncoming((prev) => (prev?.id === call.id ? prev : call));
         } else {
@@ -99,45 +114,62 @@ export default function VoiceCallBanner() {
     };
   }, [isHydrated, accessToken, user, suppressed, activeCall]);
 
+  // ── Accept ────────────────────────────────────────────────────────────
   async function handleAccept() {
     if (!incoming) return;
+    log("ACCEPT tapped", { conversationId: incoming.conversationId });
     setLoading(true);
+
     try {
+      // 1. Flip the call to ACTIVE on the server.
       const res = await api.patch(
         `/voice-calls/${incoming.conversationId}/accept`,
       );
-      const updatedCall = res.data.data.call;
-      console.log(`[VCB ${ts()}] accepted — handing call to context`, {
-        callId: updatedCall?.id,
-        status: updatedCall?.status,
-        initiatorId: updatedCall?.initiatorId,
-        receiverId: updatedCall?.receiverId,
-      });
-      // CRITICAL: put the call into the global context so the
-      // VoiceCallProvider's WebRTC hook starts on the receiver's side.
-      openCall(updatedCall);
+      log("accept response", res.data);
+
+      const updatedCall = res.data?.data?.call;
+      if (!updatedCall) {
+        // Fallback: construct a minimal call object from what we already
+        // know so the WebRTC hook still has something to work with.
+        logErr("accept response missing call object — using fallback");
+        openCall({
+          ...incoming,
+          status: "ACTIVE",
+        });
+      } else {
+        // 2. Hand off to global context so the WebRTC hook starts.
+        openCall(updatedCall);
+      }
+
+      log("openCall() dispatched — clearing banner");
       setIncoming(null);
+
+      // 3. Land the receiver in the conversation so they can see the
+      //    minimised call widget.
       navigate(`/messages?convo=${incoming.conversationId}`);
     } catch (err) {
-      console.error(`[VCB ${ts()}] accept failed:`, err.message);
+      logErr("accept failed:", err?.response?.data || err.message);
     } finally {
       setLoading(false);
     }
   }
 
+  // ── Decline ───────────────────────────────────────────────────────────
   async function handleDecline() {
     if (!incoming) return;
+    log("DECLINE tapped", { conversationId: incoming.conversationId });
     setLoading(true);
     try {
       await api.patch(`/voice-calls/${incoming.conversationId}/decline`);
       setIncoming(null);
-    } catch {
-      /* silent */
+    } catch (err) {
+      logErr("decline failed:", err?.response?.data || err.message);
     } finally {
       setLoading(false);
     }
   }
 
+  // ── Render guard ──────────────────────────────────────────────────────
   if (!incoming || suppressed) return null;
 
   const callerName = incoming.initiator
