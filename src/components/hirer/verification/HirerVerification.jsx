@@ -1,3 +1,4 @@
+// src/pages/hirer/verification/HirerVerification.jsx
 import { useState, useEffect } from "react";
 import HirerLayout from "../../../components/layout/HirerLayout";
 import api from "../../../lib/api";
@@ -11,10 +12,28 @@ import {
   FiCreditCard,
   FiUploadCloud,
   FiFileText,
-  FiFolder,
   FiAlertTriangle,
   FiX,
 } from "react-icons/fi";
+
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
+function validateFile(file) {
+  if (!file) return "Please select a file.";
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return "Only JPG, PNG, WEBP, or PDF files are allowed.";
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    return "File is too large. Max 10MB.";
+  }
+  return null;
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -36,11 +55,9 @@ export default function HirerVerification() {
   const [loading, setLoading] = useState(true);
   const [verType, setVerType] = useState("INDIVIDUAL");
 
-  // Individual fields
   const [idType, setIdType] = useState("");
   const [idNumber, setIdNumber] = useState("");
 
-  // Business fields
   const [companyName, setCompanyName] = useState("");
   const [companyReg, setCompanyReg] = useState("");
   const [companyCountry, setCompanyCountry] = useState("");
@@ -59,6 +76,18 @@ export default function HirerVerification() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleFileSelect = (file) => {
+    setError("");
+    if (!file) return;
+    const err = validateFile(file);
+    if (err) {
+      setError(err);
+      setDocFile(null);
+      return;
+    }
+    setDocFile(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -76,6 +105,11 @@ export default function HirerVerification() {
     }
     if (verType === "BUSINESS" && (!companyName || !companyReg)) {
       setError("Company name and registration number are required.");
+      return;
+    }
+    const fileErr = validateFile(docFile);
+    if (fileErr) {
+      setError(fileErr);
       return;
     }
 
@@ -113,7 +147,6 @@ export default function HirerVerification() {
   const isVerified = currentStatus === "VERIFIED";
   const isPending = currentStatus === "PENDING";
 
-  // Status hero icon
   const StatusIcon = isVerified
     ? FiCheckCircle
     : isPending
@@ -133,7 +166,6 @@ export default function HirerVerification() {
   return (
     <HirerLayout>
       <div className={styles.page}>
-        {/* Header */}
         <div className={styles.pageHeader}>
           <div className={styles.badge2}>Trust & Safety</div>
           <h1 className={styles.title}>Account Verification</h1>
@@ -143,7 +175,6 @@ export default function HirerVerification() {
           </p>
         </div>
 
-        {/* Status card */}
         {!loading && status && (
           <div className={styles.statusCard}>
             <div className={styles.statusLeft}>
@@ -196,7 +227,6 @@ export default function HirerVerification() {
           </div>
         )}
 
-        {/* Form — hide if verified or pending */}
         {!isVerified && !isPending && (
           <div className={styles.tabContent}>
             <div className={styles.infoBox}>
@@ -209,7 +239,6 @@ export default function HirerVerification() {
               </ul>
             </div>
 
-            {/* Type selector */}
             <div className={styles.typeSelector}>
               <button
                 type="button"
@@ -327,9 +356,9 @@ export default function HirerVerification() {
                   <input
                     id="docFileInput"
                     type="file"
-                    accept="image/*,.pdf"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
                     style={{ display: "none" }}
-                    onChange={(e) => setDocFile(e.target.files[0])}
+                    onChange={(e) => handleFileSelect(e.target.files?.[0])}
                   />
                   {docFile ? (
                     <div className={styles.fileSelected}>
@@ -392,7 +421,6 @@ export default function HirerVerification() {
           </div>
         )}
 
-        {/* Already verified */}
         {isVerified && (
           <div className={styles.alreadyVerified}>
             <span className={styles.bigIcon}>
@@ -405,7 +433,6 @@ export default function HirerVerification() {
           </div>
         )}
 
-        {/* Pending */}
         {isPending && (
           <div className={styles.pendingBox}>
             <span className={styles.bigIcon}>

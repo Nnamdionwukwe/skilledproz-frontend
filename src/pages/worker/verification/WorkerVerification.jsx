@@ -25,6 +25,25 @@ const ID_TYPES = [
   { value: "WORK_PERMIT", label: "Work Permit" },
 ];
 
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
+function validateFile(file) {
+  if (!file) return "Please select a file.";
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return "Only JPG, PNG, WEBP, or PDF files are allowed.";
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    return "File is too large. Max 10MB.";
+  }
+  return null;
+}
+
 function StatusBadge({ status }) {
   const map = {
     UNVERIFIED: { label: "Unverified", cls: "badgeDefault" },
@@ -43,13 +62,9 @@ function StatusIcon({ status }) {
   return <FiUnlock size={32} />;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton loader — mirrors the real page structure
-// ─────────────────────────────────────────────────────────────────────────────
 function VerificationSkeleton() {
   return (
     <div aria-busy="true" aria-live="polite">
-      {/* Status card skeleton */}
       <div className={styles.skStatusCard}>
         <div className={`${styles.skBlock} ${styles.skStatusIcon}`} />
         <div className={styles.skStatusBody}>
@@ -61,16 +76,12 @@ function VerificationSkeleton() {
           <div className={`${styles.skBlock} ${styles.skTextShort}`} />
         </div>
       </div>
-
-      {/* Info box skeleton */}
       <div className={styles.skInfoBox}>
         <div className={`${styles.skBlock} ${styles.skInfoTitle}`} />
         <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
         <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
         <div className={`${styles.skBlock} ${styles.skInfoItem}`} />
       </div>
-
-      {/* Form fields skeleton */}
       <div className={styles.skFormGrid}>
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className={styles.skField}>
@@ -79,11 +90,7 @@ function VerificationSkeleton() {
           </div>
         ))}
       </div>
-
-      {/* Dropzone skeleton */}
       <div className={`${styles.skBlock} ${styles.skDropzone}`} />
-
-      {/* Submit button skeleton */}
       <div className={`${styles.skBlock} ${styles.skSubmitBtn}`} />
     </div>
   );
@@ -93,7 +100,6 @@ export default function WorkerVerification() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ID form state
   const [idType, setIdType] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [dob, setDob] = useState("");
@@ -116,12 +122,33 @@ export default function WorkerVerification() {
     setStatus(res.data.data);
   };
 
+  const handleFileSelect = (file) => {
+    setIdError("");
+    if (!file) return;
+    const err = validateFile(file);
+    if (err) {
+      setIdError(err);
+      setIdFile(null);
+      return;
+    }
+    setIdFile(file);
+  };
+
   const handleIdSubmit = async (e) => {
     e.preventDefault();
     setIdError("");
     setIdSuccess("");
-    if (!idType || !idNumber || !idFile) {
-      setIdError("ID type, ID number, and document image are required.");
+    if (!idType || !idNumber) {
+      setIdError("ID type and ID number are required.");
+      return;
+    }
+    if (!idFile) {
+      setIdError("Please upload your ID document.");
+      return;
+    }
+    const fileErr = validateFile(idFile);
+    if (fileErr) {
+      setIdError(fileErr);
       return;
     }
     setSubmittingId(true);
@@ -147,7 +174,6 @@ export default function WorkerVerification() {
   return (
     <WorkerLayout>
       <div className={styles.page}>
-        {/* Header — always visible */}
         <div className={styles.pageHeader}>
           <div className={styles.badge2}>
             <FiShield size={12} />
@@ -160,12 +186,10 @@ export default function WorkerVerification() {
           </p>
         </div>
 
-        {/* Loading — skeleton mirrors real layout */}
         {loading ? (
           <VerificationSkeleton />
         ) : (
           <>
-            {/* Status card */}
             {status && (
               <div className={styles.statusCard}>
                 <div className={styles.statusLeft}>
@@ -210,7 +234,6 @@ export default function WorkerVerification() {
               </div>
             )}
 
-            {/* Content */}
             <div className={styles.tabContent}>
               {status?.verificationStatus === "VERIFIED" ? (
                 <div className={styles.alreadyVerified}>
@@ -318,9 +341,11 @@ export default function WorkerVerification() {
                         <input
                           id="idFileInput"
                           type="file"
-                          accept="image/*,.pdf"
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
                           style={{ display: "none" }}
-                          onChange={(e) => setIdFile(e.target.files[0])}
+                          onChange={(e) =>
+                            handleFileSelect(e.target.files?.[0])
+                          }
                         />
                         {idFile ? (
                           <div className={styles.fileSelected}>
