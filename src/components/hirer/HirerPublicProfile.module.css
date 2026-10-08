@@ -1,8 +1,51 @@
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 16px;
-  animation: fadeUp 0.3s ease;
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding: 32px 24px;
+  max-width: none;
+  animation: fadeUp 0.4s ease both;
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding: 16px 12px;
+  }
+}
+
+@media (max-width: 359px) {
+  .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 14px 10px;
+  }
+}
+
+@media (min-width: 640px) {
+  .page {
+    padding: 40px 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding: 40px 56px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .page {
+    padding: 40px 80px;
+  }
 }
 
 /* ── Hero ── */
@@ -10,10 +53,13 @@
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 20px;
+  padding: 24px;
   margin-bottom: 14px;
   position: relative;
   overflow: hidden;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .hero::before {
   content: "";
@@ -28,7 +74,7 @@
 .heroInner {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 20px;
   margin-bottom: 14px;
 }
 
@@ -36,24 +82,24 @@
   flex-shrink: 0;
 }
 .avatarImg {
-  width: 64px;
-  height: 64px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--orange-glow);
+  border: 3px solid var(--orange-glow);
   display: block;
 }
 .avatarFallback {
-  width: 64px;
-  height: 64px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: var(--orange-dim);
-  border: 2px solid var(--orange-glow);
+  border: 3px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 2rem;
   font-weight: 800;
   color: var(--orange);
 }
@@ -65,7 +111,7 @@
 
 .heroName {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--text);
   margin-bottom: 3px;
@@ -226,6 +272,9 @@
   margin-bottom: 14px;
   overflow-x: auto;
   scrollbar-width: none;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .tabBar::-webkit-scrollbar {
   display: none;
@@ -261,6 +310,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .jobsGrid {
@@ -495,12 +547,18 @@
   border-radius: 18px;
   margin-bottom: 14px;
   animation: pulse 1.5s infinite;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .skContent {
   height: 350px;
   background: var(--bg-panel);
   border-radius: 12px;
   animation: pulse 1.5s infinite;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ── Not found ── */
@@ -548,35 +606,60 @@
   .jobsGrid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
+}
+
+@media (min-width: 640px) {
+  .hero {
+    padding: 28px;
+  }
+  .heroName {
+    font-size: 26px;
+  }
+  .avatarImg,
+  .avatarFallback {
+    width: 108px;
+    height: 108px;
+  }
+  .avatarFallback {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: 32px;
+  }
+  .heroName {
+    font-size: 28px;
+  }
+  .avatarImg,
+  .avatarFallback {
+    width: 120px;
+    height: 120px;
+  }
+  .avatarFallback {
+    font-size: 2.5rem;
+  }
+}
+
+/* ── Small screen adjustments for hero layout ── */
+@media (max-width: 480px) {
+  .heroInner {
+    gap: 14px;
+  }
   .avatarImg,
   .avatarFallback {
     width: 72px;
     height: 72px;
   }
-}
-
-@media (min-width: 640px) {
-  .page {
-    padding: 20px;
-  }
-  .heroName {
-    font-size: 20px;
-  }
-  .avatarImg,
   .avatarFallback {
-    width: 80px;
-    height: 80px;
+    font-size: 1.5rem;
+  }
+  .heroName {
+    font-size: 18px;
   }
 }
 
-@media (min-width: 768px) {
-  .page {
-    padding: 28px;
-  }
-  .heroName {
-    font-size: 22px;
-  }
-}
 /* ── Icon alignment in inline rows ── */
 .companyName,
 .companySize {
@@ -627,6 +710,7 @@
   justify-content: center;
   gap: 6px;
 }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    VERIFIED BADGES — inline with hero typography
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -728,5 +812,107 @@
   .badgeVerified svg,
   .badgeChecked svg {
     transform: none;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   AVATAR — clickable + fullscreen lightbox
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The button wrapper keeps the avatar at its original size */
+.avatar {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: default;
+  position: relative;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.avatarClickable {
+  cursor: zoom-in;
+}
+
+.avatarClickable:hover {
+  transform: scale(1.03);
+}
+
+.avatarClickable:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+/* Small magnifier badge in the corner — matches WorkerPublicProfile */
+.avatarExpandBadge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-panel);
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Fullscreen avatar overlay ─────────────────────────────────────────── */
+.avatarLightboxOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+  cursor: zoom-out;
+  animation: fadeIn 0.15s ease both;
+}
+
+.avatarLightboxImg {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  cursor: default;
+}
+
+.avatarLightboxCloseBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  z-index: 10;
+}
+
+.avatarLightboxCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

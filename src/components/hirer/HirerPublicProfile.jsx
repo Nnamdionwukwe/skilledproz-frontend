@@ -22,6 +22,8 @@ import {
   Lock,
   Search,
   ArrowLeft,
+  X,
+  Maximize2,
 } from "lucide-react";
 import api from "../../lib/api";
 import { useAuthStore } from "../../store/authStore";
@@ -71,7 +73,6 @@ export default function HirerPublicProfile() {
   const navigate = useNavigate();
 
   // ── CRITICAL: always read the VIEWER's identity from the auth store ─────────
-  // This never changes based on whose profile we're viewing
   const { user: viewerUser } = useAuthStore();
 
   // Layout = whoever is LOGGED IN viewing, not the profile owner
@@ -84,6 +85,7 @@ export default function HirerPublicProfile() {
   const [applying, setApplying] = useState(null);
   const [applyMsg, setApplyMsg] = useState({}); // keyed by jobId
   const [applyResult, setApplyResult] = useState({}); // keyed by jobId
+  const [avatarLightbox, setAvatarLightbox] = useState(null);
 
   const isOwnProfile = viewerUser?.id === userId;
 
@@ -107,7 +109,6 @@ export default function HirerPublicProfile() {
       .get(`/hirers/${userId}/profile`)
       .then((res) => {
         setData(res.data.data);
-        // ── ANALYTICS: hirer data loaded ─────────────────────────────
         const d = res.data.data;
         tracker.track("hirerProfile.loaded", {
           hirerId: userId,
@@ -122,7 +123,6 @@ export default function HirerPublicProfile() {
       })
       .catch((e) => {
         setError(e.response?.data?.message || "Profile not found");
-        // ── ANALYTICS: hirer profile load failed ────────────────────
         tracker.track("hirerProfile.load.failed", {
           hirerId: userId,
           reason: e.response?.data?.message || "unknown",
@@ -132,11 +132,30 @@ export default function HirerPublicProfile() {
       .finally(() => setLoading(false));
   }, [userId]);
 
+  // ── Escape key closes the avatar lightbox ───────────────────────────────
+  useEffect(() => {
+    if (!avatarLightbox) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setAvatarLightbox(null);
+        tracker.track("hirerProfile.avatarLightbox.closed", {
+          via: "escape",
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [avatarLightbox]);
+
   async function handleApply(jobId) {
     setApplying(jobId);
     setApplyResult((r) => ({ ...r, [jobId]: null }));
 
-    // ── ANALYTICS: application attempt ──────────────────────────────────
     tracker.action("hirerProfile.job.apply.attempt", {
       hirerId: userId,
       jobId,
@@ -157,7 +176,6 @@ export default function HirerPublicProfile() {
       }));
       setApplyMsg((m) => ({ ...m, [jobId]: "" }));
 
-      // ── ANALYTICS: application sent successfully ─────────────────────
       tracker.action("hirerProfile.job.applied", {
         hirerId: userId,
         jobId,
@@ -171,7 +189,6 @@ export default function HirerPublicProfile() {
         },
       }));
 
-      // ── ANALYTICS: application failed ────────────────────────────────
       tracker.action("hirerProfile.job.apply.failed", {
         hirerId: userId,
         jobId,
@@ -219,18 +236,45 @@ export default function HirerPublicProfile() {
         <div className={styles.hero}>
           <div className={styles.heroInner}>
             <div className={styles.avatarWrap}>
-              {hirerUser.avatar ? (
-                <img
-                  src={hirerUser.avatar}
-                  alt=""
-                  className={styles.avatarImg}
-                />
-              ) : (
-                <div className={styles.avatarFallback}>
-                  {hirerUser.firstName?.[0]}
-                  {hirerUser.lastName?.[0]}
-                </div>
-              )}
+              <button
+                type="button"
+                className={`${styles.avatar} ${
+                  hirerUser.avatar ? styles.avatarClickable : ""
+                }`}
+                onClick={() => {
+                  if (hirerUser.avatar) {
+                    setAvatarLightbox(hirerUser.avatar);
+                    tracker.action("hirerProfile.avatar.opened", {
+                      hirerId: userId,
+                    });
+                  }
+                }}
+                disabled={!hirerUser.avatar}
+                aria-label={
+                  hirerUser.avatar
+                    ? `View ${hirerUser.firstName || "profile"}'s photo full screen`
+                    : undefined
+                }
+                title={hirerUser.avatar ? "View full photo" : undefined}
+              >
+                {hirerUser.avatar ? (
+                  <>
+                    <img
+                      src={hirerUser.avatar}
+                      alt={hirerUser.firstName}
+                      className={styles.avatarImg}
+                    />
+                    <span className={styles.avatarExpandBadge}>
+                      <Maximize2 size={11} />
+                    </span>
+                  </>
+                ) : (
+                  <div className={styles.avatarFallback}>
+                    {hirerUser.firstName?.[0]}
+                    {hirerUser.lastName?.[0]}
+                  </div>
+                )}
+              </button>
             </div>
 
             <div className={styles.heroInfo}>
@@ -356,12 +400,6 @@ export default function HirerPublicProfile() {
                   <span className={styles.statLabel}>hires</span>
                 </div>
                 <div className={styles.statDivider} />
-                {/* <div className={styles.stat}>
-                  <span className={styles.statNum}>
-                    {formatSpent(stats.totalSpent)}
-                  </span>
-                  <span className={styles.statLabel}>total spent</span>
-                </div> */}
                 <div className={styles.statDivider} />
                 <div className={styles.stat}>
                   <span className={styles.statNum}>{stats.openJobs}</span>
@@ -417,7 +455,6 @@ export default function HirerPublicProfile() {
               className={`${styles.tabBtn} ${tab === t ? styles.tabBtnActive : ""}`}
               onClick={() => {
                 setTab(t);
-                // ── ANALYTICS: tab switched ──────────────────────────────
                 tracker.track("hirerProfile.tab.switched", {
                   hirerId: userId,
                   from: tab,
@@ -607,6 +644,44 @@ export default function HirerPublicProfile() {
           )}
         </div>
       </div>
+
+      {/* ── FULLSCREEN AVATAR VIEWER ── */}
+      {avatarLightbox && (
+        <div
+          className={styles.avatarLightboxOverlay}
+          onClick={() => {
+            setAvatarLightbox(null);
+            tracker.track("hirerProfile.avatarLightbox.closed", {
+              via: "overlay",
+            });
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Profile photo"
+        >
+          <button
+            type="button"
+            className={styles.avatarLightboxCloseBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              setAvatarLightbox(null);
+              tracker.track("hirerProfile.avatarLightbox.closed", {
+                via: "closeBtn",
+              });
+            }}
+            aria-label="Close photo"
+            data-track-id="hirerProfile.avatarLightbox.close"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={avatarLightbox}
+            alt={`${hirerUser.firstName || ""} ${hirerUser.lastName || ""}`.trim()}
+            className={styles.avatarLightboxImg}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </Layout>
   );
 }
