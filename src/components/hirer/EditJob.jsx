@@ -239,6 +239,7 @@ export default function EditJob() {
     useState(false);
 
   const [form, setForm] = useState(null); // null while loading
+  const [originalJob, setOriginalJob] = useState(null); // server snapshot
 
   // ── Analytics ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -273,6 +274,16 @@ export default function EditJob() {
         if (cancelled) return;
         const job = res.data.data?.jobPost || res.data.data;
 
+        // Remember the raw server snapshot so `handleSubmit` can compare
+        // against it and skip validations for fields the user never touched.
+        setOriginalJob(job);
+
+        // Infer schedule mode: if the server didn't return one explicitly,
+        // check the notes for the "Recurring:" marker that PostJob writes.
+        const hasRecurringNote = /Recurring:/i.test(job.notes || "");
+        const inferredScheduleMode =
+          job.scheduleMode || (hasRecurringNote ? "RECURRING" : "ONE_OFF");
+
         setForm({
           categoryId: job.categoryId || job.category?.id || "",
           title: job.title || "",
@@ -284,7 +295,7 @@ export default function EditJob() {
           jobType: job.jobType || "FULL_TIME",
           scheduledAt: toLocalDatetimeInput(job.scheduledAt),
           languageRequirement: job.languageRequirement || "en",
-          scheduleMode: job.scheduleMode || "ONE_OFF",
+          scheduleMode: inferredScheduleMode,
           durationUnit: job.estimatedUnit || "hours",
           durationCustomLabel: "",
           estimatedValue:
@@ -487,12 +498,26 @@ export default function EditJob() {
       );
     if (!form.scheduledAt)
       return setError("Please choose a scheduled date and time.");
-    if (form.scheduleMode === "ONE_OFF" && !form.estimatedValue)
-      return setError(
-        form.durationUnit === "custom"
-          ? "Please describe the duration."
-          : "Please estimate how long the job will take.",
-      );
+
+    // ── Duration guard (relaxed for edit) ──
+    // Only block if the user is in ONE_OFF mode, has no estimatedValue,
+    // AND the original job also had no estimated info on the server.
+    // This lets users edit other fields without being forced to fill
+    // the duration for a job that was created as recurring.
+    if (form.scheduleMode === "ONE_OFF" && !form.estimatedValue) {
+      const originalHasEstimated =
+        originalJob?.estimatedHours != null ||
+        (originalJob?.estimatedValue != null &&
+          originalJob?.estimatedValue !== "");
+      if (!originalHasEstimated) {
+        return setError(
+          form.durationUnit === "custom"
+            ? "Please describe the duration."
+            : "Please estimate how long the job will take.",
+        );
+      }
+    }
+
     if (!form.budget) return setError("Please enter a budget.");
     if (
       form.showRateOptions &&
@@ -864,10 +889,10 @@ export default function EditJob() {
           {/* ── Schedule ── */}
           <div className={styles.field}>
             <label className={styles.label}>
-              Scheduled Date & Time <span className={styles.req}>*</span>
+              Scheduled Date &amp; Time <span className={styles.req}>*</span>
             </label>
             <input
-              className={styles.input}
+              className={`${styles.input} ${styles.datetimeInput}`}
               type="datetime-local"
               value={form.scheduledAt}
               onChange={(e) => set("scheduledAt", e.target.value)}

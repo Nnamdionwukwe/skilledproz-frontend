@@ -780,3 +780,66 @@
     opacity: 0.55;
   }
 }
+/* ── Date & time input — matches every other input's height & padding ── */
+.datetimeInput {
+  /* height and padding inherited from .input — we only normalize
+     the browser's internal rendering of datetime-local so it doesn't
+     look bigger/smaller than a text input on any browser. */
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  line-height: normal;
+  min-height: 44px;
+  font-family: var(--font-body);
+}
+
+/* The native calendar icon in Chromium/Edge — sit it flush right
+   with the same 14px padding the rest of the input uses. */
+.datetimeInput::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  filter: invert(1);
+  transition: opacity 0.15s;
+}
+
+.datetimeInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Firefox renders a small grey picker button on the right —
+   color it to match the rest of the theme. */
+.datetimeInput::-moz-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: invert(1);
+}
+
+/* Firefox and Safari like to add a tiny bit of default padding —
+   strip it so the input's inner text baseline matches text inputs. */
+.datetimeInput::-webkit-datetime-edit {
+  padding: 0;
+}
+.datetimeInput::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+.datetimeInput::-webkit-datetime-edit-text,
+.datetimeInput::-webkit-datetime-edit-month-field,
+.datetimeInput::-webkit-datetime-edit-day-field,
+.datetimeInput::-webkit-datetime-edit-year-field,
+.datetimeInput::-webkit-datetime-edit-hour-field,
+.datetimeInput::-webkit-datetime-edit-minute-field,
+.datetimeInput::-webkit-datetime-edit-ampm-field {
+  padding: 0 1px;
+  color: var(--text);
+}
+
+/* Small phones — same height as other inputs there. */
+@media (max-width: 359px) {
+  .datetimeInput {
+    min-height: 40px;
+  }
+}
