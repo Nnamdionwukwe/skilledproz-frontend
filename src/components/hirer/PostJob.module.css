@@ -843,3 +843,99 @@
     min-height: 40px;
   }
 }
+/* ── Skills / Qualifications input box ───────────────────────── */
+.skillBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  min-height: 48px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.skillBox:focus-within {
+  border-color: var(--border-focus);
+}
+
+.skillTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 100%;
+}
+
+.skillRemove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.skillRemove:hover {
+  opacity: 1;
+}
+.skillRemove svg {
+  flex-shrink: 0;
+}
+
+.skillInput {
+  flex: 1;
+  min-width: 120px;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-body);
+  padding: 4px 0;
+}
+.skillInput::placeholder {
+  color: var(--text-muted);
+}
+
+.skillSuggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.skillSuggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 100px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.skillSuggestion:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  border-style: solid;
+}
+.skillSuggestion svg {
+  flex-shrink: 0;
+}

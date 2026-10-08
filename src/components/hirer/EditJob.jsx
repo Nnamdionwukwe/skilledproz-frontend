@@ -274,12 +274,8 @@ export default function EditJob() {
         if (cancelled) return;
         const job = res.data.data?.jobPost || res.data.data;
 
-        // Remember the raw server snapshot so `handleSubmit` can compare
-        // against it and skip validations for fields the user never touched.
         setOriginalJob(job);
 
-        // Infer schedule mode: if the server didn't return one explicitly,
-        // check the notes for the "Recurring:" marker that PostJob writes.
         const hasRecurringNote = /Recurring:/i.test(job.notes || "");
         const inferredScheduleMode =
           job.scheduleMode || (hasRecurringNote ? "RECURRING" : "ONE_OFF");
@@ -323,8 +319,6 @@ export default function EditJob() {
           notes: stripSystemNotes(job.notes || ""),
         });
 
-        // If the loaded job's category isn't in our list yet, add it so
-        // `selectedCat` lookup succeeds (custom categories, deleted cats).
         if (job.category && job.category.id) {
           setCategories((prev) =>
             prev.some((c) => c.id === job.category.id)
@@ -502,8 +496,6 @@ export default function EditJob() {
     // ── Duration guard (relaxed for edit) ──
     // Only block if the user is in ONE_OFF mode, has no estimatedValue,
     // AND the original job also had no estimated info on the server.
-    // This lets users edit other fields without being forced to fill
-    // the duration for a job that was created as recurring.
     if (form.scheduleMode === "ONE_OFF" && !form.estimatedValue) {
       const originalHasEstimated =
         originalJob?.estimatedHours != null ||
@@ -1160,7 +1152,8 @@ export default function EditJob() {
           <div className={styles.field}>
             <label className={styles.label}>Required Qualifications</label>
             <p className={styles.fieldHint}>
-              Press Enter or comma to add. Optional.
+              Add any specific qualifications this job requires. Press Enter or
+              comma to add. Optional — leave blank if not needed.
             </p>
 
             <div className={styles.skillBox}>
@@ -1232,12 +1225,21 @@ export default function EditJob() {
                 )}
               </>
             )}
+
+            {form.qualifications.length > 0 && (
+              <p className={styles.durationSummary}>
+                ✓ {form.qualifications.length} qualification
+                {form.qualifications.length !== 1 ? "s" : ""} required
+              </p>
+            )}
           </div>
 
           {/* ── Skills ── */}
           <div className={styles.field}>
             <label className={styles.label}>Required Skills</label>
-            <p className={styles.fieldHint}>Press Enter or comma to add.</p>
+            <p className={styles.fieldHint}>
+              Add skills the worker should have. Press Enter or comma to add.
+            </p>
 
             <div className={styles.skillBox}>
               {form.skills.map((skill) => (
@@ -1283,6 +1285,13 @@ export default function EditJob() {
                     </button>
                   ))}
               </div>
+            )}
+
+            {form.skills.length > 0 && (
+              <p className={styles.durationSummary}>
+                ✓ {form.skills.length} skill
+                {form.skills.length !== 1 ? "s" : ""} required
+              </p>
             )}
           </div>
 
@@ -1330,7 +1339,6 @@ export default function EditJob() {
 function EditJobSkeleton() {
   return (
     <div className={styles.page}>
-      {/* Header skeleton */}
       <div className={styles.header}>
         <div className={styles.skLine} style={{ width: 80, height: 12 }} />
         <div
@@ -1343,9 +1351,7 @@ function EditJobSkeleton() {
         />
       </div>
 
-      {/* Form skeleton — mimic the shape of the real form fields */}
       <div className={styles.form}>
-        {/* Category */}
         <SkField>
           <div className={styles.skLine} style={{ width: 90, height: 12 }} />
           <div
@@ -1354,7 +1360,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Title */}
         <SkField>
           <div className={styles.skLine} style={{ width: 80, height: 12 }} />
           <div
@@ -1363,7 +1368,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Description */}
         <SkField>
           <div className={styles.skLine} style={{ width: 100, height: 12 }} />
           <div
@@ -1372,7 +1376,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Job Type options */}
         <SkField>
           <div className={styles.skLine} style={{ width: 70, height: 12 }} />
           <div
@@ -1390,7 +1393,6 @@ function EditJobSkeleton() {
           </div>
         </SkField>
 
-        {/* Work Location options */}
         <SkField>
           <div className={styles.skLine} style={{ width: 100, height: 12 }} />
           <div
@@ -1407,7 +1409,6 @@ function EditJobSkeleton() {
           </div>
         </SkField>
 
-        {/* Schedule */}
         <SkField>
           <div className={styles.skLine} style={{ width: 140, height: 12 }} />
           <div
@@ -1416,7 +1417,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Language */}
         <SkField>
           <div className={styles.skLine} style={{ width: 140, height: 12 }} />
           <div
@@ -1425,7 +1425,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Budget (2 columns) */}
         <SkField>
           <div className={styles.skLine} style={{ width: 70, height: 12 }} />
           <div
@@ -1441,7 +1440,6 @@ function EditJobSkeleton() {
           </div>
         </SkField>
 
-        {/* Work Conditions */}
         <SkField>
           <div className={styles.skLine} style={{ width: 120, height: 12 }} />
           <div
@@ -1457,7 +1455,6 @@ function EditJobSkeleton() {
           </div>
         </SkField>
 
-        {/* Qualifications */}
         <SkField>
           <div className={styles.skLine} style={{ width: 160, height: 12 }} />
           <div
@@ -1466,7 +1463,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Skills */}
         <SkField>
           <div className={styles.skLine} style={{ width: 120, height: 12 }} />
           <div
@@ -1475,7 +1471,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Notes */}
         <SkField>
           <div className={styles.skLine} style={{ width: 130, height: 12 }} />
           <div
@@ -1484,7 +1479,6 @@ function EditJobSkeleton() {
           />
         </SkField>
 
-        {/* Submit button */}
         <div className={styles.skBlock} style={{ height: 48, marginTop: 8 }} />
       </div>
     </div>
