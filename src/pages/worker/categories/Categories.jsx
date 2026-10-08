@@ -1,3 +1,4 @@
+// src/pages/worker/categories/Categories.jsx
 import { useState, useEffect } from "react";
 import {
   FiTool,
@@ -117,7 +118,7 @@ export default function CategoriesPage() {
           <h1 className={styles.title}>My Trade Categories</h1>
           <p className={styles.sub}>
             Add the trades and professions you offer. Search from{" "}
-            <strong>800+ categories</strong> or add your own.
+            <strong>1200+ categories</strong> or add your own.
           </p>
         </div>
 
@@ -134,11 +135,14 @@ export default function CategoriesPage() {
           </div>
         )}
 
-        {/* Category picker */}
+        {/* Category picker — now backed by the full categories list
+            (fetched inside CategorySuggest). Supports search + custom
+            suggestions + "Add as new" fallback. */}
         <div className={styles.pickerCard}>
           <h2 className={styles.cardTitle}>Add a Category</h2>
           <p className={styles.cardSub}>
-            Search for your trade — it's already in our database.
+            Search for your trade — it's already in our database, or add a
+            custom one if you can't find it.
           </p>
           <CategorySuggest
             onSelect={handleSelect}
