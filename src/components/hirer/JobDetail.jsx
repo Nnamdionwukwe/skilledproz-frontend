@@ -959,7 +959,7 @@ export default function JobDetail() {
                   size={14}
                   style={{ verticalAlign: "-2px", marginRight: 6 }}
                 />
-                Requirements & Qualifications
+                Requirements
               </h2>
               <div className={styles.detailGrid}>
                 {requirementItems.map((item, i) => (
