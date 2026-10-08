@@ -26,6 +26,9 @@ import {
   FiRefreshCw,
   FiHome,
   FiCoffee,
+  FiAward,
+  FiChevronDown,
+  FiChevronUp,
 } from "react-icons/fi";
 import tracker from "../../lib/analytics/tracker";
 
@@ -64,6 +67,40 @@ const ALL_CURRENCIES = [
   "MYR",
   "SGD",
   "HKD",
+];
+
+// ── Language selector ────────────────────────────────────────────────────
+// The hirer picks the language the worker must be able to speak.
+// Default is English so the field is never blank.
+const ALL_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "French" },
+  { code: "ar", label: "Arabic" },
+  { code: "yo", label: "Yoruba" },
+  { code: "ha", label: "Hausa" },
+  { code: "ig", label: "Igbo" },
+  { code: "sw", label: "Swahili" },
+  { code: "pt", label: "Portuguese" },
+  { code: "es", label: "Spanish" },
+  { code: "de", label: "German" },
+  { code: "zh", label: "Chinese" },
+  { code: "hi", label: "Hindi" },
+  { code: "bn", label: "Bengali" },
+  { code: "ur", label: "Urdu" },
+  { code: "tr", label: "Turkish" },
+  { code: "ko", label: "Korean" },
+  { code: "ja", label: "Japanese" },
+  { code: "ru", label: "Russian" },
+  { code: "id", label: "Indonesian" },
+  { code: "vi", label: "Vietnamese" },
+  { code: "it", label: "Italian" },
+  { code: "nl", label: "Dutch" },
+  { code: "pl", label: "Polish" },
+  { code: "fa", label: "Persian" },
+  { code: "am", label: "Amharic" },
+  { code: "zu", label: "Zulu" },
+  { code: "af", label: "Afrikaans" },
+  { code: "so", label: "Somali" },
 ];
 
 const DURATION_UNITS = [
@@ -142,6 +179,24 @@ const WORK_CONDITION_OPTIONS = [
   },
 ];
 
+// ── Qualification presets ────────────────────────────────────────────────
+// A hirer can quickly pick from these. Anything they type manually is
+// stored as a custom entry.
+const QUALIFICATION_PRESETS = [
+  "High School Diploma",
+  "Bachelor's Degree",
+  "Master's Degree",
+  "Doctorate (PhD)",
+  "Trade Certification",
+  "Professional License",
+  "Vocational Training",
+  "Driving License",
+  "Food Handling Certificate",
+  "Safety Certification",
+  "First Aid / CPR",
+  "Teaching Certificate",
+];
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export default function PostJob() {
@@ -155,6 +210,9 @@ export default function PostJob() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [skillInput, setSkillInput] = useState("");
+  const [qualificationInput, setQualificationInput] = useState("");
+  const [showQualificationPresets, setShowQualificationPresets] =
+    useState(false);
 
   const [form, setForm] = useState({
     // core
@@ -171,6 +229,7 @@ export default function PostJob() {
     // job meta
     jobType: "FULL_TIME",
     scheduledAt: "",
+    languageRequirement: "en", // ← default English
 
     // schedule / duration
     scheduleMode: "ONE_OFF",
@@ -191,6 +250,9 @@ export default function PostJob() {
     providesAccommodation: false,
     providesMeals: false,
 
+    // qualifications
+    qualifications: [],
+
     // extras
     skills: [],
     notes: "",
@@ -205,9 +267,13 @@ export default function PostJob() {
   }, []);
 
   // ── Load categories ─────────────────────────────────────────────────────
+  // `all=true` tells the backend to bypass pagination and return every
+  // category. The default page cap is 200, which is far below the total
+  // category count (~1200), so a plain `?limit=1000` returns only a
+  // partial list.
   useEffect(() => {
     api
-      .get("/categories?limit=1000")
+      .get("/categories?all=true")
       .then((res) => {
         const data = res.data.data;
         setCategories(Array.isArray(data) ? data : data?.categories || []);
@@ -218,6 +284,17 @@ export default function PostJob() {
   const filteredCats = categories.filter(
     (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
   );
+
+  // Native <select> becomes unusable with 1000+ options. When the user
+  // hasn't typed a search, show only the top 50 (user-submitted sorts
+  // first). Once they type 2+ characters, show up to 100 matches.
+  const displayedCats =
+    catSearch.trim().length >= 2
+      ? filteredCats.slice(0, 100)
+      : filteredCats.slice(0, 50);
+
+  const totalCats = categories.length;
+  const isTruncated = displayedCats.length < totalCats;
 
   // ── Custom category ─────────────────────────────────────────────────────
   async function handleAddCustomCategory() {
@@ -309,6 +386,53 @@ export default function PostJob() {
     }
   }
 
+  // ── Qualifications ──────────────────────────────────────────────────────
+  function addQualification(qual) {
+    const trimmed = qual.trim();
+    if (!trimmed) return;
+    if (form.qualifications.includes(trimmed)) {
+      setQualificationInput("");
+      return;
+    }
+    if (form.qualifications.length >= 10) {
+      setError("Maximum 10 qualifications");
+      return;
+    }
+    setForm((f) => ({ ...f, qualifications: [...f.qualifications, trimmed] }));
+    setQualificationInput("");
+    setError("");
+
+    tracker.track("postJob.qualification.added", {
+      qualification: trimmed,
+      totalQualifications: form.qualifications.length + 1,
+    });
+  }
+
+  function removeQualification(qual) {
+    setForm((f) => ({
+      ...f,
+      qualifications: f.qualifications.filter((q) => q !== qual),
+    }));
+
+    tracker.track("postJob.qualification.removed", {
+      qualification: qual,
+      totalQualifications: form.qualifications.length - 1,
+    });
+  }
+
+  function handleQualificationKeyDown(e) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addQualification(qualificationInput);
+    } else if (
+      e.key === "Backspace" &&
+      !qualificationInput &&
+      form.qualifications.length
+    ) {
+      removeQualification(form.qualifications[form.qualifications.length - 1]);
+    }
+  }
+
   // ── Submit ──────────────────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
@@ -371,6 +495,10 @@ export default function PostJob() {
       ? [...form.skills, skillInput.trim()].slice(0, 20)
       : form.skills;
 
+    const finalQualifications = qualificationInput.trim()
+      ? [...form.qualifications, qualificationInput.trim()].slice(0, 10)
+      : form.qualifications;
+
     setLoading(true);
 
     tracker.action("postJob.submit.attempt", {
@@ -384,6 +512,8 @@ export default function PostJob() {
       hasBudget: !!form.budget,
       hasSkills: finalSkills.length > 0,
       skillCount: finalSkills.length,
+      languageRequirement: form.languageRequirement,
+      qualificationCount: finalQualifications.length,
       providesAccommodation: form.providesAccommodation,
       providesMeals: form.providesMeals,
     });
@@ -457,6 +587,10 @@ export default function PostJob() {
         skills: finalSkills,
         notes: clean(finalNotes),
 
+        // Language requirement + qualifications (new fields)
+        languageRequirement: form.languageRequirement || "en",
+        qualifications: finalQualifications,
+
         providesAccommodation: form.providesAccommodation,
         providesMeals: form.providesMeals,
       };
@@ -475,6 +609,8 @@ export default function PostJob() {
         currency: form.currency,
         budget: parseFloat(form.budget),
         skillCount: finalSkills.length,
+        languageRequirement: form.languageRequirement,
+        qualificationCount: finalQualifications.length,
         providesAccommodation: form.providesAccommodation,
         providesMeals: form.providesMeals,
       });
@@ -507,6 +643,7 @@ export default function PostJob() {
       longitude: "",
       jobType: "FULL_TIME",
       scheduledAt: "",
+      languageRequirement: "en",
       scheduleMode: "ONE_OFF",
       durationUnit: "hours",
       durationCustomLabel: "",
@@ -520,14 +657,20 @@ export default function PostJob() {
       budgetCustomLabel: "",
       providesAccommodation: false,
       providesMeals: false,
+      qualifications: [],
       skills: [],
       notes: "",
     });
     setSkillInput("");
+    setQualificationInput("");
     setCatSearch("");
+    setShowQualificationPresets(false);
   }
 
   const selectedCat = categories.find((c) => c.id === form.categoryId);
+  const selectedLanguageLabel =
+    ALL_LANGUAGES.find((l) => l.code === form.languageRequirement)?.label ||
+    "English";
 
   // ── Success state ───────────────────────────────────────────────────────
   if (submitted && postedJob) {
@@ -611,6 +754,23 @@ export default function PostJob() {
                 </div>
               )}
 
+              {postedJob.languageRequirement && (
+                <div className={styles.successMeta}>
+                  <FiGlobe size={12} />{" "}
+                  {ALL_LANGUAGES.find(
+                    (l) => l.code === postedJob.languageRequirement,
+                  )?.label || postedJob.languageRequirement}
+                </div>
+              )}
+
+              {postedJob.qualifications?.length > 0 && (
+                <div className={styles.successMeta}>
+                  <FiAward size={12} /> {postedJob.qualifications.length}{" "}
+                  qualification
+                  {postedJob.qualifications.length !== 1 ? "s" : ""} required
+                </div>
+              )}
+
               {postedJob.skills?.length > 0 && (
                 <div className={styles.successMeta}>
                   <FiTag size={12} /> {postedJob.skills.length} skill
@@ -645,13 +805,14 @@ export default function PostJob() {
             <div className={styles.successActions}>
               <Link
                 to="/dashboard/hirer/jobs-management"
-                className={styles.submitBtn}
+                className={styles.successPrimaryBtn}
                 data-track-id="postJob.success.viewMyJobs"
               >
                 View My Jobs
               </Link>
               <button
-                className={styles.resetBtn}
+                type="button"
+                className={styles.successSecondaryBtn}
                 onClick={resetForm}
                 data-track-id="postJob.success.postAnother"
               >
@@ -708,11 +869,11 @@ export default function PostJob() {
               className={styles.select}
               value={form.categoryId}
               onChange={(e) => set("categoryId", e.target.value)}
-              size={catSearch ? Math.min(filteredCats.length + 1, 8) : 1}
+              size={catSearch ? Math.min(displayedCats.length + 1, 8) : 1}
               data-track-id="postJob.category.select"
             >
               {!catSearch && <option value="">Select a category</option>}
-              {filteredCats.map((c) => (
+              {displayedCats.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.icon ? `${c.icon} ` : ""}
                   {c.name}
@@ -720,6 +881,13 @@ export default function PostJob() {
                 </option>
               ))}
             </select>
+
+            {isTruncated && !selectedCat && (
+              <p className={styles.fieldHint} style={{ marginTop: 4 }}>
+                Showing {displayedCats.length} of {totalCats} categories — type
+                above to search for a specific one.
+              </p>
+            )}
 
             {selectedCat && (
               <div className={styles.selectedCat}>
@@ -920,6 +1088,29 @@ export default function PostJob() {
               onChange={(e) => set("scheduledAt", e.target.value)}
               data-track-id="postJob.scheduledAt"
             />
+          </div>
+
+          {/* ── Language Requirement ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>Language Requirement</label>
+            <p className={styles.fieldHint}>
+              What language should the worker speak fluently?
+            </p>
+            <select
+              className={styles.select}
+              value={form.languageRequirement}
+              onChange={(e) => set("languageRequirement", e.target.value)}
+              data-track-id="postJob.languageRequirement"
+            >
+              {ALL_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+            <p className={styles.durationSummary}>
+              ✓ Workers must speak <strong>{selectedLanguageLabel}</strong>
+            </p>
           </div>
 
           {/* ── Schedule Mode: One-off vs Recurring ── */}
@@ -1224,6 +1415,101 @@ export default function PostJob() {
                 ]
                   .filter(Boolean)
                   .join(" and ")}
+              </p>
+            )}
+          </div>
+
+          {/* ── Qualifications ── */}
+          <div className={styles.field}>
+            <label className={styles.label}>Required Qualifications</label>
+            <p className={styles.fieldHint}>
+              Add any specific qualifications this job requires. Press Enter or
+              comma to add. Optional — leave blank if not needed.
+            </p>
+
+            <div className={styles.skillBox}>
+              {form.qualifications.map((qual) => (
+                <span key={qual} className={styles.skillTag}>
+                  <FiAward size={11} />
+                  {qual}
+                  <button
+                    type="button"
+                    className={styles.skillRemove}
+                    onClick={() => removeQualification(qual)}
+                    data-track-id={`postJob.qualification.remove.${qual}`}
+                  >
+                    <FiX size={12} />
+                  </button>
+                </span>
+              ))}
+              <input
+                className={styles.skillInput}
+                placeholder={
+                  form.qualifications.length === 0
+                    ? "Type a qualification or pick from below..."
+                    : ""
+                }
+                value={qualificationInput}
+                onChange={(e) => setQualificationInput(e.target.value)}
+                onKeyDown={handleQualificationKeyDown}
+                onBlur={() => {
+                  if (qualificationInput.trim())
+                    addQualification(qualificationInput);
+                }}
+                data-track-id="postJob.qualification.input"
+              />
+            </div>
+
+            {form.qualifications.length < 10 && (
+              <>
+                <button
+                  type="button"
+                  className={styles.addCatBtn}
+                  onClick={() => {
+                    setShowQualificationPresets((v) => !v);
+                    tracker.track("postJob.qualificationPresets.toggled", {
+                      opened: !showQualificationPresets,
+                    });
+                  }}
+                  data-track-id="postJob.qualificationPresets.toggle"
+                >
+                  {showQualificationPresets ? (
+                    <>
+                      <FiChevronUp size={13} /> Hide common qualifications
+                    </>
+                  ) : (
+                    <>
+                      <FiChevronDown size={13} /> Show common qualifications
+                    </>
+                  )}
+                </button>
+
+                {showQualificationPresets && (
+                  <div className={styles.skillSuggestions}>
+                    {QUALIFICATION_PRESETS.filter(
+                      (q) => !form.qualifications.includes(q),
+                    )
+                      .slice(0, 12)
+                      .map((q) => (
+                        <button
+                          type="button"
+                          key={q}
+                          className={styles.skillSuggestion}
+                          onClick={() => addQualification(q)}
+                          data-track-id={`postJob.qualification.preset.${q}`}
+                        >
+                          <FiPlus size={11} /> {q}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {form.qualifications.length > 0 && (
+              <p className={styles.durationSummary}>
+                ✓ {form.qualifications.length} qualification
+                {form.qualifications.length !== 1 ? "s" : ""} required
               </p>
             )}
           </div>
