@@ -84,13 +84,15 @@ function classifyFile(url) {
   const fullUrl = url.toLowerCase();
   const [path] = fullUrl.split("?");
 
+  // Extension-based detection wins.
   if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(path))
     return "image";
   if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(path)) return "video";
   if (/\.pdf$/.test(path)) return "pdf";
 
-  if (path.includes("/image/upload/")) return "image";
+  // Cloudinary path segments.
   if (path.includes("/video/upload/")) return "video";
+  if (path.includes("/image/upload/")) return "image";
   if (path.includes("/raw/upload/")) return "pdf";
 
   if (fullUrl.includes("format=pdf")) return "pdf";
@@ -205,15 +207,25 @@ function MediaViewer({ src, title, kind, onClose }) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Normalise the PDF URL so it always ends in .pdf.
-  const viewableSrc = kind === "pdf" ? toViewableUrl(src) : src;
+  // Normalise PDF URLs: append .pdf when the URL is a Cloudinary raw path
+  // that has no extension yet. This helps Cloudinary serve the correct
+  // Content-Type when the browser fetches it directly.
+  const viewableSrc = (() => {
+    if (!src) return src;
+    if (kind !== "pdf") return src;
+    const [path, query] = src.split("?");
+    if (path.toLowerCase().endsWith(".pdf")) return src;
+    if (!path.toLowerCase().includes("/raw/upload/")) return src;
+    return `${path}.pdf${query ? `?${query}` : ""}`;
+  })();
 
-  // For PDFs, use Google Docs Viewer. It fetches the file server-side and
-  // re-serves it with Content-Type: text/html, so the browser renders it
-  // inline without CORS or X-Frame-Options issues.
+  // For PDFs, use Mozilla's PDF.js viewer. It fetches the file, decodes it
+  // in JS, and renders to a canvas — completely bypassing Cloudinary's
+  // Content-Type / X-Frame-Options restrictions. The `file=` param must be
+  // a URL-encoded absolute URL.
   const pdfViewerSrc =
     kind === "pdf"
-      ? `https://docs.google.com/viewer?url=${encodeURIComponent(viewableSrc)}&embedded=true`
+      ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(viewableSrc)}`
       : null;
 
   useEffect(() => {
@@ -342,9 +354,8 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "pdf" && (
-          // Google Docs Viewer wraps the PDF in an HTML page with
-          // Content-Type: text/html, so it renders inline in the iframe
-          // without hitting Cloudinary's CORS / X-Frame-Options limits.
+          // PDF.js runs entirely client-side and fetches the PDF via JS,
+          // so Cloudinary's Content-Type / CSP headers don't matter.
           <iframe
             src={pdfViewerSrc}
             title={title}
@@ -355,19 +366,16 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "other" && (
-          // Best-effort inline preview for unknown file types. If the URL
-          // is a raw Cloudinary PDF with no extension, we still route it
-          // through Google Docs Viewer for a shot at inline rendering.
           <div className={styles.fsOther}>
             <iframe
-              src={`https://docs.google.com/viewer?url=${encodeURIComponent(toViewableUrl(src))}&embedded=true`}
+              src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(viewableSrc)}`}
               title={title}
               className={styles.fsPdf}
               style={{ width: "100%", height: "100%", border: 0 }}
               allowFullScreen
             />
             <a
-              href={toViewableUrl(src)}
+              href={viewableSrc}
               target="_blank"
               rel="noreferrer"
               className={styles.fsOpenLink}
