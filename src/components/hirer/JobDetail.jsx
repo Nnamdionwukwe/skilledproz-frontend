@@ -40,7 +40,95 @@ import {
   FiLayers,
   FiUserCheck,
   FiGlobe as FiLanguage,
+  FiHome,
+  FiCoffee,
+  FiRefreshCw,
+  FiTarget,
+  FiNavigation,
+  FiInfo,
 } from "react-icons/fi";
+
+// ─── Language map (mirrors PostJob.jsx) ────────────────────────────────────
+const ALL_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "French" },
+  { code: "ar", label: "Arabic" },
+  { code: "yo", label: "Yoruba" },
+  { code: "ha", label: "Hausa" },
+  { code: "ig", label: "Igbo" },
+  { code: "sw", label: "Swahili" },
+  { code: "pt", label: "Portuguese" },
+  { code: "es", label: "Spanish" },
+  { code: "de", label: "German" },
+  { code: "zh", label: "Chinese" },
+  { code: "hi", label: "Hindi" },
+  { code: "bn", label: "Bengali" },
+  { code: "ur", label: "Urdu" },
+  { code: "tr", label: "Turkish" },
+  { code: "ko", label: "Korean" },
+  { code: "ja", label: "Japanese" },
+  { code: "ru", label: "Russian" },
+  { code: "id", label: "Indonesian" },
+  { code: "vi", label: "Vietnamese" },
+  { code: "it", label: "Italian" },
+  { code: "nl", label: "Dutch" },
+  { code: "pl", label: "Polish" },
+  { code: "fa", label: "Persian" },
+  { code: "am", label: "Amharic" },
+  { code: "zu", label: "Zulu" },
+  { code: "af", label: "Afrikaans" },
+  { code: "so", label: "Somali" },
+];
+
+// ─── Budget type labels (mirrors PostJob.jsx) ───────────────────────────────
+const BUDGET_TYPE_LABELS = {
+  HOURLY: "Per Hour",
+  DAILY: "Per Day",
+  WEEKLY: "Per Week",
+  MONTHLY: "Per Month",
+  YEARLY: "Per Year",
+  CUSTOM: "Custom",
+  FIXED: "Fixed Price",
+};
+
+const SALARY_PERIOD_LABELS = {
+  HOURLY: "Per Hour",
+  DAILY: "Per Day",
+  WEEKLY: "Per Week",
+  MONTHLY: "Per Month",
+  YEARLY: "Per Year",
+};
+
+const EDUCATION_LEVEL_LABELS = {
+  HIGH_SCHOOL: "High School",
+  DIPLOMA: "Diploma",
+  BACHELOR: "Bachelor's Degree",
+  MASTER: "Master's Degree",
+  DOCTORATE: "Doctorate",
+  CERTIFICATION: "Certification",
+  OTHER: "Other",
+};
+
+// ─── Helpers: parse recurring info from notes ───────────────────────────────
+function parseRecurring(notes) {
+  if (!notes) return null;
+  const match = notes.match(/Recurring:\s*([^.]+)\./i);
+  return match ? match[1].trim() : null;
+}
+
+function parseCustomDuration(notes) {
+  if (!notes) return null;
+  const match = notes.match(/Duration:\s*([^.]+)\./i);
+  return match ? match[1].trim() : null;
+}
+
+function stripSystemNotes(notes) {
+  if (!notes) return notes;
+  return notes
+    .replace(/Recurring:\s*[^.]+\.\s*/i, "")
+    .replace(/Duration:\s*[^.]+\.\s*/i, "")
+    .trim();
+}
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -68,9 +156,6 @@ export default function JobDetail() {
         : "/landingpage";
 
   useEffect(() => {
-    // Guard: don't fire a request if the URL param is missing or is
-    // the literal string "undefined"/"null" (which happens when a Link
-    // was built with a missing job.id).
     if (!id || id === "undefined" || id === "null") {
       setError("Job not found.");
       setLoading(false);
@@ -190,42 +275,29 @@ export default function JobDetail() {
     DAILY: { icon: FiSun, label: "Daily" },
     WEEKLY: { icon: FiCalendar, label: "Weekly" },
     MONTHLY: { icon: FiCalendar, label: "Monthly" },
+    YEARLY: { icon: FiCalendar, label: "Yearly" },
     CUSTOM: { icon: FiEdit3, label: "Custom" },
   }[jobPost.budgetType];
 
-  const salaryPeriodLabel = {
-    HOURLY: "Per Hour",
-    DAILY: "Per Day",
-    WEEKLY: "Per Week",
-    MONTHLY: "Per Month",
-    YEARLY: "Per Year",
-  }[jobPost.salaryPeriod];
-
-  const educationLevelLabel = {
-    HIGH_SCHOOL: "High School",
-    DIPLOMA: "Diploma",
-    BACHELOR: "Bachelor's Degree",
-    MASTER: "Master's Degree",
-    DOCTORATE: "Doctorate",
-    CERTIFICATION: "Certification",
-    OTHER: "Other",
-  }[jobPost.educationLevel];
-
-  const budgetTypeLabel = {
-    FIXED: "Fixed Price",
-    HOURLY: "Per Hour",
-    DAILY: "Per Day",
-    WEEKLY: "Per Week",
-    MONTHLY: "Per Month",
-    CUSTOM: "Custom",
-  }[jobPost.budgetType];
+  const salaryPeriodLabel = SALARY_PERIOD_LABELS[jobPost.salaryPeriod];
+  const educationLevelLabel = EDUCATION_LEVEL_LABELS[jobPost.educationLevel];
+  const budgetTypeLabel = BUDGET_TYPE_LABELS[jobPost.budgetType];
 
   const JobTypeIcon = jobTypeMeta?.icon;
   const LocationTypeIcon = locationTypeMeta?.icon;
   const BudgetTypeIcon = budgetTypeMeta?.icon;
 
+  // ── Language label ──
+  const languageLabel =
+    ALL_LANGUAGES.find((l) => l.code === jobPost.languageRequirement)?.label ||
+    jobPost.languageRequirement;
+
+  // ── Recurring / custom duration parsed from notes ──
+  const recurringLabel = parseRecurring(jobPost.notes);
+  const customDurationLabel = parseCustomDuration(jobPost.notes);
+  const cleanNotes = stripSystemNotes(jobPost.notes);
+
   // ── Derived: payment display ──
-  // Priority: salaryText > salary range > budget
   const hasSalaryText = !!jobPost.salaryText;
   const hasSalaryRange = !!(
     jobPost.salaryAmount ||
@@ -257,6 +329,23 @@ export default function JobDetail() {
       ? "Salary Range"
       : "Budget";
 
+  // ── Derived: budget display suffix (per hour / per day / etc.) ──
+  const budgetSuffix =
+    jobPost.budgetType && jobPost.budgetType !== "FIXED"
+      ? jobPost.budgetType === "CUSTOM"
+        ? jobPost.budgetCustomLabel
+          ? ` · ${jobPost.budgetCustomLabel}`
+          : " · Custom"
+        : ` · ${BUDGET_TYPE_LABELS[jobPost.budgetType] || jobPost.budgetType}`
+      : " total";
+
+  // ── Derived: duration text ──
+  const durationParts = formatJobDurationParts(jobPost);
+  const hasEstimatedDuration = !!(durationParts || jobPost.estimatedHours);
+  const hasProjectDuration = !!(jobPost.durationValue && jobPost.durationType);
+  const hasRecurring = !!recurringLabel;
+  const hasCustomDuration = !!customDurationLabel;
+
   // ── Derived: application channels ──
   const hasExternalApplyChannels = !!(
     jobPost.applicationUrl ||
@@ -268,6 +357,24 @@ export default function JobDetail() {
   // ── Derived: employer / company info ──
   const companyDisplay =
     jobPost.companyName || jobPost.hirer?.hirerProfile?.companyName || null;
+
+  // ── Derived: coordinates ──
+  const hasCoordinates =
+    jobPost.latitude !== null &&
+    jobPost.latitude !== undefined &&
+    jobPost.longitude !== null &&
+    jobPost.longitude !== undefined;
+
+  // ── Derived: work conditions ──
+  const hasWorkConditions =
+    jobPost.providesAccommodation || jobPost.providesMeals;
+
+  // ── Derived: qualifications (PostJob sends a string[]) ──
+  const qualificationsList = Array.isArray(jobPost.qualifications)
+    ? jobPost.qualifications.filter(
+        (q) => typeof q === "string" && q.trim().length > 0,
+      )
+    : [];
 
   // ── Derived: requirements block items ──
   const requirementItems = [
@@ -294,10 +401,10 @@ export default function JobDetail() {
       label: "Education Level",
       value: educationLevelLabel,
     },
-    jobPost.languageRequirement && {
+    languageLabel && {
       icon: <FiLanguage size={14} />,
       label: "Language",
-      value: jobPost.languageRequirement,
+      value: languageLabel,
     },
     jobPost.workingHours && {
       icon: <FiClock size={14} />,
@@ -312,12 +419,6 @@ export default function JobDetail() {
   ].filter(Boolean);
 
   const hasRequirementsBlock = requirementItems.length > 0;
-
-  // ── Derived: duration values ──
-  const hasEstimatedDuration = !!(
-    formatJobDurationParts(jobPost) || jobPost.estimatedHours
-  );
-  const hasProjectDuration = !!(jobPost.durationValue && jobPost.durationType);
 
   return (
     <div className={styles.page}>
@@ -345,6 +446,18 @@ export default function JobDetail() {
                     <span>{jobPost.category.icon}</span>
                   )}
                   {jobPost.category?.name}
+                  {jobPost.category?.isUserSubmitted && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        marginLeft: 4,
+                        opacity: 0.7,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      (custom)
+                    </span>
+                  )}
                 </div>
               )}
               <span
@@ -398,6 +511,11 @@ export default function JobDetail() {
                     <FiTrendingUp size={12} /> {jobPost.experienceLevel}
                   </span>
                 )}
+                {hasRecurring && (
+                  <span className={styles.typePill}>
+                    <FiRefreshCw size={12} /> Recurring
+                  </span>
+                )}
                 {jobPost.sourcePlatform && (
                   <span className={styles.typePill}>
                     <FiExternalLink size={12} /> via {jobPost.sourcePlatform}
@@ -441,10 +559,10 @@ export default function JobDetail() {
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Job Description</h2>
             <p className={styles.description}>{jobPost.description}</p>
-            {jobPost.notes && (
+            {cleanNotes && (
               <div className={styles.notes}>
                 <FiFileText size={14} />
-                <p>{jobPost.notes}</p>
+                <p>{cleanNotes}</p>
               </div>
             )}
           </section>
@@ -498,6 +616,64 @@ export default function JobDetail() {
           )}
 
           {/* ═══════════════════════════════════════════════════════
+              QUALIFICATIONS (from PostJob.qualifications[])
+          ═══════════════════════════════════════════════════════ */}
+          {qualificationsList.length > 0 && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <FiAward
+                  size={14}
+                  style={{ verticalAlign: "-2px", marginRight: 6 }}
+                />
+                Required Qualifications
+              </h2>
+              <div className={styles.skillsWrap}>
+                {qualificationsList.map((qual, i) => (
+                  <span key={i} className={styles.skillChip}>
+                    <FiAward
+                      size={11}
+                      style={{ marginRight: 4, verticalAlign: "-1px" }}
+                    />
+                    {qual}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════
+              WORK CONDITIONS (from PostJob: providesAccommodation,
+              providesMeals)
+          ═══════════════════════════════════════════════════════ */}
+          {hasWorkConditions && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <FiHome
+                  size={14}
+                  style={{ verticalAlign: "-2px", marginRight: 6 }}
+                />
+                Work Conditions
+              </h2>
+              <div className={styles.detailGrid}>
+                {jobPost.providesAccommodation && (
+                  <DetailCard
+                    icon={<FiHome size={14} />}
+                    label="Accommodation"
+                    value="Provided"
+                  />
+                )}
+                {jobPost.providesMeals && (
+                  <DetailCard
+                    icon={<FiCoffee size={14} />}
+                    label="Meals"
+                    value="Provided"
+                  />
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════
               DETAILS GRID — every present field
           ═══════════════════════════════════════════════════════ */}
           <section className={styles.section}>
@@ -507,7 +683,23 @@ export default function JobDetail() {
                 <DetailCard
                   icon={<FiFileText size={14} />}
                   label="Category"
-                  value={jobPost.category.name}
+                  value={
+                    <>
+                      {jobPost.category.icon ? `${jobPost.category.icon} ` : ""}
+                      {jobPost.category.name}
+                      {jobPost.category.isUserSubmitted && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginLeft: 4,
+                          }}
+                        >
+                          (custom)
+                        </span>
+                      )}
+                    </>
+                  }
                 />
               )}
 
@@ -515,12 +707,26 @@ export default function JobDetail() {
                 <DetailCard
                   icon={<FiDollarSign size={14} />}
                   label={mainPaymentLabel}
-                  value={mainPaymentText}
+                  value={
+                    <>
+                      {mainPaymentText}
+                      {hasBudget && !hasSalaryRange && !hasSalaryText && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginLeft: 4,
+                          }}
+                        >
+                          {budgetSuffix}
+                        </span>
+                      )}
+                    </>
+                  }
                   accent
                 />
               )}
 
-              {/* If salaryText was the main payment, still show numeric range if present */}
               {hasSalaryText && hasSalaryRange && (
                 <DetailCard
                   icon={<FiDollarSign size={14} />}
@@ -539,15 +745,14 @@ export default function JobDetail() {
                 })}
               />
 
-              {hasEstimatedDuration && formatJobDurationParts(jobPost) && (
+              {hasEstimatedDuration && durationParts && (
                 <DetailCard
                   icon={<FiClock size={14} />}
                   label="Estimated Duration"
                   value={
                     <span>
-                      {formatJobDurationParts(jobPost).primary}
-                      {formatJobDurationParts(jobPost).equivalents.length >
-                        0 && (
+                      {durationParts.primary}
+                      {durationParts.equivalents.length > 0 && (
                         <span
                           style={{
                             fontSize: 11,
@@ -556,14 +761,54 @@ export default function JobDetail() {
                           }}
                         >
                           (
-                          {formatJobDurationParts(jobPost)
-                            .equivalents.map((e) => e.label)
+                          {durationParts.equivalents
+                            .map((e) => e.label)
                             .join(", ")}
                           )
                         </span>
                       )}
                     </span>
                   }
+                />
+              )}
+
+              {(jobPost.estimatedValue || jobPost.estimatedUnit) && (
+                <DetailCard
+                  icon={<FiClock size={14} />}
+                  label="Estimated Time"
+                  value={
+                    <>
+                      {jobPost.estimatedValue || "—"}
+                      {jobPost.estimatedUnit && ` ${jobPost.estimatedUnit}`}
+                      {jobPost.estimatedHours && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginLeft: 4,
+                          }}
+                        >
+                          ({jobPost.estimatedHours}h)
+                        </span>
+                      )}
+                    </>
+                  }
+                />
+              )}
+
+              {hasCustomDuration && (
+                <DetailCard
+                  icon={<FiClock size={14} />}
+                  label="Custom Duration"
+                  value={customDurationLabel}
+                />
+              )}
+
+              {hasRecurring && (
+                <DetailCard
+                  icon={<FiRefreshCw size={14} />}
+                  label="Recurring Schedule"
+                  value={recurringLabel}
                 />
               )}
 
@@ -580,6 +825,28 @@ export default function JobDetail() {
                   icon={<FiMapPin size={14} />}
                   label="Location"
                   value={jobPost.address}
+                />
+              )}
+
+              {hasCoordinates && (
+                <DetailCard
+                  icon={<FiNavigation size={14} />}
+                  label="Coordinates"
+                  value={
+                    <a
+                      href={`https://www.google.com/maps?q=${jobPost.latitude},${jobPost.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "var(--orange)", textDecoration: "none" }}
+                    >
+                      {Number(jobPost.latitude).toFixed(5)},{" "}
+                      {Number(jobPost.longitude).toFixed(5)}
+                      <FiExternalLink
+                        size={10}
+                        style={{ marginLeft: 4, verticalAlign: "-1px" }}
+                      />
+                    </a>
+                  }
                 />
               )}
 
@@ -605,11 +872,43 @@ export default function JobDetail() {
                 />
               )}
 
+              {jobPost.languageRequirement && (
+                <DetailCard
+                  icon={<FiLanguage size={14} />}
+                  label="Language Required"
+                  value={languageLabel}
+                />
+              )}
+
               {jobPost.budgetType && budgetTypeLabel && (
                 <DetailCard
                   icon={<FiCreditCard size={14} />}
                   label="Payment Type"
-                  value={budgetTypeLabel}
+                  value={
+                    <>
+                      {budgetTypeLabel}
+                      {jobPost.budgetType === "CUSTOM" &&
+                        jobPost.budgetCustomLabel && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: "var(--text-muted)",
+                              marginLeft: 4,
+                            }}
+                          >
+                            ({jobPost.budgetCustomLabel})
+                          </span>
+                        )}
+                    </>
+                  }
+                />
+              )}
+
+              {jobPost.currency && (
+                <DetailCard
+                  icon={<FiDollarSign size={14} />}
+                  label="Currency"
+                  value={jobPost.currency}
                 />
               )}
 
@@ -943,6 +1242,36 @@ export default function JobDetail() {
               </div>
             )}
 
+            {qualificationsList.length > 0 && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Qualifications</span>
+                <span className={styles.factValue}>
+                  {qualificationsList.length} required
+                </span>
+              </div>
+            )}
+
+            {jobPost.languageRequirement && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Language</span>
+                <span className={styles.factValue}>{languageLabel}</span>
+              </div>
+            )}
+
+            {hasWorkConditions && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Includes</span>
+                <span className={styles.factValue}>
+                  {[
+                    jobPost.providesAccommodation && "Accommodation",
+                    jobPost.providesMeals && "Meals",
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              </div>
+            )}
+
             {hasProjectDuration && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Project Duration</span>
@@ -952,12 +1281,12 @@ export default function JobDetail() {
               </div>
             )}
 
-            {hasEstimatedDuration && formatJobDurationParts(jobPost) && (
+            {hasEstimatedDuration && durationParts && (
               <div className={styles.factRow}>
                 <span className={styles.factLabel}>Est. Duration</span>
                 <span className={styles.factValue}>
-                  {formatJobDurationParts(jobPost).primary}
-                  {formatJobDurationParts(jobPost).equivalents[0] && (
+                  {durationParts.primary}
+                  {durationParts.equivalents[0] && (
                     <span
                       style={{
                         color: "var(--text-muted)",
@@ -965,10 +1294,24 @@ export default function JobDetail() {
                         marginLeft: 4,
                       }}
                     >
-                      ({formatJobDurationParts(jobPost).equivalents[0].label})
+                      ({durationParts.equivalents[0].label})
                     </span>
                   )}
                 </span>
+              </div>
+            )}
+
+            {hasRecurring && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Recurring</span>
+                <span className={styles.factValue}>{recurringLabel}</span>
+              </div>
+            )}
+
+            {hasCustomDuration && (
+              <div className={styles.factRow}>
+                <span className={styles.factLabel}>Duration</span>
+                <span className={styles.factValue}>{customDurationLabel}</span>
               </div>
             )}
 
