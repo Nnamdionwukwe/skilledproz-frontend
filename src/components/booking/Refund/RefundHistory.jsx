@@ -18,7 +18,7 @@ import {
 } from "react-icons/fa";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../store/authStore";
-import { calcPricing } from "../../utils/pricing";
+import { calcPricing } from "../../../utils/pricing";
 
 const STATUS_CONFIG = {
   PENDING: { icon: FaClock, color: "#fbbf24", label: "Pending Review" },

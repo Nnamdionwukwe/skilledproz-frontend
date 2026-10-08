@@ -9,7 +9,7 @@ import RaiseDisputeModal from "../../disputes/RaiseDisputeModal";
 import BookingDetailPayment from "./BookingDetailPayment";
 import BookingDetailMain from "./BookingDetailMain";
 import BookingDetailSidebar from "./BookingDetailSidebar";
-import { calcPricing } from "../../utils/pricing";
+import { calcPricing } from "../../../utils/pricing";
 import WorkerPaymentPreview from "./WorkerPaymentPreview";
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { RefundRequest, RefundStatus, RefundHistory } from "../Refund";

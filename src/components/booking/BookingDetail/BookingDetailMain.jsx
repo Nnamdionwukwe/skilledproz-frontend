@@ -31,7 +31,7 @@ import {
   FaCoffee,
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
-import { calcPricing } from "../../utils/pricing";
+import { calcPricing } from "../../../utils/pricing";
 import { RefundRequest } from "../Refund";
 
 // ── Inline helpers ──────────────────────────────────────────────────────

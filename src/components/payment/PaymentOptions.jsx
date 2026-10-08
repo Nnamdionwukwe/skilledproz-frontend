@@ -15,7 +15,7 @@ import {
   FaEthereum,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
-import { calcPricing } from "../utils/pricing";
+import { calcPricing } from "../../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;

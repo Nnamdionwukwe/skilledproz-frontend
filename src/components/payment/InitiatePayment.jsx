@@ -29,8 +29,8 @@ import {
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
 import tracker from "../../lib/analytics/tracker";
+import { calcPricing } from "../../utils/pricing";
 
-const HIRER_FEE_RATE = 0.05;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 function formatPrice(amount, currency = "USD") {
@@ -39,69 +39,6 @@ function formatPrice(amount, currency = "USD") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
-}
-
-function calcPricing(booking, referralDiscount = 0) {
-  const agreedRate = booking?.agreedRate || 0;
-  const unit = booking?.estimatedUnit || "hours";
-  const hours = booking?.estimatedHours;
-  const value = booking?.estimatedValue
-    ? parseFloat(booking.estimatedValue)
-    : null;
-  const currency = booking?.currency || "USD";
-  const quantity = booking?.quantity || 1;
-
-  let qty = 1;
-
-  // For custom bookings, use the quantity field
-  if (unit === "custom") {
-    qty = quantity || 1;
-  } else if (value && unit !== "custom") {
-    qty = value;
-  } else if (hours) {
-    if (unit === "hours") qty = hours;
-    else if (unit === "days") qty = Math.round(hours / 8);
-    else if (unit === "weeks") qty = Math.round(hours / 40);
-    else if (unit === "months") qty = Math.round(hours / 160);
-  }
-
-  const unitSuffix =
-    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo", custom: "" }[
-      unit
-    ] || "";
-  const unitLabel =
-    {
-      hours: "hour",
-      days: "day",
-      weeks: "week",
-      months: "month",
-      custom: "custom",
-    }[unit] || unit;
-
-  const subtotal = parseFloat((agreedRate * qty).toFixed(2));
-  const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
-  const workerPayout = subtotal;
-  const grossTotal = parseFloat((subtotal + hirerFee).toFixed(2));
-  const referralSaving = currency === "NGN" ? referralDiscount : 0;
-  const totalCharged = parseFloat(
-    Math.max(0, grossTotal - referralSaving).toFixed(2),
-  );
-
-  return {
-    agreedRate,
-    qty,
-    unit,
-    unitSuffix,
-    unitLabel,
-    currency,
-    subtotal,
-    hirerFee,
-    workerPayout,
-    grossTotal,
-    totalCharged,
-    referralSaving,
-    hasQty: ((value || hours) && unit !== "custom") || unit === "custom",
-  };
 }
 
 const METHODS = [
@@ -267,9 +204,10 @@ export default function InitiatePayment() {
     return () => clearInterval(timer);
   }, [bookingId, bookingStatus]);
 
+  // ── Use the shared util so job-post pricing is handled correctly ──
   const p = calcPricing(booking, referralApplied ? referralAmount : 0);
 
-  // ── NEW: Job-post booking source indicator ──
+  // ── Job-post booking source indicator ──
   const isJobPostBooking = booking?.source === "JOB_POST";
 
   const handlePercentChange = (pct) => {
@@ -999,13 +937,35 @@ export default function InitiatePayment() {
               <p className={styles.breakdownTitle}>Payment Preview</p>
               <div className={styles.breakdownRows}>
                 <div className={styles.breakdownRow}>
-                  <span className={styles.breakdownLabel}>Agreed Rate</span>
+                  <span className={styles.breakdownLabel}>
+                    {isJobPostBooking ? "Agreed Total" : "Agreed Rate"}
+                  </span>
                   <span className={styles.breakdownVal}>
                     {formatPrice(prev.agreedRate, prev.currency)}
-                    {prev.unitSuffix}
+                    {!isJobPostBooking && prev.unitSuffix}
                   </span>
                 </div>
-                {prev.hasQty && (
+                {isJobPostBooking && booking?.estimatedValue && (
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownLabel}>Duration</span>
+                    <span className={styles.breakdownVal}>
+                      {booking.estimatedValue}{" "}
+                      {booking.estimatedUnit || "hours"}
+                      {booking.estimatedHours && (
+                        <span
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: 11,
+                            marginLeft: 4,
+                          }}
+                        >
+                          (≈ {booking.estimatedHours}h)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+                {!isJobPostBooking && prev.hasQty && (
                   <>
                     <div className={styles.breakdownRow}>
                       <span className={styles.breakdownLabel}>Duration</span>
@@ -1163,7 +1123,7 @@ export default function InitiatePayment() {
                 </p>
               </div>
             </div>
-            {/* ── NEW: Job-post booking info note ── */}
+            {/* ── Job-post booking info note ── */}
             {isJobPostBooking && (
               <div className={styles.jobPostNote}>
                 <FaBriefcase size={14} />
@@ -1253,13 +1213,39 @@ export default function InitiatePayment() {
             <p className={styles.breakdownTitle}>Payment Breakdown</p>
             <div className={styles.breakdownRows}>
               <div className={styles.breakdownRow}>
-                <span className={styles.breakdownLabel}>Agreed Rate</span>
+                <span className={styles.breakdownLabel}>
+                  {isJobPostBooking ? "Agreed Total" : "Agreed Rate"}
+                </span>
                 <span className={styles.breakdownVal}>
                   {formatPrice(p.agreedRate, p.currency)}
-                  {p.unitSuffix}
+                  {!isJobPostBooking && p.unitSuffix}
                 </span>
               </div>
-              {p.hasQty && (
+
+              {/* For job-post bookings, show the real duration from the
+                  job post rather than the calcPricing qty (which is 1) */}
+              {isJobPostBooking && booking?.estimatedValue && (
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>Duration</span>
+                  <span className={styles.breakdownVal}>
+                    {booking.estimatedValue} {booking.estimatedUnit || "hours"}
+                    {booking.estimatedHours && (
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: 11,
+                          marginLeft: 4,
+                        }}
+                      >
+                        (≈ {booking.estimatedHours}h)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+
+              {/* For direct bookings, show the calcPricing-derived qty */}
+              {!isJobPostBooking && p.hasQty && (
                 <>
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownLabel}>Duration</span>
@@ -1279,6 +1265,7 @@ export default function InitiatePayment() {
                   </div>
                 </>
               )}
+
               <div className={styles.breakdownRow}>
                 <span className={styles.breakdownLabel}>Service Fee (5%)</span>
                 <span className={styles.breakdownVal}>

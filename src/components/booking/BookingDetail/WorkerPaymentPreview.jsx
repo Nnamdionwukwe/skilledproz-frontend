@@ -5,7 +5,7 @@ import {
   FaInfoCircle,
 } from "react-icons/fa";
 import styles from "./BookingDetail.module.css";
-import { calcPricing } from "../../utils/pricing";
+import { calcPricing } from "../../../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
