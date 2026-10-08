@@ -207,27 +207,6 @@ function MediaViewer({ src, title, kind, onClose }) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  // Normalise PDF URLs: append .pdf when the URL is a Cloudinary raw path
-  // that has no extension yet. This helps Cloudinary serve the correct
-  // Content-Type when the browser fetches it directly.
-  const viewableSrc = (() => {
-    if (!src) return src;
-    if (kind !== "pdf") return src;
-    const [path, query] = src.split("?");
-    if (path.toLowerCase().endsWith(".pdf")) return src;
-    if (!path.toLowerCase().includes("/raw/upload/")) return src;
-    return `${path}.pdf${query ? `?${query}` : ""}`;
-  })();
-
-  // For PDFs, use Mozilla's PDF.js viewer. It fetches the file, decodes it
-  // in JS, and renders to a canvas — completely bypassing Cloudinary's
-  // Content-Type / X-Frame-Options restrictions. The `file=` param must be
-  // a URL-encoded absolute URL.
-  const pdfViewerSrc =
-    kind === "pdf"
-      ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(viewableSrc)}`
-      : null;
-
   useEffect(() => {
     setZoom(1);
     setRotation(0);
@@ -303,7 +282,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             </>
           )}
           <a
-            href={viewableSrc}
+            href={src}
             target="_blank"
             rel="noreferrer"
             className={styles.fsBtn}
@@ -312,7 +291,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             <FiMaximize2 size={14} />
           </a>
           <a
-            href={viewableSrc}
+            href={src}
             download
             className={styles.fsBtn}
             title="Download"
@@ -334,7 +313,7 @@ function MediaViewer({ src, title, kind, onClose }) {
       <div className={styles.fsStage} onClick={(e) => e.stopPropagation()}>
         {kind === "image" && (
           <img
-            src={viewableSrc}
+            src={src}
             alt={title}
             className={styles.fsImage}
             style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
@@ -344,7 +323,7 @@ function MediaViewer({ src, title, kind, onClose }) {
 
         {kind === "video" && (
           <video
-            src={viewableSrc}
+            src={src}
             className={styles.fsVideo}
             controls
             autoPlay
@@ -354,40 +333,25 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "pdf" && (
-          // PDF.js runs entirely client-side and fetches the PDF via JS,
-          // so Cloudinary's Content-Type / CSP headers don't matter.
+          // Browser-native PDF rendering. Works because the backend now
+          // serves PDFs with Content-Type: application/pdf.
           <iframe
-            src={pdfViewerSrc}
+            src={src}
             title={title}
             className={styles.fsPdf}
             style={{ width: "100%", height: "100%", border: 0 }}
-            allowFullScreen
           />
         )}
 
         {kind === "other" && (
           <div className={styles.fsOther}>
-            <iframe
-              src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(viewableSrc)}`}
-              title={title}
-              className={styles.fsPdf}
-              style={{ width: "100%", height: "100%", border: 0 }}
-              allowFullScreen
-            />
+            <FiFileText size={48} />
+            <p>Preview not available for this file type.</p>
             <a
-              href={viewableSrc}
+              href={src}
               target="_blank"
               rel="noreferrer"
               className={styles.fsOpenLink}
-              style={{
-                position: "absolute",
-                bottom: 16,
-                right: 16,
-                zIndex: 2,
-                background: "rgba(0,0,0,0.7)",
-                padding: "6px 12px",
-                borderRadius: 6,
-              }}
             >
               Open in new tab <FiExternalLink size={12} />
             </a>
