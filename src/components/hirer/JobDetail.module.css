@@ -1,8 +1,8 @@
-/* ── Page — sits inside parent layout padding, no negative bleed ── */
+/* ── Page — full-bleed, hugs both screen edges ── */
 .page {
   width: auto;
-  margin-left: 0;
-  margin-right: 0;
+  margin-left: -2rem;
+  margin-right: -2rem;
   padding: 32px 24px;
   max-width: none;
   animation: fadeUp 0.4s ease both;
@@ -10,6 +10,8 @@
 
 @media (max-width: 640px) {
   .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
     padding: 20px 16px;
   }
 }
@@ -22,6 +24,8 @@
 
 @media (max-width: 359px) {
   .page {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
     padding: 14px 10px;
   }
 }
