@@ -84,16 +84,16 @@ function classifyFile(url) {
   const fullUrl = url.toLowerCase();
   const [path] = fullUrl.split("?");
 
-  // Extension-based detection wins.
+  // Extension wins — a .pdf URL under /image/upload/ is still a PDF.
+  if (/\.pdf$/.test(path)) return "pdf";
+  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(path)) return "video";
   if (/\.(jpg|jpeg|png|webp|gif|bmp|svg|avif|heic|heif)$/.test(path))
     return "image";
-  if (/\.(mp4|webm|mov|m4v|ogg|ogv|avi|mkv)$/.test(path)) return "video";
-  if (/\.pdf$/.test(path)) return "pdf";
 
-  // Cloudinary path segments.
+  // Cloudinary path segments (fallback when no extension).
   if (path.includes("/video/upload/")) return "video";
-  if (path.includes("/image/upload/")) return "image";
   if (path.includes("/raw/upload/")) return "pdf";
+  if (path.includes("/image/upload/")) return "image";
 
   if (fullUrl.includes("format=pdf")) return "pdf";
 
@@ -122,6 +122,32 @@ function toViewableUrl(url) {
   if (lower.endsWith(".pdf")) return url;
   // Append .pdf to the path (before ?query).
   return `${path}.pdf${query ? `?${query}` : ""}`;
+}
+
+/**
+ * Force Cloudinary to deliver a file inline instead of as a download.
+ *
+ * Inject the `fl_attachment:false` transformation flag into the URL so
+ * Cloudinary sets `Content-Disposition: inline` on the response. Without
+ * this, raw resources get `Content-Disposition: attachment` (or
+ * octet-stream), which forces a download and breaks in-app iframe
+ * previews.
+ *
+ *   /raw/upload/v123/skilledpro/file.pdf
+ *   → /raw/upload/fl_attachment:false/v123/skilledpro/file.pdf
+ *
+ * Idempotent — if the flag is already there, returns the URL unchanged.
+ */
+function toInlineUrl(url) {
+  if (!url) return url;
+  if (url.includes("fl_attachment")) return url;
+
+  // Match the segment right after /<resource>/upload/ and inject the flag
+  // before the version segment (v123...).
+  return url.replace(
+    /(\/(?:image|raw|video)\/upload\/)(v\d+)/,
+    "$1fl_attachment:false/$2",
+  );
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -198,14 +224,23 @@ function VerifBadge({ status }) {
 // ─── Full-Screen Media Viewer ─────────────────────────────────────────────────
 // Images: zoom + rotate
 // Videos: native player
-// PDFs:   Google Docs viewer iframe (Cloudinary raw PDFs often block direct
-//         embedding, and the Docs viewer is a reliable cross-origin renderer)
+// PDFs:   native iframe. We inject `fl_attachment:false` into the Cloudinary
+//         URL so the response carries Content-Disposition: inline, which lets
+//         every browser (Chrome, Safari, mobile) render the PDF in place
+//         instead of downloading it.
 // Other:  attempt iframe, fall back to "Open in new tab"
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MediaViewer({ src, title, kind, onClose }) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+
+  // For PDFs we use TWO transforms together:
+  //   1. Append ".pdf" to Cloudinary raw URLs that don't already have it
+  //      so Cloudinary recognises the file as a PDF.
+  //   2. Inject `fl_attachment:false` so Cloudinary serves the file with
+  //      Content-Disposition: inline (browser renders in iframe).
+  const viewableSrc = src;
 
   useEffect(() => {
     setZoom(1);
@@ -282,7 +317,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             </>
           )}
           <a
-            href={src}
+            href={viewableSrc}
             target="_blank"
             rel="noreferrer"
             className={styles.fsBtn}
@@ -291,7 +326,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             <FiMaximize2 size={14} />
           </a>
           <a
-            href={src}
+            href={viewableSrc}
             download
             className={styles.fsBtn}
             title="Download"
@@ -313,7 +348,7 @@ function MediaViewer({ src, title, kind, onClose }) {
       <div className={styles.fsStage} onClick={(e) => e.stopPropagation()}>
         {kind === "image" && (
           <img
-            src={src}
+            src={viewableSrc}
             alt={title}
             className={styles.fsImage}
             style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
@@ -323,7 +358,7 @@ function MediaViewer({ src, title, kind, onClose }) {
 
         {kind === "video" && (
           <video
-            src={src}
+            src={viewableSrc}
             className={styles.fsVideo}
             controls
             autoPlay
@@ -333,13 +368,16 @@ function MediaViewer({ src, title, kind, onClose }) {
         )}
 
         {kind === "pdf" && (
-          // Browser-native PDF rendering. Works because the backend now
-          // serves PDFs with Content-Type: application/pdf.
+          // Native browser PDF rendering. Works because:
+          //   • the URL ends in ".pdf" (Cloudinary recognises the format)
+          //   • the URL contains fl_attachment:false (Cloudinary serves
+          //     with Content-Disposition: inline)
           <iframe
-            src={src}
+            src={viewableSrc}
             title={title}
             className={styles.fsPdf}
             style={{ width: "100%", height: "100%", border: 0 }}
+            allowFullScreen
           />
         )}
 
@@ -348,7 +386,7 @@ function MediaViewer({ src, title, kind, onClose }) {
             <FiFileText size={48} />
             <p>Preview not available for this file type.</p>
             <a
-              href={src}
+              href={viewableSrc}
               target="_blank"
               rel="noreferrer"
               className={styles.fsOpenLink}
