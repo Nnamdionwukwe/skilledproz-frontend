@@ -68,17 +68,34 @@ export default function JobDetail() {
         : "/landingpage";
 
   useEffect(() => {
+    // Guard: don't fire a request if the URL param is missing or is
+    // the literal string "undefined"/"null" (which happens when a Link
+    // was built with a missing job.id).
+    if (!id || id === "undefined" || id === "null") {
+      setError("Job not found.");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     api
       .get(`/jobs/${id}`)
       .then((res) => {
+        if (cancelled) return;
         setJob(res.data.data);
         setIsSaved(res.data.data.isSaved || false);
         setLoading(false);
       })
       .catch(() => {
+        if (cancelled) return;
         setError("Job not found.");
         setLoading(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleApply(e) {

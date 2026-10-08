@@ -647,3 +647,14 @@
     padding: 40px 32px;
   }
 }
+.budgetSuffix {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 3px;
+  font-weight: 500;
+}
+
+.skillsCount {
+  font-size: 11px;
+  color: var(--text-muted);
+}

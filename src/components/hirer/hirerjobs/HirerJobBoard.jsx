@@ -168,72 +168,105 @@ export default function HirerJobBoard() {
 }
 
 function JobCard({ job, isWorker }) {
+  // ── Safe accessors (guards against partial/malformed API responses) ──
+  const description =
+    typeof job?.description === "string" ? job.description : "";
+  const truncatedDesc =
+    description.length > 100 ? `${description.slice(0, 100)}...` : description;
+
+  const hirer = job?.hirer || {};
+  const hirerProfile = hirer?.hirerProfile || {};
+  const category = job?.category || {};
+  const applicantCount = job?._count?.applications ?? 0;
+
+  const hasJobId = Boolean(job?.id);
+  const hasHirerId = Boolean(hirer?.id);
+
+  const hirerDisplayName =
+    hirerProfile.companyName ||
+    [hirer.firstName, hirer.lastName].filter(Boolean).join(" ") ||
+    "Unknown Hirer";
+
+  const hirerInitials = [hirer.firstName?.[0], hirer.lastName?.[0]]
+    .filter(Boolean)
+    .join("");
+
+  const hirerLocation = [hirer.city, hirer.country].filter(Boolean).join(", ");
+
   return (
     <div className={styles.card}>
       <div className={styles.cardTop}>
-        <div className={styles.catChip}>
-          {job.category.icon} {job.category.name}
-        </div>
-        <span className={styles.timeAgo}>{timeAgo(job.createdAt)}</span>
+        {(category.icon || category.name) && (
+          <div className={styles.catChip}>
+            {category.icon} {category.name}
+          </div>
+        )}
+        {job.createdAt && (
+          <span className={styles.timeAgo}>{timeAgo(job.createdAt)}</span>
+        )}
       </div>
 
       <h3 className={styles.cardTitle}>{job.title}</h3>
-      <p className={styles.cardDesc}>
-        {job.description.slice(0, 100)}
-        {job.description.length > 100 ? "..." : ""}
-      </p>
+      {truncatedDesc && <p className={styles.cardDesc}>{truncatedDesc}</p>}
 
       {/* Hirer info */}
       <div className={styles.hirerRow}>
         <div className={styles.hirerAvatar}>
-          {job.hirer.avatar ? (
-            <img src={job.hirer.avatar} alt="" />
+          {hirer.avatar ? (
+            <img src={hirer.avatar} alt="" />
           ) : (
-            <span>
-              {job.hirer.firstName?.[0]}
-              {job.hirer.lastName?.[0]}
-            </span>
+            <span>{hirerInitials}</span>
           )}
         </div>
         <div>
-          <p className={styles.hirerName}>
-            {job.hirer.hirerProfile?.companyName ||
-              `${job.hirer.firstName} ${job.hirer.lastName}`}
-          </p>
-          {(job.hirer.city || job.hirer.country) && (
-            <p className={styles.hirerLocation}>
-              📍{" "}
-              {[job.hirer.city, job.hirer.country].filter(Boolean).join(", ")}
-            </p>
+          <p className={styles.hirerName}>{hirerDisplayName}</p>
+          {hirerLocation && (
+            <p className={styles.hirerLocation}>📍 {hirerLocation}</p>
           )}
         </div>
-        {job.hirer.hirerProfile?.avgRating > 0 && (
+        {hirerProfile.avgRating > 0 && (
           <span className={styles.hirerRating}>
-            ★ {job.hirer.hirerProfile.avgRating.toFixed(1)}
+            ★ {hirerProfile.avgRating.toFixed(1)}
           </span>
         )}
       </div>
 
       <div className={styles.cardFooter}>
         <span className={styles.budget}>
-          {job.currency} {Number(job.budget).toLocaleString()}
+          {job.currency} {Number(job.budget || 0).toLocaleString()}
         </span>
         <div className={styles.footerRight}>
           {(() => {
             const dur = formatJobDuration(job);
             return dur ? <span className={styles.durPill}>⏱ {dur}</span> : null;
           })()}
-          <span className={styles.apps}>{job._count.applications} applied</span>
+          <span className={styles.apps}>{applicantCount} applied</span>
         </div>
       </div>
 
       <div className={styles.cardActions}>
-        <Link to={`/jobs/${job.id}`} className={styles.viewBtn}>
-          View & Apply →
-        </Link>
-        <Link to={`/hirers/${job.hirer.id}`} className={styles.profileBtn}>
-          Hirer Profile
-        </Link>
+        {hasJobId ? (
+          <Link to={`/jobs/${job.id}`} className={styles.viewBtn}>
+            View & Apply →
+          </Link>
+        ) : (
+          <span
+            className={styles.viewBtn}
+            aria-disabled="true"
+            title="Job details unavailable"
+          >
+            View & Apply →
+          </span>
+        )}
+        {hasHirerId ? (
+          <Link to={`/hirers/${hirer.id}`} className={styles.profileBtn}>
+            Hirer Profile
+          </Link>
+        ) : (
+          <span className={styles.profileBtn} aria-disabled="true">
+            Hirer Profile
+          </span>
+        )}
       </div>
     </div>
   );

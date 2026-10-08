@@ -5,6 +5,20 @@ import api from "../../../lib/api";
 import HirerLayout from "../../layout/HirerLayout";
 import { formatJobDuration } from "../../utils/formatDuration";
 import DurationBadge from "../../common/DurationBadge";
+import {
+  FiPlus,
+  FiCalendar,
+  FiMapPin,
+  FiBriefcase,
+  FiGlobe,
+  FiHome,
+  FiShuffle,
+  FiUsers,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiX,
+  FiFileText,
+} from "react-icons/fi";
 
 const STATUS_TABS = ["ALL", "OPEN", "FILLED", "CANCELLED"];
 
@@ -12,6 +26,36 @@ const STATUS_META = {
   OPEN: { label: "Open", color: "green" },
   FILLED: { label: "Filled", color: "indigo" },
   CANCELLED: { label: "Cancelled", color: "red" },
+};
+
+// ── Compact label maps (mirrors PostJob.jsx) ──────────────────
+const BUDGET_TYPE_LABELS = {
+  HOURLY: "/hr",
+  DAILY: "/day",
+  WEEKLY: "/wk",
+  MONTHLY: "/mo",
+  YEARLY: "/yr",
+  CUSTOM: "",
+  FIXED: "",
+};
+
+const JOB_TYPE_LABELS = {
+  FULL_TIME: "Full-time",
+  PART_TIME: "Part-time",
+  CONTRACT: "Contract",
+  TEMPORARY: "Temporary",
+};
+
+const LOCATION_TYPE_LABELS = {
+  REMOTE: "Remote",
+  ON_SITE: "On-site",
+  HYBRID: "Hybrid",
+};
+
+const LOCATION_TYPE_ICONS = {
+  REMOTE: FiGlobe,
+  ON_SITE: FiHome,
+  HYBRID: FiShuffle,
 };
 
 export default function HirerJobBoardManagement() {
@@ -78,7 +122,7 @@ export default function HirerJobBoardManagement() {
             <h1 className={styles.title}>Job Board</h1>
           </div>
           <Link to="/dashboard/hirer/post-job" className={styles.postBtn}>
-            <span>+</span> Post New Job
+            <FiPlus size={15} /> Post New Job
           </Link>
         </div>
 
@@ -172,6 +216,10 @@ function JobCard({ job, delay, acting, onStatusChange }) {
   const scheduled = new Date(job.scheduledAt);
   const applicantCount = job._count?.applications || 0;
   const recentApplicants = job.applications?.slice(0, 3) || [];
+  const skillsCount = job.skills?.length || 0;
+  const budgetSuffix = BUDGET_TYPE_LABELS[job.budgetType];
+  const LocationIcon = LOCATION_TYPE_ICONS[job.locationType];
+  const hasValidId = Boolean(job.id);
 
   return (
     <div className={styles.card} style={{ animationDelay: `${delay}s` }}>
@@ -198,29 +246,67 @@ function JobCard({ job, delay, acting, onStatusChange }) {
       {/* Meta */}
       <div className={styles.cardMeta}>
         <span className={styles.metaItem}>
-          📅{" "}
+          <FiCalendar size={12} />{" "}
           {scheduled.toLocaleDateString("en-GB", {
             day: "numeric",
             month: "short",
             year: "numeric",
           })}
         </span>
-        <span className={styles.metaItem}>📍 {job.address}</span>
+        {job.address && (
+          <span className={styles.metaItem}>
+            <FiMapPin size={12} /> {job.address}
+          </span>
+        )}
 
         <DurationBadge job={job} size="sm" />
+
+        {JOB_TYPE_LABELS[job.jobType] && (
+          <span className={styles.metaItem}>
+            <FiBriefcase size={12} /> {JOB_TYPE_LABELS[job.jobType]}
+          </span>
+        )}
+        {LOCATION_TYPE_LABELS[job.locationType] && LocationIcon && (
+          <span className={styles.metaItem}>
+            <LocationIcon size={12} /> {LOCATION_TYPE_LABELS[job.locationType]}
+          </span>
+        )}
       </div>
 
       {/* Budget + applicants */}
       <div className={styles.cardStats}>
         <span className={styles.budget}>
-          {job.currency} {parseFloat(job.budget).toLocaleString()}
+          {job.currency} {parseFloat(job.budget || 0).toLocaleString()}
+          {budgetSuffix && (
+            <span className={styles.budgetSuffix}>{budgetSuffix}</span>
+          )}
         </span>
-        <Link
-          to={`/jobs/${job.id}/applications`}
-          className={styles.applicantsLink}
-        >
-          👥 {applicantCount} applicant{applicantCount !== 1 ? "s" : ""}
-        </Link>
+        {hasValidId ? (
+          <Link
+            to={`/jobs/${job.id}/applications`}
+            className={styles.applicantsLink}
+          >
+            <FiUsers size={12} /> {applicantCount} applicant
+            {applicantCount !== 1 ? "s" : ""}
+            {skillsCount > 0 && (
+              <span className={styles.skillsCount}>
+                {" "}
+                · {skillsCount} skill{skillsCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </Link>
+        ) : (
+          <span className={styles.applicantsLink}>
+            <FiUsers size={12} /> {applicantCount} applicant
+            {applicantCount !== 1 ? "s" : ""}
+            {skillsCount > 0 && (
+              <span className={styles.skillsCount}>
+                {" "}
+                · {skillsCount} skill{skillsCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </span>
+        )}
       </div>
 
       {/* Recent applicants preview */}
@@ -250,12 +336,28 @@ function JobCard({ job, delay, acting, onStatusChange }) {
 
       {/* Actions */}
       <div className={styles.cardActions}>
-        <Link to={`/jobs/${job.id}`} className={styles.viewBtn}>
-          View Details
-        </Link>
-        <Link to={`/jobs/${job.id}/applications`} className={styles.appsBtn}>
-          Applications
-        </Link>
+        {hasValidId ? (
+          <>
+            <Link to={`/jobs/${job.id}`} className={styles.viewBtn}>
+              View Details
+            </Link>
+            <Link
+              to={`/jobs/${job.id}/applications`}
+              className={styles.appsBtn}
+            >
+              Applications
+            </Link>
+          </>
+        ) : (
+          <>
+            <span className={styles.viewBtn} aria-disabled="true">
+              View Details
+            </span>
+            <span className={styles.appsBtn} aria-disabled="true">
+              Applications
+            </span>
+          </>
+        )}
 
         {isOpen && !showConfirm && (
           <div className={styles.statusActions}>
@@ -326,13 +428,14 @@ function SummaryPill({ label, value, color }) {
 }
 
 function Alert({ type, text, onClose }) {
+  const Icon = type === "error" ? FiAlertTriangle : FiCheckCircle;
   return (
     <div className={`${styles.alert} ${styles[`alert_${type}`]}`}>
-      <span>
-        {type === "error" ? "⚠️" : "✅"} {text}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <Icon size={14} /> {text}
       </span>
       <button className={styles.alertClose} onClick={onClose}>
-        ×
+        <FiX size={14} />
       </button>
     </div>
   );
@@ -341,7 +444,9 @@ function Alert({ type, text, onClose }) {
 function Empty({ filter }) {
   return (
     <div className={styles.empty}>
-      <span className={styles.emptyIcon}>📋</span>
+      <span className={styles.emptyIcon}>
+        <FiFileText size={40} />
+      </span>
       <p className={styles.emptyTitle}>
         {filter === "ALL"
           ? "No jobs posted yet"
