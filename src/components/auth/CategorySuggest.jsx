@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./CategorySuggest.module.css";
 
+// Curated list of "popular" categories to surface at the top of the
+// dropdown when no search is typed. Everything else is still available
+// via search.
 const POPULAR = [
   "Electrician",
   "Plumber",
@@ -26,9 +29,8 @@ export default function CategorySuggest({
   placeholder = "Search trades, professions...",
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
   const [allCategories, setAllCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [customName, setCustomName] = useState("");
   const [adding, setAdding] = useState(false);
@@ -36,12 +38,19 @@ export default function CategorySuggest({
   const [showCustom, setShowCustom] = useState(false);
   const wrapRef = useRef(null);
 
-  // Load all categories on mount for the browser
+  // ── Load ALL platform categories on mount ────────────────────────────
+  // `all=true` tells the backend to bypass its default 200-item pagination
+  // cap, so the worker can browse every category (~1200).
   useEffect(() => {
     api
-      .get("/categories?limit=500")
-      .then((res) => setAllCategories(res.data.data.categories || []))
-      .catch(() => {});
+      .get("/categories?all=true")
+      .then((res) => {
+        const data = res.data.data;
+        const list = Array.isArray(data) ? data : data?.categories || [];
+        setAllCategories(list);
+      })
+      .catch(() => setAllCategories([]))
+      .finally(() => setLoading(false));
   }, []);
 
   // Close on outside click
@@ -53,33 +62,44 @@ export default function CategorySuggest({
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  // Search
-  useEffect(() => {
-    if (query.length < 2) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    const t = setTimeout(() => {
-      const filtered = allCategories
-        .filter(
-          (c) =>
-            c.name.toLowerCase().includes(query.toLowerCase()) ||
-            c.description?.toLowerCase().includes(query.toLowerCase()),
-        )
-        .slice(0, 12);
-      setResults(filtered);
-      setLoading(false);
-    }, 200);
-    return () => clearTimeout(t);
-  }, [query, allCategories]);
+  // ── Compute what to render in the dropdown ───────────────────────────
+  // Two modes:
+  //   • Query ≥ 2 chars → filter ALL categories by name/description,
+  //     cap at 100 so the dropdown stays usable on mobile.
+  //   • Empty query     → show "popular" categories first (curated list),
+  //     then everything else, sorted alphabetically. No cap — the whole
+  //     list is browsable by scrolling.
+  const trimmedQuery = query.trim().toLowerCase();
+
+  const filteredCategories = trimmedQuery
+    ? allCategories.filter(
+        (c) =>
+          c.name.toLowerCase().includes(trimmedQuery) ||
+          c.description?.toLowerCase().includes(trimmedQuery),
+      )
+    : null; // null means "no search active"
+
+  const popularSet = new Set(POPULAR.map((p) => p.toLowerCase()));
+  const popularCats = allCategories.filter((c) =>
+    popularSet.has(c.name.toLowerCase()),
+  );
+  const otherCats = allCategories
+    .filter((c) => !popularSet.has(c.name.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // What actually shows in the dropdown:
+  const displayList = filteredCategories
+    ? filteredCategories.slice(0, 100) // search mode: cap at 100 matches
+    : [...popularCats, ...otherCats]; // browse mode: everything
+
+  const isSearchMode = trimmedQuery.length >= 2;
+  const totalMatches = filteredCategories?.length ?? 0;
 
   const isSelected = (cat) => selected.some((s) => s.id === cat.id);
 
   const handleSelect = (cat) => {
     if (!isSelected(cat)) onSelect?.(cat);
     setQuery("");
-    setResults([]);
     setShowDropdown(false);
   };
 
@@ -97,7 +117,6 @@ export default function CategorySuggest({
           : `"${cat.name}" added to the platform!`,
       );
       setCustomName("");
-      // Add to local list
       setAllCategories((prev) => {
         if (prev.find((c) => c.id === cat.id)) return prev;
         return [...prev, cat];
@@ -108,16 +127,6 @@ export default function CategorySuggest({
       setAdding(false);
     }
   };
-
-  // Show popular categories when focused but no query
-  const displayList =
-    query.length >= 2
-      ? results
-      : allCategories
-          .filter((c) =>
-            POPULAR.some((p) => c.name.toLowerCase().includes(p.toLowerCase())),
-          )
-          .slice(0, 10);
 
   return (
     <div className={styles.wrap} ref={wrapRef}>
@@ -140,36 +149,53 @@ export default function CategorySuggest({
       {/* Dropdown */}
       {showDropdown && (
         <div className={styles.dropdown}>
-          {!query && (
-            <div className={styles.dropdownHeader}>
-              <span>Popular categories</span>
-              <span className={styles.totalCount}>
-                {allCategories.length} total
-              </span>
-            </div>
-          )}
+          {/* Header — differs by mode */}
+          <div className={styles.dropdownHeader}>
+            {isSearchMode ? (
+              <>
+                <span>
+                  {totalMatches} result{totalMatches === 1 ? "" : "s"} for "
+                  {query.trim()}"
+                </span>
+                {totalMatches > 100 && (
+                  <span className={styles.totalCount}>showing first 100</span>
+                )}
+              </>
+            ) : (
+              <>
+                <span>Browse all categories</span>
+                <span className={styles.totalCount}>
+                  {allCategories.length} total
+                </span>
+              </>
+            )}
+          </div>
 
-          {query.length >= 2 && results.length === 0 && !loading && (
+          {/* Empty state when searching with no matches */}
+          {isSearchMode && displayList.length === 0 && !loading && (
             <div className={styles.noResults}>
-              <span>No results for "{query}"</span>
+              <span>No results for "{query.trim()}"</span>
               <button
                 className={styles.addCustomInline}
                 onClick={() => {
-                  setCustomName(query);
+                  setCustomName(query.trim());
                   setShowCustom(true);
                   setShowDropdown(false);
                 }}
               >
-                + Add "{query}" as new category
+                + Add "{query.trim()}" as new category
               </button>
             </div>
           )}
 
+          {/* Results list */}
           <div className={styles.resultsList}>
             {displayList.map((cat) => (
               <button
                 key={cat.id}
-                className={`${styles.resultItem} ${isSelected(cat) ? styles.resultSelected : ""}`}
+                className={`${styles.resultItem} ${
+                  isSelected(cat) ? styles.resultSelected : ""
+                }`}
                 onClick={() => handleSelect(cat)}
               >
                 <span className={styles.resultIcon}>{cat.icon || "🔧"}</span>
@@ -186,7 +212,7 @@ export default function CategorySuggest({
             ))}
           </div>
 
-          {/* Custom add inside dropdown */}
+          {/* Footer */}
           <div className={styles.dropdownFooter}>
             <button
               className={styles.addCustomTrigger}
