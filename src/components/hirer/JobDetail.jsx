@@ -782,7 +782,7 @@ export default function JobDetail() {
                   />
                 )}
 
-                {(jobPost.estimatedValue || jobPost.estimatedUnit) && (
+                {/* {(jobPost.estimatedValue || jobPost.estimatedUnit) && (
                   <DetailCard
                     icon={<FiClock size={14} />}
                     label="Estimated Time"
@@ -804,7 +804,7 @@ export default function JobDetail() {
                       </>
                     }
                   />
-                )}
+                )} */}
 
                 {hasCustomDuration && (
                   <DetailCard
