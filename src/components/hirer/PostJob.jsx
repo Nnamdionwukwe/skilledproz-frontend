@@ -1092,7 +1092,7 @@ export default function PostJob() {
               Scheduled Date & Time <span className={styles.req}>*</span>
             </label>
             <input
-              className={styles.input}
+              className={`${styles.input} ${styles.datetimeInput}`}
               type="datetime-local"
               value={form.scheduledAt}
               onChange={(e) => set("scheduledAt", e.target.value)}

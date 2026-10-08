@@ -782,30 +782,6 @@ export default function JobDetail() {
                   />
                 )}
 
-                {/* {(jobPost.estimatedValue || jobPost.estimatedUnit) && (
-                  <DetailCard
-                    icon={<FiClock size={14} />}
-                    label="Estimated Time"
-                    value={
-                      <>
-                        {jobPost.estimatedValue || "—"}
-                        {jobPost.estimatedUnit && ` ${jobPost.estimatedUnit}`}
-                        {jobPost.estimatedHours && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: "var(--text-muted)",
-                              marginLeft: 4,
-                            }}
-                          >
-                            ({jobPost.estimatedHours}h)
-                          </span>
-                        )}
-                      </>
-                    }
-                  />
-                )} */}
-
                 {hasCustomDuration && (
                   <DetailCard
                     icon={<FiClock size={14} />}
