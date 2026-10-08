@@ -285,13 +285,11 @@ export default function PostJob() {
     (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
   );
 
-  // Native <select> becomes unusable with 1000+ options. When the user
-  // hasn't typed a search, show only the top 50 (user-submitted sorts
-  // first). Once they type 2+ characters, show up to 100 matches.
-  const displayedCats =
-    catSearch.trim().length >= 2
-      ? filteredCats.slice(0, 100)
-      : filteredCats.slice(0, 50);
+  // Show every category. The search input above the dropdown still
+  // narrows the list in real time, so users can type to find a specific
+  // one fast. Native <select> handles 1200+ options acceptably on
+  // desktop and modern mobile.
+  const displayedCats = filteredCats;
 
   const totalCats = categories.length;
   const isTruncated = displayedCats.length < totalCats;
