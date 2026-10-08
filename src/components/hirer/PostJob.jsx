@@ -69,9 +69,6 @@ const ALL_CURRENCIES = [
   "HKD",
 ];
 
-// ── Language selector ────────────────────────────────────────────────────
-// The hirer picks the language the worker must be able to speak.
-// Default is English so the field is never blank.
 const ALL_LANGUAGES = [
   { code: "en", label: "English" },
   { code: "fr", label: "French" },
@@ -172,16 +169,9 @@ const WORK_CONDITION_OPTIONS = [
     label: "Accommodation provided",
     icon: FiHome,
   },
-  {
-    key: "providesMeals",
-    label: "Meals provided",
-    icon: FiCoffee,
-  },
+  { key: "providesMeals", label: "Meals provided", icon: FiCoffee },
 ];
 
-// ── Qualification presets ────────────────────────────────────────────────
-// A hirer can quickly pick from these. Anything they type manually is
-// stored as a custom entry.
 const QUALIFICATION_PRESETS = [
   "High School Diploma",
   "Bachelor's Degree",
@@ -215,45 +205,30 @@ export default function PostJob() {
     useState(false);
 
   const [form, setForm] = useState({
-    // core
     categoryId: "",
     title: "",
     description: "",
-
-    // location
     locationType: "REMOTE",
     address: "",
     latitude: "",
     longitude: "",
-
-    // job meta
     jobType: "FULL_TIME",
     scheduledAt: "",
-    languageRequirement: "en", // ← default English
-
-    // schedule / duration
+    languageRequirement: "en",
     scheduleMode: "ONE_OFF",
     durationUnit: "hours",
     durationCustomLabel: "",
     estimatedValue: "",
     recurrenceInterval: "WEEKLY",
     recurrenceDuration: "1_MONTH",
-
-    // payment
     budget: "",
     currency: "NGN",
     showRateOptions: false,
     budgetType: "HOURLY",
     budgetCustomLabel: "",
-
-    // work conditions
     providesAccommodation: false,
     providesMeals: false,
-
-    // qualifications
     qualifications: [],
-
-    // extras
     skills: [],
     notes: "",
   });
@@ -267,10 +242,6 @@ export default function PostJob() {
   }, []);
 
   // ── Load categories ─────────────────────────────────────────────────────
-  // `all=true` tells the backend to bypass pagination and return every
-  // category. The default page cap is 200, which is far below the total
-  // category count (~1200), so a plain `?limit=1000` returns only a
-  // partial list.
   useEffect(() => {
     api
       .get("/categories?all=true")
@@ -281,18 +252,22 @@ export default function PostJob() {
       .catch(() => {});
   }, []);
 
+  // ── Filtered + displayed categories ─────────────────────────────────────
+  // Custom categories added via the "Add custom" flow are already merged
+  // into `categories`, so they flow through the same filter and appear in
+  // the dropdown. The search box above the dropdown narrows the list.
+  const normalizedSearch = catSearch.trim().toLowerCase();
   const filteredCats = categories.filter(
-    (c) => !catSearch || c.name.toLowerCase().includes(catSearch.toLowerCase()),
+    (c) => !normalizedSearch || c.name.toLowerCase().includes(normalizedSearch),
   );
 
-  // Show every category. The search input above the dropdown still
-  // narrows the list in real time, so users can type to find a specific
-  // one fast. Native <select> handles 1200+ options acceptably on
-  // desktop and modern mobile.
   const displayedCats = filteredCats;
-
   const totalCats = categories.length;
   const isTruncated = displayedCats.length < totalCats;
+
+  const selectedCat = categories.find((c) => c.id === form.categoryId);
+  const isSearching = normalizedSearch.length > 0;
+  const showSearchResults = isSearching && !selectedCat;
 
   // ── Custom category ─────────────────────────────────────────────────────
   async function handleAddCustomCategory() {
@@ -308,24 +283,53 @@ export default function PostJob() {
         name: customCatName.trim(),
       });
       const newCat = res.data.data.category;
-      setCategories((prev) => [...prev, newCat]);
+
+      // Merge into the local list if not already there (dedupe by id).
+      setCategories((prev) =>
+        prev.some((c) => c.id === newCat.id) ? prev : [...prev, newCat],
+      );
+
+      // Select it immediately so the user doesn't have to pick it again.
       setForm((f) => ({ ...f, categoryId: newCat.id }));
       setCustomCatName("");
       setShowCustomCat(false);
+
+      // Clear the search so the collapsed selected-category chip is what
+      // shows next, not a stale filtered dropdown.
       setCatSearch("");
 
       tracker.action("postJob.customCategory.created", {
         categoryId: newCat.id,
         categoryName: newCat.name,
       });
-    } catch {
-      setError("Failed to add custom category");
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || "Failed to add custom category";
+      setError(msg);
       tracker.action("postJob.customCategory.failed", {
         name: customCatName.trim(),
+        reason: msg,
       });
     } finally {
       setAddingCat(false);
     }
+  }
+
+  // ── Category selection ──────────────────────────────────────────────────
+  // Called from the <select> when the user picks an option. Clears the
+  // search box so the select collapses back to the "selected chip" view.
+  function handleCategoryChange(e) {
+    set("categoryId", e.target.value);
+    setCatSearch("");
+    tracker.track("postJob.category.selected", {
+      categoryId: e.target.value,
+    });
+  }
+
+  function clearCategory() {
+    set("categoryId", "");
+    setCatSearch("");
+    tracker.track("postJob.category.cleared");
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -522,9 +526,7 @@ export default function PostJob() {
           ? toEstimatedHours(form.durationUnit, form.estimatedValue)
           : null;
 
-      // Build notes that describe recurrence + custom duration for the job.
       const noteParts = [];
-
       if (form.scheduleMode === "RECURRING") {
         const intervalLabel =
           RECURRENCE_INTERVALS.find((i) => i.value === form.recurrenceInterval)
@@ -537,16 +539,12 @@ export default function PostJob() {
       } else if (form.durationUnit === "custom" && form.estimatedValue) {
         noteParts.push(`Duration: ${form.estimatedValue.trim()}.`);
       }
-
       if (form.notes) noteParts.push(form.notes);
       const finalNotes = noteParts.join(" ");
 
       const clean = (v) =>
         v === "" || v === null || v === undefined ? undefined : v;
 
-      // Resolve the estimated unit + value that go to the backend.
-      // For custom, we store the raw text as estimatedValue and pass a
-      // descriptive unit so the DB column still reads sensibly.
       const resolvedEstimatedUnit =
         form.scheduleMode === "ONE_OFF"
           ? form.durationUnit === "custom"
@@ -585,7 +583,6 @@ export default function PostJob() {
         skills: finalSkills,
         notes: clean(finalNotes),
 
-        // Language requirement + qualifications (new fields)
         languageRequirement: form.languageRequirement || "en",
         qualifications: finalQualifications,
 
@@ -663,9 +660,10 @@ export default function PostJob() {
     setQualificationInput("");
     setCatSearch("");
     setShowQualificationPresets(false);
+    setShowCustomCat(false);
+    setCustomCatName("");
   }
 
-  const selectedCat = categories.find((c) => c.id === form.categoryId);
   const selectedLanguageLabel =
     ALL_LANGUAGES.find((l) => l.code === form.languageRequirement)?.label ||
     "English";
@@ -854,40 +852,10 @@ export default function PostJob() {
               Category <span className={styles.req}>*</span>
             </label>
 
-            <input
-              className={styles.input}
-              placeholder="Search categories..."
-              value={catSearch}
-              onChange={(e) => setCatSearch(e.target.value)}
-              style={{ marginBottom: 6 }}
-              data-track-id="postJob.category.search"
-            />
-
-            <select
-              className={styles.select}
-              value={form.categoryId}
-              onChange={(e) => set("categoryId", e.target.value)}
-              size={catSearch ? Math.min(displayedCats.length + 1, 8) : 1}
-              data-track-id="postJob.category.select"
-            >
-              {!catSearch && <option value="">Select a category</option>}
-              {displayedCats.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.icon ? `${c.icon} ` : ""}
-                  {c.name}
-                  {c.isUserSubmitted ? " (custom)" : ""}
-                </option>
-              ))}
-            </select>
-
-            {isTruncated && !selectedCat && (
-              <p className={styles.fieldHint} style={{ marginTop: 4 }}>
-                Showing {displayedCats.length} of {totalCats} categories — type
-                above to search for a specific one.
-              </p>
-            )}
-
-            {selectedCat && (
+            {/* When a category is already selected, show the chip and hide
+                the search + dropdown. This makes the section collapse once
+                the user has made a choice. */}
+            {selectedCat ? (
               <div className={styles.selectedCat}>
                 <FiCheckCircle size={13} /> Selected:{" "}
                 <strong>
@@ -896,66 +864,110 @@ export default function PostJob() {
                 <button
                   type="button"
                   className={styles.clearCat}
-                  onClick={() => {
-                    set("categoryId", "");
-                    setCatSearch("");
-                    tracker.track("postJob.category.cleared");
-                  }}
+                  onClick={clearCategory}
                   data-track-id="postJob.category.clear"
                 >
                   <FiX size={14} />
                 </button>
               </div>
-            )}
-
-            {!showCustomCat ? (
-              <button
-                type="button"
-                className={styles.addCatBtn}
-                onClick={() => {
-                  setShowCustomCat(true);
-                  tracker.track("postJob.customCategory.opened");
-                }}
-                data-track-id="postJob.customCategory.open"
-              >
-                <FiPlus size={13} /> Can't find your category? Add a custom one
-              </button>
             ) : (
-              <div className={styles.customCatBox}>
+              <>
                 <input
                   className={styles.input}
-                  placeholder="Category name e.g. Solar Panel Installation"
-                  value={customCatName}
-                  onChange={(e) => setCustomCatName(e.target.value)}
-                  autoFocus
-                  data-track-id="postJob.customCategory.input"
+                  placeholder="Search categories..."
+                  value={catSearch}
+                  onChange={(e) => setCatSearch(e.target.value)}
+                  style={{ marginBottom: 6 }}
+                  data-track-id="postJob.category.search"
                 />
-                <div className={styles.customCatActions}>
+
+                {/* A native dropdown — behaves normally now. `size` stays
+                    at 1 so picking an option closes the list. */}
+                <select
+                  className={styles.select}
+                  value={form.categoryId}
+                  onChange={handleCategoryChange}
+                  data-track-id="postJob.category.select"
+                >
+                  <option value="">
+                    {displayedCats.length === 0
+                      ? "No matching categories"
+                      : isSearching
+                        ? `${displayedCats.length} match${displayedCats.length === 1 ? "" : "es"} — pick one`
+                        : "Select a category"}
+                  </option>
+                  {displayedCats.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.icon ? `${c.icon} ` : ""}
+                      {c.name}
+                      {c.isUserSubmitted ? " (custom)" : ""}
+                    </option>
+                  ))}
+                </select>
+
+                {showSearchResults && (
+                  <p className={styles.fieldHint} style={{ marginTop: 4 }}>
+                    Showing {displayedCats.length} of {totalCats} categories
+                    matching "{catSearch.trim()}".
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Custom category flow — hidden once a category is selected */}
+            {!selectedCat && (
+              <>
+                {!showCustomCat ? (
                   <button
                     type="button"
-                    className={styles.submitBtn}
-                    style={{ height: 36, fontSize: 13 }}
-                    onClick={handleAddCustomCategory}
-                    disabled={addingCat || !customCatName.trim()}
-                    data-track-id="postJob.customCategory.submit"
-                  >
-                    {addingCat ? "Adding..." : "Add Category"}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.resetBtn}
-                    style={{ height: 36, fontSize: 13 }}
+                    className={styles.addCatBtn}
                     onClick={() => {
-                      setShowCustomCat(false);
-                      setCustomCatName("");
-                      tracker.track("postJob.customCategory.cancelled");
+                      setShowCustomCat(true);
+                      tracker.track("postJob.customCategory.opened");
                     }}
-                    data-track-id="postJob.customCategory.cancel"
+                    data-track-id="postJob.customCategory.open"
                   >
-                    Cancel
+                    <FiPlus size={13} /> Can't find your category? Add a custom
+                    one
                   </button>
-                </div>
-              </div>
+                ) : (
+                  <div className={styles.customCatBox}>
+                    <input
+                      className={styles.input}
+                      placeholder="Category name e.g. Solar Panel Installation"
+                      value={customCatName}
+                      onChange={(e) => setCustomCatName(e.target.value)}
+                      autoFocus
+                      data-track-id="postJob.customCategory.input"
+                    />
+                    <div className={styles.customCatActions}>
+                      <button
+                        type="button"
+                        className={styles.submitBtn}
+                        style={{ height: 36, fontSize: 13 }}
+                        onClick={handleAddCustomCategory}
+                        disabled={addingCat || !customCatName.trim()}
+                        data-track-id="postJob.customCategory.submit"
+                      >
+                        {addingCat ? "Adding..." : "Add Category"}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.resetBtn}
+                        style={{ height: 36, fontSize: 13 }}
+                        onClick={() => {
+                          setShowCustomCat(false);
+                          setCustomCatName("");
+                          tracker.track("postJob.customCategory.cancelled");
+                        }}
+                        data-track-id="postJob.customCategory.cancel"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
