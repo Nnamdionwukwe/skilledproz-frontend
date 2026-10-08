@@ -1,4 +1,3 @@
-// src/components/booking/BookingDetail/WorkerPaymentPreview.jsx
 import {
   FaMoneyBillWave,
   FaClock,
@@ -17,37 +16,83 @@ function formatPrice(amount, currency = "NGN") {
 }
 
 export default function WorkerPaymentPreview({ booking, isWorker }) {
-  // Only workers should see this component
   if (!isWorker) return null;
 
   const p = calcPricing(booking);
   const currency = p.currency || "NGN";
   const subtotal = p.subtotal;
-  const platformFee = p.hirerFee; // fee paid by hirer
-  const workerPayout = p.workerPayout; // what worker earns
+  const platformFee = p.hirerFee;
+  const workerPayout = p.workerPayout;
 
-  // Determine unit label for display
   const unitLabel = p.unitLabel || "unit";
   const unitSuffix = p.unitSuffix || "";
+
+  // ── Job-post booking flag ──
+  const isJobPostBooking = booking?.source === "JOB_POST";
+
+  // Human-friendly duration string for job-post bookings
+  const realDurationText =
+    booking?.estimatedValue && booking?.estimatedUnit
+      ? `${booking.estimatedValue} ${
+          {
+            hours: booking.estimatedValue == 1 ? "hour" : "hours",
+            days: booking.estimatedValue == 1 ? "day" : "days",
+            weeks: booking.estimatedValue == 1 ? "week" : "weeks",
+            months: booking.estimatedValue == 1 ? "month" : "months",
+            years: booking.estimatedValue == 1 ? "year" : "years",
+            custom: "",
+          }[booking.estimatedUnit] || booking.estimatedUnit
+        }`
+      : null;
 
   return (
     <div className={styles.workerPaymentPreview}>
       <div className={styles.workerPaymentHeader}>
         <FaMoneyBillWave className={styles.workerPaymentIcon} />
-        <h3 className={styles.workerPaymentTitle}>Your Earnings Estimate</h3>
+        <h3 className={styles.workerPaymentTitle}>
+          {isJobPostBooking
+            ? "Your Earnings (From Job Post)"
+            : "Your Earnings Estimate"}
+        </h3>
         <span className={styles.workerPaymentBadge}>Before accepting</span>
       </div>
 
       <div className={styles.workerPaymentBody}>
         <div className={styles.workerPaymentRow}>
-          <span className={styles.workerPaymentLabel}>Agreed Rate</span>
+          <span className={styles.workerPaymentLabel}>
+            {isJobPostBooking ? "Agreed Total" : "Agreed Rate"}
+          </span>
           <span className={styles.workerPaymentValue}>
             {formatPrice(p.agreedRate, currency)}
-            {unitSuffix}
+            {/* Only show the /hr suffix for direct bookings — the job-post
+                amount is already the total */}
+            {!isJobPostBooking && unitSuffix}
           </span>
         </div>
 
-        {p.hasQty && (
+        {/* Real duration for job-post bookings */}
+        {isJobPostBooking && realDurationText && (
+          <div className={styles.workerPaymentRow}>
+            <span className={styles.workerPaymentLabel}>Duration</span>
+            <span className={styles.workerPaymentValue}>
+              {realDurationText}
+              {booking.estimatedHours && (
+                <span
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: 11,
+                    marginLeft: 4,
+                  }}
+                >
+                  (≈ {booking.estimatedHours}h)
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+
+        {/* Duration & subtotal for direct bookings */}
+        {!isJobPostBooking && p.hasQty && (
           <div className={styles.workerPaymentRow}>
             <span className={styles.workerPaymentLabel}>Duration</span>
             <span className={styles.workerPaymentValue}>
@@ -57,7 +102,7 @@ export default function WorkerPaymentPreview({ booking, isWorker }) {
           </div>
         )}
 
-        {p.hasQty && (
+        {!isJobPostBooking && p.hasQty && (
           <div className={styles.workerPaymentRow}>
             <span className={styles.workerPaymentLabel}>
               Subtotal ({p.qty} × {formatPrice(p.agreedRate, currency)})
@@ -75,7 +120,7 @@ export default function WorkerPaymentPreview({ booking, isWorker }) {
             </span>
             <span className={styles.workerPaymentValue}>
               {formatPrice(booking.negotiatedRate, currency)}
-              {unitSuffix}
+              {!isJobPostBooking && unitSuffix}
             </span>
           </div>
         )}

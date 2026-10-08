@@ -338,9 +338,9 @@ export default function PostJob() {
     const v = parseFloat(value) || 0;
     if (unit === "hours") return v;
     if (unit === "days") return v * 8;
-    if (unit === "weeks") return v * 40;
-    if (unit === "months") return v * 160;
-    if (unit === "years") return v * 2000;
+    if (unit === "weeks") return v * 56; // was 40
+    if (unit === "months") return v * 242.5; // was 160
+    if (unit === "years") return v * 2910; // was 2000
     return null;
   }
 

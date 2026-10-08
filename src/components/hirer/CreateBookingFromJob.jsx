@@ -12,7 +12,6 @@ import styles from "./CreateBookingFromJob.module.css";
 import {
   FiChevronLeft,
   FiLock,
-  FiUser,
   FiFileText,
   FiCalendar,
   FiClock,
@@ -29,6 +28,7 @@ import {
   FiLayers,
   FiCheckSquare,
   FiSearch,
+  FiInfo,
 } from "react-icons/fi";
 
 // ── Static lookups (mirror backend enums) ──────────────────────────────────
@@ -47,12 +47,29 @@ const LOCATION_TYPE_LABEL = {
 
 const BUDGET_TYPE_LABEL = {
   FIXED: "Fixed",
-  HOURLY: "Hourly",
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  MONTHLY: "Monthly",
+  HOURLY: "Per Hour",
+  DAILY: "Per Day",
+  WEEKLY: "Per Week",
+  MONTHLY: "Per Month",
+  YEARLY: "Per Year",
   CUSTOM: "Custom",
 };
+
+// Friendly labels for the server error codes
+const OPTION_ERROR_LABEL = {
+  MISSING_RATE: "No amount set for this option",
+  MISSING_DURATION:
+    "This rate needs a duration — enter a negotiated total below",
+  CUSTOM_UNSUPPORTED:
+    "Custom rate — enter the agreed total as a negotiated amount below",
+  SALARY_TEXT_UNSUPPORTED:
+    "Salary headline only — enter a negotiated amount below",
+};
+
+function formatMoney(amount, currency) {
+  if (amount == null) return "—";
+  return `${currency || ""} ${Number(amount).toLocaleString()}`.trim();
+}
 
 export default function CreateBookingFromJob() {
   const { jobPostId } = useParams();
@@ -66,7 +83,7 @@ export default function CreateBookingFromJob() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
 
-  // Form state
+  // ── Form state ──
   const [selectedRateOption, setSelectedRateOption] = useState("");
   const [negotiatedRate, setNegotiatedRate] = useState("");
   const [negotiationNote, setNegotiationNote] = useState("");
@@ -83,10 +100,17 @@ export default function CreateBookingFromJob() {
     api
       .get(url)
       .then((res) => {
-        setDraft(res.data.data);
-        // Auto-select the first price option
-        if (res.data.data.priceOptions?.length > 0) {
-          setSelectedRateOption(res.data.data.priceOptions[0].key);
+        const data = res.data.data;
+        setDraft(data);
+
+        // Auto-select the first *computable* option. If none is
+        // computable, leave the selection empty so the hirer is
+        // prompted to negotiate.
+        const firstComputable = data.priceOptions?.find(
+          (o) => o.canAutoCompute !== false && o.estimatedTotal != null,
+        );
+        if (firstComputable) {
+          setSelectedRateOption(firstComputable.key);
         }
       })
       .catch((err) => {
@@ -98,24 +122,38 @@ export default function CreateBookingFromJob() {
       .finally(() => setLoading(false));
   }, [jobPostId, workerId]);
 
-  // ── Derived: is a negotiated amount actually filled in? ──────────────
+  // ── Derived values ──────────────────────────────────────────────────
   const hasNegotiated = negotiatedRate !== "" && parseFloat(negotiatedRate) > 0;
 
   const selectedPriceOption = draft?.priceOptions?.find(
     (p) => p.key === selectedRateOption,
   );
 
-  const finalRate = hasNegotiated
+  // The selected option must be computable by the server UNLESS a
+  // negotiated amount has been entered.
+  const selectedOptionBlocked =
+    !hasNegotiated &&
+    selectedPriceOption &&
+    (selectedPriceOption.canAutoCompute === false ||
+      selectedPriceOption.estimatedTotal == null);
+
+  // Final displayed total = negotiated amount > server-computed total
+  const finalAmount = hasNegotiated
     ? parseFloat(negotiatedRate)
-    : (selectedPriceOption?.amount ?? null);
+    : (selectedPriceOption?.estimatedTotal ??
+      selectedPriceOption?.amount ??
+      null);
 
   const finalCurrency =
-    selectedPriceOption?.currency ||
-    draft?.lockedFields?.currency ||
-    draft?.lockedFields?.salaryCurrency ||
-    "NGN";
+    selectedPriceOption?.currency || draft?.lockedFields?.currency || "NGN";
 
-  // ── Submit ───────────────────────────────────────────────────────────
+  const canSubmit =
+    !submitting &&
+    selectedRateOption &&
+    finalAmount != null &&
+    (!selectedOptionBlocked || hasNegotiated);
+
+  // ── Submit ──────────────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -124,23 +162,18 @@ export default function CreateBookingFromJob() {
       setError("Missing worker. Reload the page and try again.");
       return;
     }
+    if (!selectedRateOption) {
+      setError("Please select a payment option.");
+      return;
+    }
+    if (selectedOptionBlocked && !hasNegotiated) {
+      setError(
+        "This option has no automatic total. Please enter a negotiated amount.",
+      );
+      return;
+    }
 
     const resolvedWorkerId = workerId || draft?.lockedFields?.workerId;
-
-    // If the selected option is salaryText and no negotiated amount, block
-    if (selectedRateOption === "salaryText" && !hasNegotiated) {
-      setError(
-        "The salary text on this job has no numeric amount. Please enter a negotiated amount.",
-      );
-      return;
-    }
-
-    if (!hasNegotiated && !selectedPriceOption?.amount) {
-      setError(
-        "This price option has no numeric value. Please enter a negotiated amount.",
-      );
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -156,9 +189,13 @@ export default function CreateBookingFromJob() {
         }
       }
       const res = await api.post(`/bookings/from-job/${jobPostId}`, payload);
-      // Route to the booking detail page — same destination as the direct flow
-      navigate(`/bookings/${res.data.data.booking.id}`);
       setSuccess(res.data.data.booking);
+      // Navigate after we've captured the booking so the success screen
+      // has the data it needs. We do this in the next tick to avoid a
+      // flash.
+      setTimeout(() => {
+        navigate(`/bookings/${res.data.data.booking.id}`);
+      }, 50);
     } catch (err) {
       setError(
         err.response?.data?.message || "Failed to create booking. Try again.",
@@ -168,7 +205,7 @@ export default function CreateBookingFromJob() {
     }
   }
 
-  // ── Success state ───────────────────────────────────────────────────
+  // ── Success state ────────────────────────────────────────────────────
   if (success) {
     return (
       <HirerLayout>
@@ -199,8 +236,8 @@ export default function CreateBookingFromJob() {
                   : success.address || "—"}
               </div>
               <div className={styles.successMeta}>
-                <FiDollarSign size={12} /> {success.currency}{" "}
-                {Number(success.agreedRate).toLocaleString()}
+                <FiDollarSign size={12} />{" "}
+                {formatMoney(success.agreedRate, success.currency)}
                 {success.isNegotiated && " · Negotiated"}
               </div>
               {success.scheduledAt && (
@@ -261,8 +298,7 @@ export default function CreateBookingFromJob() {
     );
   }
 
-  const { worker, hirer, category, lockedFields, priceOptions, jobTitle } =
-    draft;
+  const { worker, category, lockedFields, priceOptions, jobTitle } = draft;
 
   // ── Main form ───────────────────────────────────────────────────────
   return (
@@ -292,7 +328,11 @@ export default function CreateBookingFromJob() {
           <div className={styles.alertError}>
             <FiAlertTriangle size={14} />
             <span>{error}</span>
-            <button onClick={() => setError("")}>
+            <button
+              type="button"
+              onClick={() => setError("")}
+              aria-label="Dismiss"
+            >
               <FiX size={14} />
             </button>
           </div>
@@ -356,7 +396,9 @@ export default function CreateBookingFromJob() {
               <LockedCard
                 icon={<FiClock size={14} />}
                 label="Estimated Duration"
-                value={`${lockedFields.estimatedValue} ${lockedFields.estimatedUnit || "hours"}`}
+                value={`${lockedFields.estimatedValue} ${
+                  lockedFields.estimatedUnit || "hours"
+                }`}
               />
             )}
             {lockedFields.durationValue && lockedFields.durationType && (
@@ -434,38 +476,69 @@ export default function CreateBookingFromJob() {
               Select Payment Option <span className={styles.req}>*</span>
             </label>
             <p className={styles.fieldHint}>
-              Choose one of the price options from the job post. The hirer will
-              pay this amount for the completed job.
+              Pick the price the hirer will pay for this booking. The total is
+              calculated by the server based on the job's rate and duration.
             </p>
 
             <div className={styles.rateOptions}>
-              {priceOptions.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={`${styles.rateOption} ${
-                    selectedRateOption === option.key
-                      ? styles.rateOptionActive
-                      : ""
-                  } ${hasNegotiated ? styles.rateOptionDim : ""}`}
-                  onClick={() => setSelectedRateOption(option.key)}
-                >
-                  <span className={styles.rateOptionRadio}>
-                    {selectedRateOption === option.key ? "◉" : "○"}
-                  </span>
-                  <span className={styles.rateOptionBody}>
-                    <span className={styles.rateOptionLabel}>
-                      {option.label}
+              {priceOptions.map((option) => {
+                const blocked =
+                  option.canAutoCompute === false ||
+                  option.estimatedTotal == null;
+                const isSelected = selectedRateOption === option.key;
+                const dimmed = hasNegotiated && !isSelected;
+
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`${styles.rateOption} ${
+                      isSelected ? styles.rateOptionActive : ""
+                    } ${dimmed ? styles.rateOptionDim : ""} ${
+                      blocked ? styles.rateOptionBlocked : ""
+                    }`}
+                    onClick={() => setSelectedRateOption(option.key)}
+                  >
+                    <span className={styles.rateOptionRadio}>
+                      {isSelected ? "◉" : "○"}
                     </span>
-                    <span className={styles.rateOptionMeta}>
-                      {option.description}
-                      {option.period &&
-                        option.period !== "FIXED" &&
-                        ` · ${BUDGET_TYPE_LABEL[option.period] || option.period}`}
+                    <span className={styles.rateOptionBody}>
+                      <span className={styles.rateOptionLabel}>
+                        {option.label}
+                      </span>
+                      <span className={styles.rateOptionMeta}>
+                        {option.description}
+                        {option.period &&
+                          option.period !== "FIXED" &&
+                          ` · ${
+                            BUDGET_TYPE_LABEL[option.period] || option.period
+                          }`}
+                      </span>
+
+                      {/* Server-computed total for this option */}
+                      {!blocked ? (
+                        <span className={styles.rateOptionTotal}>
+                          Total:{" "}
+                          {formatMoney(option.estimatedTotal, option.currency)}
+                        </span>
+                      ) : (
+                        <span className={styles.rateOptionBlockedNote}>
+                          <FiInfo size={11} />{" "}
+                          {OPTION_ERROR_LABEL[option.error] ||
+                            "Enter a negotiated amount below"}
+                        </span>
+                      )}
+
+                      {/* Show the audit trail when the server gives one */}
+                      {!blocked && option.explanation && (
+                        <span className={styles.rateOptionAudit}>
+                          {option.explanation}
+                        </span>
+                      )}
                     </span>
-                  </span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -477,8 +550,9 @@ export default function CreateBookingFromJob() {
             </div>
             <p className={styles.negotiatedHint}>
               If you and the worker agreed on a different amount after
-              discussion, enter it here. It will <strong>override</strong> the
-              selected option above.
+              discussion, enter it here. It will{" "}
+              <strong>override the calculated total</strong> and is required for
+              options marked above.
             </p>
 
             <div className={styles.row2}>
@@ -507,9 +581,7 @@ export default function CreateBookingFromJob() {
                 />
                 <p className={styles.negotiatedSummary}>
                   ✓ Final amount:{" "}
-                  <strong>
-                    {finalCurrency} {Number(negotiatedRate).toLocaleString()}
-                  </strong>{" "}
+                  <strong>{formatMoney(negotiatedRate, finalCurrency)}</strong>{" "}
                   · overrides the selected option
                 </p>
               </>
@@ -517,17 +589,20 @@ export default function CreateBookingFromJob() {
           </div>
 
           {/* Final rate summary */}
-          {finalRate && !hasNegotiated && (
+          {finalAmount != null && (
             <div className={styles.rateSummary}>
               <FiCheckCircle size={14} />
               <span>
                 Final amount:{" "}
-                <strong>
-                  {finalCurrency} {finalRate.toLocaleString()}
-                </strong>
-                {selectedPriceOption?.period &&
+                <strong>{formatMoney(finalAmount, finalCurrency)}</strong>
+                {!hasNegotiated &&
+                  selectedPriceOption?.period &&
                   selectedPriceOption.period !== "FIXED" &&
-                  ` (${BUDGET_TYPE_LABEL[selectedPriceOption.period]})`}
+                  ` (${
+                    BUDGET_TYPE_LABEL[selectedPriceOption.period] ||
+                    selectedPriceOption.period
+                  })`}
+                {hasNegotiated && " · negotiated"}
               </span>
             </div>
           )}
@@ -560,7 +635,7 @@ export default function CreateBookingFromJob() {
             <button
               type="submit"
               className={styles.submitBtn}
-              disabled={submitting || !selectedRateOption}
+              disabled={!canSubmit}
             >
               {submitting ? (
                 <>

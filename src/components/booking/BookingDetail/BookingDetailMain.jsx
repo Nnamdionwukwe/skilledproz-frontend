@@ -13,6 +13,7 @@ import {
   FaMapPin,
   FaGlobe,
   FaHandshake,
+  FaRandom,
   FaFileAlt,
   FaTools,
   FaShieldAlt,
@@ -24,7 +25,10 @@ import {
   FaMap,
   FaSpinner,
   FaUndo,
-  FaTags, // ── NEW: for skills
+  FaTags,
+  FaAward,
+  FaHome,
+  FaCoffee,
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing } from "../../utils/pricing";
@@ -166,14 +170,14 @@ export default function BookingDetailMain({
   const LOC_TYPES = {
     REMOTE: { icon: <FaGlobe />, label: "Remote" },
     ON_SITE: { icon: <FaMapPin />, label: "On-site" },
-    HYBRID: { icon: <FaMapMarkerAlt />, label: "Hybrid" },
+    HYBRID: { icon: <FaRandom />, label: "Hybrid" },
   };
 
   // ── Determine whether to show map link ──────────────────────────────
   const showMapLink =
     booking.latitude && booking.longitude && booking.locationType !== "REMOTE";
 
-  // ── NEW: Job-post booking flag ──────────────────────────────────────
+  // ── Job-post booking flag ──────────────────────────────────────────
   const isJobPostBooking = booking.source === "JOB_POST";
 
   // ── Helper to render duration with unit ─────────────────────────────
@@ -242,7 +246,7 @@ export default function BookingDetailMain({
             <FaHandshake /> Negotiated rate
           </span>
         )}
-        {/* ── NEW: Job-post source pill ── */}
+        {/* ── Job-post source pill ── */}
         {isJobPostBooking && (
           <Link
             to={`/jobs/${booking.jobPostId}`}
@@ -316,7 +320,7 @@ export default function BookingDetailMain({
         )}
       </section>
 
-      {/* ── NEW: Required Skills (from the job post) ── */}
+      {/* ── Required Skills (from the job post) ── */}
       {isJobPostBooking && booking.skills?.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
@@ -335,6 +339,58 @@ export default function BookingDetailMain({
           </div>
         </section>
       )}
+
+      {/* ── Required Qualifications (from the job post) ── */}
+      {isJobPostBooking && booking.qualifications?.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            <FaAward
+              size={12}
+              style={{ marginRight: 6, verticalAlign: "-1px" }}
+            />
+            Required Qualifications
+          </h2>
+          <div className={styles.skillsWrap}>
+            {booking.qualifications.map((qual, i) => (
+              <span key={i} className={styles.skillChip}>
+                <FaAward
+                  size={10}
+                  style={{ marginRight: 4, verticalAlign: "-1px" }}
+                />
+                {qual}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Work Conditions (from the job post) ── */}
+      {isJobPostBooking &&
+        (booking.providesAccommodation || booking.providesMeals) && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              <FaHome
+                size={12}
+                style={{ marginRight: 6, verticalAlign: "-1px" }}
+              />
+              Work Conditions
+            </h2>
+            <div className={styles.skillsWrap}>
+              {booking.providesAccommodation && (
+                <span className={styles.skillChip}>
+                  <FaHome size={10} style={{ marginRight: 4 }} />
+                  Accommodation provided
+                </span>
+              )}
+              {booking.providesMeals && (
+                <span className={styles.skillChip}>
+                  <FaCoffee size={10} style={{ marginRight: 4 }} />
+                  Meals provided
+                </span>
+              )}
+            </div>
+          </section>
+        )}
 
       {/* Requirements & Responsibilities */}
       {(booking.requirements || booking.responsibilities) && (
@@ -412,14 +468,16 @@ export default function BookingDetailMain({
               }
             />
           )}
+
+          {/* ── Agreed Total for job-post bookings, Agreed Rate for direct ── */}
           <DetailItem
             icon={<FaMoneyBillWave />}
-            label="Agreed Rate"
+            label={isJobPostBooking ? "Agreed Total" : "Agreed Rate"}
             value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
             accent
           />
 
-          {/* ── NEW: Job-post specifics ── */}
+          {/* ── Job-post specific rows ── */}
           {isJobPostBooking && (
             <>
               <DetailItem

@@ -15,6 +15,7 @@ import {
   FaEthereum,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
+import { calcPricing } from "../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -22,82 +23,6 @@ function formatPrice(amount, currency = "NGN") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
-}
-
-function calcPricing(booking, referralAmount = 0, applyReferral = false) {
-  const rate = booking.agreedRate || 0;
-  const unit = booking.estimatedUnit || "hours";
-  const hours = booking.estimatedHours;
-  const value = booking.estimatedValue
-    ? parseFloat(booking.estimatedValue)
-    : null;
-  const currency = booking.currency || "USD";
-  const PLATFORM_FEE_RATE = 0.05;
-  const quantity = booking.quantity || 1;
-
-  // ── NEW: Job-post bookings ────────────────────────────────────────────
-  // When a booking is created from a job post (source === "JOB_POST"),
-  // the agreedRate IS the final amount the hirer picked (either a
-  // selected price option or a negotiated override). We do NOT multiply
-  // by duration — the amount is already the total.
-  const isJobPostBooking = booking?.source === "JOB_POST";
-
-  let qty = 1;
-
-  if (isJobPostBooking) {
-    // No multiplication — the amount is already final
-    qty = 1;
-  } else if (unit === "custom") {
-    // For custom bookings, use the quantity field
-    qty = quantity || 1;
-  } else if (value && unit !== "custom") {
-    qty = value;
-  } else if (hours) {
-    if (unit === "hours") qty = hours;
-    if (unit === "days") qty = Math.round(hours / 8);
-    if (unit === "weeks") qty = Math.round(hours / 40);
-    if (unit === "months") qty = Math.round(hours / 160);
-  }
-
-  const unitSuffix =
-    { hours: "/hr", days: "/day", weeks: "/wk", months: "/mo", custom: "" }[
-      unit
-    ] || "";
-  const unitLabel =
-    {
-      hours: "hour",
-      days: "day",
-      weeks: "week",
-      months: "month",
-      custom: "custom",
-    }[unit] || unit;
-
-  // For JOB_POST, subtotal is just the agreedRate — no duration math.
-  const subtotal = isJobPostBooking ? rate : rate * qty;
-  const platformFee = parseFloat((subtotal * PLATFORM_FEE_RATE).toFixed(2));
-  const workerPayout = subtotal;
-  const referralDeduct = applyReferral
-    ? Math.min(referralAmount, subtotal + platformFee)
-    : 0;
-  const totalCharged = parseFloat(
-    (subtotal + platformFee - referralDeduct).toFixed(2),
-  );
-
-  return {
-    rate,
-    qty,
-    unit,
-    unitSuffix,
-    unitLabel,
-    currency,
-    subtotal,
-    platformFee,
-    workerPayout,
-    totalCharged,
-    hasQty: ((value || hours) && unit !== "custom") || unit === "custom",
-    referralDeduct,
-    isJobPostBooking, // ← expose to the UI
-  };
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -129,6 +54,8 @@ export default function PaymentOptions({
 
   const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
 
+  // Uses the shared util so any pricing-rule change only happens in one
+  // place. The util already handles `source === "JOB_POST"` correctly.
   const p = calcPricing(booking, referralAmount, referralApplied);
 
   const validateFileSize = (file) => {
@@ -267,25 +194,48 @@ export default function PaymentOptions({
         </p>
 
         <div className={styles.summaryRow}>
-          <span>Agreed Rate</span>
+          <span>{p.isJobPostBooking ? "Agreed Total" : "Agreed Rate"}</span>
           <span>
             {formatPrice(p.rate, p.currency)}
-            {p.unitSuffix}
+            {!p.isJobPostBooking && p.unitSuffix}
           </span>
         </div>
 
-        {p.hasQty && (
+        {/* For job-post bookings, show the real duration the hirer filled
+            in when creating the job post. For direct bookings, show the
+            calcPricing-derived qty. */}
+        {p.isJobPostBooking && booking.estimatedValue ? (
           <div className={styles.summaryRow}>
             <span>Duration</span>
             <span>
-              {p.qty} {p.unitLabel}
-              {p.qty !== 1 ? "s" : ""}
+              {booking.estimatedValue} {booking.estimatedUnit || "hours"}
+              {booking.estimatedHours && (
+                <span
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: 11,
+                    marginLeft: 4,
+                  }}
+                >
+                  (≈ {booking.estimatedHours}h)
+                </span>
+              )}
             </span>
           </div>
+        ) : (
+          p.hasQty && (
+            <div className={styles.summaryRow}>
+              <span>Duration</span>
+              <span>
+                {p.qty} {p.unitLabel}
+                {p.qty !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )
         )}
 
-        {/* ── Subtotal row — hidden for job-post bookings (amount is already final) ── */}
-        {p.hasQty && !p.isJobPostBooking && (
+        {/* Subtotal row — hidden for job-post bookings (amount is final) */}
+        {!p.isJobPostBooking && p.hasQty && (
           <div className={styles.summaryRow}>
             <span>
               Subtotal ({p.qty} × {formatPrice(p.rate, p.currency)})
@@ -374,7 +324,6 @@ export default function PaymentOptions({
                 transaction hash.
               </p>
 
-              {/* ── Live crypto rate converter ── */}
               <CryptoRateConverter
                 fiatAmount={p.totalCharged}
                 fiatCurrency={p.currency || "NGN"}
@@ -385,7 +334,6 @@ export default function PaymentOptions({
                 }}
               />
 
-              {/* ── Pay button ── */}
               <button
                 className={styles.payBtn}
                 onClick={handleCryptoInitiate}

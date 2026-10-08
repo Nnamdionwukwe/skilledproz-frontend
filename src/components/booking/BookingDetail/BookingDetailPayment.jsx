@@ -60,32 +60,35 @@ export default function BookingDetailPayment({
   isHirer,
   isWorker,
 }) {
-  // ── NEW: Job-post booking flag ──────────────────────────────────────
   const isJobPostBooking = booking?.source === "JOB_POST";
+
+  // ── Real duration of the job-post booking (used instead of `qty`) ──
+  const realDurationText =
+    booking?.estimatedValue && booking?.estimatedUnit
+      ? `${booking.estimatedValue} ${
+          {
+            hours: booking.estimatedValue == 1 ? "hour" : "hours",
+            days: booking.estimatedValue == 1 ? "day" : "days",
+            weeks: booking.estimatedValue == 1 ? "week" : "weeks",
+            months: booking.estimatedValue == 1 ? "month" : "months",
+            years: booking.estimatedValue == 1 ? "year" : "years",
+            custom: "",
+          }[booking.estimatedUnit] || booking.estimatedUnit
+        }`
+      : null;
 
   // ── Render fee breakdown ──────────────────────────────────────────────
   const renderFeeBreakdown = () => {
     if (!feeBreakdown) return null;
 
     const isNegotiated = booking.isNegotiated && booking.negotiatedRate;
+    const isFixedTotalView = isNegotiated || isJobPostBooking;
 
     // Workers see a simplified view
     if (isWorker) {
       const cur = feeBreakdown.currency || "NGN";
       const workerPayout = feeBreakdown.workerPayout || 0;
-      const hasQty = feeBreakdown.hasQty || false;
-      const qty = feeBreakdown.qty || 1;
-      const unitLabel = feeBreakdown.unitLabel || "unit";
       const agreedRate = feeBreakdown.agreedRate || 0;
-      const unit = feeBreakdown.estimatedUnit || "hours";
-      const suffix =
-        {
-          hours: "/hr",
-          days: "/day",
-          weeks: "/wk",
-          months: "/mo",
-          custom: "",
-        }[unit] || "";
 
       return (
         <div className={styles.feeBreakdown}>
@@ -97,28 +100,38 @@ export default function BookingDetailPayment({
                 : "Your Earnings"}
           </p>
 
-          {isNegotiated || isJobPostBooking ? (
-            // Fixed-total view (negotiated OR job-post booking)
+          {isFixedTotalView ? (
             <>
               <div className={styles.feeRow}>
-                <span>Agreed Total</span>
-                <span>
-                  {formatPrice(agreedRate || booking.negotiatedRate, cur)}
-                </span>
+                <span>{isNegotiated ? "Agreed Total" : "Selected Amount"}</span>
+                <span>{formatPrice(agreedRate, cur)}</span>
               </div>
-              {hasQty && (
+
+              {isJobPostBooking && realDurationText && (
                 <div className={styles.feeRow}>
                   <span>Duration</span>
                   <span>
-                    {qty} {unitLabel}
-                    {qty !== 1 ? "s" : ""}
+                    {realDurationText}
+                    {booking.estimatedHours && (
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: 11,
+                          marginLeft: 4,
+                        }}
+                      >
+                        (≈ {booking.estimatedHours}h)
+                      </span>
+                    )}
                   </span>
                 </div>
               )}
+
               <div className={styles.feeRow}>
                 <span>Platform Fee (5%)</span>
                 <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
               </div>
+
               <div className={styles.feeTotal}>
                 <span>You Earn</span>
                 <span className={styles.feeTotalAmount}>
@@ -127,30 +140,35 @@ export default function BookingDetailPayment({
               </div>
             </>
           ) : (
-            // Regular view
             <>
               <div className={styles.feeRow}>
                 <span>Agreed Rate</span>
                 <span>
                   {formatPrice(agreedRate, cur)}
-                  {suffix}
+                  {{
+                    hours: "/hr",
+                    days: "/day",
+                    weeks: "/wk",
+                    months: "/mo",
+                  }[feeBreakdown.estimatedUnit] || ""}
                 </span>
               </div>
 
-              {hasQty && (
+              {feeBreakdown.hasQty && (
                 <div className={styles.feeRow}>
                   <span>Duration</span>
                   <span>
-                    {qty} {unitLabel}
-                    {qty !== 1 ? "s" : ""}
+                    {feeBreakdown.qty} {feeBreakdown.unitLabel}
+                    {feeBreakdown.qty !== 1 ? "s" : ""}
                   </span>
                 </div>
               )}
 
-              {hasQty && (
+              {feeBreakdown.hasQty && (
                 <div className={styles.feeRow}>
                   <span>
-                    Subtotal ({qty} × {formatPrice(agreedRate, cur)})
+                    Subtotal ({feeBreakdown.qty} ×{" "}
+                    {formatPrice(agreedRate, cur)})
                   </span>
                   <span>{formatPrice(feeBreakdown.subtotal || 0, cur)}</span>
                 </div>
@@ -175,11 +193,7 @@ export default function BookingDetailPayment({
 
     // Hirer view
     const cur = feeBreakdown.currency || "NGN";
-
     const agreedRate = feeBreakdown.agreedRate || 0;
-    const hasQty = feeBreakdown.hasQty || false;
-    const qty = feeBreakdown.qty || 1;
-    const unitLabel = feeBreakdown.unitLabel || "unit";
     const subtotal = feeBreakdown.subtotal || 0;
     const platformFee = feeBreakdown.platformFee || 0;
     const workerPayout = feeBreakdown.workerPayout || subtotal;
@@ -189,22 +203,7 @@ export default function BookingDetailPayment({
       referralApplied && booking.currency === "NGN" ? referralAmount : 0;
     const finalTotal = Math.max(0, grossTotal - discount);
 
-    const unit = feeBreakdown.estimatedUnit || "hours";
-    const suffix =
-      {
-        hours: "/hr",
-        days: "/day",
-        weeks: "/wk",
-        months: "/mo",
-        custom: "",
-      }[unit] || "";
-
-    // Check if this is a custom booking
     const isCustom = feeBreakdown.estimatedUnit === "custom";
-
-    // For fixed-total views (negotiated OR job-post), we don't show the
-    // "(qty × rate)" multiplication line because the amount is already final.
-    const isFixedTotalView = isNegotiated || isJobPostBooking;
 
     return (
       <div className={styles.feeBreakdown}>
@@ -217,20 +216,38 @@ export default function BookingDetailPayment({
         </p>
 
         {isFixedTotalView ? (
-          // Fixed-total view — amount comes from the job post's selected
-          // rate option (or negotiated override). No duration multiplication.
           <>
             <div className={styles.feeRow}>
               <span>{isNegotiated ? "Agreed Total" : "Selected Amount"}</span>
               <span>{formatPrice(agreedRate, cur)}</span>
             </div>
 
-            {(hasQty || isCustom) && (
+            {isJobPostBooking && realDurationText && (
               <div className={styles.feeRow}>
                 <span>Duration</span>
                 <span>
-                  {qty} {unitLabel}
-                  {qty !== 1 ? "s" : ""}
+                  {realDurationText}
+                  {booking.estimatedHours && (
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: 11,
+                        marginLeft: 4,
+                      }}
+                    >
+                      (≈ {booking.estimatedHours}h)
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {isNegotiated && (feeBreakdown.hasQty || isCustom) && (
+              <div className={styles.feeRow}>
+                <span>Duration</span>
+                <span>
+                  {feeBreakdown.qty} {feeBreakdown.unitLabel}
+                  {feeBreakdown.qty !== 1 ? "s" : ""}
                 </span>
               </div>
             )}
@@ -257,31 +274,34 @@ export default function BookingDetailPayment({
             </div>
           </>
         ) : (
-          // Regular view - with custom booking support
           <>
             <div className={styles.feeRow}>
               <span>Agreed Rate</span>
               <span>
                 {formatPrice(agreedRate, cur)}
-                {suffix}
+                {{
+                  hours: "/hr",
+                  days: "/day",
+                  weeks: "/wk",
+                  months: "/mo",
+                }[feeBreakdown.estimatedUnit] || ""}
               </span>
             </div>
 
-            {/* For custom bookings, always show duration and subtotal */}
-            {(hasQty || isCustom) && (
+            {(feeBreakdown.hasQty || isCustom) && (
               <div className={styles.feeRow}>
                 <span>Duration</span>
                 <span>
-                  {qty} {unitLabel}
-                  {qty !== 1 ? "s" : ""}
+                  {feeBreakdown.qty} {feeBreakdown.unitLabel}
+                  {feeBreakdown.qty !== 1 ? "s" : ""}
                 </span>
               </div>
             )}
 
-            {(hasQty || isCustom) && (
+            {(feeBreakdown.hasQty || isCustom) && (
               <div className={styles.feeRow}>
                 <span>
-                  Subtotal ({qty} × {formatPrice(agreedRate, cur)})
+                  Subtotal ({feeBreakdown.qty} × {formatPrice(agreedRate, cur)})
                 </span>
                 <span>{formatPrice(subtotal, cur)}</span>
               </div>
@@ -427,7 +447,6 @@ export default function BookingDetailPayment({
 
   // ── Render payment banner ──────────────────────────────────────────────
   const renderPaymentBanner = () => {
-    // Only hirers should see payment options
     if (!isHirer) return null;
     if (!paymentRequired) return null;
 
@@ -437,7 +456,6 @@ export default function BookingDetailPayment({
       referralApplied && booking.currency === "NGN" ? referralAmount : 0;
     const finalTotal = Math.max(0, grossTotal - discount);
 
-    // Determine if payment is pending and booking is accepted
     const isPaymentPending = payment?.status === "PENDING";
     const isBookingAccepted = booking?.status === "ACCEPTED";
 
@@ -461,7 +479,6 @@ export default function BookingDetailPayment({
           </div>
         </div>
 
-        {/* ── Worker waiting message ── */}
         {isPaymentPending && isBookingAccepted && (
           <div
             className={styles.paymentBannerPerk}

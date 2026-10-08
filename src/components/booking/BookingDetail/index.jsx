@@ -20,6 +20,24 @@ import {
   FaTimes,
   FaExclamationCircle,
   FaSpinner,
+  FaBriefcase,
+  FaMapMarkerAlt,
+  FaGlobe,
+  FaRandom,
+  FaCalendarAlt,
+  FaClock,
+  FaTag,
+  FaAward,
+  FaHome,
+  FaCoffee,
+  FaListAlt,
+  FaClipboardCheck,
+  FaDollarSign,
+  FaLink,
+  FaEnvelope,
+  FaWhatsapp,
+  FaPhone,
+  FaFileAlt,
 } from "react-icons/fa";
 import tracker from "../../../lib/analytics/tracker";
 
@@ -131,6 +149,36 @@ const STATUS_META = {
   DISPUTED: { label: "Disputed", color: "rose", step: -1 },
 };
 
+// ── Lookup maps for job-post fields ─────────────────────────────────────
+const JOB_TYPE_LABEL = {
+  FULL_TIME: "Full-time",
+  PART_TIME: "Part-time",
+  CONTRACT: "Contract",
+  TEMPORARY: "Temporary",
+};
+
+const LOCATION_TYPE_LABEL = {
+  REMOTE: "Remote",
+  ON_SITE: "On-site",
+  HYBRID: "Hybrid",
+};
+
+const LOCATION_TYPE_ICON = {
+  REMOTE: FaGlobe,
+  ON_SITE: FaMapMarkerAlt,
+  HYBRID: FaRandom,
+};
+
+const BUDGET_TYPE_LABEL = {
+  FIXED: "Fixed Price",
+  HOURLY: "Per Hour",
+  DAILY: "Per Day",
+  WEEKLY: "Per Week",
+  MONTHLY: "Per Month",
+  YEARLY: "Per Year",
+  CUSTOM: "Custom",
+};
+
 // ── Inlined components ──────────────────────────────────────────────
 function Skeleton() {
   return (
@@ -184,6 +232,451 @@ function Toast({ type, message, onClose }) {
         <FaTimes size={16} />
       </button>
     </div>
+  );
+}
+
+/**
+ * JobPostDetails — renders the full job-post payload on a booking that
+ * originated from a job post. Uses the same field set that PostJob /
+ * EditJob sends, so nothing the hirer entered is hidden.
+ */
+function JobPostDetails({ booking }) {
+  const snapshot = booking.jobRateSnapshot || {};
+  const job = booking.jobPost || {};
+
+  // Prefer live values from `booking` — they were copied from the job at
+  // creation time. Fall back to the live job record or the snapshot if
+  // the booking row is older.
+  const fields = {
+    jobType: booking.jobType || job.jobType,
+    locationType: booking.locationType || job.locationType,
+    scheduledAt: booking.scheduledAt || job.scheduledAt,
+    address: booking.address || job.address,
+    estimatedValue: booking.estimatedValue || job.estimatedValue,
+    estimatedUnit: booking.estimatedUnit || job.estimatedUnit || "hours",
+    estimatedHours: booking.estimatedHours ?? job.estimatedHours,
+    durationValue: booking.durationValue || job.durationValue,
+    durationType: booking.durationType || job.durationType,
+    languageRequirement: job.languageRequirement,
+    qualifications: job.qualifications || [],
+    skills: booking.skills || job.skills || [],
+    requirements: booking.requirements || job.requirements,
+    responsibilities: booking.responsibilities || job.responsibilities,
+    providesAccommodation:
+      job.providesAccommodation ?? snapshot.providesAccommodation,
+    providesMeals: job.providesMeals ?? snapshot.providesMeals,
+    applicationUrl: job.applicationUrl,
+    applicationEmail: job.applicationEmail,
+    applicationWhatsApp: job.applicationWhatsApp,
+    applicationPhone: job.applicationPhone,
+    companyName: job.companyName,
+    sourcePlatform: job.sourcePlatform,
+  };
+
+  const LocationIcon = LOCATION_TYPE_ICON[fields.locationType];
+
+  const hasAnyJobMeta =
+    fields.jobType ||
+    fields.locationType ||
+    fields.scheduledAt ||
+    fields.address ||
+    fields.estimatedValue ||
+    fields.durationValue;
+
+  const hasRequirementsList =
+    fields.skills?.length > 0 ||
+    fields.qualifications?.length > 0 ||
+    fields.requirements ||
+    fields.responsibilities;
+
+  const hasWorkConditions =
+    fields.providesAccommodation || fields.providesMeals;
+
+  const hasApplyChannels =
+    fields.applicationUrl ||
+    fields.applicationEmail ||
+    fields.applicationWhatsApp ||
+    fields.applicationPhone;
+
+  if (
+    !hasAnyJobMeta &&
+    !hasRequirementsList &&
+    !hasWorkConditions &&
+    !hasApplyChannels
+  ) {
+    return null;
+  }
+
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle}>
+        <FaBriefcase
+          size={14}
+          style={{ marginRight: 6, verticalAlign: "-2px" }}
+        />
+        Job Post Details
+      </h2>
+
+      {/* ── Meta grid ── */}
+      <div className={styles.detailGrid}>
+        {fields.jobType && (
+          <JobDetailCard
+            icon={<FaBriefcase size={14} />}
+            label="Job Type"
+            value={JOB_TYPE_LABEL[fields.jobType] || fields.jobType}
+          />
+        )}
+
+        {fields.locationType && LocationIcon && (
+          <JobDetailCard
+            icon={<LocationIcon size={14} />}
+            label="Work Style"
+            value={
+              LOCATION_TYPE_LABEL[fields.locationType] || fields.locationType
+            }
+          />
+        )}
+
+        {fields.scheduledAt && (
+          <JobDetailCard
+            icon={<FaCalendarAlt size={14} />}
+            label="Scheduled"
+            value={new Date(fields.scheduledAt).toLocaleString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          />
+        )}
+
+        {fields.estimatedValue && (
+          <JobDetailCard
+            icon={<FaClock size={14} />}
+            label="Estimated Duration"
+            value={`${fields.estimatedValue} ${fields.estimatedUnit}`}
+          />
+        )}
+
+        {fields.durationValue && fields.durationType && (
+          <JobDetailCard
+            icon={<FaClock size={14} />}
+            label="Project Duration"
+            value={`${fields.durationValue} ${String(
+              fields.durationType,
+            ).toLowerCase()}`}
+          />
+        )}
+
+        {fields.languageRequirement && (
+          <JobDetailCard
+            icon={<FaGlobe size={14} />}
+            label="Language Required"
+            value={String(fields.languageRequirement).toUpperCase()}
+          />
+        )}
+
+        {fields.address &&
+          fields.locationType &&
+          fields.locationType !== "REMOTE" && (
+            <JobDetailCard
+              icon={<FaMapMarkerAlt size={14} />}
+              label="Location"
+              value={fields.address}
+              full
+            />
+          )}
+      </div>
+
+      {/* ── Work Conditions ── */}
+      {hasWorkConditions && (
+        <div className={styles.subSection}>
+          <h3 className={styles.subSectionTitle}>Work Conditions</h3>
+          <div className={styles.pillRow}>
+            {fields.providesAccommodation && (
+              <span className={styles.featurePill}>
+                <FaHome size={11} /> Accommodation provided
+              </span>
+            )}
+            {fields.providesMeals && (
+              <span className={styles.featurePill}>
+                <FaCoffee size={11} /> Meals provided
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Required Skills ── */}
+      {fields.skills?.length > 0 && (
+        <div className={styles.subSection}>
+          <h3 className={styles.subSectionTitle}>
+            <FaTag
+              size={12}
+              style={{ marginRight: 5, verticalAlign: "-1px" }}
+            />
+            Required Skills
+          </h3>
+          <div className={styles.pillRow}>
+            {fields.skills.map((s, i) => (
+              <span key={i} className={styles.skillPill}>
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Required Qualifications ── */}
+      {fields.qualifications?.length > 0 && (
+        <div className={styles.subSection}>
+          <h3 className={styles.subSectionTitle}>
+            <FaAward
+              size={12}
+              style={{ marginRight: 5, verticalAlign: "-1px" }}
+            />
+            Required Qualifications
+          </h3>
+          <div className={styles.pillRow}>
+            {fields.qualifications.map((q, i) => (
+              <span key={i} className={styles.qualificationPill}>
+                <FaAward size={10} style={{ marginRight: 4 }} />
+                {q}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Requirements (rich text) ── */}
+      {fields.requirements && (
+        <div className={styles.subSection}>
+          <h3 className={styles.subSectionTitle}>
+            <FaClipboardCheck
+              size={12}
+              style={{ marginRight: 5, verticalAlign: "-1px" }}
+            />
+            Requirements
+          </h3>
+          <p className={styles.richText}>{fields.requirements}</p>
+        </div>
+      )}
+
+      {/* ── Responsibilities (rich text) ── */}
+      {fields.responsibilities && (
+        <div className={styles.subSection}>
+          <h3 className={styles.subSectionTitle}>
+            <FaListAlt
+              size={12}
+              style={{ marginRight: 5, verticalAlign: "-1px" }}
+            />
+            Responsibilities
+          </h3>
+          <p className={styles.richText}>{fields.responsibilities}</p>
+        </div>
+      )}
+
+      {/* ── Additional Application Channels ── */}
+      {hasApplyChannels && (
+        <div className={styles.subSection}>
+          <h3 className={styles.subSectionTitle}>
+            <FaFileAlt
+              size={12}
+              style={{ marginRight: 5, verticalAlign: "-1px" }}
+            />
+            Additional Application Channels
+          </h3>
+          <div className={styles.channelRow}>
+            {fields.applicationUrl && (
+              <a
+                href={fields.applicationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.channelPill}
+              >
+                <FaLink size={12} /> Apply link
+              </a>
+            )}
+            {fields.applicationEmail && (
+              <a
+                href={`mailto:${fields.applicationEmail}`}
+                className={styles.channelPill}
+              >
+                <FaEnvelope size={12} /> {fields.applicationEmail}
+              </a>
+            )}
+            {fields.applicationWhatsApp && (
+              <a
+                href={`https://wa.me/${String(
+                  fields.applicationWhatsApp,
+                ).replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.channelPill}
+              >
+                <FaWhatsapp size={12} /> {fields.applicationWhatsApp}
+              </a>
+            )}
+            {fields.applicationPhone && (
+              <a
+                href={`tel:${fields.applicationPhone}`}
+                className={styles.channelPill}
+              >
+                <FaPhone size={12} /> {fields.applicationPhone}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function JobDetailCard({ icon, label, value, full }) {
+  return (
+    <div
+      className={`${styles.detailCard} ${full ? styles.detailCardFull : ""}`}
+    >
+      <span className={styles.detailCardIcon}>{icon}</span>
+      <div className={styles.detailCardBody}>
+        <p className={styles.detailCardLabel}>{label}</p>
+        <p className={styles.detailCardValue}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * JobRateSummary — shows exactly how the booking's agreedRate was
+ * derived: rate × units = total, or fixed, or negotiated override. Pulls
+ * from `jobRateSnapshot` which is written by the backend at creation
+ * time so the hirer can see the calculation.
+ */
+function JobRateSummary({ booking, payment }) {
+  const snapshot = booking.jobRateSnapshot || {};
+
+  const selectedOption =
+    booking.selectedRateOption || snapshot.selectedRateOption;
+  const agreedRate = booking.agreedRate;
+  const currency = booking.currency || "NGN";
+  const isNegotiated =
+    booking.isNegotiated || snapshot.negotiatedOverride != null;
+  const budgetType = snapshot.budgetType || "FIXED";
+
+  const value = booking.estimatedValue || snapshot.estimatedValue;
+  const unit = booking.estimatedUnit || snapshot.estimatedUnit || "hours";
+
+  const rate =
+    selectedOption === "budget"
+      ? snapshot.budget
+      : selectedOption === "salaryAmount"
+        ? snapshot.salaryAmount
+        : selectedOption === "salaryMin"
+          ? snapshot.salaryMin
+          : selectedOption === "salaryMax"
+            ? snapshot.salaryMax
+            : selectedOption === "salaryText"
+              ? null
+              : snapshot.budget;
+
+  const rateLabel = selectedOption
+    ? {
+        budget: "Job budget",
+        salaryAmount: "Salary amount",
+        salaryMin: "Salary (min)",
+        salaryMax: "Salary (max)",
+        salaryText: "Salary headline",
+      }[selectedOption] || selectedOption
+    : "Rate";
+
+  // Build the explanation line, preferring the server-written audit
+  // trail, else constructing a simple one from available data.
+  let explanation = snapshot.explanation || null;
+  if (!explanation) {
+    if (isNegotiated) {
+      explanation = "Negotiated amount — overrides the job's rate";
+    } else if (budgetType === "FIXED") {
+      explanation = `Fixed total: ${currency} ${Number(agreedRate).toLocaleString()}`;
+    } else if (rate && value) {
+      const rateStr = `${currency} ${Number(rate).toLocaleString()}`;
+      explanation = `${rateStr} × ${value} ${unit} = ${currency} ${Number(
+        agreedRate,
+      ).toLocaleString()}`;
+    }
+  }
+
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle}>
+        <FaDollarSign
+          size={14}
+          style={{ marginRight: 6, verticalAlign: "-2px" }}
+        />
+        Payment Calculation
+      </h2>
+
+      <div className={styles.rateSummaryGrid}>
+        {rate != null && (
+          <div className={styles.rateSummaryRow}>
+            <span className={styles.rateSummaryLabel}>{rateLabel}</span>
+            <span className={styles.rateSummaryValue}>
+              {currency} {Number(rate).toLocaleString()}
+              {budgetType && budgetType !== "FIXED" && rate != null && (
+                <span className={styles.rateSummaryUnit}>
+                  {" "}
+                  · {BUDGET_TYPE_LABEL[budgetType] || budgetType}
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+
+        {value && budgetType !== "FIXED" && !isNegotiated && (
+          <div className={styles.rateSummaryRow}>
+            <span className={styles.rateSummaryLabel}>Duration</span>
+            <span className={styles.rateSummaryValue}>
+              {value} {unit}
+              {booking.estimatedHours && (
+                <span className={styles.rateSummaryUnit}>
+                  {" "}
+                  · ≈ {booking.estimatedHours}h
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+
+        <div className={styles.rateSummaryRow}>
+          <span className={styles.rateSummaryLabel}>Payment type</span>
+          <span className={styles.rateSummaryValue}>
+            {isNegotiated
+              ? "Negotiated"
+              : BUDGET_TYPE_LABEL[budgetType] || budgetType}
+          </span>
+        </div>
+
+        <div className={`${styles.rateSummaryRow} ${styles.rateSummaryTotal}`}>
+          <span className={styles.rateSummaryLabel}>Final amount</span>
+          <span className={styles.rateSummaryTotalValue}>
+            {currency} {Number(agreedRate).toLocaleString()}
+          </span>
+        </div>
+
+        {isNegotiated && booking.negotiationNote && (
+          <div className={styles.rateSummaryRow}>
+            <span className={styles.rateSummaryLabel}>Negotiation note</span>
+            <span className={styles.rateSummaryValueSmall}>
+              {booking.negotiationNote}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {explanation && !isNegotiated && (
+        <p className={styles.rateSummaryAudit}>{explanation}</p>
+      )}
+    </section>
   );
 }
 
@@ -328,6 +821,7 @@ export default function BookingDetail() {
           jobType: b.jobType || null,
           locationType: b.locationType || null,
           isPast: b.scheduledAt ? new Date(b.scheduledAt) < new Date() : false,
+          source: b.source || "DIRECT",
         });
       })
       .catch((e) => {
@@ -568,6 +1062,7 @@ export default function BookingDetail() {
   const other = isHirer ? booking.worker : booking.hirer;
   const dur = formatDuration(booking);
   const sosActive = !!booking.sosActivatedAt && !booking.sosResolvedAt;
+  const isJobSourced = booking.source === "JOB_POST";
 
   const hasCheckInGps =
     booking.checkInLat != null && booking.checkInLng != null;
@@ -652,22 +1147,14 @@ export default function BookingDetail() {
   };
 
   // ── Get refunds for this specific booking ──────────────────────────────
-  // Filter refunds by the current booking ID
   const bookingRefunds = refunds.filter(
     (r) => r.bookingId === id || r.booking?.id === id,
   );
 
-  // Get the most recent active refund for THIS booking
   const activeRefund = bookingRefunds.find((r) =>
     ["PENDING", "APPROVED", "PROCESSING", "DISPUTED"].includes(r.status),
   );
 
-  // ── Check if refund should be shown ──────────────────────────────────────
-  // Refund should only show when:
-  // 1. Booking is COMPLETED
-  // 2. Payment status is RELEASED
-  // 3. No active refund exists (the refund request form)
-  // But always show refund status if there's an active refund for THIS booking
   const showRefundForm =
     booking.status === "COMPLETED" &&
     payment?.status === "RELEASED" &&
@@ -751,6 +1238,14 @@ export default function BookingDetail() {
               refundLoading={refundLoading}
               hasActiveRefund={!!activeRefund}
             />
+
+            {/* ── Job Post Details — only for job-sourced bookings ── */}
+            {isJobSourced && <JobPostDetails booking={booking} />}
+
+            {/* ── Payment Calculation — full breakdown for job-sourced bookings ── */}
+            {isJobSourced && (
+              <JobRateSummary booking={booking} payment={payment} />
+            )}
 
             {isWorker && booking.status === "PENDING" && (
               <WorkerPaymentPreview booking={booking} isWorker={isWorker} />
@@ -850,8 +1345,6 @@ export default function BookingDetail() {
         {(showRefundForm || showRefundStatus) && (
           <div className={styles.refundSection}>
             <div className={styles.section}>
-              {/* <h2 className={styles.sectionTitle}>Refund</h2> */}
-
               {activeRefund && (
                 <RefundStatus
                   refund={activeRefund}

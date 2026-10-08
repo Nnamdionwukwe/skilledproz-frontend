@@ -2540,3 +2540,241 @@
     padding: 3px 10px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Job Post Details — only rendered for bookings whose source is JOB_POST
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.detailCardFull {
+  grid-column: 1 / -1;
+}
+
+.detailCardIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--orange);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detailCardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.detailCardLabel {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.detailCardValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.subSection {
+  margin-top: 18px;
+}
+
+.subSectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skillPill {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+.qualificationPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+.featurePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+.channelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.channelPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  text-decoration: none;
+  transition: all 0.15s;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.channelPill:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.richText {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Payment Calculation — the "how was this amount derived?" card
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.rateSummaryGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rateSummaryRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rateSummaryRow:last-child {
+  border-bottom: none;
+}
+
+.rateSummaryLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.rateSummaryValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
+
+.rateSummaryValueSmall {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-align: right;
+  word-break: break-word;
+  font-style: italic;
+}
+
+.rateSummaryUnit {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.rateSummaryTotal {
+  background: var(--orange-dim);
+}
+
+.rateSummaryTotal .rateSummaryLabel {
+  color: var(--orange);
+  font-weight: 700;
+}
+
+.rateSummaryTotalValue {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--orange);
+}
+
+.rateSummaryAudit {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+  line-height: 1.6;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}

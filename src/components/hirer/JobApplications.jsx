@@ -126,16 +126,6 @@ export default function JobApplications() {
   };
 
   // ── Unaccept / cancel booking ──
-  // Two outcomes depending on whether a booking exists for this application:
-  //
-  //   a) No booking yet → PATCH the application back to PENDING and
-  //      set the job to OPEN again.
-  //   b) Booking exists  → PATCH the booking to CANCELLED, then reset
-  //      the application to PENDING and the job to OPEN.
-  //
-  // The backend endpoint is `/jobs/:id/applications/:appId/status` for
-  // (a). For (b) we call `/bookings/:bookingId/cancel` — adjust if your
-  // route is named differently.
   const handleUnaccept = async ({ applicationId }) => {
     setUpdating(applicationId);
     setError("");
@@ -143,8 +133,6 @@ export default function JobApplications() {
     try {
       await api.patch(`/jobs/${id}/applications/${applicationId}/unaccept`);
 
-      // Update local state — flip the application back to PENDING
-      // and mark the job as OPEN again.
       setApplications((prev) =>
         prev.map((a) =>
           a.id === applicationId
@@ -168,6 +156,8 @@ export default function JobApplications() {
   };
 
   const pending = applications.filter((a) => a.status === "PENDING");
+  const accepted = applications.filter((a) => a.status === "ACCEPTED");
+  const declined = applications.filter((a) => a.status === "REJECTED");
   const decided = applications.filter((a) => a.status !== "PENDING");
 
   return (
@@ -222,9 +212,18 @@ export default function JobApplications() {
                     className={styles.appCountNum}
                     style={{ color: "var(--green)" }}
                   >
-                    {applications.filter((a) => a.status === "ACCEPTED").length}
+                    {accepted.length}
                   </span>
                   <span className={styles.appCountLabel}>Accepted</span>
+                </div>
+                <div className={styles.appCount}>
+                  <span
+                    className={styles.appCountNum}
+                    style={{ color: "var(--red)" }}
+                  >
+                    {declined.length}
+                  </span>
+                  <span className={styles.appCountLabel}>Declined</span>
                 </div>
               </div>
             </div>

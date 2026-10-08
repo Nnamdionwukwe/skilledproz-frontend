@@ -672,3 +672,51 @@
     transform: translateY(0);
   }
 }
+/* ── Server-computed total on each rate option ─────────────────────── */
+.rateOptionTotal {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--orange);
+  letter-spacing: 0.01em;
+}
+
+/* ── Blocked option → red note instead of a total ──────────────────── */
+.rateOptionBlockedNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.rateOptionBlockedNote svg {
+  flex-shrink: 0;
+}
+
+/* ── Dim non-selected options when a negotiated amount is entered ──── */
+.rateOptionDim {
+  opacity: 0.5;
+}
+
+/* ── Faded audit trail under the total ─────────────────────────────── */
+.rateOptionAudit {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Optional: red-tint blocked option border for clarity */
+.rateOptionBlocked {
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
