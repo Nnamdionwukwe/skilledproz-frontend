@@ -18,6 +18,9 @@ import {
   FiCheckCircle,
   FiX,
   FiFileText,
+  FiEdit3,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 
 const STATUS_TABS = ["ALL", "OPEN", "FILLED", "CANCELLED"];
@@ -189,7 +192,7 @@ export default function HirerJobBoardManagement() {
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              ← Prev
+              <FiChevronLeft size={14} /> Prev
             </button>
             <span className={styles.pageInfo}>
               {page} / {pages}
@@ -199,7 +202,7 @@ export default function HirerJobBoardManagement() {
               disabled={page === pages}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next →
+              Next <FiChevronRight size={14} />
             </button>
           </div>
         )}
@@ -347,6 +350,14 @@ function JobCard({ job, delay, acting, onStatusChange }) {
             >
               Applications
             </Link>
+            {isOpen && (
+              <Link
+                to={`/dashboard/hirer/edit-job/${job.id}`}
+                className={styles.editBtn}
+              >
+                <FiEdit3 size={12} /> Edit
+              </Link>
+            )}
           </>
         ) : (
           <>

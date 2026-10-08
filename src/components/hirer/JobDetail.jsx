@@ -146,7 +146,17 @@ export default function JobDetail() {
 
   const isWorker = user?.role === "WORKER";
   const isHirer = user?.role === "HIRER";
-  const isOwner = user?.id === job?.hirer?.id;
+  const isAdmin = user?.role === "ADMIN";
+
+  // ── OWNERSHIP: string-normalized comparison + fallback to hirerId ──
+  const jobHirerId = job?.hirer?.id ?? job?.hirerId;
+  const isOwner =
+    user?.id != null &&
+    jobHirerId != null &&
+    String(user.id) === String(jobHirerId);
+
+  // Admins can manage any job
+  const canManage = isOwner || isAdmin;
 
   const backDestination =
     user?.role === "WORKER"
@@ -168,8 +178,13 @@ export default function JobDetail() {
       .get(`/jobs/${id}`)
       .then((res) => {
         if (cancelled) return;
-        setJob(res.data.data);
-        setIsSaved(res.data.data.isSaved || false);
+
+        // Normalize: handle both { data: { jobPost } } and { data: jobPost }
+        const raw = res.data.data;
+        const jobData = raw?.jobPost ?? raw;
+
+        setJob(jobData);
+        setIsSaved(jobData.isSaved || false);
         setLoading(false);
       })
       .catch(() => {
@@ -206,7 +221,8 @@ export default function JobDetail() {
   async function handleStatusUpdate(status) {
     try {
       await api.patch(`/jobs/${id}/status`, { status });
-      setJob((j) => ({ ...j, jobPost: { ...j.jobPost, status } }));
+      // Flat shape: update `job.status` directly
+      setJob((j) => ({ ...j, status }));
       setSuccess(`Job marked as ${status.toLowerCase()}.`);
     } catch {
       setError("Failed to update status.");
@@ -246,9 +262,15 @@ export default function JobDetail() {
       </div>
     );
 
-  const { jobPost, hasApplied } = job;
+  // Flat shape — no more destructuring of `job.jobPost`
+  const jobPost = job;
+  const hasApplied = job.hasApplied;
+
   const scheduled = new Date(jobPost.scheduledAt);
   const isOpen = jobPost.status === "OPEN";
+  const isFilled = jobPost.status === "FILLED";
+  const isCancelled = jobPost.status === "CANCELLED";
+
   const statusMeta = {
     OPEN: { label: "Open", color: "green" },
     FILLED: { label: "Filled", color: "indigo" },
@@ -436,7 +458,7 @@ export default function JobDetail() {
       <div className={styles.layout}>
         <div className={styles.main}>
           {/* ═══════════════════════════════════════════════════════
-              HEADER CARD — status, category, title, key pills
+              HEADER CARD
           ═══════════════════════════════════════════════════════ */}
           <div className={styles.headerCard}>
             <div className={styles.headerTop}>
@@ -466,7 +488,7 @@ export default function JobDetail() {
                 {sm.label}
               </span>
 
-              {isWorker && !isOwner && (
+              {isWorker && !canManage && (
                 <button
                   className={`${styles.saveJobBtn} ${isSaved ? styles.saveJobBtnActive : ""}`}
                   onClick={handleSave}
@@ -553,9 +575,7 @@ export default function JobDetail() {
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════
-              DESCRIPTION
-          ═══════════════════════════════════════════════════════ */}
+          {/* DESCRIPTION */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Job Description</h2>
             <p className={styles.description}>{jobPost.description}</p>
@@ -567,9 +587,7 @@ export default function JobDetail() {
             )}
           </section>
 
-          {/* ═══════════════════════════════════════════════════════
-              RESPONSIBILITIES (only if present)
-          ═══════════════════════════════════════════════════════ */}
+          {/* RESPONSIBILITIES */}
           {jobPost.responsibilities && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
@@ -583,9 +601,7 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              REQUIREMENTS (only if present)
-          ═══════════════════════════════════════════════════════ */}
+          {/* REQUIREMENTS */}
           {jobPost.requirements && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
@@ -599,9 +615,7 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              SKILLS (only if present)
-          ═══════════════════════════════════════════════════════ */}
+          {/* SKILLS */}
           {jobPost.skills?.length > 0 && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Required Skills</h2>
@@ -615,9 +629,7 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              QUALIFICATIONS (from PostJob.qualifications[])
-          ═══════════════════════════════════════════════════════ */}
+          {/* QUALIFICATIONS */}
           {qualificationsList.length > 0 && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
@@ -641,10 +653,7 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              WORK CONDITIONS (from PostJob: providesAccommodation,
-              providesMeals)
-          ═══════════════════════════════════════════════════════ */}
+          {/* WORK CONDITIONS */}
           {hasWorkConditions && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
@@ -673,9 +682,7 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              DETAILS GRID — every present field
-          ═══════════════════════════════════════════════════════ */}
+          {/* DETAILS GRID */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Details</h2>
             <div className={styles.detailGrid}>
@@ -944,9 +951,7 @@ export default function JobDetail() {
             </div>
           </section>
 
-          {/* ═══════════════════════════════════════════════════════
-              REQUIREMENTS & QUALIFICATIONS (grouped card)
-          ═══════════════════════════════════════════════════════ */}
+          {/* REQUIREMENTS & QUALIFICATIONS grouped */}
           {hasRequirementsBlock && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
@@ -969,9 +974,7 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              HOW TO APPLY — external channels only
-          ═══════════════════════════════════════════════════════ */}
+          {/* HOW TO APPLY */}
           {hasExternalApplyChannels && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>How to Apply</h2>
@@ -1020,10 +1023,8 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              APPLY (worker only, job open)
-          ═══════════════════════════════════════════════════════ */}
-          {isWorker && isOpen && (
+          {/* APPLY (worker only, job open) */}
+          {isWorker && !canManage && isOpen && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Apply for this Job</h2>
               {hasApplied ? (
@@ -1086,10 +1087,22 @@ export default function JobDetail() {
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════════════
-              MANAGE (owner only)
-          ═══════════════════════════════════════════════════════ */}
-          {isOwner && (
+          {/* Job closed banner (workers only, job not open) */}
+          {isWorker && !canManage && !isOpen && (
+            <section className={styles.section}>
+              <div className={styles.appliedBanner}>
+                <FiAlertTriangle size={16} />
+                <p>
+                  {isFilled
+                    ? "This job has been filled. Applications are closed."
+                    : "This job has been cancelled. Applications are closed."}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* MANAGE (owner or admin) */}
+          {canManage && (
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Manage Job</h2>
               <div className={styles.manageActions}>
@@ -1100,8 +1113,15 @@ export default function JobDetail() {
                   <FiUsers size={14} /> View Applications (
                   {jobPost._count?.applications || 0})
                 </Link>
+
                 {isOpen && (
                   <>
+                    <Link
+                      to={`/dashboard/hirer/edit-job/${id}`}
+                      className={styles.manageBtn}
+                    >
+                      <FiEdit3 size={14} /> Edit Job
+                    </Link>
                     <button
                       className={styles.manageBtnFilled}
                       onClick={() => handleStatusUpdate("FILLED")}
@@ -1116,7 +1136,8 @@ export default function JobDetail() {
                     </button>
                   </>
                 )}
-                {!isOpen && (
+
+                {(isFilled || isCancelled) && (
                   <button
                     className={styles.manageBtnReopen}
                     onClick={() => handleStatusUpdate("OPEN")}
@@ -1129,9 +1150,7 @@ export default function JobDetail() {
           )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════
-            SIDEBAR
-        ═══════════════════════════════════════════════════════ */}
+        {/* SIDEBAR */}
         <div className={styles.sidebar}>
           <div className={styles.hirerCard}>
             <p className={styles.hirerCardLabel}>Posted by</p>

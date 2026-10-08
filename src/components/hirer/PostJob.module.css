@@ -755,3 +755,28 @@
   min-width: 0;
   width: 100%;
 }
+/* Skeleton primitives */
+.skLine {
+  display: block;
+  background: var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 4px;
+  animation: skPulse 1.4s ease-in-out infinite;
+}
+
+.skBlock {
+  display: block;
+  width: 100%;
+  background: var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  animation: skPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

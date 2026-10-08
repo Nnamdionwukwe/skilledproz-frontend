@@ -144,6 +144,7 @@ import AdminPaymentFunnel from "./pages/admin/AdminPaymentFunnel.jsx";
 import AdminCategoryDemand from "./pages/admin/AdminCategoryDemand.jsx";
 import VideoCallPage from "./components/booking/VideoCallPage.jsx";
 import ConversationVideoCallPage from "./components/booking/ConversationVideoCallPage.jsx";
+import EditJob from "./components/hirer/EditJob.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -886,6 +887,16 @@ export default function App() {
             <RequireHirer>
               <RequireAuth requireVerified>
                 <PostJob />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/edit-job/:id"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <EditJob />
               </RequireAuth>
             </RequireHirer>
           }
