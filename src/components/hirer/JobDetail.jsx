@@ -174,24 +174,23 @@ export default function JobDetail() {
 
     let cancelled = false;
 
-    api
-      .get(`/jobs/${id}`)
-      .then((res) => {
-        if (cancelled) return;
+    api.get(`/jobs/${id}`).then((res) => {
+      if (cancelled) return;
 
-        // Normalize: handle both { data: { jobPost } } and { data: jobPost }
-        const raw = res.data.data;
-        const jobData = raw?.jobPost ?? raw;
+      // Normalize: handle both { data: { jobPost, hasApplied, isSaved } }
+      // and a flat { data: jobPost } response.
+      const payload = res.data.data;
+      const jobData = payload?.jobPost ?? payload;
 
-        setJob(jobData);
-        setIsSaved(jobData.isSaved || false);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setError("Job not found.");
-        setLoading(false);
-      });
+      // `hasApplied` and `isSaved` are top-level siblings of `jobPost`
+      // in the backend response — read them from the outer payload.
+      const savedFlag = payload?.isSaved ?? jobData?.isSaved ?? false;
+      const appliedFlag = payload?.hasApplied ?? jobData?.hasApplied ?? false;
+
+      setJob({ ...jobData, hasApplied: appliedFlag });
+      setIsSaved(savedFlag);
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
