@@ -1254,3 +1254,226 @@
     height: 14px;
   }
 }
+/* ── Accepted row: booking actions ────────────────────────────────────── */
+
+.acceptedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.acceptedNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.acceptedNote svg {
+  flex-shrink: 0;
+}
+
+.acceptedActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.unacceptBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.unacceptBtn:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+.unacceptBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.unacceptBtn svg {
+  flex-shrink: 0;
+}
+
+/* ── Confirm modal ─────────────────────────────────────────────────────── */
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: lightboxFadeIn 0.18s ease;
+}
+
+.confirmBox {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px 20px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: lightboxZoomIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.confirmIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--red-dim);
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.confirmTitle {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.confirmText {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.confirmText strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.confirmCancelBtn,
+.confirmDangerBtn {
+  flex: 1;
+  min-width: 130px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.confirmCancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.confirmCancelBtn:hover:not(:disabled) {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.confirmDangerBtn {
+  background: var(--red);
+  border: 1px solid var(--red);
+  color: #fff;
+}
+
+.confirmDangerBtn:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.confirmCancelBtn:disabled,
+.confirmDangerBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmDangerBtn svg {
+  flex-shrink: 0;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .acceptedRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .acceptedActions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .acceptedActions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .confirmBox {
+    padding: 22px 18px 18px;
+  }
+
+  .confirmActions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .confirmCancelBtn,
+  .confirmDangerBtn {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+}

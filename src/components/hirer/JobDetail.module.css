@@ -918,3 +918,21 @@
   border-color: var(--orange);
   color: var(--orange);
 }
+/* ── Rejected banner — worker can still re-apply ── */
+.rejectedBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--red-dim);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red);
+  margin-bottom: 14px;
+}
+
+.rejectedBanner svg {
+  flex-shrink: 0;
+}

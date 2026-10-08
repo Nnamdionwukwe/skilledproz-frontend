@@ -20,6 +20,8 @@ import {
   FaQuoteLeft,
   FaTimes,
   FaExpand,
+  FaUndo,
+  FaBan,
 } from "react-icons/fa";
 import InterviewCallButton from "../video/InterviewCallButton";
 
@@ -65,6 +67,10 @@ export default function JobApplications() {
   // ── Full-screen avatar viewer ──
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
+  // ── Cancel confirmation state ──
+  // Shape: { applicationId, workerName, hasBooking } | null
+  const [cancelTarget, setCancelTarget] = useState(null);
+
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
@@ -94,6 +100,7 @@ export default function JobApplications() {
     return () => window.removeEventListener("keydown", onKey);
   }, [lightboxSrc]);
 
+  // ── Accept / reject a pending application ──
   const handleDecision = async (applicationId, status) => {
     setUpdating(applicationId);
     setError("");
@@ -113,6 +120,48 @@ export default function JobApplications() {
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update application.");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  // ── Unaccept / cancel booking ──
+  // Two outcomes depending on whether a booking exists for this application:
+  //
+  //   a) No booking yet → PATCH the application back to PENDING and
+  //      set the job to OPEN again.
+  //   b) Booking exists  → PATCH the booking to CANCELLED, then reset
+  //      the application to PENDING and the job to OPEN.
+  //
+  // The backend endpoint is `/jobs/:id/applications/:appId/status` for
+  // (a). For (b) we call `/bookings/:bookingId/cancel` — adjust if your
+  // route is named differently.
+  const handleUnaccept = async ({ applicationId }) => {
+    setUpdating(applicationId);
+    setError("");
+    setSuccess("");
+    try {
+      await api.patch(`/jobs/${id}/applications/${applicationId}/unaccept`);
+
+      // Update local state — flip the application back to PENDING
+      // and mark the job as OPEN again.
+      setApplications((prev) =>
+        prev.map((a) =>
+          a.id === applicationId
+            ? { ...a, status: "PENDING", booking: undefined, bookingId: null }
+            : a,
+        ),
+      );
+      setJob((prev) => ({ ...prev, status: "OPEN" }));
+      setSuccess(
+        "Acceptance undone. The application is back in Pending Review and any booking has been cancelled.",
+      );
+      setCancelTarget(null);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to cancel. Please try again or contact support.",
+      );
     } finally {
       setUpdating(null);
     }
@@ -245,6 +294,15 @@ export default function JobApplications() {
                       updating={updating}
                       onAccept={() => handleDecision(app.id, "ACCEPTED")}
                       onReject={() => handleDecision(app.id, "REJECTED")}
+                      onUnacceptRequest={() =>
+                        setCancelTarget({
+                          applicationId: app.id,
+                          workerName:
+                            `${app.worker?.firstName || ""} ${app.worker?.lastName || ""}`.trim(),
+                          hasBooking: !!(app.booking || app.bookingId),
+                          bookingId: app.booking?.id || app.bookingId || null,
+                        })
+                      }
                       onAvatarClick={setLightboxSrc}
                       delay={i * 0.06}
                     />
@@ -271,6 +329,15 @@ export default function JobApplications() {
                       jobTitle={job?.title}
                       updating={updating}
                       decided
+                      onUnacceptRequest={() =>
+                        setCancelTarget({
+                          applicationId: app.id,
+                          workerName:
+                            `${app.worker?.firstName || ""} ${app.worker?.lastName || ""}`.trim(),
+                          hasBooking: !!(app.booking || app.bookingId),
+                          bookingId: app.booking?.id || app.bookingId || null,
+                        })
+                      }
                       onAvatarClick={setLightboxSrc}
                       delay={i * 0.06}
                     />
@@ -281,6 +348,82 @@ export default function JobApplications() {
           </>
         )}
       </div>
+
+      {/* ── Confirm cancel / unaccept modal ─────────────────────────── */}
+      {cancelTarget && (
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => setCancelTarget(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm cancellation"
+        >
+          <div
+            className={styles.confirmBox}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.confirmIcon}>
+              {cancelTarget.hasBooking ? (
+                <FaBan size={26} />
+              ) : (
+                <FaUndo size={26} />
+              )}
+            </div>
+            <h3 className={styles.confirmTitle}>
+              {cancelTarget.hasBooking
+                ? "Cancel this booking?"
+                : "Undo this acceptance?"}
+            </h3>
+            <p className={styles.confirmText}>
+              {cancelTarget.hasBooking ? (
+                <>
+                  This will cancel the booking with{" "}
+                  <strong>{cancelTarget.workerName || "the worker"}</strong> and
+                  return the job to <strong>Open</strong>. The worker will be
+                  notified and their application will go back to{" "}
+                  <strong>Pending Review</strong>.
+                </>
+              ) : (
+                <>
+                  This will return{" "}
+                  <strong>{cancelTarget.workerName || "the worker"}</strong>'s
+                  application to <strong>Pending Review</strong> and set the job
+                  back to <strong>Open</strong>. You can accept a different
+                  applicant afterwards.
+                </>
+              )}
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setCancelTarget(null)}
+                disabled={updating === cancelTarget.applicationId}
+              >
+                Keep it
+              </button>
+              <button
+                className={styles.confirmDangerBtn}
+                onClick={() => handleUnaccept(cancelTarget)}
+                disabled={updating === cancelTarget.applicationId}
+              >
+                {updating === cancelTarget.applicationId ? (
+                  <>
+                    <span className={styles.spinner} /> Cancelling...
+                  </>
+                ) : cancelTarget.hasBooking ? (
+                  <>
+                    <FaBan size={13} /> Cancel Booking
+                  </>
+                ) : (
+                  <>
+                    <FaUndo size={13} /> Undo Acceptance
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Full-screen avatar viewer ───────────────────────────────── */}
       {lightboxSrc && (
@@ -322,6 +465,7 @@ function ApplicationCard({
   updating,
   onAccept,
   onReject,
+  onUnacceptRequest,
   onAvatarClick,
   decided,
   delay,
@@ -332,6 +476,8 @@ function ApplicationCard({
   const StatusIcon = statusInfo.Icon;
 
   const hasAvatar = !!worker?.avatar;
+  const hasBooking = !!(app.booking || app.bookingId);
+  const bookingId = app.booking?.id || app.bookingId;
 
   return (
     <div className={styles.appCard} style={{ animationDelay: `${delay}s` }}>
@@ -445,7 +591,7 @@ function ApplicationCard({
         })}
       </p>
 
-      {/* Actions */}
+      {/* Actions — pending state */}
       {!decided && (
         <div className={styles.appActions}>
           <Link to={`/workers/${worker?.id}`} className={styles.viewProfileBtn}>
@@ -478,9 +624,7 @@ function ApplicationCard({
         </div>
       )}
 
-      {/* Interview section — offered to the hirer while the application is
-          still pending. Lets them meet the worker face-to-face before
-          committing to a hire. */}
+      {/* Interview section — only while pending */}
       {!decided && (
         <div className={styles.interviewSection}>
           <div className={styles.interviewHeader}>
@@ -499,16 +643,60 @@ function ApplicationCard({
         </div>
       )}
 
-      {/* Decided state */}
+      {/* Accepted state — booking management row */}
       {decided && app.status === "ACCEPTED" && (
-        <div className={styles.acceptedNote}>
-          <FaCheckCircle /> Accepted —{" "}
-          <Link
-            to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
-            className={styles.bookLink}
-          >
-            Create Booking →
-          </Link>
+        <div className={styles.acceptedRow}>
+          <div className={styles.acceptedNote}>
+            <FaCheckCircle />
+            <span>Accepted</span>
+          </div>
+
+          <div className={styles.acceptedActions}>
+            {hasBooking ? (
+              <>
+                <Link to={`/bookings/${bookingId}`} className={styles.bookLink}>
+                  View Booking →
+                </Link>
+                <button
+                  className={styles.unacceptBtn}
+                  disabled={updating === app.id}
+                  onClick={onUnacceptRequest}
+                  title="Cancel the booking and return this application to Pending Review"
+                >
+                  {updating === app.id ? (
+                    <span className={styles.spinner} />
+                  ) : (
+                    <>
+                      <FaBan size={12} /> Cancel Booking
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
+                  className={styles.bookLink}
+                >
+                  Create Booking →
+                </Link>
+                <button
+                  className={styles.unacceptBtn}
+                  disabled={updating === app.id}
+                  onClick={onUnacceptRequest}
+                  title="Undo the acceptance and return this application to Pending Review"
+                >
+                  {updating === app.id ? (
+                    <span className={styles.spinner} />
+                  ) : (
+                    <>
+                      <FaUndo size={12} /> Undo Acceptance
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

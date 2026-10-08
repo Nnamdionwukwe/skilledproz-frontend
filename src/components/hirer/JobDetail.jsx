@@ -184,8 +184,15 @@ export default function JobDetail() {
 
       const savedFlag = payload?.isSaved ?? jobData?.isSaved ?? false;
       const appliedFlag = payload?.hasApplied ?? jobData?.hasApplied ?? false;
+      const appStatus = payload?.applicationStatus ?? null;
+      const appId = payload?.applicationId ?? null;
 
-      setJob({ ...jobData, hasApplied: appliedFlag });
+      setJob({
+        ...jobData,
+        hasApplied: appliedFlag,
+        applicationStatus: appStatus, // "PENDING" | "ACCEPTED" | "REJECTED" | null
+        applicationId: appId,
+      });
       setIsSaved(savedFlag);
       setLoading(false);
     });
@@ -202,7 +209,11 @@ export default function JobDetail() {
     setSuccess("");
     try {
       await api.post(`/jobs/${id}/apply`, { message });
-      setJob((j) => ({ ...j, hasApplied: true }));
+      setJob((j) => ({
+        ...j,
+        hasApplied: true,
+        applicationStatus: "PENDING",
+      }));
       setSuccess("Application submitted! The hirer will be notified.");
       setShowForm(false);
       setMessage("");
@@ -278,6 +289,10 @@ export default function JobDetail() {
   // Flat shape — no more destructuring of `job.jobPost`
   const jobPost = job;
   const hasApplied = job.hasApplied;
+  const applicationStatus = job.applicationStatus;
+  const wasAccepted = applicationStatus === "ACCEPTED";
+  const isPending = applicationStatus === "PENDING";
+  const wasRejected = applicationStatus === "REJECTED";
 
   const scheduled = new Date(jobPost.scheduledAt);
   const isOpen = jobPost.status === "OPEN";
@@ -1009,7 +1024,18 @@ export default function JobDetail() {
             {isWorker && !canManage && isOpen && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Apply for this Job</h2>
-                {hasApplied ? (
+
+                {/* Case 1 — Already accepted */}
+                {wasAccepted ? (
+                  <div className={styles.appliedBanner}>
+                    <FiCheckCircle size={16} />
+                    <p>
+                      Your application has been accepted. The hirer will be in
+                      touch to arrange next steps.
+                    </p>
+                  </div>
+                ) : /* Case 2 — Currently pending review */
+                isPending ? (
                   <div className={styles.appliedBanner}>
                     <FiCheckCircle size={16} />
                     <p>
@@ -1017,7 +1043,64 @@ export default function JobDetail() {
                       your application.
                     </p>
                   </div>
-                ) : showForm ? (
+                ) : /* Case 3 — Previously rejected, allow re-apply */
+                wasRejected ? (
+                  <>
+                    <div className={styles.rejectedBanner}>
+                      <FiAlertTriangle size={16} />
+                      <p>
+                        Your previous application wasn't selected. You can apply
+                        again if you're still interested.
+                      </p>
+                    </div>
+                    {showForm ? (
+                      <form className={styles.applyForm} onSubmit={handleApply}>
+                        <label className={styles.applyLabel}>
+                          Message to Hirer{" "}
+                          <span className={styles.optional}>(optional)</span>
+                        </label>
+                        <textarea
+                          className={styles.applyTextarea}
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          placeholder="Introduce yourself, explain your experience with this type of job..."
+                          rows={4}
+                        />
+                        <div className={styles.applyActions}>
+                          <button
+                            type="submit"
+                            className={styles.applyBtn}
+                            disabled={applying}
+                          >
+                            {applying ? (
+                              <>
+                                <span className={styles.spinner} />{" "}
+                                Submitting...
+                              </>
+                            ) : (
+                              "Submit Application"
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.cancelApplyBtn}
+                            onClick={() => setShowForm(false)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <button
+                        className={styles.applyTriggerBtn}
+                        onClick={() => setShowForm(true)}
+                      >
+                        <FiSend size={15} /> Apply Again
+                      </button>
+                    )}
+                  </>
+                ) : /* Case 4 — Never applied */
+                showForm ? (
                   <form className={styles.applyForm} onSubmit={handleApply}>
                     <label className={styles.applyLabel}>
                       Message to Hirer{" "}
@@ -1061,6 +1144,7 @@ export default function JobDetail() {
                     <FiSend size={15} /> Apply Now
                   </button>
                 )}
+
                 <ReportButton
                   targetType="JOB_POST"
                   targetId={job.id}
