@@ -1,3 +1,5 @@
+/* src/components/hirer/PostJob.module.css */
+
 /* ── Page — full-bleed, hugs both screen edges, fits every screen ── */
 .page {
   width: auto;
@@ -161,8 +163,10 @@
   border-radius: 8px;
 }
 
+/* ── Form submit button (main form only) ───────────────────── */
 .submitBtn {
   height: 50px;
+  width: 100%;
   background: var(--orange);
   color: var(--bg);
   border: none;
@@ -178,6 +182,8 @@
     background 0.15s,
     transform 0.1s;
   margin-top: 4px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 .submitBtn:hover:not(:disabled) {
   background: var(--orange-hover);
@@ -205,6 +211,8 @@
   text-align: center;
   padding: 20px 0 40px;
   animation: fadeUp 0.4s ease both;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .successIcon {
@@ -227,94 +235,137 @@
   margin-bottom: 28px;
 }
 
-.matchedGrid {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 28px;
-}
-
-.matchedCard {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  text-decoration: none;
-  text-align: left;
-  transition:
-    border-color 0.15s,
-    transform 0.15s;
-}
-.matchedCard:hover {
-  border-color: var(--orange);
-  transform: translateX(3px);
-}
-
-.matchedAvatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+/* ── Success card (job summary) ───────────────────────────── */
+.successCard {
   background: var(--orange-dim);
   border: 1px solid var(--orange-glow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--orange);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.matchedAvatar img {
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-top: 1.5rem;
+  text-align: left;
+  max-width: 480px;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  box-sizing: border-box;
 }
-
-.matchedInfo {
-  flex: 1;
-  min-width: 0;
-}
-.matchedName {
-  font-size: 14px;
+.successCat {
+  font-size: 11px;
+  color: var(--orange);
   font-weight: 700;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-.matchedTitle {
-  font-size: 12px;
-  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   margin-bottom: 4px;
 }
-.matchedMeta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.matchedRate {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--orange);
-}
-.matchedRating {
-  font-size: 12px;
-  color: #fbbf24;
+.successJobTitle {
+  font-size: 1rem;
   font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
 }
-
-.viewArrow {
-  font-size: 16px;
+.successMeta {
+  font-size: 13px;
   color: var(--text-dim);
-  transition: color 0.15s;
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
-.matchedCard:hover .viewArrow {
+.successMeta svg {
+  flex-shrink: 0;
   color: var(--orange);
 }
 
+/* ── Success action buttons (View My Jobs / Post Another) ─── */
+/* These are distinct from the form's .submitBtn and .resetBtn
+   because they need to sit side-by-side, size to their content,
+   and never overflow on narrow screens. */
+
+.successActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.successPrimaryBtn,
+.successSecondaryBtn {
+  /* Shared base */
+  flex: 1 1 140px;
+  min-width: 140px;
+  max-width: 220px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.1s;
+}
+
+.successPrimaryBtn {
+  background: var(--orange);
+  color: var(--bg);
+  border: 1px solid var(--orange);
+}
+.successPrimaryBtn:hover {
+  background: var(--orange-hover);
+  border-color: var(--orange-hover);
+  transform: translateY(-1px);
+}
+.successPrimaryBtn:active {
+  transform: translateY(0);
+}
+
+.successSecondaryBtn {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+.successSecondaryBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  transform: translateY(-1px);
+}
+.successSecondaryBtn:active {
+  transform: translateY(0);
+}
+
+/* On narrow screens, stack them full-width */
+@media (max-width: 480px) {
+  .successActions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .successPrimaryBtn,
+  .successSecondaryBtn {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    height: 48px;
+    font-size: 14px;
+  }
+}
+
+/* Keep the old .resetBtn for any other place that still uses it */
 .resetBtn {
   padding: 10px 28px;
   background: transparent;
@@ -332,6 +383,7 @@
   color: var(--orange);
 }
 
+/* ── Responsive tweaks ─────────────────────────────────────── */
 @media (min-width: 640px) {
   .page {
     padding: 40px 32px;
@@ -451,50 +503,6 @@
 .customCatActions {
   display: flex;
   gap: 8px;
-}
-.successCard {
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-glow);
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
-  margin-top: 1.5rem;
-  text-align: left;
-  max-width: 480px;
-  width: 100%;
-  box-sizing: border-box;
-}
-.successCat {
-  font-size: 11px;
-  color: var(--orange);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 4px;
-}
-.successJobTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.successMeta {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-top: 3px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.successMeta svg {
-  flex-shrink: 0;
-  color: var(--orange);
-}
-.successActions {
-  display: flex;
-  gap: 12px;
-  margin-top: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
 }
 
 /* ── Job type / Location type option cards ─────────────────── */
@@ -672,6 +680,15 @@
   .optionCard {
     font-size: 11px;
     padding: 8px 8px;
+  }
+  .successActions {
+    gap: 8px;
+  }
+  .successPrimaryBtn,
+  .successSecondaryBtn {
+    height: 46px;
+    font-size: 13px;
+    padding: 0 14px;
   }
 }
 
