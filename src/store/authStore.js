@@ -10,7 +10,29 @@ export const useAuthStore = create(
       accessToken: null,
       refreshToken: null,
       isLoading: false,
-      isHydrated: false, // ← added; flipped to true by onRehydrateStorage
+      isHydrated: false, // flipped to true after localStorage restore
+
+      // ── Called by onRehydrateStorage so Zustand actually notifies
+      //    subscribers. Mutating `state.isHydrated = true` directly does
+      //    NOT trigger a re-render — this setter is the correct way.
+      setHydrated: () => set({ isHydrated: true }),
+
+      // ── Called by onRehydrateStorage right after setHydrated.
+      //    If we restored `user` but not a matching pair of tokens,
+      //    the session is half-broken (this is what caused the 401 flood
+      //    after Paystack). Wipe everything so the app is cleanly logged out.
+      validateHydration: () => {
+        const { user, accessToken, refreshToken } = get();
+        const hasUser = !!user;
+        const hasTokens = !!(accessToken && refreshToken);
+        if (hasUser && !hasTokens) {
+          get().clearAuth();
+        }
+        if (!hasUser && hasTokens) {
+          // Tokens without a user are also useless
+          get().clearAuth();
+        }
+      },
 
       setAuth: (user, accessToken, refreshToken) => {
         localStorage.setItem("accessToken", accessToken);
@@ -174,9 +196,14 @@ export const useAuthStore = create(
         refreshToken: s.refreshToken,
       }),
       // Fires after localStorage is read and state is restored.
-      // This is the correct place to flip isHydrated.
+      // setHydrated() triggers a proper Zustand update so subscribers
+      // (guards, layouts) re-render. validateHydration() cleans up any
+      // half-restored session (user without tokens, or vice versa).
       onRehydrateStorage: () => (state) => {
-        if (state) state.isHydrated = true;
+        if (state) {
+          state.setHydrated();
+          state.validateHydration();
+        }
       },
     },
   ),
