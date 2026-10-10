@@ -54,9 +54,45 @@ export default function PaymentOptions({
 
   const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
 
-  // Uses the shared util so any pricing-rule change only happens in one
-  // place. The util already handles `source === "JOB_POST"` correctly.
+  // ── Pricing ──────────────────────────────────────────────────────
+  // calcPricing already handles `source === "JOB_POST"` and returns the
+  // correct fields, but for job-post bookings the "subtotal" and
+  // "platformFee" come out as 0 because there's no qty × rate model.
+  // We compute the real values directly from the booking row so the
+  // breakdown shows the actual numbers the hirer will pay.
   const p = calcPricing(booking, referralAmount, referralApplied);
+
+  const isJobPost = booking?.source === "JOB_POST";
+
+  // The agreed total for a job-post booking is `booking.agreedRate`.
+  // For direct bookings we keep using calcPricing's numbers.
+  const agreedTotal = isJobPost
+    ? Number(booking?.agreedRate || 0)
+    : Number(p.subtotal || p.rate || 0);
+
+  const currency = booking?.currency || p.currency || "NGN";
+
+  // Platform fee = 5% of the agreed total (matches the backend's
+  // fee phase 1). Always positive.
+  const PLATFORM_FEE_PCT = 0.05;
+  const platformFee = isJobPost
+    ? Math.round(agreedTotal * PLATFORM_FEE_PCT * 100) / 100
+    : Number(p.platformFee || 0);
+
+  // Referral deduction
+  const referralDeduct =
+    referralApplied && referralAmount > 0 ? Number(referralAmount) : 0;
+
+  // Final amount the hirer pays
+  const finalTotal = isJobPost
+    ? Math.max(0, agreedTotal + platformFee - referralDeduct)
+    : Number(p.totalCharged || 0);
+
+  // Duration label for job-post bookings
+  const durationText =
+    isJobPost && booking?.estimatedValue
+      ? `${booking.estimatedValue} ${booking.estimatedUnit || "hours"}`
+      : null;
 
   const validateFileSize = (file) => {
     if (!file) return true;
@@ -75,8 +111,8 @@ export default function PaymentOptions({
     setError("");
     try {
       const res = await api.post(`/payments/bank-transfer/${booking.id}`, {
-        amount: p.totalCharged,
-        currency: p.currency,
+        amount: finalTotal,
+        currency,
         narration: `SkilledProz-${booking.id.slice(0, 8).toUpperCase()}`,
       });
       setBankDetails(res.data.data.bankDetails);
@@ -177,7 +213,7 @@ export default function PaymentOptions({
       <div className={styles.summary}>
         <p className={styles.summaryTitle}>
           <FaMoneyBillWave style={{ marginRight: "6px" }} /> Payment Breakdown
-          {p.isJobPostBooking && (
+          {isJobPost && (
             <span
               style={{
                 marginLeft: 8,
@@ -193,22 +229,21 @@ export default function PaymentOptions({
           )}
         </p>
 
+        {/* Agreed Total row — the amount the hirer agreed to pay */}
         <div className={styles.summaryRow}>
-          <span>{p.isJobPostBooking ? "Agreed Total" : "Agreed Rate"}</span>
+          <span>{isJobPost ? "Agreed Total" : "Agreed Rate"}</span>
           <span>
-            {formatPrice(p.rate, p.currency)}
-            {!p.isJobPostBooking && p.unitSuffix}
+            {formatPrice(agreedTotal, currency)}
+            {!isJobPost && p.unitSuffix}
           </span>
         </div>
 
-        {/* For job-post bookings, show the real duration the hirer filled
-            in when creating the job post. For direct bookings, show the
-            calcPricing-derived qty. */}
-        {p.isJobPostBooking && booking.estimatedValue ? (
+        {/* Duration row — for job-post bookings, show the real duration */}
+        {isJobPost && durationText && (
           <div className={styles.summaryRow}>
             <span>Duration</span>
             <span>
-              {booking.estimatedValue} {booking.estimatedUnit || "hours"}
+              {durationText}
               {booking.estimatedHours && (
                 <span
                   style={{
@@ -222,44 +257,46 @@ export default function PaymentOptions({
               )}
             </span>
           </div>
-        ) : (
-          p.hasQty && (
-            <div className={styles.summaryRow}>
-              <span>Duration</span>
-              <span>
-                {p.qty} {p.unitLabel}
-                {p.qty !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )
         )}
 
-        {/* Subtotal row — hidden for job-post bookings (amount is final) */}
-        {!p.isJobPostBooking && p.hasQty && (
+        {/* Duration row — for direct bookings with a quantity */}
+        {!isJobPost && p.hasQty && (
           <div className={styles.summaryRow}>
+            <span>Duration</span>
             <span>
-              Subtotal ({p.qty} × {formatPrice(p.rate, p.currency)})
+              {p.qty} {p.unitLabel}
+              {p.qty !== 1 ? "s" : ""}
             </span>
-            <span>{formatPrice(p.subtotal, p.currency)}</span>
           </div>
         )}
 
+        {/* Subtotal row — only for direct bookings */}
+        {!isJobPost && p.hasQty && (
+          <div className={styles.summaryRow}>
+            <span>
+              Subtotal ({p.qty} × {formatPrice(p.rate, currency)})
+            </span>
+            <span>{formatPrice(p.subtotal, currency)}</span>
+          </div>
+        )}
+
+        {/* Platform fee — always shown with the real value */}
         <div className={styles.summaryRow}>
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            Platform Fee (5%)
+            Platform Fee ({PLATFORM_FEE_PCT * 100}%)
           </span>
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            + {formatPrice(p.platformFee, p.currency)}
+            + {formatPrice(platformFee, currency)}
           </span>
         </div>
 
-        {p.referralDeduct > 0 && (
+        {referralDeduct > 0 && (
           <div className={styles.summaryRow}>
             <span style={{ color: "var(--green)", fontSize: 12 }}>
               <FaGift style={{ marginRight: "4px" }} /> Referral bonus
             </span>
             <span style={{ color: "var(--green)", fontSize: 12 }}>
-              − {formatPrice(p.referralDeduct, p.currency)}
+              − {formatPrice(referralDeduct, currency)}
             </span>
           </div>
         )}
@@ -269,7 +306,7 @@ export default function PaymentOptions({
         <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
           <span>You Pay</span>
           <span className={styles.summaryTotalAmt}>
-            {formatPrice(p.totalCharged, p.currency)}
+            {formatPrice(finalTotal, currency)}
           </span>
         </div>
       </div>
@@ -325,8 +362,8 @@ export default function PaymentOptions({
               </p>
 
               <CryptoRateConverter
-                fiatAmount={p.totalCharged}
-                fiatCurrency={p.currency || "NGN"}
+                fiatAmount={finalTotal}
+                fiatCurrency={currency}
                 selectedToken={cryptoAsset}
                 onAmountChange={(data) => {
                   setCryptoAsset(data.token);
@@ -369,7 +406,7 @@ export default function PaymentOptions({
             <BankRow label="Account Name" value={bankDetails.accountName} />
             <BankRow
               label="Amount"
-              value={formatPrice(p.totalCharged, p.currency)}
+              value={formatPrice(finalTotal, currency)}
               accent
             />
             <BankRow label="Narration" value={bankDetails.narration} mono />
@@ -478,7 +515,7 @@ export default function PaymentOptions({
               value={
                 convertedCryptoAmount
                   ? `${convertedCryptoAmount.toFixed(6)} ${cryptoAsset}`
-                  : formatPrice(p.totalCharged, p.currency)
+                  : formatPrice(finalTotal, currency)
               }
               accent
             />
