@@ -480,19 +480,6 @@ export default function BookingDetailMain({
           {/* ── Job-post specific rows ── */}
           {isJobPostBooking && (
             <>
-              <DetailItem
-                icon={<FaBriefcase />}
-                label="Created From"
-                value={
-                  <Link
-                    to={`/jobs/${booking.jobPostId}`}
-                    className={styles.jobPostLink}
-                  >
-                    Job Post
-                    <FaExternalLinkAlt size={10} style={{ marginLeft: 4 }} />
-                  </Link>
-                }
-              />
               {booking.selectedRateOption && (
                 <DetailItem
                   icon={<FaMoneyBillWave />}
