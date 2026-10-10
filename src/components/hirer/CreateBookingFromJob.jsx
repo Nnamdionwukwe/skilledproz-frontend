@@ -1,5 +1,5 @@
 // src/components/hirer/CreateBookingFromJob.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Link,
   useParams,
@@ -12,23 +12,26 @@ import styles from "./CreateBookingFromJob.module.css";
 import {
   FiChevronLeft,
   FiLock,
-  FiFileText,
   FiCalendar,
   FiClock,
   FiMapPin,
-  FiGlobe,
-  FiShuffle,
   FiBriefcase,
   FiCheckCircle,
   FiAlertTriangle,
   FiX,
-  FiTag,
   FiDollarSign,
   FiTrendingUp,
   FiLayers,
   FiCheckSquare,
   FiSearch,
   FiInfo,
+  FiGlobe,
+  FiHome,
+  FiCoffee,
+  FiAward,
+  FiUser,
+  FiUsers,
+  FiRefreshCw,
 } from "react-icons/fi";
 
 // ── Static lookups (mirror backend enums) ──────────────────────────────────
@@ -45,8 +48,14 @@ const LOCATION_TYPE_LABEL = {
   HYBRID: "Hybrid",
 };
 
+const LOCATION_TYPE_ICON = {
+  REMOTE: FiGlobe,
+  ON_SITE: FiMapPin,
+  HYBRID: FiRefreshCw,
+};
+
 const BUDGET_TYPE_LABEL = {
-  FIXED: "Fixed",
+  FIXED: "Fixed Price",
   HOURLY: "Per Hour",
   DAILY: "Per Day",
   WEEKLY: "Per Week",
@@ -55,7 +64,82 @@ const BUDGET_TYPE_LABEL = {
   CUSTOM: "Custom",
 };
 
-// Friendly labels for the server error codes
+// Singular form for "per month" / "per week" etc.
+const BUDGET_TYPE_PERIOD_LABEL = {
+  HOURLY: "per hour",
+  DAILY: "per day",
+  WEEKLY: "per week",
+  MONTHLY: "per month",
+  YEARLY: "per year",
+};
+
+// The unit noun used for a given budget type ("Month" → "month")
+const BUDGET_TYPE_UNIT = {
+  HOURLY: "hours",
+  DAILY: "days",
+  WEEKLY: "weeks",
+  MONTHLY: "months",
+  YEARLY: "years",
+};
+
+const RATE_OPTION_LABEL = {
+  budget: "Job Budget",
+  salaryAmount: "Salary Amount",
+  salaryMin: "Salary (Minimum)",
+  salaryMax: "Salary (Maximum)",
+  salaryText: "Salary Headline",
+};
+
+// Plural / singular noun forms for the multiplier line
+const DURATION_UNIT_NOUN = {
+  hours: ["hour", "hours"],
+  days: ["day", "days"],
+  weeks: ["week", "weeks"],
+  months: ["month", "months"],
+  years: ["year", "years"],
+};
+
+const EDUCATION_LEVEL_LABEL = {
+  HIGH_SCHOOL: "High School",
+  DIPLOMA: "Diploma",
+  BACHELOR: "Bachelor's Degree",
+  MASTER: "Master's Degree",
+  DOCTORATE: "Doctorate",
+  CERTIFICATION: "Certification",
+  OTHER: "Other",
+};
+
+const ALL_LANGUAGES = {
+  en: "English",
+  fr: "French",
+  ar: "Arabic",
+  yo: "Yoruba",
+  ha: "Hausa",
+  ig: "Igbo",
+  sw: "Swahili",
+  pt: "Portuguese",
+  es: "Spanish",
+  de: "German",
+  zh: "Chinese",
+  hi: "Hindi",
+  bn: "Bengali",
+  ur: "Urdu",
+  tr: "Turkish",
+  ko: "Korean",
+  ja: "Japanese",
+  ru: "Russian",
+  id: "Indonesian",
+  vi: "Vietnamese",
+  it: "Italian",
+  nl: "Dutch",
+  pl: "Polish",
+  fa: "Persian",
+  am: "Amharic",
+  zu: "Zulu",
+  af: "Afrikaans",
+  so: "Somali",
+};
+
 const OPTION_ERROR_LABEL = {
   MISSING_RATE: "No amount set for this option",
   MISSING_DURATION:
@@ -66,9 +150,112 @@ const OPTION_ERROR_LABEL = {
     "Salary headline only — enter a negotiated amount below",
 };
 
-function formatMoney(amount, currency) {
-  if (amount == null) return "—";
-  return `${currency || ""} ${Number(amount).toLocaleString()}`.trim();
+function formatMoney(amount, currency = "NGN") {
+  if (amount == null || isNaN(amount)) return "—";
+  return `${currency} ${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatNumber(n) {
+  if (n == null || isNaN(n)) return "—";
+  return Number(n).toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Renders "1 week", "3 months", "a full weekend".
+ */
+function formatDurationLabel(estimatedValue, estimatedUnit) {
+  if (estimatedValue == null || estimatedValue === "") return null;
+  const unit = estimatedUnit || "hours";
+  if (unit === "custom") return String(estimatedValue);
+  const num = parseFloat(estimatedValue);
+  if (!Number.isFinite(num)) return String(estimatedValue);
+  const [singular, plural] = DURATION_UNIT_NOUN[unit] || [unit, unit];
+  const noun = num === 1 ? singular : plural;
+  return `${formatNumber(num)} ${noun}`;
+}
+
+// ── Notes parsing — mirrors JobDetail.jsx exactly ─────────────────────────
+function parseRecurring(notes) {
+  if (!notes) return null;
+  const m = notes.match(/Recurring:\s*([^.]+)\./i);
+  return m ? m[1].trim() : null;
+}
+function parseCustomDuration(notes) {
+  if (!notes) return null;
+  const m = notes.match(/Duration:\s*([^.]+)\./i);
+  return m ? m[1].trim() : null;
+}
+function stripSystemNotes(notes) {
+  if (!notes) return notes;
+  return notes
+    .replace(/Recurring:\s*[^.]+\.\s*/i, "")
+    .replace(/Duration:\s*[^.]+\.\s*/i, "")
+    .trim();
+}
+
+/**
+ * Parse the recurring text "Monthly for 1 month" into { count, unit, label }.
+ * Used as a fallback when the job post has no estimatedValue/estimatedUnit
+ * (older job posts that predate the schema change).
+ *
+ *  "Monthly for 1 month"    → { count: 1, unit: "months" }
+ *  "Weekly for 3 months"    → { count: 3, unit: "months" }
+ *  "Daily for 2 weeks"      → { count: 2, unit: "weeks" }
+ *  "Bi-weekly for 1 month"  → { count: 1, unit: "months" }
+ *  "Yearly for 2 years"     → { count: 2, unit: "years" }
+ *  "Monthly ongoing"        → { count: 1, unit: "months", label: "ongoing" }
+ */
+function parseRecurringBreakdown(recurringText) {
+  if (!recurringText) return null;
+  const text = recurringText.toLowerCase();
+
+  // Find the "for N unit" portion
+  const forMatch = text.match(/for\s+(\d+(?:\.\d+)?)\s+(\w+)/i);
+  if (forMatch) {
+    const count = parseFloat(forMatch[1]);
+    let unit = forMatch[2];
+    // Normalize singular → plural
+    if (unit === "month") unit = "months";
+    else if (unit === "week") unit = "weeks";
+    else if (unit === "day") unit = "days";
+    else if (unit === "year") unit = "years";
+    else if (unit === "hour") unit = "hours";
+    if (DURATION_UNIT_NOUN[unit] && Number.isFinite(count) && count > 0) {
+      return { count, unit };
+    }
+  }
+
+  // "ongoing" → treat as 1 unit of the interval's natural unit
+  if (text.includes("ongoing")) {
+    const interval = text.split(/\s/)[0];
+    const unitMap = {
+      daily: "days",
+      weekly: "weeks",
+      "bi-weekly": "weeks",
+      biweekly: "weeks",
+      monthly: "months",
+      yearly: "years",
+    };
+    const unit = unitMap[interval];
+    if (unit) return { count: 1, unit };
+  }
+
+  return null;
+}
+
+/**
+ * Best-effort extraction of the multiplier label from notes:
+ *  "Recurring: Monthly for 1 month."  → "1 month"
+ */
+function parseRecurringDurationLabel(recurringText) {
+  const parsed = parseRecurringBreakdown(recurringText);
+  if (!parsed) return null;
+  return formatDurationLabel(String(parsed.count), parsed.unit);
 }
 
 export default function CreateBookingFromJob() {
@@ -83,13 +270,11 @@ export default function CreateBookingFromJob() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
 
-  // ── Form state ──
   const [selectedRateOption, setSelectedRateOption] = useState("");
   const [negotiatedRate, setNegotiatedRate] = useState("");
   const [negotiationNote, setNegotiationNote] = useState("");
   const [notes, setNotes] = useState("");
 
-  // ── Load the draft ───────────────────────────────────────────────────
   useEffect(() => {
     if (!jobPostId) return;
 
@@ -103,9 +288,6 @@ export default function CreateBookingFromJob() {
         const data = res.data.data;
         setDraft(data);
 
-        // Auto-select the first *computable* option. If none is
-        // computable, leave the selection empty so the hirer is
-        // prompted to negotiate.
         const firstComputable = data.priceOptions?.find(
           (o) => o.canAutoCompute !== false && o.estimatedTotal != null,
         );
@@ -122,22 +304,18 @@ export default function CreateBookingFromJob() {
       .finally(() => setLoading(false));
   }, [jobPostId, workerId]);
 
-  // ── Derived values ──────────────────────────────────────────────────
   const hasNegotiated = negotiatedRate !== "" && parseFloat(negotiatedRate) > 0;
 
   const selectedPriceOption = draft?.priceOptions?.find(
     (p) => p.key === selectedRateOption,
   );
 
-  // The selected option must be computable by the server UNLESS a
-  // negotiated amount has been entered.
   const selectedOptionBlocked =
     !hasNegotiated &&
     selectedPriceOption &&
     (selectedPriceOption.canAutoCompute === false ||
       selectedPriceOption.estimatedTotal == null);
 
-  // Final displayed total = negotiated amount > server-computed total
   const finalAmount = hasNegotiated
     ? parseFloat(negotiatedRate)
     : (selectedPriceOption?.estimatedTotal ??
@@ -153,7 +331,105 @@ export default function CreateBookingFromJob() {
     finalAmount != null &&
     (!selectedOptionBlocked || hasNegotiated);
 
-  // ── Submit ──────────────────────────────────────────────────────────
+  // ── Full payment breakdown ───────────────────────────────────────────
+  const breakdown = useMemo(() => {
+    if (!draft || !selectedPriceOption) return null;
+
+    const lf = draft.lockedFields || {};
+    const snap = lf.jobRateSnapshot || {};
+
+    const rate = selectedPriceOption.amount;
+    const rateCurrency = selectedPriceOption.currency || finalCurrency;
+    const period = selectedPriceOption.period;
+    const budgetType = period || snap.budgetType || lf.budgetType || "FIXED";
+
+    // ── Resolve the duration from the job post's fields.
+    // Prefer estimatedValue/estimatedUnit. If they're missing (older job
+    // posts), parse the recurring note to get the multiplier instead.
+    let estimatedValue = lf.estimatedValue;
+    let estimatedUnit = lf.estimatedUnit;
+    const estimatedHours = lf.estimatedHours;
+    const recurringLabel = parseRecurring(lf.notes);
+
+    let derivedFromNotes = false;
+    if (
+      (!estimatedValue || estimatedValue === "") &&
+      budgetType !== "FIXED" &&
+      budgetType !== "CUSTOM"
+    ) {
+      const parsed = parseRecurringBreakdown(recurringLabel);
+      if (parsed) {
+        estimatedValue = String(parsed.count);
+        estimatedUnit = parsed.unit;
+        derivedFromNotes = true;
+      }
+    }
+
+    const numericDuration = parseFloat(estimatedValue);
+    const durationLabel = formatDurationLabel(estimatedValue, estimatedUnit);
+
+    let multiplierLabel = null;
+    let subtotal = 0;
+    let calculationText = null;
+    let isRecurring = false;
+
+    if (hasNegotiated) {
+      subtotal = parseFloat(negotiatedRate);
+      calculationText = null;
+    } else if (budgetType === "FIXED" || !budgetType) {
+      subtotal = rate ?? 0;
+      calculationText = `Fixed price · ${formatMoney(subtotal, rateCurrency)}`;
+    } else if (budgetType === "CUSTOM") {
+      subtotal = selectedPriceOption.estimatedTotal ?? rate ?? 0;
+      calculationText = `Estimated from custom duration: ${formatMoney(subtotal, rateCurrency)}`;
+    } else {
+      // HOURLY / DAILY / WEEKLY / MONTHLY / YEARLY
+      if (Number.isFinite(numericDuration) && numericDuration > 0) {
+        multiplierLabel = durationLabel;
+        isRecurring = true;
+        subtotal = (rate ?? 0) * numericDuration;
+        calculationText =
+          `${formatMoney(rate, rateCurrency)} ` +
+          `${BUDGET_TYPE_PERIOD_LABEL[budgetType] || BUDGET_TYPE_LABEL[budgetType]} ` +
+          `× ${multiplierLabel} = ${formatMoney(subtotal, rateCurrency)}`;
+      } else {
+        subtotal = selectedPriceOption.estimatedTotal ?? rate ?? 0;
+        calculationText = `Estimated total: ${formatMoney(subtotal, rateCurrency)}`;
+      }
+    }
+
+    const platformFeePct = 0.05;
+    const platformFee = Math.round(subtotal * platformFeePct * 100) / 100;
+    const grandTotal = subtotal + platformFee;
+
+    return {
+      rate,
+      rateCurrency,
+      budgetType,
+      budgetTypeLabel: BUDGET_TYPE_LABEL[budgetType] || budgetType,
+      periodLabel: BUDGET_TYPE_PERIOD_LABEL[budgetType] || null,
+      multiplierLabel,
+      durationLabel,
+      estimatedHours,
+      calculationText,
+      subtotal,
+      platformFeePct,
+      platformFee,
+      grandTotal,
+      isNegotiated: hasNegotiated,
+      isFixed: budgetType === "FIXED" && !hasNegotiated,
+      isRecurring,
+      isCustom: budgetType === "CUSTOM",
+      derivedFromNotes,
+    };
+  }, [
+    draft,
+    selectedPriceOption,
+    hasNegotiated,
+    negotiatedRate,
+    finalCurrency,
+  ]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -190,9 +466,6 @@ export default function CreateBookingFromJob() {
       }
       const res = await api.post(`/bookings/from-job/${jobPostId}`, payload);
       setSuccess(res.data.data.booking);
-      // Navigate after we've captured the booking so the success screen
-      // has the data it needs. We do this in the next tick to avoid a
-      // flash.
       setTimeout(() => {
         navigate(`/bookings/${res.data.data.booking.id}`);
       }, 50);
@@ -205,7 +478,6 @@ export default function CreateBookingFromJob() {
     }
   }
 
-  // ── Success state ────────────────────────────────────────────────────
   if (success) {
     return (
       <HirerLayout>
@@ -262,7 +534,6 @@ export default function CreateBookingFromJob() {
     );
   }
 
-  // ── Loading state ────────────────────────────────────────────────────
   if (loading) {
     return (
       <HirerLayout>
@@ -276,7 +547,6 @@ export default function CreateBookingFromJob() {
     );
   }
 
-  // ── Error state (nothing loaded) ────────────────────────────────────
   if (!draft) {
     return (
       <HirerLayout>
@@ -299,8 +569,31 @@ export default function CreateBookingFromJob() {
   }
 
   const { worker, category, lockedFields, priceOptions, jobTitle } = draft;
+  const LocationIcon = LOCATION_TYPE_ICON[lockedFields.locationType];
+  const languageLabel = lockedFields.languageRequirement
+    ? ALL_LANGUAGES[lockedFields.languageRequirement] ||
+      lockedFields.languageRequirement.toUpperCase()
+    : null;
+  const educationLabel = lockedFields.educationLevel
+    ? EDUCATION_LEVEL_LABEL[lockedFields.educationLevel] ||
+      lockedFields.educationLevel
+    : null;
 
-  // ── Main form ───────────────────────────────────────────────────────
+  // Notes-derived duration (used both in the locked grid and breakdown)
+  const recurringLabel = parseRecurring(lockedFields.notes);
+  const customDurationLabel = parseCustomDuration(lockedFields.notes);
+  const cleanNotes = stripSystemNotes(lockedFields.notes);
+  const recurringDurationLabel = parseRecurringDurationLabel(recurringLabel);
+
+  const hasRequirementsBlock = !!(
+    lockedFields.minQualification ||
+    lockedFields.experienceLevel ||
+    lockedFields.experienceLength ||
+    educationLabel ||
+    lockedFields.workingHours ||
+    lockedFields.applicantLocation
+  );
+
   return (
     <HirerLayout>
       <div className={styles.page}>
@@ -311,7 +604,6 @@ export default function CreateBookingFromJob() {
           <FiChevronLeft size={14} /> Back to Applications
         </Link>
 
-        {/* Header */}
         <div className={styles.header}>
           <p className={styles.eyebrow}>Create Booking</p>
           <h1 className={styles.title}>From job post</h1>
@@ -339,9 +631,7 @@ export default function CreateBookingFromJob() {
         )}
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* ══════════════════════════════════════════════════════════
-              LOCKED FIELDS (from the job post)
-          ══════════════════════════════════════════════════════════ */}
+          {/* LOCKED FIELDS */}
           <div className={styles.lockHeader}>
             <FiLock size={14} />
             <span>
@@ -392,22 +682,47 @@ export default function CreateBookingFromJob() {
                 )}
               />
             )}
+
             {lockedFields.estimatedValue && (
               <LockedCard
                 icon={<FiClock size={14} />}
                 label="Estimated Duration"
-                value={`${lockedFields.estimatedValue} ${
-                  lockedFields.estimatedUnit || "hours"
-                }`}
+                value={
+                  <>
+                    {formatDurationLabel(
+                      lockedFields.estimatedValue,
+                      lockedFields.estimatedUnit,
+                    )}
+                    {lockedFields.estimatedHours &&
+                      lockedFields.estimatedUnit !== "hours" && (
+                        <span className={styles.lockedSub}>
+                          {" "}
+                          ≈ {formatNumber(lockedFields.estimatedHours)}h of work
+                        </span>
+                      )}
+                  </>
+                }
               />
             )}
+
+            {!lockedFields.estimatedValue && recurringLabel && (
+              <LockedCard
+                icon={<FiRefreshCw size={14} />}
+                label="Recurring Schedule"
+                value={recurringLabel}
+              />
+            )}
+
             {lockedFields.durationValue && lockedFields.durationType && (
               <LockedCard
                 icon={<FiClock size={14} />}
                 label="Project Duration"
-                value={`${lockedFields.durationValue} ${lockedFields.durationType.toLowerCase()}`}
+                value={`${lockedFields.durationValue} ${String(
+                  lockedFields.durationType,
+                ).toLowerCase()}`}
               />
             )}
+
             {lockedFields.locationType !== "REMOTE" && lockedFields.address && (
               <LockedCard
                 icon={<FiMapPin size={14} />}
@@ -418,7 +733,6 @@ export default function CreateBookingFromJob() {
             )}
           </div>
 
-          {/* Title + Description */}
           <div className={styles.field}>
             <label className={styles.label}>Job Title</label>
             <div className={styles.lockedValue}>{lockedFields.title}</div>
@@ -431,7 +745,25 @@ export default function CreateBookingFromJob() {
             </div>
           </div>
 
-          {/* Skills */}
+          {(lockedFields.providesAccommodation ||
+            lockedFields.providesMeals) && (
+            <div className={styles.field}>
+              <label className={styles.label}>Work Conditions</label>
+              <div className={styles.conditionRow}>
+                {lockedFields.providesAccommodation && (
+                  <span className={styles.conditionChip}>
+                    <FiHome size={12} /> Accommodation provided
+                  </span>
+                )}
+                {lockedFields.providesMeals && (
+                  <span className={styles.conditionChip}>
+                    <FiCoffee size={12} /> Meals provided
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {lockedFields.skills?.length > 0 && (
             <div className={styles.field}>
               <label className={styles.label}>Required Skills</label>
@@ -445,7 +777,73 @@ export default function CreateBookingFromJob() {
             </div>
           )}
 
-          {/* Requirements / Responsibilities */}
+          {lockedFields.qualifications?.length > 0 && (
+            <div className={styles.field}>
+              <label className={styles.label}>Required Qualifications</label>
+              <div className={styles.skillsWrap}>
+                {lockedFields.qualifications.map((q, i) => (
+                  <span key={i} className={styles.skillChip}>
+                    <FiAward size={11} /> {q}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {hasRequirementsBlock && (
+            <div className={styles.field}>
+              <label className={styles.label}>Additional Requirements</label>
+              <div className={styles.lockedGrid}>
+                {lockedFields.minQualification && (
+                  <LockedCard
+                    icon={<FiAward size={14} />}
+                    label="Minimum Qualification"
+                    value={lockedFields.minQualification}
+                  />
+                )}
+                {lockedFields.experienceLevel && (
+                  <LockedCard
+                    icon={<FiTrendingUp size={14} />}
+                    label="Experience Level"
+                    value={
+                      lockedFields.experienceLength
+                        ? `${lockedFields.experienceLevel} · ${lockedFields.experienceLength}`
+                        : lockedFields.experienceLevel
+                    }
+                  />
+                )}
+                {educationLabel && (
+                  <LockedCard
+                    icon={<FiAward size={14} />}
+                    label="Education Level"
+                    value={educationLabel}
+                  />
+                )}
+                {languageLabel && (
+                  <LockedCard
+                    icon={<FiGlobe size={14} />}
+                    label="Language"
+                    value={languageLabel}
+                  />
+                )}
+                {lockedFields.workingHours && (
+                  <LockedCard
+                    icon={<FiClock size={14} />}
+                    label="Working Hours"
+                    value={lockedFields.workingHours}
+                  />
+                )}
+                {lockedFields.applicantLocation && (
+                  <LockedCard
+                    icon={<FiMapPin size={14} />}
+                    label="Preferred Applicant Location"
+                    value={lockedFields.applicantLocation}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
           {lockedFields.requirements && (
             <div className={styles.field}>
               <label className={styles.label}>Requirements</label>
@@ -463,9 +861,7 @@ export default function CreateBookingFromJob() {
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════
-              PAYMENT SELECTION
-          ══════════════════════════════════════════════════════════ */}
+          {/* PAYMENT */}
           <div className={styles.sectionDivider}>
             <FiDollarSign size={14} />
             <span>Payment</span>
@@ -476,8 +872,8 @@ export default function CreateBookingFromJob() {
               Select Payment Option <span className={styles.req}>*</span>
             </label>
             <p className={styles.fieldHint}>
-              Pick the price the hirer will pay for this booking. The total is
-              calculated by the server based on the job's rate and duration.
+              Pick the price that matches what you and the worker agreed. The
+              full breakdown updates live below.
             </p>
 
             <div className={styles.rateOptions}>
@@ -503,23 +899,25 @@ export default function CreateBookingFromJob() {
                       {isSelected ? "◉" : "○"}
                     </span>
                     <span className={styles.rateOptionBody}>
-                      <span className={styles.rateOptionLabel}>
-                        {option.label}
+                      <span className={styles.rateOptionHeader}>
+                        <span className={styles.rateOptionLabel}>
+                          {RATE_OPTION_LABEL[option.key] || option.label}
+                        </span>
+                        {option.period && option.period !== "FIXED" && (
+                          <span className={styles.rateOptionBadge}>
+                            {BUDGET_TYPE_LABEL[option.period] || option.period}
+                          </span>
+                        )}
                       </span>
                       <span className={styles.rateOptionMeta}>
                         {option.description}
-                        {option.period &&
-                          option.period !== "FIXED" &&
-                          ` · ${
-                            BUDGET_TYPE_LABEL[option.period] || option.period
-                          }`}
                       </span>
 
-                      {/* Server-computed total for this option */}
                       {!blocked ? (
                         <span className={styles.rateOptionTotal}>
-                          Total:{" "}
-                          {formatMoney(option.estimatedTotal, option.currency)}
+                          {option.period && option.period !== "FIXED"
+                            ? `Rate: ${formatMoney(option.amount, option.currency)} ${BUDGET_TYPE_PERIOD_LABEL[option.period] || ""} · Total: ${formatMoney(option.estimatedTotal, option.currency)}`
+                            : `Total: ${formatMoney(option.estimatedTotal, option.currency)}`}
                         </span>
                       ) : (
                         <span className={styles.rateOptionBlockedNote}>
@@ -529,7 +927,6 @@ export default function CreateBookingFromJob() {
                         </span>
                       )}
 
-                      {/* Show the audit trail when the server gives one */}
                       {!blocked && option.explanation && (
                         <span className={styles.rateOptionAudit}>
                           {option.explanation}
@@ -541,6 +938,147 @@ export default function CreateBookingFromJob() {
               })}
             </div>
           </div>
+
+          {/* ══════════════════════════════════════════════════════════
+              FULL PAYMENT BREAKDOWN
+          ══════════════════════════════════════════════════════════ */}
+          {breakdown && !selectedOptionBlocked && (
+            <div className={styles.breakdownCard}>
+              <div className={styles.breakdownHeader}>
+                <FiDollarSign size={16} />
+                <span>Payment Breakdown</span>
+                <span className={styles.breakdownBadge}>
+                  {breakdown.isNegotiated
+                    ? "Negotiated"
+                    : breakdown.budgetTypeLabel}
+                </span>
+              </div>
+
+              <div className={styles.breakdownBody}>
+                {/* Rate row */}
+                {!breakdown.isFixed && !breakdown.isNegotiated && (
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownLabel}>
+                      {breakdown.periodLabel ? "Rate" : "Agreed Rate"}
+                    </span>
+                    <span className={styles.breakdownValue}>
+                      {formatMoney(breakdown.rate, breakdown.rateCurrency)}
+                      {breakdown.periodLabel && (
+                        <span className={styles.breakdownSub}>
+                          {" "}
+                          {breakdown.periodLabel}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {/* Duration row for recurring/numeric types */}
+                {breakdown.isRecurring && breakdown.multiplierLabel && (
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownLabel}>
+                      Duration ({breakdown.budgetTypeLabel})
+                    </span>
+                    <span className={styles.breakdownValue}>
+                      {breakdown.multiplierLabel}
+                      {breakdown.estimatedHours &&
+                        breakdown.estimatedHours > 0 && (
+                          <span className={styles.breakdownSub}>
+                            {" "}
+                            ≈ {formatNumber(breakdown.estimatedHours)}h
+                          </span>
+                        )}
+                    </span>
+                  </div>
+                )}
+
+                {breakdown.isCustom &&
+                  breakdown.durationLabel &&
+                  !breakdown.isRecurring && (
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownLabel}>Duration</span>
+                      <span className={styles.breakdownValue}>
+                        {breakdown.durationLabel}
+                      </span>
+                    </div>
+                  )}
+
+                {/* ★ The multiplier line — "NGN 200,000 per month × 1 month = NGN 200,000" */}
+                {breakdown.calculationText && (
+                  <div className={styles.breakdownCalc}>
+                    <FiInfo size={12} />
+                    <span>{breakdown.calculationText}</span>
+                  </div>
+                )}
+
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>Subtotal</span>
+                  <span className={styles.breakdownValue}>
+                    {formatMoney(breakdown.subtotal, breakdown.rateCurrency)}
+                  </span>
+                </div>
+
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>
+                    Platform fee ({breakdown.platformFeePct * 100}%)
+                    <span className={styles.breakdownHint}>
+                      {" "}
+                      — covers escrow, support, and payment processing
+                    </span>
+                  </span>
+                  <span className={styles.breakdownValue}>
+                    +{" "}
+                    {formatMoney(breakdown.platformFee, breakdown.rateCurrency)}
+                  </span>
+                </div>
+
+                <div className={styles.breakdownDivider} />
+
+                <div className={styles.breakdownTotal}>
+                  <span className={styles.breakdownTotalLabel}>
+                    {breakdown.isNegotiated ? "Negotiated Total" : "You Pay"}
+                  </span>
+                  <span className={styles.breakdownTotalValue}>
+                    {formatMoney(breakdown.grandTotal, breakdown.rateCurrency)}
+                  </span>
+                </div>
+
+                <div className={styles.breakdownNotes}>
+                  {breakdown.isFixed && (
+                    <p>
+                      <FiInfo size={11} /> Fixed-price booking. The agreed
+                      amount is the total, plus the platform fee.
+                    </p>
+                  )}
+                  {breakdown.isRecurring && (
+                    <p>
+                      <FiInfo size={11} />{" "}
+                      {formatMoney(breakdown.rate, breakdown.rateCurrency)}{" "}
+                      {breakdown.periodLabel} × {breakdown.multiplierLabel}. The
+                      worker is paid per {breakdown.budgetType.toLowerCase()}{" "}
+                      for the full {breakdown.multiplierLabel} engagement.
+                    </p>
+                  )}
+                  {breakdown.isCustom && (
+                    <p>
+                      <FiInfo size={11} /> Custom rate — the total was estimated
+                      from the duration you described.
+                    </p>
+                  )}
+                  {breakdown.isNegotiated && (
+                    <p>
+                      <FiInfo size={11} /> You and the worker agreed on a custom
+                      amount. This overrides the job post's rate.
+                    </p>
+                  )}
+                  <p>
+                    <FiInfo size={11} /> Referral bonuses from your wallet can
+                    be applied at the payment step to reduce the total.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Negotiated override */}
           <div className={styles.negotiatedBox}>
@@ -588,28 +1126,7 @@ export default function CreateBookingFromJob() {
             )}
           </div>
 
-          {/* Final rate summary */}
-          {finalAmount != null && (
-            <div className={styles.rateSummary}>
-              <FiCheckCircle size={14} />
-              <span>
-                Final amount:{" "}
-                <strong>{formatMoney(finalAmount, finalCurrency)}</strong>
-                {!hasNegotiated &&
-                  selectedPriceOption?.period &&
-                  selectedPriceOption.period !== "FIXED" &&
-                  ` (${
-                    BUDGET_TYPE_LABEL[selectedPriceOption.period] ||
-                    selectedPriceOption.period
-                  })`}
-                {hasNegotiated && " · negotiated"}
-              </span>
-            </div>
-          )}
-
-          {/* ══════════════════════════════════════════════════════════
-              BOOKING NOTES (hirer-editable)
-          ══════════════════════════════════════════════════════════ */}
+          {/* BOOKING NOTES */}
           <div className={styles.field}>
             <label className={styles.label}>
               Booking Notes <span className={styles.optional}>(optional)</span>
@@ -624,7 +1141,6 @@ export default function CreateBookingFromJob() {
             />
           </div>
 
-          {/* Actions */}
           <div className={styles.actions}>
             <Link
               to={`/jobs/${jobPostId}/applications`}
@@ -643,7 +1159,10 @@ export default function CreateBookingFromJob() {
                 </>
               ) : (
                 <>
-                  <FiCheckCircle size={16} /> Create Booking
+                  <FiCheckCircle size={16} />
+                  {breakdown
+                    ? `Create Booking · ${formatMoney(breakdown.grandTotal, breakdown.rateCurrency)}`
+                    : "Create Booking"}
                 </>
               )}
             </button>
@@ -654,7 +1173,6 @@ export default function CreateBookingFromJob() {
   );
 }
 
-// ── Sub-component: read-only card ──────────────────────────────────────────
 function LockedCard({ icon, label, value, full }) {
   return (
     <div

@@ -720,3 +720,213 @@
 .rateOptionBlocked {
   border-color: rgba(239, 68, 68, 0.25) !important;
 }
+/* ── Locked field sub-text (e.g. "≈ 320h of work") ─────────────────── */
+.lockedSub {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── Work conditions row ───────────────────────────────────────────── */
+.conditionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.conditionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Rate option header with badge ─────────────────────────────────── */
+.rateOptionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+.rateOptionBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  border-radius: 100px;
+}
+
+/* ── FULL PAYMENT BREAKDOWN CARD ───────────────────────────────────── */
+.breakdownCard {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.breakdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--orange-dim);
+  border-bottom: 1px solid var(--orange-glow);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--orange);
+}
+.breakdownHeader svg {
+  flex-shrink: 0;
+}
+.breakdownBadge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  background: var(--bg);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  border-radius: 100px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.breakdownBody {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.breakdownRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+}
+.breakdownLabel {
+  color: var(--text-dim);
+  font-weight: 500;
+  line-height: 1.5;
+}
+.breakdownValue {
+  color: var(--text);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.breakdownSub {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 12px;
+  margin-left: 4px;
+}
+.breakdownHint {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* Calculation line — the "rate × duration = total" */
+.breakdownCalc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.01em;
+}
+.breakdownCalc svg {
+  flex-shrink: 0;
+  color: var(--orange);
+}
+
+/* Divider */
+.breakdownDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* Grand total row */
+.breakdownTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  border-radius: 10px;
+}
+.breakdownTotalLabel {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--orange);
+}
+.breakdownTotalValue {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--orange);
+  letter-spacing: -0.5px;
+}
+
+/* Contextual notes */
+.breakdownNotes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.breakdownNotes p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.breakdownNotes p svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--orange);
+}
+
+@media (max-width: 480px) {
+  .breakdownBody {
+    padding: 14px;
+  }
+  .breakdownTotalValue {
+    font-size: 18px;
+  }
+  .breakdownRow {
+    font-size: 13px;
+  }
+}
