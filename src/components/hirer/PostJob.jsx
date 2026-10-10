@@ -1446,9 +1446,84 @@ export default function PostJob() {
               </p>
             )}
 
-            {/* ── Recurring total preview ──
-                Shows the total the worker will be paid over the whole
-                engagement, so the hirer understands what they're offering. */}
+            {/* ── One-off total preview ──
+                When the hirer picks a non-FIXED rate on a one-off job,
+                show the full calculation: rate × duration = total. */}
+            {form.scheduleMode === "ONE_OFF" &&
+              form.showRateOptions &&
+              form.budgetType !== "CUSTOM" &&
+              form.budget &&
+              form.estimatedValue &&
+              (() => {
+                const rate = parseFloat(form.budget);
+                if (!Number.isFinite(rate) || rate <= 0) return null;
+
+                const MONTHS_PER_UNIT = {
+                  hours: 1 / (30.44 * 8),
+                  days: 1 / 30.44,
+                  weeks: 1 / 4.33,
+                  months: 1,
+                  years: 12,
+                };
+
+                const valueNum = parseFloat(form.estimatedValue);
+                if (!Number.isFinite(valueNum) || valueNum <= 0) return null;
+
+                const durationInMonths =
+                  valueNum * (MONTHS_PER_UNIT[form.durationUnit] || 0);
+
+                const MONTHS_PER_RATE_PERIOD = {
+                  HOURLY: 1 / (30.44 * 8),
+                  DAILY: 1 / 30.44,
+                  WEEKLY: 1 / 4.33,
+                  MONTHLY: 1,
+                  YEARLY: 12,
+                };
+                const ratePeriodMonths =
+                  MONTHS_PER_RATE_PERIOD[form.budgetType];
+                if (!ratePeriodMonths) return null;
+
+                const periods = durationInMonths / ratePeriodMonths;
+                if (!Number.isFinite(periods) || periods <= 0) return null;
+
+                const total = rate * periods;
+
+                const unitNounMap = {
+                  HOURLY: ["hour", "hours"],
+                  DAILY: ["day", "days"],
+                  WEEKLY: ["week", "weeks"],
+                  MONTHLY: ["month", "months"],
+                  YEARLY: ["year", "years"],
+                };
+                const [sing, plur] = unitNounMap[form.budgetType] || [
+                  "unit",
+                  "units",
+                ];
+                const rounded = Number(periods.toFixed(2));
+                const periodsLabel = `${rounded} ${rounded === 1 ? sing : plur}`;
+
+                const periodLabel =
+                  {
+                    HOURLY: "per hour",
+                    DAILY: "per day",
+                    WEEKLY: "per week",
+                    MONTHLY: "per month",
+                    YEARLY: "per year",
+                  }[form.budgetType] || `per ${form.budgetType.toLowerCase()}`;
+
+                return (
+                  <p className={styles.durationSummary}>
+                    ✓ Total:{" "}
+                    <strong>
+                      {form.currency} {Math.round(total).toLocaleString()}
+                    </strong>{" "}
+                    ({form.currency} {rate.toLocaleString()} {periodLabel} ×{" "}
+                    {periodsLabel})
+                  </p>
+                );
+              })()}
+
+            {/* ── Recurring total preview ── */}
             {form.scheduleMode === "RECURRING" &&
               form.showRateOptions &&
               form.budgetType !== "CUSTOM" &&
