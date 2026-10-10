@@ -4,14 +4,20 @@
  * Convert a numeric value in a given unit to hours.
  * Mirrors the same math used by PostJob.jsx so the display stays
  * consistent with what the hirer typed.
+ *
+ * ── Multipliers (must match PostJob.jsx) ─────────────────────────────
+ * 1 day    = 8 hours
+ * 1 week   = 56 hours    (8 × 7)
+ * 1 month  = 242.5 hours (56 × 4.33)
+ * 1 year   = 2910 hours  (242.5 × 12)
  */
 function toHours(n, unit) {
   if (!Number.isFinite(n)) return null;
   if (unit === "hours") return n;
   if (unit === "days") return n * 8;
-  if (unit === "weeks") return n * 40;
-  if (unit === "months") return n * 160;
-  if (unit === "years") return n * 2000;
+  if (unit === "weeks") return n * 56;
+  if (unit === "months") return n * 242.5;
+  if (unit === "years") return n * 2910;
   return null;
 }
 
@@ -23,9 +29,9 @@ function fromHours(hours, unit) {
   if (!Number.isFinite(hours)) return null;
   if (unit === "hours") return hours;
   if (unit === "days") return hours / 8;
-  if (unit === "weeks") return hours / 40;
-  if (unit === "months") return hours / 160;
-  if (unit === "years") return hours / 2000;
+  if (unit === "weeks") return hours / 56;
+  if (unit === "months") return hours / 242.5;
+  if (unit === "years") return hours / 2910;
   return hours;
 }
 
@@ -40,7 +46,7 @@ const UNIT_CONFIG = {
   days: { s: "day", p: "days", icon: "📅" },
   weeks: { s: "week", p: "weeks", icon: "📆" },
   months: { s: "month", p: "months", icon: "🗓" },
-  years: { s: "year", p: "years", icon: "📅" }, // ← was missing
+  years: { s: "year", p: "years", icon: "📅" },
 };
 
 /**
@@ -85,13 +91,13 @@ export function formatJobDuration(job) {
 
   if (unit === "years") {
     equivParts.push(`${tidy(count * 12)} mo`);
-    equivParts.push(`≈${tidy(count * 2000)}h`);
+    equivParts.push(`≈${tidy(count * 2910)}h`);
   } else if (unit === "months") {
-    equivParts.push(`${tidy(count * 4)} wk`);
-    equivParts.push(`≈${tidy(count * 160)}h`);
+    equivParts.push(`${tidy(count * 4.33)} wk`);
+    equivParts.push(`≈${tidy(count * 242.5)}h`);
   } else if (unit === "weeks") {
     equivParts.push(`${tidy(count * 7)} day${count * 7 !== 1 ? "s" : ""}`);
-    equivParts.push(`≈${tidy(count * 40)}h`);
+    equivParts.push(`≈${tidy(count * 56)}h`);
   } else if (unit === "days") {
     equivParts.push(`≈${tidy(count * 8)}h`);
     if (count >= 7) equivParts.push(`${tidy(count / 7)} wk`);
@@ -135,11 +141,11 @@ export function formatJobDurationParts(job) {
     equivalents.push({ label: `${tidy(count * 12)} months`, unit: "months" });
     equivalents.push({ label: `${tidy(count * 52)} weeks`, unit: "weeks" });
   } else if (unit === "months") {
-    equivalents.push({ label: `${tidy(count * 4)} weeks`, unit: "weeks" });
-    equivalents.push({ label: `${tidy(count * 160)} hrs`, unit: "hours" });
+    equivalents.push({ label: `${tidy(count * 4.33)} weeks`, unit: "weeks" });
+    equivalents.push({ label: `${tidy(count * 242.5)} hrs`, unit: "hours" });
   } else if (unit === "weeks") {
     equivalents.push({ label: `${tidy(count * 7)} days`, unit: "days" });
-    equivalents.push({ label: `${tidy(count * 40)} hrs`, unit: "hours" });
+    equivalents.push({ label: `${tidy(count * 56)} hrs`, unit: "hours" });
   } else if (unit === "days") {
     equivalents.push({ label: `${tidy(count * 8)} hrs`, unit: "hours" });
     if (count >= 7) {

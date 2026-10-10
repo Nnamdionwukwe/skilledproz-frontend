@@ -19,25 +19,6 @@ import {
   FaCheckCircle,
   FaTimes,
   FaExclamationCircle,
-  FaSpinner,
-  FaBriefcase,
-  FaMapMarkerAlt,
-  FaGlobe,
-  FaRandom,
-  FaCalendarAlt,
-  FaClock,
-  FaTag,
-  FaAward,
-  FaHome,
-  FaCoffee,
-  FaListAlt,
-  FaClipboardCheck,
-  FaDollarSign,
-  FaLink,
-  FaEnvelope,
-  FaWhatsapp,
-  FaPhone,
-  FaFileAlt,
 } from "react-icons/fa";
 import tracker from "../../../lib/analytics/tracker";
 
@@ -66,30 +47,17 @@ function formatDuration(booking) {
   const hours = booking.estimatedHours;
   const quantity = booking.quantity || 1;
 
-  // ── FALLBACK: no numeric duration, but notes may carry one ──
-  // PostJob writes recurring jobs as "Recurring: <interval> <duration>."
-  // and custom one-offs as "Duration: <text>."
+  // FALLBACK: no numeric duration, but notes may carry one
   if (!value && !hours && booking.notes) {
     const recurring = booking.notes.match(/Recurring:\s*([^.]*?)(?:\.|$)/i);
     if (recurring && recurring[1] && recurring[1].trim()) {
       const label = recurring[1].trim();
-      return {
-        main: label,
-        sub: null,
-        unit: "custom",
-        label,
-      };
+      return { main: label, sub: null, unit: "custom", label };
     }
-
     const custom = booking.notes.match(/Duration:\s*([^.]*?)(?:\.|$)/i);
     if (custom && custom[1] && custom[1].trim()) {
       const label = custom[1].trim();
-      return {
-        main: label,
-        sub: null,
-        unit: "custom",
-        label,
-      };
+      return { main: label, sub: null, unit: "custom", label };
     }
   }
 
@@ -114,22 +82,13 @@ function formatDuration(booking) {
       months: "month",
       years: "year",
     };
-
     const unitLabel = unitMap[unit] || unit;
     const num = parseFloat(value);
-
     if (isNaN(num) || num <= 0) {
-      return {
-        main: value,
-        sub: null,
-        unit: unit,
-        label: `${value} ${unit}`,
-      };
+      return { main: value, sub: null, unit: unit, label: `${value} ${unit}` };
     }
-
     const label = unitLabel + (num !== 1 ? "s" : "");
     const eqv = unit !== "hours" && hours ? `≈ ${hours}h` : null;
-
     return {
       main: `${num} ${label}`,
       sub: eqv,
@@ -174,36 +133,6 @@ const STATUS_META = {
   COMPLETED: { label: "Completed", color: "green", step: 3 },
   CANCELLED: { label: "Cancelled", color: "red", step: -1 },
   DISPUTED: { label: "Disputed", color: "rose", step: -1 },
-};
-
-// ── Lookup maps for job-post fields ─────────────────────────────────────
-const JOB_TYPE_LABEL = {
-  FULL_TIME: "Full-time",
-  PART_TIME: "Part-time",
-  CONTRACT: "Contract",
-  TEMPORARY: "Temporary",
-};
-
-const LOCATION_TYPE_LABEL = {
-  REMOTE: "Remote",
-  ON_SITE: "On-site",
-  HYBRID: "Hybrid",
-};
-
-const LOCATION_TYPE_ICON = {
-  REMOTE: FaGlobe,
-  ON_SITE: FaMapMarkerAlt,
-  HYBRID: FaRandom,
-};
-
-const BUDGET_TYPE_LABEL = {
-  FIXED: "Fixed Price",
-  HOURLY: "Per Hour",
-  DAILY: "Per Day",
-  WEEKLY: "Per Week",
-  MONTHLY: "Per Month",
-  YEARLY: "Per Year",
-  CUSTOM: "Custom",
 };
 
 // ── Inlined components ──────────────────────────────────────────────
@@ -259,451 +188,6 @@ function Toast({ type, message, onClose }) {
         <FaTimes size={16} />
       </button>
     </div>
-  );
-}
-
-/**
- * JobPostDetails — renders the full job-post payload on a booking that
- * originated from a job post. Uses the same field set that PostJob /
- * EditJob sends, so nothing the hirer entered is hidden.
- */
-function JobPostDetails({ booking }) {
-  const snapshot = booking.jobRateSnapshot || {};
-  const job = booking.jobPost || {};
-
-  // Prefer live values from `booking` — they were copied from the job at
-  // creation time. Fall back to the live job record or the snapshot if
-  // the booking row is older.
-  const fields = {
-    jobType: booking.jobType || job.jobType,
-    locationType: booking.locationType || job.locationType,
-    scheduledAt: booking.scheduledAt || job.scheduledAt,
-    address: booking.address || job.address,
-    estimatedValue: booking.estimatedValue || job.estimatedValue,
-    estimatedUnit: booking.estimatedUnit || job.estimatedUnit || "hours",
-    estimatedHours: booking.estimatedHours ?? job.estimatedHours,
-    durationValue: booking.durationValue || job.durationValue,
-    durationType: booking.durationType || job.durationType,
-    languageRequirement: job.languageRequirement,
-    qualifications: job.qualifications || [],
-    skills: booking.skills || job.skills || [],
-    requirements: booking.requirements || job.requirements,
-    responsibilities: booking.responsibilities || job.responsibilities,
-    providesAccommodation:
-      job.providesAccommodation ?? snapshot.providesAccommodation,
-    providesMeals: job.providesMeals ?? snapshot.providesMeals,
-    applicationUrl: job.applicationUrl,
-    applicationEmail: job.applicationEmail,
-    applicationWhatsApp: job.applicationWhatsApp,
-    applicationPhone: job.applicationPhone,
-    companyName: job.companyName,
-    sourcePlatform: job.sourcePlatform,
-  };
-
-  const LocationIcon = LOCATION_TYPE_ICON[fields.locationType];
-
-  const hasAnyJobMeta =
-    fields.jobType ||
-    fields.locationType ||
-    fields.scheduledAt ||
-    fields.address ||
-    fields.estimatedValue ||
-    fields.durationValue;
-
-  const hasRequirementsList =
-    fields.skills?.length > 0 ||
-    fields.qualifications?.length > 0 ||
-    fields.requirements ||
-    fields.responsibilities;
-
-  const hasWorkConditions =
-    fields.providesAccommodation || fields.providesMeals;
-
-  const hasApplyChannels =
-    fields.applicationUrl ||
-    fields.applicationEmail ||
-    fields.applicationWhatsApp ||
-    fields.applicationPhone;
-
-  if (
-    !hasAnyJobMeta &&
-    !hasRequirementsList &&
-    !hasWorkConditions &&
-    !hasApplyChannels
-  ) {
-    return null;
-  }
-
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>
-        <FaBriefcase
-          size={14}
-          style={{ marginRight: 6, verticalAlign: "-2px" }}
-        />
-        Job Post Details
-      </h2>
-
-      {/* ── Meta grid ── */}
-      <div className={styles.detailGrid}>
-        {fields.jobType && (
-          <JobDetailCard
-            icon={<FaBriefcase size={14} />}
-            label="Job Type"
-            value={JOB_TYPE_LABEL[fields.jobType] || fields.jobType}
-          />
-        )}
-
-        {fields.locationType && LocationIcon && (
-          <JobDetailCard
-            icon={<LocationIcon size={14} />}
-            label="Work Style"
-            value={
-              LOCATION_TYPE_LABEL[fields.locationType] || fields.locationType
-            }
-          />
-        )}
-
-        {fields.scheduledAt && (
-          <JobDetailCard
-            icon={<FaCalendarAlt size={14} />}
-            label="Scheduled"
-            value={new Date(fields.scheduledAt).toLocaleString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          />
-        )}
-
-        {fields.estimatedValue && (
-          <JobDetailCard
-            icon={<FaClock size={14} />}
-            label="Estimated Duration"
-            value={`${fields.estimatedValue} ${fields.estimatedUnit}`}
-          />
-        )}
-
-        {fields.durationValue && fields.durationType && (
-          <JobDetailCard
-            icon={<FaClock size={14} />}
-            label="Project Duration"
-            value={`${fields.durationValue} ${String(
-              fields.durationType,
-            ).toLowerCase()}`}
-          />
-        )}
-
-        {fields.languageRequirement && (
-          <JobDetailCard
-            icon={<FaGlobe size={14} />}
-            label="Language Required"
-            value={String(fields.languageRequirement).toUpperCase()}
-          />
-        )}
-
-        {fields.address &&
-          fields.locationType &&
-          fields.locationType !== "REMOTE" && (
-            <JobDetailCard
-              icon={<FaMapMarkerAlt size={14} />}
-              label="Location"
-              value={fields.address}
-              full
-            />
-          )}
-      </div>
-
-      {/* ── Work Conditions ── */}
-      {hasWorkConditions && (
-        <div className={styles.subSection}>
-          <h3 className={styles.subSectionTitle}>Work Conditions</h3>
-          <div className={styles.pillRow}>
-            {fields.providesAccommodation && (
-              <span className={styles.featurePill}>
-                <FaHome size={11} /> Accommodation provided
-              </span>
-            )}
-            {fields.providesMeals && (
-              <span className={styles.featurePill}>
-                <FaCoffee size={11} /> Meals provided
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Required Skills ── */}
-      {fields.skills?.length > 0 && (
-        <div className={styles.subSection}>
-          <h3 className={styles.subSectionTitle}>
-            <FaTag
-              size={12}
-              style={{ marginRight: 5, verticalAlign: "-1px" }}
-            />
-            Required Skills
-          </h3>
-          <div className={styles.pillRow}>
-            {fields.skills.map((s, i) => (
-              <span key={i} className={styles.skillPill}>
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Required Qualifications ── */}
-      {fields.qualifications?.length > 0 && (
-        <div className={styles.subSection}>
-          <h3 className={styles.subSectionTitle}>
-            <FaAward
-              size={12}
-              style={{ marginRight: 5, verticalAlign: "-1px" }}
-            />
-            Required Qualifications
-          </h3>
-          <div className={styles.pillRow}>
-            {fields.qualifications.map((q, i) => (
-              <span key={i} className={styles.qualificationPill}>
-                <FaAward size={10} style={{ marginRight: 4 }} />
-                {q}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Requirements (rich text) ── */}
-      {fields.requirements && (
-        <div className={styles.subSection}>
-          <h3 className={styles.subSectionTitle}>
-            <FaClipboardCheck
-              size={12}
-              style={{ marginRight: 5, verticalAlign: "-1px" }}
-            />
-            Requirements
-          </h3>
-          <p className={styles.richText}>{fields.requirements}</p>
-        </div>
-      )}
-
-      {/* ── Responsibilities (rich text) ── */}
-      {fields.responsibilities && (
-        <div className={styles.subSection}>
-          <h3 className={styles.subSectionTitle}>
-            <FaListAlt
-              size={12}
-              style={{ marginRight: 5, verticalAlign: "-1px" }}
-            />
-            Responsibilities
-          </h3>
-          <p className={styles.richText}>{fields.responsibilities}</p>
-        </div>
-      )}
-
-      {/* ── Additional Application Channels ── */}
-      {hasApplyChannels && (
-        <div className={styles.subSection}>
-          <h3 className={styles.subSectionTitle}>
-            <FaFileAlt
-              size={12}
-              style={{ marginRight: 5, verticalAlign: "-1px" }}
-            />
-            Additional Application Channels
-          </h3>
-          <div className={styles.channelRow}>
-            {fields.applicationUrl && (
-              <a
-                href={fields.applicationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.channelPill}
-              >
-                <FaLink size={12} /> Apply link
-              </a>
-            )}
-            {fields.applicationEmail && (
-              <a
-                href={`mailto:${fields.applicationEmail}`}
-                className={styles.channelPill}
-              >
-                <FaEnvelope size={12} /> {fields.applicationEmail}
-              </a>
-            )}
-            {fields.applicationWhatsApp && (
-              <a
-                href={`https://wa.me/${String(
-                  fields.applicationWhatsApp,
-                ).replace(/[^0-9]/g, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.channelPill}
-              >
-                <FaWhatsapp size={12} /> {fields.applicationWhatsApp}
-              </a>
-            )}
-            {fields.applicationPhone && (
-              <a
-                href={`tel:${fields.applicationPhone}`}
-                className={styles.channelPill}
-              >
-                <FaPhone size={12} /> {fields.applicationPhone}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function JobDetailCard({ icon, label, value, full }) {
-  return (
-    <div
-      className={`${styles.detailCard} ${full ? styles.detailCardFull : ""}`}
-    >
-      <span className={styles.detailCardIcon}>{icon}</span>
-      <div className={styles.detailCardBody}>
-        <p className={styles.detailCardLabel}>{label}</p>
-        <p className={styles.detailCardValue}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * JobRateSummary — shows exactly how the booking's agreedRate was
- * derived: rate × units = total, or fixed, or negotiated override. Pulls
- * from `jobRateSnapshot` which is written by the backend at creation
- * time so the hirer can see the calculation.
- */
-function JobRateSummary({ booking, payment }) {
-  const snapshot = booking.jobRateSnapshot || {};
-
-  const selectedOption =
-    booking.selectedRateOption || snapshot.selectedRateOption;
-  const agreedRate = booking.agreedRate;
-  const currency = booking.currency || "NGN";
-  const isNegotiated =
-    booking.isNegotiated || snapshot.negotiatedOverride != null;
-  const budgetType = snapshot.budgetType || "FIXED";
-
-  const value = booking.estimatedValue || snapshot.estimatedValue;
-  const unit = booking.estimatedUnit || snapshot.estimatedUnit || "hours";
-
-  const rate =
-    selectedOption === "budget"
-      ? snapshot.budget
-      : selectedOption === "salaryAmount"
-        ? snapshot.salaryAmount
-        : selectedOption === "salaryMin"
-          ? snapshot.salaryMin
-          : selectedOption === "salaryMax"
-            ? snapshot.salaryMax
-            : selectedOption === "salaryText"
-              ? null
-              : snapshot.budget;
-
-  const rateLabel = selectedOption
-    ? {
-        budget: "Job budget",
-        salaryAmount: "Salary amount",
-        salaryMin: "Salary (min)",
-        salaryMax: "Salary (max)",
-        salaryText: "Salary headline",
-      }[selectedOption] || selectedOption
-    : "Rate";
-
-  // Build the explanation line, preferring the server-written audit
-  // trail, else constructing a simple one from available data.
-  let explanation = snapshot.explanation || null;
-  if (!explanation) {
-    if (isNegotiated) {
-      explanation = "Negotiated amount — overrides the job's rate";
-    } else if (budgetType === "FIXED") {
-      explanation = `Fixed total: ${currency} ${Number(agreedRate).toLocaleString()}`;
-    } else if (rate && value) {
-      const rateStr = `${currency} ${Number(rate).toLocaleString()}`;
-      explanation = `${rateStr} × ${value} ${unit} = ${currency} ${Number(
-        agreedRate,
-      ).toLocaleString()}`;
-    }
-  }
-
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>
-        <FaDollarSign
-          size={14}
-          style={{ marginRight: 6, verticalAlign: "-2px" }}
-        />
-        Payment Calculation
-      </h2>
-
-      <div className={styles.rateSummaryGrid}>
-        {rate != null && (
-          <div className={styles.rateSummaryRow}>
-            <span className={styles.rateSummaryLabel}>{rateLabel}</span>
-            <span className={styles.rateSummaryValue}>
-              {currency} {Number(rate).toLocaleString()}
-              {budgetType && budgetType !== "FIXED" && rate != null && (
-                <span className={styles.rateSummaryUnit}>
-                  {" "}
-                  · {BUDGET_TYPE_LABEL[budgetType] || budgetType}
-                </span>
-              )}
-            </span>
-          </div>
-        )}
-
-        {value && budgetType !== "FIXED" && !isNegotiated && (
-          <div className={styles.rateSummaryRow}>
-            <span className={styles.rateSummaryLabel}>Duration</span>
-            <span className={styles.rateSummaryValue}>
-              {value} {unit}
-              {booking.estimatedHours && (
-                <span className={styles.rateSummaryUnit}>
-                  {" "}
-                  · ≈ {booking.estimatedHours}h
-                </span>
-              )}
-            </span>
-          </div>
-        )}
-
-        <div className={styles.rateSummaryRow}>
-          <span className={styles.rateSummaryLabel}>Payment type</span>
-          <span className={styles.rateSummaryValue}>
-            {isNegotiated
-              ? "Negotiated"
-              : BUDGET_TYPE_LABEL[budgetType] || budgetType}
-          </span>
-        </div>
-
-        <div className={`${styles.rateSummaryRow} ${styles.rateSummaryTotal}`}>
-          <span className={styles.rateSummaryLabel}>Final amount</span>
-          <span className={styles.rateSummaryTotalValue}>
-            {currency} {Number(agreedRate).toLocaleString()}
-          </span>
-        </div>
-
-        {isNegotiated && booking.negotiationNote && (
-          <div className={styles.rateSummaryRow}>
-            <span className={styles.rateSummaryLabel}>Negotiation note</span>
-            <span className={styles.rateSummaryValueSmall}>
-              {booking.negotiationNote}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {explanation && !isNegotiated && (
-        <p className={styles.rateSummaryAudit}>{explanation}</p>
-      )}
-    </section>
   );
 }
 
@@ -852,7 +336,6 @@ export default function BookingDetail() {
         });
       })
       .catch((e) => {
-        // ── ANALYTICS: booking detail failed to load ─────────────────────
         tracker.track("bookingDetail.load.failed", {
           bookingId: id,
           viewerRole: user?.role || "GUEST",
@@ -886,7 +369,6 @@ export default function BookingDetail() {
   async function updateStatus(status, extra = {}) {
     setActing(true);
 
-    // ── ANALYTICS: status change attempt ─────────────────────────────────
     tracker.action("bookingDetail.status.attempt", {
       bookingId: id,
       fromStatus: booking?.status || null,
@@ -911,7 +393,6 @@ export default function BookingDetail() {
       setCancelReason("");
       setCancelError("");
 
-      // ── ANALYTICS: status change succeeded ───────────────────────────
       tracker.action("bookingDetail.status.changed", {
         bookingId: id,
         fromStatus: booking?.status || null,
@@ -924,7 +405,6 @@ export default function BookingDetail() {
         e.response?.data?.message || "Action failed. Please try again.",
       );
 
-      // ── ANALYTICS: status change failed ──────────────────────────────
       tracker.action("bookingDetail.status.failed", {
         bookingId: id,
         fromStatus: booking?.status || null,
@@ -940,14 +420,12 @@ export default function BookingDetail() {
   function handleCancelSubmit() {
     if (!cancelReason.trim()) {
       setCancelError("Please provide a reason.");
-      // ── ANALYTICS: cancel blocked by missing reason ──────────────────
       tracker.action("bookingDetail.cancel.blocked", {
         bookingId: id,
         reason: "missing_reason",
       });
       return;
     }
-    // ── ANALYTICS: cancel submitted ──────────────────────────────────────
     tracker.action("bookingDetail.cancel.submitted", {
       bookingId: id,
       reasonLength: cancelReason.trim().length,
@@ -959,7 +437,6 @@ export default function BookingDetail() {
   const handleResolveSOS = async () => {
     setResolvingSOS(true);
 
-    // ── ANALYTICS: SOS resolve attempt ───────────────────────────────────
     tracker.action("bookingDetail.sos.resolve.attempt", {
       bookingId: booking?.id,
       viewerRole: user?.role || "GUEST",
@@ -970,7 +447,6 @@ export default function BookingDetail() {
       showToastMessage("success", "SOS marked as resolved.");
       refetch();
 
-      // ── ANALYTICS: SOS resolved ──────────────────────────────────────
       tracker.action("bookingDetail.sos.resolved", {
         bookingId: booking.id,
       });
@@ -980,7 +456,6 @@ export default function BookingDetail() {
         err.response?.data?.message || "Failed to resolve SOS",
       );
 
-      // ── ANALYTICS: SOS resolve failed ────────────────────────────────
       tracker.action("bookingDetail.sos.resolve.failed", {
         bookingId: booking?.id,
         reason: err.response?.data?.message || "unknown",
@@ -995,7 +470,6 @@ export default function BookingDetail() {
   const handleRefundRequest = async (refundData) => {
     setRefundLoading(true);
 
-    // ── ANALYTICS: refund request attempt ────────────────────────────────
     tracker.action("bookingDetail.refund.attempt", {
       bookingId: id,
       amount: refundData?.amount,
@@ -1007,11 +481,9 @@ export default function BookingDetail() {
       const response = await api.post("/refunds/request", refundData);
       showToastMessage("success", "Refund request submitted successfully!");
       refetch();
-      // Refresh refunds
       const res = await api.get(`/refunds/my?bookingId=${id}`);
       setRefunds(res.data.data?.refunds || []);
 
-      // ── ANALYTICS: refund request submitted ──────────────────────────
       tracker.action("bookingDetail.refund.submitted", {
         bookingId: id,
         refundId: response.data?.data?.refund?.id || null,
@@ -1024,7 +496,6 @@ export default function BookingDetail() {
         error.response?.data?.message || "Failed to submit refund request",
       );
 
-      // ── ANALYTICS: refund request failed ─────────────────────────────
       tracker.action("bookingDetail.refund.failed", {
         bookingId: id,
         reason: error.response?.data?.message || "unknown",
@@ -1038,7 +509,6 @@ export default function BookingDetail() {
   const handleDownloadInvoice = async () => {
     setInvoiceLoading(true);
 
-    // ── ANALYTICS: invoice download attempt ──────────────────────────────
     tracker.action("bookingDetail.invoice.download.attempt", {
       bookingId: booking.id,
     });
@@ -1056,14 +526,12 @@ export default function BookingDetail() {
       link.click();
       URL.revokeObjectURL(url);
 
-      // ── ANALYTICS: invoice downloaded ────────────────────────────────
       tracker.action("bookingDetail.invoice.downloaded", {
         bookingId: booking.id,
       });
     } catch {
       showToastMessage("error", "Failed to download invoice");
 
-      // ── ANALYTICS: invoice download failed ───────────────────────────
       tracker.action("bookingDetail.invoice.failed", {
         bookingId: booking?.id,
       });
@@ -1089,7 +557,6 @@ export default function BookingDetail() {
   const other = isHirer ? booking.worker : booking.hirer;
   const dur = formatDuration(booking);
   const sosActive = !!booking.sosActivatedAt && !booking.sosResolvedAt;
-  const isJobSourced = booking.source === "JOB_POST";
 
   const hasCheckInGps =
     booking.checkInLat != null && booking.checkInLng != null;
@@ -1150,7 +617,6 @@ export default function BookingDetail() {
     setReferralAmount(final);
     setReferralApplied(final > 0);
 
-    // ── ANALYTICS: referral slider changed ───────────────────────────────
     tracker.action("bookingDetail.referral.slider.changed", {
       bookingId: id,
       percent: pct,
@@ -1164,7 +630,6 @@ export default function BookingDetail() {
     const next = !referralApplied;
     setReferralApplied(next);
 
-    // ── ANALYTICS: referral toggle changed ───────────────────────────────
     tracker.action("bookingDetail.referral.toggle.changed", {
       bookingId: id,
       applied: next,
@@ -1241,6 +706,7 @@ export default function BookingDetail() {
 
         <div className={styles.layout}>
           <div className={styles.main}>
+            {/* BookingDetailMain internally branches on isJobPostBooking */}
             <BookingDetailMain
               booking={booking}
               step={step}
@@ -1265,14 +731,6 @@ export default function BookingDetail() {
               refundLoading={refundLoading}
               hasActiveRefund={!!activeRefund}
             />
-
-            {/* ── Job Post Details — only for job-sourced bookings ── */}
-            {isJobSourced && <JobPostDetails booking={booking} />}
-
-            {/* ── Payment Calculation — full breakdown for job-sourced bookings ── */}
-            {isJobSourced && (
-              <JobRateSummary booking={booking} payment={payment} />
-            )}
 
             {isWorker && booking.status === "PENDING" && (
               <WorkerPaymentPreview booking={booking} isWorker={isWorker} />
@@ -1337,7 +795,6 @@ export default function BookingDetail() {
               onCancelOpen={() => {
                 setShowCancel(true);
                 setCancelError("");
-                // ── ANALYTICS: cancel modal opened ───────────────────────
                 tracker.action("bookingDetail.cancel.opened", {
                   bookingId: id,
                   status: booking.status,
@@ -1355,7 +812,6 @@ export default function BookingDetail() {
               onCancelSubmit={handleCancelSubmit}
               onShowDispute={() => {
                 setShowDispute(true);
-                // ── ANALYTICS: dispute modal opened ──────────────────────
                 tracker.action("bookingDetail.dispute.opened", {
                   bookingId: id,
                   status: booking.status,
@@ -1368,7 +824,7 @@ export default function BookingDetail() {
           </div>
         </div>
 
-        {/* ── Refund Section ────────────────────────────────────────────── */}
+        {/* Refund Section */}
         {(showRefundForm || showRefundStatus) && (
           <div className={styles.refundSection}>
             <div className={styles.section}>
@@ -1376,7 +832,6 @@ export default function BookingDetail() {
                 <RefundStatus
                   refund={activeRefund}
                   onViewDetails={() => {
-                    // ── ANALYTICS: refund details clicked ────────────────
                     tracker.action("bookingDetail.refund.details.clicked", {
                       bookingId: id,
                       refundId: activeRefund.id,

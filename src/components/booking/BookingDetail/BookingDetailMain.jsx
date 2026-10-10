@@ -25,14 +25,11 @@ import {
   FaMap,
   FaSpinner,
   FaUndo,
-  FaTags,
-  FaAward,
-  FaHome,
-  FaCoffee,
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing } from "../../../utils/pricing";
 import { RefundRequest } from "../Refund";
+import JobPostBookingDetails from "./JobPostBookingDetails";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function DetailItem({ icon, label, value, accent }) {
@@ -111,15 +108,6 @@ function GpsCard({ title, dotColor, timestamp, lat, lng, distKm, cardClass }) {
   );
 }
 
-// ── Rate-option label map ────────────────────────────────────────────────
-const RATE_OPTION_LABEL = {
-  budget: "Budget",
-  salaryAmount: "Salary amount",
-  salaryMin: "Salary minimum",
-  salaryMax: "Salary maximum",
-  salaryText: "Salary headline",
-};
-
 export default function BookingDetailMain({
   booking,
   step,
@@ -180,14 +168,11 @@ export default function BookingDetailMain({
   // ── Job-post booking flag ──────────────────────────────────────────
   const isJobPostBooking = booking.source === "JOB_POST";
 
-  // ── Helper to render duration with unit ─────────────────────────────
+  // ── Helper to render duration with unit (direct bookings only) ─────
   const renderDuration = () => {
     if (!dur) {
       if (booking.estimatedHours || booking.estimatedValue) {
         return <span className={styles.durationPlaceholder}>Loading...</span>;
-      }
-      if (booking.source === "JOB_POST" && booking.notes) {
-        return <span className={styles.durationPlaceholder}>See job post</span>;
       }
       return <span className={styles.durationPlaceholder}>Not specified</span>;
     }
@@ -204,20 +189,11 @@ export default function BookingDetailMain({
       ? unitMap[booking.estimatedUnit] || booking.estimatedUnit
       : null;
 
-    // Show the standard "(hours)" / "(days)" / etc. suffix only when the unit
-    // is one of the numeric ones. Skip it entirely for `custom` units — the
-    // value text already describes the duration.
-    const showUnitSuffix =
-      unitLabel &&
-      booking.estimatedUnit !== "custom" &&
-      booking.estimatedValue &&
-      !isJobPostBooking;
-
     return (
       <span className={styles.durationDisplay}>
         <span className={styles.durationMain}>{dur.main}</span>
         {dur.sub && <span className={styles.durationSub}> {dur.sub}</span>}
-        {showUnitSuffix && (
+        {unitLabel && (
           <span className={styles.durationUnit}>
             ({unitLabel}
             {booking.isNegotiated && booking.negotiatedRate
@@ -237,6 +213,438 @@ export default function BookingDetailMain({
     !refundLoading &&
     !hasActiveRefund;
 
+  // ══════════════════════════════════════════════════════════════════════
+  // JOB-POST BRANCH
+  // ══════════════════════════════════════════════════════════════════════
+  if (isJobPostBooking) {
+    return (
+      <>
+        {/* Title block */}
+        <div className={styles.titleBlock}>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{booking.title}</h1>
+            <span
+              className={`${styles.badge} ${styles[`badge_${meta.color}`]}`}
+            >
+              {meta.label}
+            </span>
+          </div>
+          {booking.category && (
+            <span className={styles.categoryPill}>{booking.category.name}</span>
+          )}
+          {booking.isNegotiated && (
+            <span className={styles.negotiatedPill}>
+              <FaHandshake /> Negotiated rate
+            </span>
+          )}
+          <Link
+            to={`/jobs/${booking.jobPostId}`}
+            className={styles.jobPostPill}
+            title="View the original job post"
+          >
+            <FaBriefcase size={10} /> From Job Post
+            <FaExternalLinkAlt size={9} />
+          </Link>
+        </div>
+
+        {/* Timeline */}
+        {step >= 0 && (
+          <div className={styles.timelineWrap}>
+            <div className={styles.timeline}>
+              {TIMELINE_STEPS.map((s, i) => (
+                <div key={s} className={styles.timelineItem}>
+                  <div
+                    className={`${styles.timelineDot} ${i <= step ? styles.timelineDotActive : ""} ${i === step ? styles.timelineDotCurrent : ""}`}
+                  >
+                    {i < step ? <FaCheck size={12} /> : i + 1}
+                  </div>
+                  <span
+                    className={`${styles.timelineLabel} ${i <= step ? styles.timelineLabelActive : ""}`}
+                  >
+                    {s}
+                  </span>
+                  {i < TIMELINE_STEPS.length - 1 && (
+                    <div
+                      className={`${styles.timelineLine} ${i < step ? styles.timelineLineActive : ""}`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pending banner (hirer only) */}
+        {booking.status === "PENDING" && isHirer && (
+          <div className={styles.pendingBanner}>
+            <div className={styles.pendingBannerPulse}>
+              <span className={styles.pendingBannerDot} />
+            </div>
+            <div className={styles.pendingBannerBody}>
+              <p className={styles.pendingBannerTitle}>
+                <FaHourglassHalf style={{ marginRight: "8px" }} />
+                Waiting for {workerName || "the worker"} to respond
+              </p>
+              <p className={styles.pendingBannerDesc}>
+                Your booking request has been sent. {workerName || "The worker"}{" "}
+                hasn't accepted yet — you'll be notified the moment they do. You
+                can cancel for free until they accept.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── The full job-post detail block ── */}
+        <JobPostBookingDetails booking={booking} />
+
+        {/* Booking-level details (dates, agreement, GPS times) */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Booking Details</h2>
+          <div className={styles.detailGrid}>
+            <DetailItem
+              icon={<FaCalendarAlt />}
+              label="Scheduled"
+              value={
+                new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }) +
+                " at " +
+                new Date(booking.scheduledAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              }
+            />
+            {booking.address && (
+              <DetailItem
+                icon={<FaMapMarkerAlt />}
+                label="Job Site Address"
+                value={
+                  <>
+                    {booking.address}
+                    {showMapLink && (
+                      <a
+                        href={mapsUrl(booking.latitude, booking.longitude)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.mapLink}
+                      >
+                        {" "}
+                        View map <FaExternalLinkAlt size={10} />
+                      </a>
+                    )}
+                  </>
+                }
+              />
+            )}
+
+            <DetailItem
+              icon={<FaMoneyBillWave />}
+              label="Agreed Total"
+              value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
+              accent
+            />
+
+            {booking.isNegotiated && booking.negotiatedRate && (
+              <DetailItem
+                icon={<FaHandshake />}
+                label="Negotiated Override"
+                value={`${booking.currency} ${booking.negotiatedRate?.toLocaleString()}`}
+                accent
+              />
+            )}
+            {booking.isNegotiated && booking.negotiationNote && (
+              <DetailItem
+                icon={<FaFileAlt />}
+                label="Negotiation Note"
+                value={booking.negotiationNote}
+              />
+            )}
+
+            {booking.checkInAt && (
+              <DetailItem
+                icon={<FaCheckCircle />}
+                label="Checked In"
+                value={
+                  <span className={styles.greenText}>
+                    {new Date(booking.checkInAt).toLocaleString("en-NG", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                }
+              />
+            )}
+            {booking.checkOutAt && (
+              <DetailItem
+                icon={<FaFlag />}
+                label="Checked Out"
+                value={new Date(booking.checkOutAt).toLocaleString("en-NG", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              />
+            )}
+            {booking.checkInAt && booking.checkOutAt && (
+              <DetailItem
+                icon={<FaClock />}
+                label="Actual Duration"
+                value={calcDuration(booking.checkInAt, booking.checkOutAt)}
+              />
+            )}
+
+            {booking.insuranceRef && (
+              <DetailItem
+                icon={<FaShieldAlt />}
+                label="Insurance"
+                value={`${booking.insurancePlan || "Insured"} · Policy #${booking.insuranceRef}`}
+              />
+            )}
+
+            {/* Payment summary */}
+            {(() => {
+              const p = calcPricing(booking);
+              const currency = p.currency || booking.currency || "NGN";
+              const subtotal = p.subtotal || 0;
+              const platformFee = p.hirerFee || 0;
+              const workerPayout = p.workerPayout || 0;
+              const grossTotal = p.grossTotal || 0;
+
+              return isHirer ? (
+                <>
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Subtotal"
+                    value={`${currency} ${subtotal.toLocaleString()}`}
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Platform Fee (5%)"
+                    value={`${currency} ${platformFee.toLocaleString()}`}
+                    accent
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Total Payment"
+                    value={`${currency} ${grossTotal.toLocaleString()}`}
+                    accent
+                  />
+                </>
+              ) : (
+                <>
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Total Earnings"
+                    value={`${currency} ${subtotal.toLocaleString()}`}
+                    accent
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Platform Fee (5%)"
+                    value={`${currency} ${platformFee.toLocaleString()}`}
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Your Payout"
+                    value={`${currency} ${workerPayout.toLocaleString()}`}
+                    accent
+                  />
+                </>
+              );
+            })()}
+          </div>
+        </section>
+
+        {/* GPS section */}
+        {(hasCheckInGps || hasCheckOutGps) && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Worker Location</h2>
+            <p className={styles.gpsNote}>
+              GPS recorded at check-in and check-out. Visible to both parties.
+            </p>
+            <div className={styles.gpsCards}>
+              {hasCheckInGps && (
+                <GpsCard
+                  title="Check-in Location"
+                  dotColor="#16a34a"
+                  timestamp={booking.checkInAt}
+                  lat={booking.checkInLat}
+                  lng={booking.checkInLng}
+                  distKm={checkInDistKm}
+                  cardClass={styles.gpsCardIn}
+                />
+              )}
+              {hasCheckOutGps && (
+                <GpsCard
+                  title="Check-out Location"
+                  dotColor="#dc2626"
+                  timestamp={booking.checkOutAt}
+                  lat={booking.checkOutLat}
+                  lng={booking.checkOutLng}
+                  distKm={checkOutDistKm}
+                  cardClass={styles.gpsCardOut}
+                />
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Reviews */}
+        {booking.status === "COMPLETED" && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Reviews</h2>
+            {booking.reviews?.length > 0 && (
+              <div className={styles.reviewsList}>
+                {booking.reviews.map((review) => (
+                  <div key={review.id} className={styles.reviewCard}>
+                    <div className={styles.reviewCardTop}>
+                      <div className={styles.reviewerAvatar}>
+                        {review.giver?.avatar ? (
+                          <img src={review.giver.avatar} alt="" />
+                        ) : (
+                          <span>
+                            {review.giver?.firstName?.[0]}
+                            {review.giver?.lastName?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.reviewerInfo}>
+                        <p className={styles.reviewerName}>
+                          {review.giver?.firstName} {review.giver?.lastName}{" "}
+                          <span className={styles.reviewerRole}>
+                            ·{" "}
+                            {review.giver?.role === "HIRER"
+                              ? "Hirer"
+                              : "Worker"}
+                          </span>
+                        </p>
+                        <p className={styles.reviewDate}>
+                          {new Date(review.createdAt).toLocaleDateString(
+                            "en-GB",
+                            { day: "numeric", month: "short", year: "numeric" },
+                          )}
+                        </p>
+                      </div>
+                      <div className={styles.stars}>
+                        {[...Array(5)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={
+                              i < review.rating
+                                ? styles.starFilled
+                                : styles.starEmpty
+                            }
+                          >
+                            <FaStar />
+                          </span>
+                        ))}
+                        <span className={styles.ratingNum}>
+                          {review.rating}/5
+                        </span>
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className={styles.reviewComment}>"{review.comment}"</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {reviewCheckDone && !hasReviewed && (
+              <Link
+                to={`/bookings/${bookingId}/review`}
+                className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+                style={{ display: "inline-flex", marginTop: "1rem" }}
+              >
+                <FaStar /> Leave a Review
+              </Link>
+            )}
+            {reviewCheckDone && hasReviewed && (
+              <div className={styles.reviewedNote}>
+                <FaCheckCircle /> Your review has been submitted.{" "}
+                {(booking.reviews?.length ?? 0) < 2 &&
+                  " Waiting for the other party."}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Cancellation reason */}
+        {booking.cancelReason && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Cancellation Reason</h2>
+            <div className={styles.cancelReasonCard}>
+              <span className={styles.cancelReasonIcon}>
+                <FaExclamationTriangle />
+              </span>
+              <p className={styles.cancelReasonText}>{booking.cancelReason}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Bottom actions */}
+        {booking.status === "COMPLETED" && (
+          <div className={styles.bottomActions}>
+            <button
+              className={styles.invoiceBtn}
+              onClick={onDownloadInvoice}
+              disabled={invoiceLoading}
+            >
+              {invoiceLoading ? (
+                <FaSpinner className={styles.spinner} />
+              ) : (
+                <FaFileAlt />
+              )}{" "}
+              Download Invoice
+            </button>
+            {showRefundButton && (
+              <button
+                className={styles.refundBtn}
+                onClick={handleRefundClick}
+                disabled={refundLoading}
+              >
+                <FaUndo /> Request Refund
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Refund modal */}
+        {showRefundModal && (
+          <div className={styles.modalOverlay} onClick={handleCloseRefundModal}>
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className={styles.modalClose}
+                onClick={handleCloseRefundModal}
+              >
+                ×
+              </button>
+              <RefundRequest
+                booking={booking}
+                payment={payment}
+                onRequestRefund={(data) => {
+                  onRefundRequest(data);
+                  handleCloseRefundModal();
+                }}
+                isProcessing={refundLoading}
+                isHirer={isHirer}
+              />
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // DIRECT BOOKING BRANCH — unchanged
+  // ══════════════════════════════════════════════════════════════════════
   return (
     <>
       {/* Title block */}
@@ -254,17 +662,6 @@ export default function BookingDetailMain({
           <span className={styles.negotiatedPill}>
             <FaHandshake /> Negotiated rate
           </span>
-        )}
-        {/* ── Job-post source pill ── */}
-        {isJobPostBooking && (
-          <Link
-            to={`/jobs/${booking.jobPostId}`}
-            className={styles.jobPostPill}
-            title="View the original job post"
-          >
-            <FaBriefcase size={10} /> From Job Post
-            <FaExternalLinkAlt size={9} />
-          </Link>
         )}
       </div>
 
@@ -295,7 +692,7 @@ export default function BookingDetailMain({
         </div>
       )}
 
-      {/* ── Pending banner – only for hirer ── */}
+      {/* Pending banner */}
       {booking.status === "PENDING" && isHirer && (
         <div className={styles.pendingBanner}>
           <div className={styles.pendingBannerPulse}>
@@ -328,78 +725,6 @@ export default function BookingDetailMain({
           </div>
         )}
       </section>
-
-      {/* ── Required Skills (from the job post) ── */}
-      {isJobPostBooking && booking.skills?.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            <FaTags
-              size={12}
-              style={{ marginRight: 6, verticalAlign: "-1px" }}
-            />
-            Required Skills
-          </h2>
-          <div className={styles.skillsWrap}>
-            {booking.skills.map((skill, i) => (
-              <span key={i} className={styles.skillChip}>
-                {skill}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Required Qualifications (from the job post) ── */}
-      {isJobPostBooking && booking.qualifications?.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            <FaAward
-              size={12}
-              style={{ marginRight: 6, verticalAlign: "-1px" }}
-            />
-            Required Qualifications
-          </h2>
-          <div className={styles.skillsWrap}>
-            {booking.qualifications.map((qual, i) => (
-              <span key={i} className={styles.skillChip}>
-                <FaAward
-                  size={10}
-                  style={{ marginRight: 4, verticalAlign: "-1px" }}
-                />
-                {qual}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Work Conditions (from the job post) ── */}
-      {isJobPostBooking &&
-        (booking.providesAccommodation || booking.providesMeals) && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>
-              <FaHome
-                size={12}
-                style={{ marginRight: 6, verticalAlign: "-1px" }}
-              />
-              Work Conditions
-            </h2>
-            <div className={styles.skillsWrap}>
-              {booking.providesAccommodation && (
-                <span className={styles.skillChip}>
-                  <FaHome size={10} style={{ marginRight: 4 }} />
-                  Accommodation provided
-                </span>
-              )}
-              {booking.providesMeals && (
-                <span className={styles.skillChip}>
-                  <FaCoffee size={10} style={{ marginRight: 4 }} />
-                  Meals provided
-                </span>
-              )}
-            </div>
-          </section>
-        )}
 
       {/* Requirements & Responsibilities */}
       {(booking.requirements || booking.responsibilities) && (
@@ -434,7 +759,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Job Details */}
+      {/* Job Details grid */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Job Details</h2>
         <div className={styles.detailGrid}>
@@ -478,36 +803,17 @@ export default function BookingDetailMain({
             />
           )}
 
-          {/* ── Agreed Total for job-post bookings, Agreed Rate for direct ── */}
           <DetailItem
             icon={<FaMoneyBillWave />}
-            label={isJobPostBooking ? "Agreed Total" : "Agreed Rate"}
+            label="Agreed Rate"
             value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
             accent
           />
 
-          {/* ── Job-post specific rows ── */}
-          {isJobPostBooking && (
-            <>
-              {booking.selectedRateOption && (
-                <DetailItem
-                  icon={<FaMoneyBillWave />}
-                  label="Rate Option Selected"
-                  value={
-                    RATE_OPTION_LABEL[booking.selectedRateOption] ||
-                    booking.selectedRateOption
-                  }
-                />
-              )}
-            </>
-          )}
-
           {booking.isNegotiated && booking.negotiatedRate && (
             <DetailItem
               icon={<FaHandshake />}
-              label={
-                isJobPostBooking ? "Negotiated Override" : "Negotiated Rate"
-              }
+              label="Negotiated Rate"
               value={`${booking.currency} ${booking.negotiatedRate?.toLocaleString()}`}
               accent
             />
@@ -519,11 +825,13 @@ export default function BookingDetailMain({
               value={booking.negotiationNote}
             />
           )}
+
           <DetailItem
             icon={<FaClock />}
             label="Est. Duration"
             value={renderDuration()}
           />
+
           {booking.checkInAt && (
             <DetailItem
               icon={<FaCheckCircle />}
@@ -581,7 +889,6 @@ export default function BookingDetailMain({
             />
           )}
 
-          {/* Payment Summary - Using calcPricing for exact numbers */}
           {(() => {
             const p = calcPricing(booking);
             const currency = p.currency || booking.currency || "NGN";
@@ -635,7 +942,7 @@ export default function BookingDetailMain({
         </div>
       </section>
 
-      {/* GPS section - Visible to both parties */}
+      {/* GPS section */}
       {(hasCheckInGps || hasCheckOutGps) && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Worker Location</h2>
@@ -669,7 +976,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Reviews - Visible to both parties when completed */}
+      {/* Reviews */}
       {booking.status === "COMPLETED" && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Reviews</h2>
@@ -747,7 +1054,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Cancellation reason - Visible to both parties */}
+      {/* Cancellation reason */}
       {booking.cancelReason && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Cancellation Reason</h2>
@@ -760,7 +1067,7 @@ export default function BookingDetailMain({
         </section>
       )}
 
-      {/* Bottom actions (invoice & refund) - Role specific */}
+      {/* Bottom actions */}
       {booking.status === "COMPLETED" && (
         <div className={styles.bottomActions}>
           <button
@@ -787,7 +1094,7 @@ export default function BookingDetailMain({
         </div>
       )}
 
-      {/* ── Refund Request Modal ── */}
+      {/* Refund modal */}
       {showRefundModal && (
         <div className={styles.modalOverlay} onClick={handleCloseRefundModal}>
           <div
