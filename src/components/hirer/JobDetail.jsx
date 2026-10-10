@@ -93,6 +93,14 @@ const BUDGET_TYPE_LABELS = {
   FIXED: "Fixed Price",
 };
 
+const BUDGET_TYPE_PERIOD_LABELS = {
+  HOURLY: "per hour",
+  DAILY: "per day",
+  WEEKLY: "per week",
+  MONTHLY: "per month",
+  YEARLY: "per year",
+};
+
 const SALARY_PERIOD_LABELS = {
   HOURLY: "Per Hour",
   DAILY: "Per Day",
@@ -110,6 +118,8 @@ const EDUCATION_LEVEL_LABELS = {
   CERTIFICATION: "Certification",
   OTHER: "Other",
 };
+
+const HIRER_FEE_RATE = 0.05;
 
 // ─── Helpers: parse recurring info from notes ───────────────────────────────
 function parseRecurring(notes) {
@@ -130,6 +140,187 @@ function stripSystemNotes(notes) {
     .replace(/Recurring:\s*[^.]+\.\s*/i, "")
     .replace(/Duration:\s*[^.]+\.\s*/i, "")
     .trim();
+}
+
+// ─── Payment breakdown math (mirrors CreateBookingFromJob + PostJob) ─
+// Handles every payment type:
+//
+//   FIXED   → total = rate                              (no multiplier)
+//   HOURLY  → total = rate × hours
+//   DAILY   → total = rate × days
+//   WEEKLY  → total = rate × weeks
+//   MONTHLY → total = rate × months
+//   YEARLY  → total = rate × years
+//   CUSTOM  → total = rate                              (server-assigned)
+//
+// Recurring jobs whose estimatedValue/estimatedUnit are missing fall back
+// to parsing the "Recurring: Monthly for 1 month." note. Crucially, when
+// the rate period (budgetType) differs from the notes' duration unit —
+// e.g. Per Day rate + "for 1 month" note — we convert the duration INTO
+// the rate's unit so the multiplication is mathematically correct:
+//
+//   Per Day rate + "for 1 month"    → 30.31 days  → rate × 30.31
+//   Per Week rate + "for 1 month"   → 4.33 weeks  → rate × 4.33
+//   Per Hour rate + "for 1 week"    → 40 hours    → rate × 40
+//
+// This mirrors CreateBookingFromJob.jsx exactly, so the numbers the
+// hirer sees on the job page match what the booking form will charge.
+function computeJobPaymentBreakdown(jobPost) {
+  if (!jobPost) return null;
+
+  const rate = Number(jobPost.budget || 0);
+  const currency = jobPost.currency || "NGN";
+  const budgetType = jobPost.budgetType || "FIXED";
+
+  // ── The unit that the rate is priced in ("days", "hours", etc.) ──
+  const RATE_UNIT = {
+    HOURLY: "hours",
+    DAILY: "days",
+    WEEKLY: "weeks",
+    MONTHLY: "months",
+    YEARLY: "years",
+  };
+  const rateUnit = RATE_UNIT[budgetType];
+
+  // ── Human-readable duration noun helper ────────────────────────────
+  const NOUNS = {
+    hours: ["hour", "hours"],
+    days: ["day", "days"],
+    weeks: ["week", "weeks"],
+    months: ["month", "months"],
+    years: ["year", "years"],
+  };
+  const pluralize = (num, unit) => {
+    const [s, p] = NOUNS[unit] || [unit, unit];
+    return num === 1 ? `${num} ${s}` : `${num} ${p}`;
+  };
+
+  // ── Duration that the hirer specified (raw value + unit) ───────────
+  let rawDurationValue = jobPost.estimatedValue;
+  let rawDurationUnit = jobPost.estimatedUnit || "hours";
+
+  if (
+    (!rawDurationValue || rawDurationValue === "") &&
+    budgetType !== "FIXED" &&
+    budgetType !== "CUSTOM"
+  ) {
+    const recurring = parseRecurring(jobPost.notes);
+    if (recurring) {
+      // "Monthly for 1 month" → count 1, unit months
+      const forMatch = recurring
+        .toLowerCase()
+        .match(/for\s+(\d+(?:\.\d+)?)\s+(\w+)/i);
+      if (forMatch) {
+        const count = parseFloat(forMatch[1]);
+        let unit = forMatch[2];
+        if (unit === "month") unit = "months";
+        else if (unit === "week") unit = "weeks";
+        else if (unit === "day") unit = "days";
+        else if (unit === "year") unit = "years";
+        else if (unit === "hour") unit = "hours";
+        if (Number.isFinite(count) && count > 0) {
+          rawDurationValue = String(count);
+          rawDurationUnit = unit;
+        }
+      }
+    }
+  }
+
+  // ── Convert the duration into the RATE'S unit so the multiplication
+  //    is mathematically correct. Uses the same multipliers as the
+  //    rest of the app (mirrors PostJob.jsx + CreateBookingFromJob.jsx).
+  //
+  //    All conversions pass through hours as the common base:
+  //      1 day    = 8 hours
+  //      1 week   = 56 hours     (8 × 7)
+  //      1 month  = 242.5 hours  (56 × 4.33)
+  //      1 year   = 2910 hours   (242.5 × 12)
+  const HOURS_PER_UNIT = {
+    hours: 1,
+    days: 8,
+    weeks: 56,
+    months: 242.5,
+    years: 2910,
+  };
+  const toHours = (val, unit) => {
+    const factor = HOURS_PER_UNIT[unit];
+    return factor ? val * factor : null;
+  };
+
+  const numericRaw = parseFloat(rawDurationValue);
+  let numericInRateUnit = null;
+  let durationLabel = null; // e.g. "1 month"
+  let multiplierLabel = null; // e.g. "30.31 days"
+
+  if (Number.isFinite(numericRaw) && numericRaw > 0) {
+    durationLabel = pluralize(numericRaw, rawDurationUnit);
+
+    if (rateUnit) {
+      const totalHours = toHours(numericRaw, rawDurationUnit);
+      const unitHours = HOURS_PER_UNIT[rateUnit];
+      if (totalHours != null && unitHours) {
+        // Round hours to whole, other units to 2 decimals — same as
+        // the booking form.
+        const rawInRateUnit = totalHours / unitHours;
+        numericInRateUnit =
+          rateUnit === "hours"
+            ? Math.round(rawInRateUnit)
+            : Number(rawInRateUnit.toFixed(2));
+        multiplierLabel = pluralize(numericInRateUnit, rateUnit);
+      }
+    }
+  }
+
+  // ── Compute subtotal per payment type ─────────────────────────────
+  let subtotal = 0;
+  let calculationText = null;
+  let isFixed = budgetType === "FIXED";
+  let isCustom = budgetType === "CUSTOM";
+  let isRecurring = false;
+
+  if (isFixed) {
+    subtotal = rate;
+    calculationText = `Fixed price · ${currency} ${rate.toLocaleString()}`;
+  } else if (isCustom) {
+    subtotal = rate;
+    calculationText = `Custom rate · ${currency} ${rate.toLocaleString()}`;
+  } else if (Number.isFinite(numericInRateUnit) && numericInRateUnit > 0) {
+    // HOURLY / DAILY / WEEKLY / MONTHLY / YEARLY with a real duration
+    isRecurring = true;
+    subtotal = rate * numericInRateUnit;
+    calculationText =
+      `${currency} ${rate.toLocaleString()} ` +
+      `${BUDGET_TYPE_PERIOD_LABELS[budgetType] || BUDGET_TYPE_LABELS[budgetType]} ` +
+      `× ${multiplierLabel} = ${currency} ${Math.round(subtotal).toLocaleString()}`;
+  } else {
+    // No duration recorded — show just the rate
+    subtotal = rate;
+    calculationText = `${currency} ${rate.toLocaleString()} ${
+      BUDGET_TYPE_PERIOD_LABELS[budgetType] || ""
+    }`;
+  }
+
+  // ── Platform fee (5%) and grand total ──────────────────────────────
+  const platformFee = Math.round(subtotal * HIRER_FEE_RATE * 100) / 100;
+  const grandTotal = subtotal + platformFee;
+
+  return {
+    rate,
+    currency,
+    budgetType,
+    budgetTypeLabel: BUDGET_TYPE_LABELS[budgetType] || budgetType,
+    periodLabel: BUDGET_TYPE_PERIOD_LABELS[budgetType] || null,
+    durationLabel, // e.g. "1 month" — what the hirer typed
+    multiplierLabel, // e.g. "30.31 days" — duration in the rate's unit
+    subtotal,
+    platformFee,
+    platformFeePct: HIRER_FEE_RATE,
+    grandTotal,
+    calculationText,
+    isFixed,
+    isCustom,
+    isRecurring,
+  };
 }
 
 export default function JobDetail() {
@@ -157,7 +348,6 @@ export default function JobDetail() {
     jobHirerId != null &&
     String(user.id) === String(jobHirerId);
 
-  // Admins can manage any job
   const canManage = isOwner || isAdmin;
 
   const backDestination =
@@ -189,7 +379,7 @@ export default function JobDetail() {
       setJob({
         ...jobData,
         hasApplied: appliedFlag,
-        applicationStatus: appStatus, // "PENDING" | "ACCEPTED" | "REJECTED" | null
+        applicationStatus: appStatus,
       });
       setIsSaved(savedFlag);
       setLoading(false);
@@ -250,7 +440,6 @@ export default function JobDetail() {
     }
   }
 
-  // ── Choose which layout to wrap the page in ──
   const Layout =
     user?.role === "HIRER" || user?.role === "ADMIN"
       ? HirerLayout
@@ -282,7 +471,6 @@ export default function JobDetail() {
     );
   }
 
-  // Flat shape — no more destructuring of `job.jobPost`
   const jobPost = job;
   const hasApplied = job.hasApplied;
   const wasRejected = job.applicationStatus === "REJECTED";
@@ -451,6 +639,9 @@ export default function JobDetail() {
   ].filter(Boolean);
 
   const hasRequirementsBlock = requirementItems.length > 0;
+
+  // ── Payment breakdown (full hirer-facing calculation) ──────────────
+  const paymentBreakdown = computeJobPaymentBreakdown(jobPost);
 
   return (
     <Layout>
@@ -941,6 +1132,160 @@ export default function JobDetail() {
               </div>
             </section>
 
+            {/* ═══════════════════════════════════════════════════════════
+                PAYMENT BREAKDOWN — full hirer-facing calculation
+                Mirrors the math used in PostJob, EditJob, and CreateBooking
+                so the hirer sees exactly what they'll pay for this job.
+            ═══════════════════════════════════════════════════════════ */}
+            {paymentBreakdown && (
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>
+                  <FiDollarSign
+                    size={14}
+                    style={{ verticalAlign: "-2px", marginRight: 6 }}
+                  />
+                  Payment Breakdown
+                </h2>
+
+                <div className={styles.paymentBreakdownCard}>
+                  <div className={styles.paymentBreakdownHeader}>
+                    <span className={styles.paymentBreakdownTitle}>
+                      What the worker will be paid
+                    </span>
+                    <span className={styles.paymentBreakdownBadge}>
+                      {paymentBreakdown.budgetTypeLabel}
+                    </span>
+                  </div>
+
+                  <div className={styles.paymentBreakdownBody}>
+                    {/* Rate row — always shown (even for FIXED — the
+                        rate IS the total in that case) */}
+                    <div className={styles.paymentBreakdownRow}>
+                      <span className={styles.paymentBreakdownLabel}>
+                        {paymentBreakdown.isFixed ? "Fixed Price" : "Rate"}
+                      </span>
+                      <span className={styles.paymentBreakdownValue}>
+                        {paymentBreakdown.currency}{" "}
+                        {paymentBreakdown.rate.toLocaleString()}
+                        {!paymentBreakdown.isFixed &&
+                          paymentBreakdown.periodLabel && (
+                            <span className={styles.paymentBreakdownSub}>
+                              {" "}
+                              {paymentBreakdown.periodLabel}
+                            </span>
+                          )}
+                      </span>
+                    </div>
+
+                    {/* Duration row — shows the hirer's raw duration AND,
+                        when the rate period differs from the duration
+                        unit, the duration converted into the rate's unit
+                        so the multiplication is clear. */}
+                    {paymentBreakdown.isRecurring &&
+                      paymentBreakdown.durationLabel && (
+                        <div className={styles.paymentBreakdownRow}>
+                          <span className={styles.paymentBreakdownLabel}>
+                            Duration ({paymentBreakdown.budgetTypeLabel})
+                          </span>
+                          <span className={styles.paymentBreakdownValue}>
+                            {paymentBreakdown.durationLabel}
+                            {paymentBreakdown.multiplierLabel &&
+                              paymentBreakdown.multiplierLabel !==
+                                paymentBreakdown.durationLabel && (
+                                <span className={styles.paymentBreakdownSub}>
+                                  {" "}
+                                  ≈ {paymentBreakdown.multiplierLabel}
+                                </span>
+                              )}
+                          </span>
+                        </div>
+                      )}
+
+                    {/* The arithmetic line:
+                        - Fixed: "Fixed price · NGN 200,000"
+                        - Custom: "Custom rate · NGN 50,000"
+                        - Numeric: "NGN 1,000 per day × 30.31 days = NGN 30,310" */}
+                    {paymentBreakdown.calculationText && (
+                      <div className={styles.paymentBreakdownCalc}>
+                        <FiInfo size={12} />
+                        <span>{paymentBreakdown.calculationText}</span>
+                      </div>
+                    )}
+
+                    {/* Subtotal — only shown when there's arithmetic above
+                        it, since for FIXED the rate row already IS the
+                        subtotal */}
+                    {!paymentBreakdown.isFixed && (
+                      <div className={styles.paymentBreakdownRow}>
+                        <span className={styles.paymentBreakdownLabel}>
+                          Subtotal
+                        </span>
+                        <span className={styles.paymentBreakdownValue}>
+                          {paymentBreakdown.currency}{" "}
+                          {paymentBreakdown.subtotal.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Platform fee */}
+                    <div className={styles.paymentBreakdownRow}>
+                      <span className={styles.paymentBreakdownLabel}>
+                        Platform fee ({paymentBreakdown.platformFeePct * 100}%)
+                        <span className={styles.paymentBreakdownHint}>
+                          {" "}
+                          — covers escrow, support, and payment processing
+                        </span>
+                      </span>
+                      <span className={styles.paymentBreakdownValue}>
+                        + {paymentBreakdown.currency}{" "}
+                        {paymentBreakdown.platformFee.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className={styles.paymentBreakdownDivider} />
+
+                    {/* Grand total */}
+                    <div className={styles.paymentBreakdownTotal}>
+                      <span className={styles.paymentBreakdownTotalLabel}>
+                        Total to hire
+                      </span>
+                      <span className={styles.paymentBreakdownTotalValue}>
+                        {paymentBreakdown.currency}{" "}
+                        {paymentBreakdown.grandTotal.toLocaleString()}
+                      </span>
+                    </div>
+
+                    {/* Contextual note */}
+                    {paymentBreakdown.isFixed && (
+                      <p className={styles.paymentBreakdownNote}>
+                        <FiInfo size={11} /> This is a fixed-price job — the
+                        agreed amount is the total, plus the platform fee.
+                      </p>
+                    )}
+                    {paymentBreakdown.isCustom && (
+                      <p className={styles.paymentBreakdownNote}>
+                        <FiInfo size={11} /> This job has a custom rate. The
+                        final amount will be confirmed when you create the
+                        booking.
+                      </p>
+                    )}
+                    {paymentBreakdown.isRecurring && (
+                      <p className={styles.paymentBreakdownNote}>
+                        <FiInfo size={11} /> {paymentBreakdown.currency}{" "}
+                        {paymentBreakdown.rate.toLocaleString()}{" "}
+                        {paymentBreakdown.periodLabel} ×{" "}
+                        {paymentBreakdown.multiplierLabel ||
+                          paymentBreakdown.durationLabel}
+                        . The worker is paid per{" "}
+                        {paymentBreakdown.budgetType.toLowerCase()} for the full{" "}
+                        {paymentBreakdown.durationLabel} engagement.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* REQUIREMENTS & QUALIFICATIONS grouped */}
             {hasRequirementsBlock && (
               <section className={styles.section}>
@@ -1018,8 +1363,6 @@ export default function JobDetail() {
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Apply for this Job</h2>
 
-                {/* Rejected banner — worker previously applied and was declined,
-                    so let them know they can re-apply. */}
                 {wasRejected && (
                   <div className={styles.rejectedBanner}>
                     <FiAlertTriangle size={16} />
