@@ -1,7 +1,7 @@
 // src/components/hirer/EditJob.jsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import styles from "./PostJob.module.css"; // reuse the same stylesheet
+import styles from "./PostJob.module.css";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import {
@@ -33,7 +33,7 @@ import {
 } from "react-icons/fi";
 import tracker from "../../lib/analytics/tracker";
 
-// ─── Constants (mirror PostJob.jsx so the form is identical) ──────────────
+// ─── Constants (mirror PostJob.jsx) ────────────────────────────────────────
 const ALL_CURRENCIES = [
   "USD",
   "EUR",
@@ -187,6 +187,64 @@ const QUALIFICATION_PRESETS = [
   "Teaching Certificate",
 ];
 
+// ─── Recurring pricing helpers (mirror PostJob.jsx) ───────────────────────
+const PERIODS_PER_RECURRENCE = {
+  "2_WEEKS": {
+    HOURLY: 14 * 8,
+    DAILY: 14,
+    WEEKLY: 2,
+    MONTHLY: 14 / 30.44,
+    YEARLY: 14 / 365,
+  },
+  "1_MONTH": {
+    HOURLY: 30.44 * 8,
+    DAILY: 30.44,
+    WEEKLY: 4.33,
+    MONTHLY: 1,
+    YEARLY: 1 / 12,
+  },
+  "3_MONTHS": {
+    HOURLY: 91.31 * 8,
+    DAILY: 91.31,
+    WEEKLY: 13,
+    MONTHLY: 3,
+    YEARLY: 0.25,
+  },
+  "6_MONTHS": {
+    HOURLY: 182.62 * 8,
+    DAILY: 182.62,
+    WEEKLY: 26,
+    MONTHLY: 6,
+    YEARLY: 0.5,
+  },
+  "1_YEAR": {
+    HOURLY: 365 * 8,
+    DAILY: 365,
+    WEEKLY: 52,
+    MONTHLY: 12,
+    YEARLY: 1,
+  },
+};
+
+const DURATION_UNIT_FOR_BUDGET_TYPE = {
+  HOURLY: "hours",
+  DAILY: "days",
+  WEEKLY: "weeks",
+  MONTHLY: "months",
+  YEARLY: "years",
+};
+
+function computeRecurringEstimated(recurrenceDuration, budgetType) {
+  const table = PERIODS_PER_RECURRENCE[recurrenceDuration];
+  const unit = DURATION_UNIT_FOR_BUDGET_TYPE[budgetType];
+  if (!table || !unit) return null;
+  const count = table[budgetType];
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const rounded =
+    unit === "hours" ? Math.round(count) : Number(count.toFixed(2));
+  return { count: rounded, unit };
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function stripSystemNotes(notes) {
   if (!notes) return "";
@@ -201,13 +259,12 @@ function toEstimatedHours(unit, value) {
   const v = parseFloat(value) || 0;
   if (unit === "hours") return v;
   if (unit === "days") return v * 8;
-  if (unit === "weeks") return v * 56; // calendar — must match PostJob.jsx
-  if (unit === "months") return v * 242.5; // calendar — must match PostJob.jsx
-  if (unit === "years") return v * 2910; // calendar — must match PostJob.jsx
+  if (unit === "weeks") return v * 56;
+  if (unit === "months") return v * 242.5;
+  if (unit === "years") return v * 2910;
   return null;
 }
 
-// Convert ISO date to the local string `<input type="datetime-local">` expects
 function toLocalDatetimeInput(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -238,16 +295,14 @@ export default function EditJob() {
   const [showQualificationPresets, setShowQualificationPresets] =
     useState(false);
 
-  const [form, setForm] = useState(null); // null while loading
-  const [originalJob, setOriginalJob] = useState(null); // server snapshot
+  const [form, setForm] = useState(null);
+  const [originalJob, setOriginalJob] = useState(null);
 
-  // ── Analytics ───────────────────────────────────────────────────────────
   useEffect(() => {
     tracker.track("page.editJob.view", { jobPostId: jobId });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Load categories ─────────────────────────────────────────────────────
   useEffect(() => {
     api
       .get("/categories?all=true")
@@ -258,7 +313,6 @@ export default function EditJob() {
       .catch(() => {});
   }, []);
 
-  // ── Load job to edit ────────────────────────────────────────────────────
   useEffect(() => {
     if (!jobId || jobId === "undefined" || jobId === "null") {
       setLoadError("Invalid job id.");
@@ -345,7 +399,6 @@ export default function EditJob() {
     };
   }, [jobId]);
 
-  // ── Derived category display ────────────────────────────────────────────
   const normalizedSearch = catSearch.trim().toLowerCase();
   const filteredCats = categories.filter(
     (c) => !normalizedSearch || c.name.toLowerCase().includes(normalizedSearch),
@@ -363,7 +416,6 @@ export default function EditJob() {
       "English"
     : "English";
 
-  // ── Form helpers ────────────────────────────────────────────────────────
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
     setError("");
@@ -409,7 +461,6 @@ export default function EditJob() {
     }
   }
 
-  // ── Skills ──────────────────────────────────────────────────────────────
   function addSkill(skill) {
     const trimmed = skill.trim();
     if (!trimmed) return;
@@ -439,7 +490,6 @@ export default function EditJob() {
     }
   }
 
-  // ── Qualifications ──────────────────────────────────────────────────────
   function addQualification(qual) {
     const trimmed = qual.trim();
     if (!trimmed) return;
@@ -479,7 +529,6 @@ export default function EditJob() {
     }
   }
 
-  // ── Submit (PUT) ────────────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -493,9 +542,6 @@ export default function EditJob() {
     if (!form.scheduledAt)
       return setError("Please choose a scheduled date and time.");
 
-    // ── Duration guard (relaxed for edit) ──
-    // Only block if the user is in ONE_OFF mode, has no estimatedValue,
-    // AND the original job also had no estimated info on the server.
     if (form.scheduleMode === "ONE_OFF" && !form.estimatedValue) {
       const originalHasEstimated =
         originalJob?.estimatedHours != null ||
@@ -532,10 +578,39 @@ export default function EditJob() {
     tracker.action("editJob.submit.attempt", { jobPostId: jobId });
 
     try {
-      const estimatedHours =
-        form.scheduleMode === "ONE_OFF"
-          ? toEstimatedHours(form.durationUnit, form.estimatedValue)
-          : null;
+      const clean = (v) =>
+        v === "" || v === null || v === undefined ? undefined : v;
+
+      // ── Duration resolution ────────────────────────────────────────────
+      let estimatedHours = null;
+      let resolvedEstimatedUnit = undefined;
+      let resolvedEstimatedValue = undefined;
+
+      if (form.scheduleMode === "ONE_OFF") {
+        estimatedHours = toEstimatedHours(
+          form.durationUnit,
+          form.estimatedValue,
+        );
+        resolvedEstimatedUnit =
+          form.durationUnit === "custom" ? "custom" : form.durationUnit;
+        resolvedEstimatedValue =
+          form.durationUnit === "custom"
+            ? form.estimatedValue.trim()
+            : clean(form.estimatedValue);
+      } else {
+        const effectiveBudgetType = form.showRateOptions
+          ? form.budgetType
+          : "FIXED";
+        const recurring = computeRecurringEstimated(
+          form.recurrenceDuration,
+          effectiveBudgetType,
+        );
+        if (recurring) {
+          estimatedHours = recurring.unit === "hours" ? recurring.count : null;
+          resolvedEstimatedUnit = recurring.unit;
+          resolvedEstimatedValue = String(recurring.count);
+        }
+      }
 
       const noteParts = [];
       if (form.scheduleMode === "RECURRING") {
@@ -552,23 +627,6 @@ export default function EditJob() {
       }
       if (form.notes) noteParts.push(form.notes);
       const finalNotes = noteParts.join(" ");
-
-      const clean = (v) =>
-        v === "" || v === null || v === undefined ? undefined : v;
-
-      const resolvedEstimatedUnit =
-        form.scheduleMode === "ONE_OFF"
-          ? form.durationUnit === "custom"
-            ? "custom"
-            : form.durationUnit
-          : undefined;
-
-      const resolvedEstimatedValue =
-        form.scheduleMode === "ONE_OFF"
-          ? form.durationUnit === "custom"
-            ? form.estimatedValue.trim()
-            : clean(form.estimatedValue)
-          : undefined;
 
       const payload = {
         categoryId: form.categoryId,
@@ -609,7 +667,6 @@ export default function EditJob() {
     }
   }
 
-  // ── Loading state ───────────────────────────────────────────────────────
   if (loading) {
     return (
       <HirerLayout>
@@ -618,7 +675,6 @@ export default function EditJob() {
     );
   }
 
-  // ── Load error ──────────────────────────────────────────────────────────
   if (loadError) {
     return (
       <HirerLayout>
@@ -651,7 +707,6 @@ export default function EditJob() {
     );
   }
 
-  // ── Form ────────────────────────────────────────────────────────────────
   return (
     <HirerLayout>
       <div className={styles.page}>
@@ -1119,6 +1174,44 @@ export default function EditJob() {
                 </button>
               </div>
             )}
+
+            {/* ── Recurring total preview ── */}
+            {form.scheduleMode === "RECURRING" &&
+              form.showRateOptions &&
+              form.budgetType !== "CUSTOM" &&
+              form.budget &&
+              (() => {
+                const recurring = computeRecurringEstimated(
+                  form.recurrenceDuration,
+                  form.budgetType,
+                );
+                if (!recurring) return null;
+                const rate = parseFloat(form.budget);
+                if (!Number.isFinite(rate) || rate <= 0) return null;
+                const total = rate * recurring.count;
+                const unitLabel =
+                  recurring.unit === "hours"
+                    ? `${recurring.count} hours`
+                    : `${recurring.count} ${recurring.unit}`;
+                const periodLabel =
+                  {
+                    HOURLY: "per hour",
+                    DAILY: "per day",
+                    WEEKLY: "per week",
+                    MONTHLY: "per month",
+                    YEARLY: "per year",
+                  }[form.budgetType] || `per ${form.budgetType.toLowerCase()}`;
+                return (
+                  <p className={styles.durationSummary}>
+                    ✓ Total:{" "}
+                    <strong>
+                      {form.currency} {Math.round(total).toLocaleString()}
+                    </strong>{" "}
+                    ({form.currency} {rate.toLocaleString()} {periodLabel} ×{" "}
+                    {unitLabel})
+                  </p>
+                );
+              })()}
           </div>
 
           {/* ── Work Conditions ── */}

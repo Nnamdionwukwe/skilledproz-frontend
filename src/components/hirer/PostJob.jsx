@@ -187,6 +187,67 @@ const QUALIFICATION_PRESETS = [
   "Teaching Certificate",
 ];
 
+// ─── Recurring pricing helpers ─────────────────────────────────────────────
+// Approximate number of periods that fit into a recurrence duration for
+// each budget type. Used to convert "Per Day for 1 month" into 30.44 days
+// so the booking form can price it as rate × periods.
+const PERIODS_PER_RECURRENCE = {
+  "2_WEEKS": {
+    HOURLY: 14 * 8,
+    DAILY: 14,
+    WEEKLY: 2,
+    MONTHLY: 14 / 30.44,
+    YEARLY: 14 / 365,
+  },
+  "1_MONTH": {
+    HOURLY: 30.44 * 8,
+    DAILY: 30.44,
+    WEEKLY: 4.33,
+    MONTHLY: 1,
+    YEARLY: 1 / 12,
+  },
+  "3_MONTHS": {
+    HOURLY: 91.31 * 8,
+    DAILY: 91.31,
+    WEEKLY: 13,
+    MONTHLY: 3,
+    YEARLY: 0.25,
+  },
+  "6_MONTHS": {
+    HOURLY: 182.62 * 8,
+    DAILY: 182.62,
+    WEEKLY: 26,
+    MONTHLY: 6,
+    YEARLY: 0.5,
+  },
+  "1_YEAR": {
+    HOURLY: 365 * 8,
+    DAILY: 365,
+    WEEKLY: 52,
+    MONTHLY: 12,
+    YEARLY: 1,
+  },
+};
+
+const DURATION_UNIT_FOR_BUDGET_TYPE = {
+  HOURLY: "hours",
+  DAILY: "days",
+  WEEKLY: "weeks",
+  MONTHLY: "months",
+  YEARLY: "years",
+};
+
+function computeRecurringEstimated(recurrenceDuration, budgetType) {
+  const table = PERIODS_PER_RECURRENCE[recurrenceDuration];
+  const unit = DURATION_UNIT_FOR_BUDGET_TYPE[budgetType];
+  if (!table || !unit) return null;
+  const count = table[budgetType];
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const rounded =
+    unit === "hours" ? Math.round(count) : Number(count.toFixed(2));
+  return { count: rounded, unit };
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export default function PostJob() {
@@ -253,9 +314,6 @@ export default function PostJob() {
   }, []);
 
   // ── Filtered + displayed categories ─────────────────────────────────────
-  // Custom categories added via the "Add custom" flow are already merged
-  // into `categories`, so they flow through the same filter and appear in
-  // the dropdown. The search box above the dropdown narrows the list.
   const normalizedSearch = catSearch.trim().toLowerCase();
   const filteredCats = categories.filter(
     (c) => !normalizedSearch || c.name.toLowerCase().includes(normalizedSearch),
@@ -263,7 +321,6 @@ export default function PostJob() {
 
   const displayedCats = filteredCats;
   const totalCats = categories.length;
-  const isTruncated = displayedCats.length < totalCats;
 
   const selectedCat = categories.find((c) => c.id === form.categoryId);
   const isSearching = normalizedSearch.length > 0;
@@ -284,18 +341,13 @@ export default function PostJob() {
       });
       const newCat = res.data.data.category;
 
-      // Merge into the local list if not already there (dedupe by id).
       setCategories((prev) =>
         prev.some((c) => c.id === newCat.id) ? prev : [...prev, newCat],
       );
 
-      // Select it immediately so the user doesn't have to pick it again.
       setForm((f) => ({ ...f, categoryId: newCat.id }));
       setCustomCatName("");
       setShowCustomCat(false);
-
-      // Clear the search so the collapsed selected-category chip is what
-      // shows next, not a stale filtered dropdown.
       setCatSearch("");
 
       tracker.action("postJob.customCategory.created", {
@@ -316,8 +368,6 @@ export default function PostJob() {
   }
 
   // ── Category selection ──────────────────────────────────────────────────
-  // Called from the <select> when the user picks an option. Clears the
-  // search box so the select collapses back to the "selected chip" view.
   function handleCategoryChange(e) {
     set("categoryId", e.target.value);
     setCatSearch("");
@@ -338,9 +388,9 @@ export default function PostJob() {
     const v = parseFloat(value) || 0;
     if (unit === "hours") return v;
     if (unit === "days") return v * 8;
-    if (unit === "weeks") return v * 56; // was 40
-    if (unit === "months") return v * 242.5; // was 160
-    if (unit === "years") return v * 2910; // was 2000
+    if (unit === "weeks") return v * 56;
+    if (unit === "months") return v * 242.5;
+    if (unit === "years") return v * 2910;
     return null;
   }
 
@@ -521,10 +571,42 @@ export default function PostJob() {
     });
 
     try {
-      const estimatedHours =
-        form.scheduleMode === "ONE_OFF"
-          ? toEstimatedHours(form.durationUnit, form.estimatedValue)
-          : null;
+      const clean = (v) =>
+        v === "" || v === null || v === undefined ? undefined : v;
+
+      // ── Duration resolution ────────────────────────────────────────────
+      let estimatedHours = null;
+      let resolvedEstimatedUnit = undefined;
+      let resolvedEstimatedValue = undefined;
+
+      if (form.scheduleMode === "ONE_OFF") {
+        estimatedHours = toEstimatedHours(
+          form.durationUnit,
+          form.estimatedValue,
+        );
+        resolvedEstimatedUnit =
+          form.durationUnit === "custom" ? "custom" : form.durationUnit;
+        resolvedEstimatedValue =
+          form.durationUnit === "custom"
+            ? form.estimatedValue.trim()
+            : clean(form.estimatedValue);
+      } else {
+        // RECURRING — derive the period count from the recurrence duration
+        // AND the chosen rate type so the booking form can price it as
+        // rate × periods.
+        const effectiveBudgetType = form.showRateOptions
+          ? form.budgetType
+          : "FIXED";
+        const recurring = computeRecurringEstimated(
+          form.recurrenceDuration,
+          effectiveBudgetType,
+        );
+        if (recurring) {
+          estimatedHours = recurring.unit === "hours" ? recurring.count : null;
+          resolvedEstimatedUnit = recurring.unit;
+          resolvedEstimatedValue = String(recurring.count);
+        }
+      }
 
       const noteParts = [];
       if (form.scheduleMode === "RECURRING") {
@@ -541,23 +623,6 @@ export default function PostJob() {
       }
       if (form.notes) noteParts.push(form.notes);
       const finalNotes = noteParts.join(" ");
-
-      const clean = (v) =>
-        v === "" || v === null || v === undefined ? undefined : v;
-
-      const resolvedEstimatedUnit =
-        form.scheduleMode === "ONE_OFF"
-          ? form.durationUnit === "custom"
-            ? "custom"
-            : form.durationUnit
-          : undefined;
-
-      const resolvedEstimatedValue =
-        form.scheduleMode === "ONE_OFF"
-          ? form.durationUnit === "custom"
-            ? form.estimatedValue.trim()
-            : clean(form.estimatedValue)
-          : undefined;
 
       const payload = {
         categoryId: form.categoryId,
@@ -852,9 +917,6 @@ export default function PostJob() {
               Category <span className={styles.req}>*</span>
             </label>
 
-            {/* When a category is already selected, show the chip and hide
-                the search + dropdown. This makes the section collapse once
-                the user has made a choice. */}
             {selectedCat ? (
               <div className={styles.selectedCat}>
                 <FiCheckCircle size={13} /> Selected:{" "}
@@ -881,8 +943,6 @@ export default function PostJob() {
                   data-track-id="postJob.category.search"
                 />
 
-                {/* A native dropdown — behaves normally now. `size` stays
-                    at 1 so picking an option closes the list. */}
                 <select
                   className={styles.select}
                   value={form.categoryId}
@@ -914,7 +974,6 @@ export default function PostJob() {
               </>
             )}
 
-            {/* Custom category flow — hidden once a category is selected */}
             {!selectedCat && (
               <>
                 {!showCustomCat ? (
@@ -1386,6 +1445,46 @@ export default function PostJob() {
                   : "as the total budget"}
               </p>
             )}
+
+            {/* ── Recurring total preview ──
+                Shows the total the worker will be paid over the whole
+                engagement, so the hirer understands what they're offering. */}
+            {form.scheduleMode === "RECURRING" &&
+              form.showRateOptions &&
+              form.budgetType !== "CUSTOM" &&
+              form.budget &&
+              (() => {
+                const recurring = computeRecurringEstimated(
+                  form.recurrenceDuration,
+                  form.budgetType,
+                );
+                if (!recurring) return null;
+                const rate = parseFloat(form.budget);
+                if (!Number.isFinite(rate) || rate <= 0) return null;
+                const total = rate * recurring.count;
+                const unitLabel =
+                  recurring.unit === "hours"
+                    ? `${recurring.count} hours`
+                    : `${recurring.count} ${recurring.unit}`;
+                const periodLabel =
+                  {
+                    HOURLY: "per hour",
+                    DAILY: "per day",
+                    WEEKLY: "per week",
+                    MONTHLY: "per month",
+                    YEARLY: "per year",
+                  }[form.budgetType] || `per ${form.budgetType.toLowerCase()}`;
+                return (
+                  <p className={styles.durationSummary}>
+                    ✓ Total:{" "}
+                    <strong>
+                      {form.currency} {Math.round(total).toLocaleString()}
+                    </strong>{" "}
+                    ({form.currency} {rate.toLocaleString()} {periodLabel} ×{" "}
+                    {unitLabel})
+                  </p>
+                );
+              })()}
           </div>
 
           {/* ── Work Conditions ── */}
