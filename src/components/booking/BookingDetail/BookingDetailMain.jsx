@@ -186,6 +186,9 @@ export default function BookingDetailMain({
       if (booking.estimatedHours || booking.estimatedValue) {
         return <span className={styles.durationPlaceholder}>Loading...</span>;
       }
+      if (booking.source === "JOB_POST" && booking.notes) {
+        return <span className={styles.durationPlaceholder}>See job post</span>;
+      }
       return <span className={styles.durationPlaceholder}>Not specified</span>;
     }
 
@@ -201,11 +204,20 @@ export default function BookingDetailMain({
       ? unitMap[booking.estimatedUnit] || booking.estimatedUnit
       : null;
 
+    // Show the standard "(hours)" / "(days)" / etc. suffix only when the unit
+    // is one of the numeric ones. Skip it entirely for `custom` units — the
+    // value text already describes the duration.
+    const showUnitSuffix =
+      unitLabel &&
+      booking.estimatedUnit !== "custom" &&
+      booking.estimatedValue &&
+      !isJobPostBooking;
+
     return (
       <span className={styles.durationDisplay}>
         <span className={styles.durationMain}>{dur.main}</span>
         {dur.sub && <span className={styles.durationSub}> {dur.sub}</span>}
-        {unitLabel && booking.estimatedUnit !== "custom" && (
+        {showUnitSuffix && (
           <span className={styles.durationUnit}>
             ({unitLabel}
             {booking.isNegotiated && booking.negotiatedRate
@@ -213,9 +225,6 @@ export default function BookingDetailMain({
               : ""}
             )
           </span>
-        )}
-        {booking.estimatedUnit === "custom" && (
-          <span className={styles.durationUnit}>(Custom)</span>
         )}
       </span>
     );

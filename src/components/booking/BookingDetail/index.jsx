@@ -66,6 +66,33 @@ function formatDuration(booking) {
   const hours = booking.estimatedHours;
   const quantity = booking.quantity || 1;
 
+  // ── FALLBACK: no numeric duration, but notes may carry one ──
+  // PostJob writes recurring jobs as "Recurring: <interval> <duration>."
+  // and custom one-offs as "Duration: <text>."
+  if (!value && !hours && booking.notes) {
+    const recurring = booking.notes.match(/Recurring:\s*([^.]*?)(?:\.|$)/i);
+    if (recurring && recurring[1] && recurring[1].trim()) {
+      const label = recurring[1].trim();
+      return {
+        main: label,
+        sub: null,
+        unit: "custom",
+        label,
+      };
+    }
+
+    const custom = booking.notes.match(/Duration:\s*([^.]*?)(?:\.|$)/i);
+    if (custom && custom[1] && custom[1].trim()) {
+      const label = custom[1].trim();
+      return {
+        main: label,
+        sub: null,
+        unit: "custom",
+        label,
+      };
+    }
+  }
+
   if (!value && !hours) return null;
 
   if (unit === "custom") {
