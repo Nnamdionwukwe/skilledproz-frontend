@@ -723,8 +723,61 @@
   animation: scaleIn 0.2s ease;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FULL-SCREEN TRANSACTION DETAIL MODAL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .modalLarge {
-  max-width: 560px;
+  max-width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  margin: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalLarge .modalHeader {
+  flex-shrink: 0;
+  border-radius: 0;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  z-index: 10;
+}
+
+.modalLarge .modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.modalLarge .detailGrid {
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.modalLarge .detailUser {
+  padding: 1.5rem;
+}
+
+.modalLarge .modalActions {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .modalHeader {
@@ -1719,6 +1772,31 @@
   .modalBox {
     max-width: 100%;
     margin: 0.5rem;
+  }
+
+  .modalLarge {
+    margin: 0;
+    max-width: 100vw;
+    width: 100vw;
+  }
+
+  .modalLarge .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalLarge .modalBody {
+    padding: 1.25rem 1rem;
+  }
+
+  .modalLarge .modalActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .modalLarge .modalActions .modalCancel,
+  .modalLarge .modalActions .detailActionBtn {
+    width: 100%;
+    justify-content: center;
   }
 
   .modalActions {
