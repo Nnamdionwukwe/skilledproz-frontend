@@ -508,3 +508,11 @@
     margin-bottom: 6px;
   }
 }
+
+.statFooter {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  line-height: 1.35;
+  font-weight: 500;
+}
