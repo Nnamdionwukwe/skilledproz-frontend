@@ -429,86 +429,97 @@ export default function WorkerDashboard() {
                 <div className={ui.emptyDesc}>No bookings yet</div>
               </div>
             ) : (
-              recentBookings.slice(0, 6).map((b) => (
-                <div
-                  onClick={() => {
-                    tracker.action("workerDashboard.recentBooking.clicked", {
-                      bookingId: b.id,
-                      status: b.status,
-                    });
-                    navigate(`/bookings/${b.id}`);
-                  }}
-                  key={b.id}
-                  className={styles.bookingItem}
-                  data-track-id={`workerDashboard.recentBooking.${b.id}`}
-                >
-                  <div className={styles.bookingAvatar}>
-                    {b.hirer?.avatar ? (
-                      <img
-                        src={b.hirer.avatar}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    ) : (
-                      initials(b.hirer)
-                    )}
-                  </div>
-                  <div className={styles.bookingInfo}>
-                    <div className={styles.bookingTitle}>{b.title}</div>
-                    <div className={styles.bookingMeta}>
-                      {b.hirer?.firstName} {b.hirer?.lastName} ·{" "}
-                      {b.category?.name}
-                    </div>
-                  </div>
+              recentBookings.slice(0, 6).map((b) => {
+                // ── Partial-release aware figures ──────────────────────
+                // `releasedAmount` is what the worker has actually received
+                // so far. Only render the money block when there is a real
+                // release amount — otherwise we'd show "NGN 0.00" on
+                // bookings that haven't had a release yet, which reads as
+                // "you earned nothing" when the truth is "nothing has been
+                // released yet."
+                const pay = b.payments?.[0] || null;
+                const released = Number(pay?.releasedAmount) || 0;
+                const promised = Number(pay?.workerPayout) || 0;
+                const hasRelease = pay && released > 0;
+                const isPartial = hasRelease && released < promised;
+
+                return (
                   <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: 4,
+                    onClick={() => {
+                      tracker.action("workerDashboard.recentBooking.clicked", {
+                        bookingId: b.id,
+                        status: b.status,
+                      });
+                      navigate(`/bookings/${b.id}`);
                     }}
+                    key={b.id}
+                    className={styles.bookingItem}
+                    data-track-id={`workerDashboard.recentBooking.${b.id}`}
                   >
-                    <span className={statusBadge(b.status)}>{b.status}</span>
-                    {b.payments?.[0] && (
-                      <>
-                        <span
+                    <div className={styles.bookingAvatar}>
+                      {b.hirer?.avatar ? (
+                        <img
+                          src={b.hirer.avatar}
+                          alt=""
                           style={{
-                            fontSize: "0.75rem",
-                            fontWeight: 700,
-                            color: "var(--green)",
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: "50%",
                           }}
-                        >
-                          {formatCurrency(
-                            b.payments[0].releasedAmount ?? 0,
-                            b.payments[0].currency,
-                          )}
-                        </span>
-                        {b.payments[0].workerPayout >
-                          (b.payments[0].releasedAmount ?? 0) && (
+                        />
+                      ) : (
+                        initials(b.hirer)
+                      )}
+                    </div>
+                    <div className={styles.bookingInfo}>
+                      <div className={styles.bookingTitle}>{b.title}</div>
+                      <div className={styles.bookingMeta}>
+                        {b.hirer?.firstName} {b.hirer?.lastName} ·{" "}
+                        {b.category?.name}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        gap: 4,
+                      }}
+                    >
+                      <span className={statusBadge(b.status)}>{b.status}</span>
+                      {hasRelease && (
+                        <>
                           <span
                             style={{
-                              fontSize: "0.6rem",
+                              fontSize: "0.75rem",
                               fontWeight: 700,
-                              color: "var(--orange)",
-                              background: "var(--orange-dim)",
-                              border: "1px solid var(--orange-glow)",
-                              borderRadius: 10,
-                              padding: "1px 6px",
+                              color: "var(--green)",
                             }}
                           >
-                            Partial
+                            {formatCurrency(released, pay.currency)}
                           </span>
-                        )}
-                      </>
-                    )}
+                          {isPartial && (
+                            <span
+                              style={{
+                                fontSize: "0.6rem",
+                                fontWeight: 700,
+                                color: "var(--orange)",
+                                background: "var(--orange-dim)",
+                                border: "1px solid var(--orange-glow)",
+                                borderRadius: 10,
+                                padding: "1px 6px",
+                              }}
+                            >
+                              Partial
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
