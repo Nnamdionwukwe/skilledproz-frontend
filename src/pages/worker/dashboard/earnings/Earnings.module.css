@@ -547,3 +547,148 @@
     display: none;
   }
 }
+/* ── Partial release badge ────────────────────────────────────────── */
+.earnedBadgePartial {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* ── Expandable row wrapper ───────────────────────────────────────── */
+.tableRowExpandable {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.rowMain {
+  display: contents;
+}
+
+/* The table row uses CSS grid on desktop; the expand button needs a
+   spot on the far right. If your current .tableRow uses `display: grid`
+   with 7 columns, add an 8th column for the toggle: */
+.tableHead,
+.tableRow {
+  /* Adjust this to match your existing column setup — add one more
+     `auto` column at the end for the expand chevron. */
+  grid-template-columns: 2fr 1.2fr 1fr auto 1fr 1fr 1fr auto;
+}
+
+/* ── Expand toggle button ─────────────────────────────────────────── */
+.expandBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  justify-self: end;
+}
+
+.expandBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ── Release history panel ────────────────────────────────────────── */
+.releaseHistory {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 12px 14px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.releaseHistoryTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+}
+
+.releaseHistoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.releaseRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.releaseAmount {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--orange);
+  flex-shrink: 0;
+}
+
+.releaseMeta {
+  color: var(--text-dim);
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ── Mobile: expand panel becomes full-width stacked ─────────────── */
+@media (max-width: 640px) {
+  .earnedBadgePartial {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .expandBtn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .releaseHistory {
+    padding: 10px 12px 12px;
+  }
+
+  .releaseRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 8px 10px;
+  }
+
+  .releaseMeta {
+    text-align: left;
+    font-size: 11px;
+  }
+}

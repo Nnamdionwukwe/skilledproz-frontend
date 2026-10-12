@@ -3,6 +3,8 @@
 // - Wallet cards show available + escrow for each currency
 // - Clicking a card filters summary cards + history + escrow to that currency
 // - "All Wallets" chip returns to the combined view
+// - Partial-release aware: available balance already includes any
+//   releasedAmount credited by the hirer before full release.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -1572,6 +1574,9 @@ function WithdrawalModal({
 //   - Clicking a card filters the summary cards AND the withdrawal history
 //     to that currency, including its escrow figure
 //   - The "All Wallets" chip restores the combined view
+//   - Partial releases flow through automatically: the backend already
+//     credits `available` with `releasedAmount` on each payment, so a
+//     hirer releasing 25% before completion is spendable immediately.
 // ─────────────────────────────────────────────────────────────────────────────
 export default function WorkerWithdrawals() {
   const [balance, setBalance] = useState(null);
@@ -1601,8 +1606,9 @@ export default function WorkerWithdrawals() {
       setPage(p);
 
       // The backend includes balancesByCurrency — one entry per currency
-      // that has RELEASED earnings or HELD escrow. Everything else
-      // (PENDING, FAILED, REFUNDED) is filtered out on the server.
+      // that has released earnings or HELD escrow. `available` here already
+      // includes partial releases (releasedAmount), so the worker can
+      // withdraw funds the moment the hirer releases anything.
       setBalancesByCurrency(data.balancesByCurrency ?? {});
 
       // Wide slice for accurate pending counts across currencies.
@@ -1659,7 +1665,7 @@ export default function WorkerWithdrawals() {
 
   // ── Summary cards — reflect the active filter ────────────────────────────
   // Available: from the per-currency breakdown when filtered, from the
-  // combined balance object otherwise.
+  // combined balance object otherwise. Already includes partial releases.
   const totalAvailable = isFiltered
     ? (activeBalance?.available ?? 0)
     : (balance?.available ?? 0);
@@ -1667,7 +1673,7 @@ export default function WorkerWithdrawals() {
   // In escrow: from the per-currency breakdown when filtered, from the
   // combined balance object otherwise. The per-currency value comes
   // directly from the backend's balancesByCurrency.inEscrow which sums
-  // only HELD payments for that currency.
+  // only HELD payments (net of any partial release).
   const totalInEscrow = isFiltered
     ? (activeBalance?.inEscrow ?? 0)
     : (balance?.inEscrow ?? 0);
@@ -1776,6 +1782,8 @@ export default function WorkerWithdrawals() {
                 };
                 const hasAvailable = (info.available ?? 0) > 0;
                 const hasEscrow = (info.inEscrow ?? 0) > 0;
+                const hasPending = (info.pendingPayout ?? 0) > 0;
+
                 return (
                   <div
                     key={cur}
@@ -1796,7 +1804,8 @@ export default function WorkerWithdrawals() {
                     </div>
 
                     {/* Escrow line — displayed whenever this currency has
-                        money held in escrow. */}
+                        money held in escrow (already net of partial
+                        releases). */}
                     <div className={s.walletName}>
                       {hasEscrow ? (
                         <>{fmt(info.inEscrow, cur)} awaiting release</>
@@ -1804,6 +1813,17 @@ export default function WorkerWithdrawals() {
                         <>Available in {cur}</>
                       )}
                     </div>
+
+                    {/* Partial-release / pending hint — surfaces why
+                        the available figure may be less than totalEarned. */}
+                    {(hasPending ||
+                      (info.totalEarned ?? 0) > (info.available ?? 0)) && (
+                      <div className={s.walletPartialHint}>
+                        {hasPending
+                          ? `${fmt(info.pendingPayout, cur)} pending`
+                          : "incl. partial releases"}
+                      </div>
+                    )}
 
                     <button
                       className={s.walletWithdrawBtn}
@@ -1838,8 +1858,8 @@ export default function WorkerWithdrawals() {
             </span>
             <span className={s.summarySub}>
               {isFiltered
-                ? `Withdrawable in ${activeCurrency}`
-                : "Across all currencies"}
+                ? `Withdrawable in ${activeCurrency} · incl. partial releases`
+                : "Across all currencies · incl. partial releases"}
             </span>
           </div>
           <div className={s.summaryCard}>
@@ -1855,8 +1875,8 @@ export default function WorkerWithdrawals() {
             </span>
             <span className={s.summarySub}>
               {isFiltered
-                ? `Held in ${activeCurrency} — awaiting hirer release`
-                : "Awaiting hirer release"}
+                ? `Held in ${activeCurrency}, net of releases`
+                : "Net of partial releases"}
             </span>
           </div>
           <div className={s.summaryCard}>
