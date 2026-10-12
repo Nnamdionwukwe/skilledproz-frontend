@@ -279,10 +279,11 @@
   overflow: hidden;
 }
 
-/* 7 columns: Job | Client | Date | Currency | Agreed Rate | You Earned | Hirer's Fee */
+/* 8 columns: Job | Client | Date | Currency | Agreed Rate | You Earned | In Escrow | Expand */
 .tableHead {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 0.9fr 0.9fr 1.1fr 1.1fr 1fr;
+  grid-template-columns: 2fr 1.2fr 0.9fr 0.8fr 1fr 1.1fr 1fr 32px;
+  align-items: center;
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.65rem;
@@ -290,6 +291,7 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
+  gap: 0.5rem;
 }
 /* Highlight the "You Earned" header */
 .tableHead span:nth-child(6) {
@@ -298,7 +300,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 0.9fr 0.9fr 1.1fr 1.1fr 1fr;
+  grid-template-columns: 2fr 1.2fr 0.9fr 0.8fr 1fr 1.1fr 1fr 32px;
   align-items: center;
   padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--border);
@@ -311,6 +313,22 @@
 }
 .tableRow:hover {
   background: var(--bg-card);
+}
+
+/* Row wrapper used when a row is expandable — the grid stays on the
+   outer row so children align; the release panel sits below it. */
+.tableRowExpandable {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.rowMain {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 0.9fr 0.8fr 1fr 1.1fr 1fr 32px;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 /* Cells */
@@ -331,6 +349,9 @@
 .jobCat {
   font-size: 0.7rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hirerCell {
@@ -368,6 +389,7 @@
 .dateCell {
   font-size: 0.8rem;
   color: var(--text-dim);
+  white-space: nowrap;
 }
 .currencyCell {
   display: flex;
@@ -377,19 +399,23 @@
 .amountRate {
   font-size: 0.8125rem;
   color: var(--text-dim);
+  white-space: nowrap;
 }
 
-/* You Earned — prominent green + 100% badge */
+/* You Earned — prominent green + status badge */
 .earnedCell {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 .amountEarned {
   font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 800;
   color: var(--green);
+  white-space: nowrap;
 }
 .earnedBadge {
   font-size: 9px;
@@ -402,18 +428,31 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+.earnedBadgePartial {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
-/* Hirer's fee — dimmed, labelled so worker knows it's not their cost */
+/* In Escrow / Hirer fee — dimmed, labelled */
 .hirerFeeCell {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 .hirerFeeAmt {
   font-size: 0.8125rem;
   color: var(--text-muted);
   text-decoration: line-through;
   text-decoration-color: rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
 }
 .hirerFeeLabel {
   font-size: 0.6rem;
@@ -421,6 +460,112 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Expand toggle button ─────────────────────────────────────────── */
+.expandBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  justify-self: end;
+  flex-shrink: 0;
+}
+.expandBtn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ── Release history panel ─────────────────────────────────────────── */
+/* A dense, table-like panel that fills the width of the parent card.
+   Each release is a full-width row with three aligned columns:
+   amount · timestamp · note. Row separators instead of nested cards,
+   so it reads as a ledger rather than a stack of widgets. */
+.releaseHistory {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px 16px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: fadeIn 0.18s ease;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.releaseHistoryTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+}
+
+.releaseHistoryList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Each release: amount | timestamp | note (grid columns) */
+.releaseRow {
+  display: grid;
+  grid-template-columns: 140px 180px 1fr;
+  align-items: center;
+  column-gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.releaseRow:last-child {
+  border-bottom: none;
+}
+
+.releaseAmount {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--orange);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.releaseMeta {
+  color: var(--text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.releaseNote {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* ── Skeleton ── */
@@ -527,16 +672,79 @@
   }
 }
 
-/* ── Responsive ── */
+/* ══════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Small desktop / large tablet (≤ 1100px) ───────────────────────── */
+@media (max-width: 1100px) {
+  .tableHead,
+  .tableRow,
+  .rowMain {
+    grid-template-columns: 1.8fr 1.2fr 0.8fr 0.7fr 0.9fr 1.1fr 1fr 32px;
+    gap: 0.4rem;
+  }
+}
+
+/* ── Tablet (≤ 900px) ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
+  /* Hide the column header row entirely */
   .tableHead {
     display: none;
   }
-  .tableRow {
-    grid-template-columns: 1fr;
-    gap: 0.375rem;
+
+  /* Each row becomes a vertical stack */
+  .tableRow,
+  .rowMain {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
     padding: 1rem;
   }
+
+  /* Hide the expand button from the stack — repositioned below */
+  .expandBtn {
+    align-self: flex-end;
+    margin-top: -28px;
+  }
+
+  /* Job title bigger on mobile */
+  .jobTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* Compact labels for stacked cells */
+  .dateCell,
+  .amountRate,
+  .currencyCell {
+    font-size: 0.8rem;
+  }
+
+  /* The earned amount stands out more on mobile */
+  .earnedCell {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .amountEarned {
+    font-size: 1.05rem;
+  }
+
+  /* In escrow row stays horizontal with label */
+  .hirerFeeCell {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .hirerFeeAmt {
+    font-size: 0.85rem;
+  }
+
+  /* Summary strip tightens */
   .sumDivider {
     display: none;
   }
@@ -546,149 +754,160 @@
   .feeBannerPills {
     display: none;
   }
-}
-/* ── Partial release badge ────────────────────────────────────────── */
-.earnedBadgePartial {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--orange);
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-glow);
-  padding: 1px 6px;
-  border-radius: 10px;
-  margin-left: 6px;
-  white-space: nowrap;
-}
 
-/* ── Expandable row wrapper ───────────────────────────────────────── */
-.tableRowExpandable {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.rowMain {
-  display: contents;
-}
-
-/* The table row uses CSS grid on desktop; the expand button needs a
-   spot on the far right. If your current .tableRow uses `display: grid`
-   with 7 columns, add an 8th column for the toggle: */
-.tableHead,
-.tableRow {
-  /* Adjust this to match your existing column setup — add one more
-     `auto` column at the end for the expand chevron. */
-  grid-template-columns: 2fr 1.2fr 1fr auto 1fr 1fr 1fr auto;
-}
-
-/* ── Expand toggle button ─────────────────────────────────────────── */
-.expandBtn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  justify-self: end;
-}
-
-.expandBtn:hover {
-  border-color: var(--orange);
-  color: var(--orange);
-}
-
-/* ── Release history panel ────────────────────────────────────────── */
-.releaseHistory {
-  grid-column: 1 / -1;
-  margin-top: 4px;
-  padding: 12px 14px 14px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  animation: fadeIn 0.18s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+  /* Release history — 2 columns; note wraps below amount/timestamp */
+  .releaseRow {
+    grid-template-columns: 120px 1fr;
+    row-gap: 2px;
   }
-  to {
-    opacity: 1;
+  .releaseNote {
+    grid-column: 1 / -1;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    margin-top: 2px;
   }
 }
 
-.releaseHistoryTitle {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin: 0 0 10px;
-}
-
-.releaseHistoryList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.releaseRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px;
-}
-
-.releaseAmount {
-  font-family: var(--font-display);
-  font-weight: 800;
-  color: var(--orange);
-  flex-shrink: 0;
-}
-
-.releaseMeta {
-  color: var(--text-dim);
-  text-align: right;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-/* ── Mobile: expand panel becomes full-width stacked ─────────────── */
+/* ── Phone portrait (≤ 640px) ─────────────────────────────────────── */
 @media (max-width: 640px) {
-  .earnedBadgePartial {
-    font-size: 9px;
-    padding: 1px 5px;
+  .page {
+    gap: 1rem;
   }
 
-  .expandBtn {
-    width: 26px;
-    height: 26px;
+  .pageTitle {
+    font-size: 1.25rem;
+  }
+
+  /* Banner stacks */
+  .feeBanner {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .feeBannerTitle {
+    font-size: 12px;
+  }
+  .feeBannerSub {
+    font-size: 10.5px;
+  }
+
+  /* Summary strip stacks vertically with 2 columns */
+  .summaryStrip {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.875rem 1rem;
+  }
+  .sumItem {
+    min-width: 0;
+  }
+  .sumValue {
+    font-size: 1.05rem;
+  }
+  .sumNote {
+    font-size: 0.6rem;
+  }
+
+  /* Filters stack */
+  .filtersRow {
+    gap: 0.5rem;
+  }
+  .currencyTabsRow {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    width: 100%;
+  }
+  .currencyTabsRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Table rows tighter */
+  .tableRow,
+  .rowMain {
+    padding: 0.875rem 1rem;
+    gap: 0.4rem;
+  }
+
+  /* Release history — fully stacked */
+  .releaseHistory {
+    padding: 12px 12px 10px;
+  }
+  .releaseRow {
+    grid-template-columns: 1fr;
+    row-gap: 2px;
+    padding: 8px 0;
+  }
+  .releaseAmount {
+    font-size: 13px;
+  }
+  .releaseMeta,
+  .releaseNote {
+    font-size: 11px;
+  }
+  .releaseNote {
+    grid-column: auto;
+    margin-top: 2px;
+  }
+
+  /* Empty state tighter */
+  .emptyState,
+  .errorState {
+    padding: 3rem 1.25rem;
+  }
+  .emptyTitle {
+    font-size: 1rem;
+  }
+  .emptyText {
+    font-size: 0.8rem;
+  }
+}
+
+/* ── Very small phone (≤ 400px) ───────────────────────────────────── */
+@media (max-width: 400px) {
+  .summaryStrip {
+    grid-template-columns: 1fr;
+  }
+  .sumValue {
+    font-size: 1rem;
+  }
+
+  .feeBanner {
+    padding: 10px 12px;
+  }
+
+  .tableRow,
+  .rowMain {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .jobTitle {
+    font-size: 0.9rem;
+  }
+
+  .amountEarned {
+    font-size: 0.975rem;
   }
 
   .releaseHistory {
-    padding: 10px 12px 12px;
+    padding: 10px 10px 8px;
   }
-
-  .releaseRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 8px 10px;
+  .releaseAmount {
+    font-size: 12.5px;
   }
+  .releaseMeta,
+  .releaseNote {
+    font-size: 10.5px;
+  }
+}
 
-  .releaseMeta {
-    text-align: left;
-    font-size: 11px;
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .feeBanner,
+  .tableRow,
+  .releaseHistory,
+  .skRow {
+    animation: none;
   }
 }
