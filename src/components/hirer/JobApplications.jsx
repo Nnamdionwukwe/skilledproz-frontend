@@ -68,7 +68,7 @@ export default function JobApplications() {
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
   // ── Undo confirmation state ──
-  // Shape: { applicationId, workerName, hasBooking } | null
+  // Shape: { applicationId, workerName, hasBooking, bookingId } | null
   const [undoTarget, setUndoTarget] = useState(null);
 
   useEffect(() => {
@@ -101,6 +101,9 @@ export default function JobApplications() {
   }, [lightboxSrc]);
 
   // ── Accept / reject a pending application ──
+  // Under Option A, accepting an application does NOT close the job —
+  // the job post is a reusable template and stays OPEN so the hirer can
+  // accept more workers and create more bookings over its lifetime.
   const handleDecision = async (applicationId, status) => {
     setUpdating(applicationId);
     setError("");
@@ -113,8 +116,9 @@ export default function JobApplications() {
         prev.map((a) => (a.id === applicationId ? { ...a, status } : a)),
       );
       if (status === "ACCEPTED") {
-        setJob((prev) => ({ ...prev, status: "FILLED" }));
-        setSuccess("Application accepted! The job has been marked as filled.");
+        setSuccess(
+          "Application accepted! You can now create a booking for this worker. The job stays open for more hires.",
+        );
       } else {
         setSuccess("Application rejected.");
       }
@@ -302,8 +306,8 @@ export default function JobApplications() {
                           applicationId: app.id,
                           workerName:
                             `${app.worker?.firstName || ""} ${app.worker?.lastName || ""}`.trim(),
-                          hasBooking: !!(app.booking || app.bookingId),
-                          bookingId: app.booking?.id || app.bookingId || null,
+                          hasBooking: !!app.latestBooking,
+                          bookingId: app.latestBooking?.id || null,
                         })
                       }
                       onAvatarClick={setLightboxSrc}
@@ -337,8 +341,8 @@ export default function JobApplications() {
                           applicationId: app.id,
                           workerName:
                             `${app.worker?.firstName || ""} ${app.worker?.lastName || ""}`.trim(),
-                          hasBooking: !!(app.booking || app.bookingId),
-                          bookingId: app.booking?.id || app.bookingId || null,
+                          hasBooking: !!app.latestBooking,
+                          bookingId: app.latestBooking?.id || null,
                         })
                       }
                       onAvatarClick={setLightboxSrc}
@@ -465,8 +469,14 @@ function ApplicationCard({
   const StatusIcon = statusInfo.Icon;
 
   const hasAvatar = !!worker?.avatar;
-  const hasBooking = !!(app.booking || app.bookingId);
-  const bookingId = app.booking?.id || app.bookingId;
+
+  // ── Booking state ──
+  // `latestBooking` is populated by the backend as the most recent
+  // non-cancelled booking for this (jobPostId, workerId). It drives the
+  // action row on accepted applications. See getJobApplications.
+  const latestBooking = app.latestBooking || null;
+  const hasBooking = !!latestBooking;
+  const bookingId = latestBooking?.id || null;
 
   return (
     <div className={styles.appCard} style={{ animationDelay: `${delay}s` }}>
@@ -641,25 +651,24 @@ function ApplicationCard({
           </div>
 
           <div className={styles.acceptedActions}>
-            {hasBooking ? (
+            {hasBooking && (
               <Link to={`/bookings/${bookingId}`} className={styles.bookLink}>
-                View Booking →
-              </Link>
-            ) : (
-              <Link
-                to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
-                className={styles.bookLink}
-              >
-                Create Booking →
+                View Latest Booking →
               </Link>
             )}
+            <Link
+              to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
+              className={styles.bookLink}
+            >
+              {hasBooking ? "Create Another Booking →" : "Create Booking →"}
+            </Link>
             <button
               className={styles.unacceptBtn}
               disabled={updating === app.id}
               onClick={onUnacceptRequest}
               title={
                 hasBooking
-                  ? "Return this application to Pending Review and reopen the job. The existing booking is not affected."
+                  ? "Return this application to Pending Review and reopen the job. Existing bookings are not affected."
                   : "Undo the acceptance and return this application to Pending Review"
               }
             >
