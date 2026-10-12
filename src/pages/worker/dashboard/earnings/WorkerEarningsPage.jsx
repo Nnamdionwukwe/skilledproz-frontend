@@ -1,7 +1,7 @@
 // src/pages/worker/dashboard/earnings/Earnings.jsx
 // Updated to reflect FEE_CONFIG Phase 1:
 //   Worker keeps 100% of agreedRate (workerPayout = agreedRate)
-//   Hirer pays 5% service fee on top — worker is never charged
+//   Hirer pays 1% service fee on top — worker is never charged
 //   Zero withdrawal fees in Phase 1
 
 import { useEffect, useState } from "react";
@@ -23,6 +23,7 @@ import {
 } from "../../../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../../../../components/common/DashboardCurrencySwitch";
 import tracker from "../../../../lib/analytics/tracker";
+import { HIRER_FEE_RATE } from "../../../../utils/pricing";
 
 const CRYPTO = ["USDC", "USDT"];
 
@@ -130,7 +131,7 @@ export default function WorkerEarningsPage() {
 
   // Derived: worker fee rate is always 0 in Phase 1
   // These are just for the banner copy
-  const HIRER_FEE_DISPLAY = "5%";
+  const HIRER_FEE_DISPLAY = `${HIRER_FEE_RATE * 100}%`;
   const WORKER_FEE_DISPLAY = "0%";
 
   return (

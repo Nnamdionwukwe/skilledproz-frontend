@@ -1,5 +1,5 @@
 // src/utils/pricing.js
-export const HIRER_FEE_RATE = 0.05;
+export const HIRER_FEE_RATE = 0.01;
 
 export function calcPricing(booking, referralDiscount = 0) {
   const agreedRate = booking?.agreedRate || 0;

@@ -8,9 +8,9 @@ import HirerLayout from "../../layout/HirerLayout";
 import BookingWorkerInfo from "./BookingWorkerInfo";
 import BookingFormFields from "./BookingFormFields";
 import tracker from "../../../lib/analytics/tracker";
+import { HIRER_FEE_RATE } from "../../../utils/pricing";
 
 // ── Fee config ──────────────────────────────────────────────────────────────
-const HIRER_FEE_RATE = 0.05;
 const WORKER_FEE_RATE = 0.0;
 
 function computeFees(agreedRate, qty = 1) {

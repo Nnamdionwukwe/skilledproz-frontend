@@ -8,6 +8,7 @@ import { formatJobDurationParts } from "../utils/formatDuration";
 import ReportButton from "../../pages/reports/ReportButton";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
+import { HIRER_FEE_RATE } from "../../utils/pricing";
 import {
   FiBriefcase,
   FiClock,
@@ -118,8 +119,6 @@ const EDUCATION_LEVEL_LABELS = {
   CERTIFICATION: "Certification",
   OTHER: "Other",
 };
-
-const HIRER_FEE_RATE = 0.05;
 
 // ─── Helpers: parse recurring info from notes ───────────────────────────────
 function parseRecurring(notes) {

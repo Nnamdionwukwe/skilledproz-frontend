@@ -9,6 +9,8 @@ import {
 import HirerLayout from "../layout/HirerLayout";
 import api from "../../lib/api";
 import styles from "./CreateBookingFromJob.module.css";
+import { HIRER_FEE_RATE } from "../../utils/pricing";
+
 import {
   FiChevronLeft,
   FiLock,
@@ -423,7 +425,7 @@ export default function CreateBookingFromJob() {
       calculationText = `Estimated total: ${formatMoney(subtotal, rateCurrency)}`;
     }
 
-    const platformFeePct = 0.05;
+    const platformFeePct = HIRER_FEE_RATE;
     const platformFee = Math.round(subtotal * platformFeePct * 100) / 100;
     const grandTotal = subtotal + platformFee;
 

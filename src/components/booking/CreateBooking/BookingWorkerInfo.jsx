@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import styles from "./CreateBooking.module.css";
 import { useState, useEffect } from "react";
+import { HIRER_FEE_RATE } from "../../../utils/pricing";
 
 // ── Currency symbol map ──────────────────────────────────────────────────
 const CURRENCY_SYMBOLS = {
@@ -640,7 +641,7 @@ export default function BookingWorkerInfo({
                 <span>{format(estFees.subtotal)}</span>
               </div>
               <div className={styles.feeRow}>
-                <span>Platform Fee (5%)</span>
+                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
                 <span>{format(estFees.hirerFee)}</span>
               </div>
               <div className={styles.feeTotal}>
@@ -657,8 +658,10 @@ export default function BookingWorkerInfo({
                 <span>{format(parseFloat(negotiatedRate))}</span>
               </div>
               <div className={styles.feeRow}>
-                <span>Platform Fee (5%)</span>
-                <span>{format(parseFloat(negotiatedRate) * 0.05)}</span>
+                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
+                <span>
+                  {format(parseFloat(negotiatedRate) * HIRER_FEE_RATE)}
+                </span>
               </div>
               <div className={styles.feeTotal}>
                 <span>Total to Pay</span>

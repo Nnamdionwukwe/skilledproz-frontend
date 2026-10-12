@@ -5,7 +5,7 @@ import {
   FaInfoCircle,
 } from "react-icons/fa";
 import styles from "./BookingDetail.module.css";
-import { calcPricing } from "../../../utils/pricing";
+import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -129,7 +129,7 @@ export default function WorkerPaymentPreview({ booking, isWorker }) {
 
         <div className={styles.workerPaymentRow}>
           <span className={styles.workerPaymentLabel}>
-            Platform Fee (5%)
+            Platform Fee ({HIRER_FEE_RATE * 100}%)
             <span className={styles.workerPaymentNote}>(paid by hirer)</span>
           </span>
           <span className={styles.workerPaymentValue}>

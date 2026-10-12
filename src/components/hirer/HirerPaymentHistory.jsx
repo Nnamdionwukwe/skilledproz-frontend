@@ -5,6 +5,7 @@ import styles from "./HirerPaymentHistory.module.css";
 import HirerLayout from "../layout/HirerLayout";
 import { useCurrency, CURRENCY_META } from "../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
+import { HIRER_FEE_RATE } from "../../utils/pricing";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -81,12 +82,12 @@ function ReceiptModal({ payment, onClose }) {
     cls: "pending",
   };
 
-  // Platform fee is 5% of the total amount
+  // Platform fee is 1% of the total amount
   // Worker gets 100% of the agreed rate (workerPayout)
   // Hirer pays amount = workerPayout + platformFee
-  const platformFeePercent = 5; // Fixed at 5%
+  const platformFeePercent = HIRER_FEE_RATE * 100;
   const workerPayout = payment.workerPayout ?? payment.amount * 0.95;
-  const platformFee = payment.platformFee ?? payment.amount * 0.05;
+  const platformFee = payment.platformFee ?? payment.amount * HIRER_FEE_RATE;
 
   return (
     <div className={styles.backdrop} onMouseDown={handleBackdrop}>
@@ -201,7 +202,7 @@ function ReceiptModal({ payment, onClose }) {
             </span>
           </div>
           <div className={styles.breakdownRow}>
-            <span>Platform fee (5%)</span>
+            <span>Platform fee ({HIRER_FEE_RATE * 100}%)</span>
             <span className={styles.feeAmount}>
               + {fmt(platformFee, payment.currency)}
             </span>
@@ -669,7 +670,7 @@ export default function HirerPaymentHistory() {
                               fontSize: "0.6rem",
                             }}
                           >
-                            Platform fee: 5%
+                            Platform fee: {HIRER_FEE_RATE * 100}%
                           </span>
                         </div>
 

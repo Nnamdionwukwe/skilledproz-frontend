@@ -27,7 +27,7 @@ import {
   FaUndo,
 } from "react-icons/fa";
 import ConfirmationModal from "../../context/ConfirmationModal";
-import { calcPricing } from "../../../utils/pricing";
+import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
 import { RefundRequest } from "../Refund";
 import JobPostBookingDetails from "./JobPostBookingDetails";
 
@@ -422,7 +422,7 @@ export default function BookingDetailMain({
                   />
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label="Platform Fee (5%)"
+                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
                     value={`${currency} ${platformFee.toLocaleString()}`}
                     accent
                   />
@@ -443,7 +443,7 @@ export default function BookingDetailMain({
                   />
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label="Platform Fee (5%)"
+                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
                     value={`${currency} ${platformFee.toLocaleString()}`}
                   />
                   <DetailItem
@@ -906,7 +906,7 @@ export default function BookingDetailMain({
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
-                  label="Platform Fee (5%)"
+                  label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
                   value={`${currency} ${platformFee.toLocaleString()}`}
                   accent
                 />
@@ -927,7 +927,7 @@ export default function BookingDetailMain({
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
-                  label="Platform Fee (5%)"
+                  label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
                   value={`${currency} ${platformFee.toLocaleString()}`}
                 />
                 <DetailItem

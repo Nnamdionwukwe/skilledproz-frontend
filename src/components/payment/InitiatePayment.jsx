@@ -29,7 +29,7 @@ import {
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
 import tracker from "../../lib/analytics/tracker";
-import { calcPricing } from "../../utils/pricing";
+import { calcPricing, HIRER_FEE_RATE } from "../../utils/pricing";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -987,7 +987,7 @@ export default function InitiatePayment() {
                 )}
                 <div className={styles.breakdownRow}>
                   <span className={styles.breakdownLabel}>
-                    Service Fee (5%)
+                    Service Fee ({HIRER_FEE_RATE * 100}%)
                   </span>
                   <span className={styles.breakdownVal}>
                     + {formatPrice(prev.hirerFee, prev.currency)}
@@ -1267,7 +1267,9 @@ export default function InitiatePayment() {
               )}
 
               <div className={styles.breakdownRow}>
-                <span className={styles.breakdownLabel}>Service Fee (5%)</span>
+                <span className={styles.breakdownLabel}>
+                  Service Fee ({HIRER_FEE_RATE * 100}%)
+                </span>
                 <span className={styles.breakdownVal}>
                   + {formatPrice(p.hirerFee, p.currency)}
                 </span>

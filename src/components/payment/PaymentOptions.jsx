@@ -15,7 +15,7 @@ import {
   FaEthereum,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
-import { calcPricing } from "../../utils/pricing";
+import { calcPricing, HIRER_FEE_RATE } from "../../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -74,7 +74,7 @@ export default function PaymentOptions({
 
   // Platform fee = 5% of the agreed total (matches the backend's
   // fee phase 1). Always positive.
-  const PLATFORM_FEE_PCT = 0.05;
+  const PLATFORM_FEE_PCT = HIRER_FEE_RATE;
   const platformFee = isJobPost
     ? Math.round(agreedTotal * PLATFORM_FEE_PCT * 100) / 100
     : Number(p.platformFee || 0);

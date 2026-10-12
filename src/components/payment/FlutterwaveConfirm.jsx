@@ -16,12 +16,25 @@ import {
   Link,
   useSearchParams,
 } from "react-router-dom";
+import {
+  FiCheck,
+  FiX,
+  FiAlertTriangle,
+  FiCreditCard,
+  FiLock,
+  FiShield,
+  FiRefreshCw,
+  FiGlobe,
+} from "react-icons/fi";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
+import { HIRER_FEE_RATE } from "../../utils/pricing";
 
 // ── Fee config (mirrors backend FEE_CONFIG Phase 1) ───────────────────────────
-const HIRER_FEE_RATE = 0.05;
+// ── Fee config ───────────────────────────────────────────────────────────────
+// HIRER_FEE_RATE now comes from src/utils/pricing.js — the single
+// source of truth for the fee rate across the app.
 
 function feeBreakdown(booking) {
   if (!booking) return null;
@@ -50,7 +63,7 @@ function PaymentReturnBanner({ bookingId }) {
     return (
       <div className={styles.successWrap}>
         <div className={styles.successRing}>
-          <span className={styles.successCheck}>✓</span>
+          <FiCheck className={styles.successCheck} />
         </div>
         <h2 className={styles.successTitle}>Payment Successful!</h2>
         <p className={styles.successText}>
@@ -71,7 +84,7 @@ function PaymentReturnBanner({ bookingId }) {
     return (
       <div className={styles.successWrap}>
         <div className={styles.failRing}>
-          <span className={styles.failIcon}>✕</span>
+          <FiX className={styles.failIcon} />
         </div>
         <h2 className={styles.failTitle}>Payment Cancelled</h2>
         <p className={styles.failText}>
@@ -179,7 +192,7 @@ export default function FlutterwaveConfirm() {
               </Link>
             </div>
             <div className={styles.errorBox}>
-              <span className={styles.errorIcon}>⚠️</span>
+              <FiAlertTriangle className={styles.errorIcon} />
               <p>{error}</p>
               <button
                 className={styles.payBtn}
@@ -198,9 +211,10 @@ export default function FlutterwaveConfirm() {
   if (paying || !error) {
     const provMeta = PROVIDER_META[provider] ?? {
       label: "Payment Provider",
-      icon: "💳",
+      Icon: FiCreditCard,
       badge: "Secure",
     };
+    const ProviderIcon = provMeta.Icon;
     return (
       <HirerLayout>
         <div className={styles.page}>
@@ -210,14 +224,16 @@ export default function FlutterwaveConfirm() {
               <Link to={`/bookings/${bookingId}`} className={styles.backLink}>
                 ← Back to Booking
               </Link>
-              <div className={styles.payBadge}>🔒 Secure Checkout</div>
+              <div className={styles.payBadge}>
+                <FiLock /> Secure Checkout
+              </div>
             </div>
 
             {/* Booking summary card */}
             <div className={styles.summaryCard}>
               <div className={styles.summaryTop}>
                 <div className={styles.summaryIconWrap}>
-                  <span className={styles.summaryIcon}>💳</span>
+                  <FiCreditCard className={styles.summaryIcon} />
                 </div>
                 <div>
                   <p className={styles.summaryLabel}>Completing payment for</p>
@@ -243,7 +259,7 @@ export default function FlutterwaveConfirm() {
                   </div>
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownLabel}>
-                      Service Fee (5%)
+                      Service Fee ({HIRER_FEE_RATE * 100}%)
                     </span>
                     <span className={styles.breakdownVal}>
                       + {fees.currency}{" "}
@@ -257,7 +273,7 @@ export default function FlutterwaveConfirm() {
                       className={styles.breakdownLabel}
                       style={{ color: "var(--green)", fontSize: "0.8rem" }}
                     >
-                      🎉 Worker receives (no deductions)
+                      Worker receives (no deductions)
                     </span>
                     <span
                       className={styles.breakdownVal}
@@ -302,9 +318,12 @@ export default function FlutterwaveConfirm() {
                       border: "1px solid var(--border)",
                       borderRadius: 20,
                       padding: "3px 10px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    {provMeta.icon} {provMeta.badge}
+                    <ProviderIcon /> {provMeta.badge}
                   </span>
                 </div>
               )}
@@ -313,14 +332,20 @@ export default function FlutterwaveConfirm() {
             {/* Manual trigger if auto-redirect fails */}
             {!paying && (
               <button className={styles.payBtn} onClick={initiatePayment}>
-                💳 Proceed to Payment
+                <FiCreditCard /> Proceed to Payment
               </button>
             )}
 
             <div className={styles.trustRow}>
-              <span className={styles.trustItem}>🔐 256-bit SSL</span>
-              <span className={styles.trustItem}>🛡️ Escrow protected</span>
-              <span className={styles.trustItem}>↩️ Refund policy</span>
+              <span className={styles.trustItem}>
+                <FiLock /> 256-bit SSL
+              </span>
+              <span className={styles.trustItem}>
+                <FiShield /> Escrow protected
+              </span>
+              <span className={styles.trustItem}>
+                <FiRefreshCw /> Refund policy
+              </span>
             </div>
           </div>
         </div>
@@ -335,8 +360,12 @@ export default function FlutterwaveConfirm() {
 const PROVIDER_META = {
   flutterwave: {
     label: "Flutterwave",
-    icon: "🦋",
+    Icon: FiGlobe,
     badge: "International payments",
   },
-  paystack: { label: "Paystack", icon: "💚", badge: "Nigeria / Africa" },
+  paystack: {
+    label: "Paystack",
+    Icon: FiCreditCard,
+    badge: "Nigeria / Africa",
+  },
 };

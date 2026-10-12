@@ -10,6 +10,7 @@ import {
   FaChevronUp,
   FaClock,
 } from "react-icons/fa";
+import { HIRER_FEE_RATE } from "../../../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -128,7 +129,7 @@ export default function BookingDetailPayment({
               )}
 
               <div className={styles.feeRow}>
-                <span>Platform Fee (5%)</span>
+                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
                 <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
               </div>
 
@@ -175,7 +176,7 @@ export default function BookingDetailPayment({
               )}
 
               <div className={styles.feeRow}>
-                <span>Platform Fee (5%)</span>
+                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
                 <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
               </div>
 
@@ -253,7 +254,7 @@ export default function BookingDetailPayment({
             )}
 
             <div className={styles.feeRow}>
-              <span>Platform Fee (5%)</span>
+              <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
               <span>+ {formatPrice(platformFee, cur)}</span>
             </div>
 
@@ -308,7 +309,7 @@ export default function BookingDetailPayment({
             )}
 
             <div className={styles.feeRow}>
-              <span>Platform Fee (5%)</span>
+              <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
               <span>+ {formatPrice(platformFee, cur)}</span>
             </div>
 
@@ -416,7 +417,7 @@ export default function BookingDetailPayment({
         <div className={styles.paymentCard}>
           <PayRow label="Total" value={formatPrice(total, cur)} />
           <PayRow
-            label="Platform Fee"
+            label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
             value={formatPrice(platformFee, cur)}
             muted
           />
