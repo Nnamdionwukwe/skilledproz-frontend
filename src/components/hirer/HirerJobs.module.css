@@ -1477,3 +1477,36 @@
     flex: none;
   }
 }
+.rejectedNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.reconsiderBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.reconsiderBtn:hover:not(:disabled) {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.reconsiderBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

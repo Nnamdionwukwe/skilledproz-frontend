@@ -163,6 +163,37 @@ export default function JobApplications() {
     }
   };
 
+  // ── Reconsider a rejected application ──
+  // Resets it to PENDING so the hirer can accept / decline / interview
+  // again — exactly the same UI as a fresh application. Does NOT touch
+  // the job status (a rejected application never changed it) and does
+  // NOT touch any booking.
+  const handleReconsider = async (applicationId) => {
+    setUpdating(applicationId);
+    setError("");
+    setSuccess("");
+    try {
+      await api.patch(`/jobs/${id}/applications/${applicationId}/reconsider`);
+
+      setApplications((prev) =>
+        prev.map((a) =>
+          a.id === applicationId ? { ...a, status: "PENDING" } : a,
+        ),
+      );
+
+      setSuccess(
+        "Application moved back to Pending Review. You can accept, decline, or interview the worker again.",
+      );
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to reconsider. Please try again.",
+      );
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const pending = applications.filter((a) => a.status === "PENDING");
   const accepted = applications.filter((a) => a.status === "ACCEPTED");
   const declined = applications.filter((a) => a.status === "REJECTED");
@@ -301,6 +332,7 @@ export default function JobApplications() {
                       updating={updating}
                       onAccept={() => handleDecision(app.id, "ACCEPTED")}
                       onReject={() => handleDecision(app.id, "REJECTED")}
+                      onReconsider={() => handleReconsider(app.id)}
                       onUnacceptRequest={() =>
                         setUndoTarget({
                           applicationId: app.id,
@@ -336,6 +368,7 @@ export default function JobApplications() {
                       jobTitle={job?.title}
                       updating={updating}
                       decided
+                      onReconsider={() => handleReconsider(app.id)}
                       onUnacceptRequest={() =>
                         setUndoTarget({
                           applicationId: app.id,
@@ -458,6 +491,7 @@ function ApplicationCard({
   updating,
   onAccept,
   onReject,
+  onReconsider,
   onUnacceptRequest,
   onAvatarClick,
   decided,
@@ -677,6 +711,33 @@ function ApplicationCard({
               ) : (
                 <>
                   <FaUndo size={12} /> Undo Acceptance
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Rejected state — reconsider button */}
+      {decided && app.status === "REJECTED" && (
+        <div className={styles.acceptedRow}>
+          <div className={styles.rejectedNote}>
+            <FaTimesCircle />
+            <span>Rejected</span>
+          </div>
+
+          <div className={styles.acceptedActions}>
+            <button
+              className={styles.reconsiderBtn}
+              disabled={updating === app.id}
+              onClick={onReconsider}
+              title="Return this application to Pending Review so you can accept, decline, or interview the worker again."
+            >
+              {updating === app.id ? (
+                <span className={styles.spinner} />
+              ) : (
+                <>
+                  <FaUndo size={12} /> Reconsider
                 </>
               )}
             </button>
