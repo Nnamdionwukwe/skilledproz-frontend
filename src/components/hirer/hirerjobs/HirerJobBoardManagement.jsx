@@ -415,7 +415,7 @@ function JobCard({ job, delay, acting, onStatusChange }) {
           </div>
         )}
 
-        {!isOpen && job.status === "CANCELLED" && (
+        {!isOpen && (
           <button
             className={styles.reopenBtn}
             disabled={acting}
