@@ -473,6 +473,7 @@ export default function JobDetail() {
   const jobPost = job;
   const hasApplied = job.hasApplied;
   const wasRejected = job.applicationStatus === "REJECTED";
+  const wasAccepted = job.applicationStatus === "ACCEPTED";
 
   const scheduled = new Date(jobPost.scheduledAt);
   const isOpen = jobPost.status === "OPEN";
@@ -1372,7 +1373,18 @@ export default function JobDetail() {
                   </div>
                 )}
 
-                {hasApplied ? (
+                {wasAccepted && (
+                  <div className={styles.acceptedBanner}>
+                    <FiCheckCircle size={16} />
+                    <p>
+                      <strong>Congratulations!</strong> The hirer accepted your
+                      application. They'll create a booking to formalize the
+                      job, and you'll be notified once it's ready.
+                    </p>
+                  </div>
+                )}
+
+                {hasApplied && !wasAccepted ? (
                   <div className={styles.appliedBanner}>
                     <FiCheckCircle size={16} />
                     <p>
