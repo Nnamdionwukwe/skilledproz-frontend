@@ -475,18 +475,36 @@ export default function WorkerDashboard() {
                   >
                     <span className={statusBadge(b.status)}>{b.status}</span>
                     {b.payments?.[0] && (
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          fontWeight: 700,
-                          color: "var(--green)",
-                        }}
-                      >
-                        {formatCurrency(
-                          b.payments[0].workerPayout,
-                          b.payments[0].currency,
+                      <>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            color: "var(--green)",
+                          }}
+                        >
+                          {formatCurrency(
+                            b.payments[0].releasedAmount ?? 0,
+                            b.payments[0].currency,
+                          )}
+                        </span>
+                        {b.payments[0].workerPayout >
+                          (b.payments[0].releasedAmount ?? 0) && (
+                          <span
+                            style={{
+                              fontSize: "0.6rem",
+                              fontWeight: 700,
+                              color: "var(--orange)",
+                              background: "var(--orange-dim)",
+                              border: "1px solid var(--orange-glow)",
+                              borderRadius: 10,
+                              padding: "1px 6px",
+                            }}
+                          >
+                            Partial
+                          </span>
                         )}
-                      </span>
+                      </>
                     )}
                   </div>
                 </div>
