@@ -2778,3 +2778,265 @@
   border: 1px dashed var(--border);
   border-radius: 8px;
 }
+/* ══════════════════════════════════════════════════════════════════════
+   HORIZONTAL OVERFLOW GUARDS — must be at the BOTTOM of the file so
+   these rules win the cascade against earlier duplicates.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Root page: never grow wider than the viewport */
+.page {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Layout grid: keep both columns inside the viewport */
+.layout {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.layout > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.main,
+.sidebar {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Cards: hard cap on width ──────────────────────────────────────── */
+.titleBlock,
+.timelineWrap,
+.section,
+.paymentBanner,
+.partyCard,
+.actionsCard,
+.emergencyCard,
+.waitingPayment,
+.pendingBanner,
+.sosBanner,
+.alert,
+.cancelReasonCard,
+.refundSection,
+.workerPaymentPreview {
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* ── Every flex/grid child: let it shrink below content width ──────── */
+.titleBlock *,
+.section *,
+.timelineWrap *,
+.actionsCard *,
+.partyCard *,
+.paymentBanner * {
+  min-width: 0;
+}
+
+/* ── Long unbreakable strings (URLs, refs, hashes) wrap ────────────── */
+.detailValue,
+.payRef,
+.payValue,
+.notes,
+.title,
+.summaryMeta,
+.rateSummaryValue,
+.rateSummaryValueSmall,
+.channelPill {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ── Detail grid: force single column on phones, cap card width ────── */
+.detailGrid {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.detailItem {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.detailItem > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* ── Timeline: shrink items so the row fits ────────────────────────── */
+.timelineWrap {
+  overflow-x: hidden;
+  padding: 18px 16px 24px;
+}
+
+.timeline {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+}
+
+.timelineItem {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.timelineLabel {
+  white-space: normal;
+  word-break: break-word;
+  font-size: 9px;
+  line-height: 1.2;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .timelineWrap {
+    padding: 14px 10px 20px;
+    overflow-x: hidden;
+  }
+
+  .timeline {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .timelineItem {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .timelineDot {
+    width: 22px;
+    height: 22px;
+    font-size: 8px;
+    flex-shrink: 0;
+  }
+
+  .timelineLabel {
+    font-size: 8px;
+    white-space: normal;
+    text-align: center;
+    max-width: 100%;
+  }
+}
+
+/* ── Kill the earlier duplicate .detailGrid rules ─────────────────── */
+@media (max-width: 640px) {
+  .detailGrid {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+}
+
+/* ── SOS banner + alert: wrap their content ────────────────────────── */
+.sosBanner {
+  flex-wrap: wrap;
+}
+
+.alert {
+  flex-wrap: wrap;
+}
+
+/* ── Bottom action buttons wrap on narrow screens ──────────────────── */
+.bottomActions {
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+}
+
+.invoiceBtn,
+.refundBtn {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .invoiceBtn,
+  .refundBtn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+/* ── Job-post pill and other inline pills wrap properly ────────────── */
+.jobPostPill,
+.categoryPill,
+.negotiatedPill,
+.badge {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Party + actions cards: full-width children ────────────────────── */
+.partyCard,
+.actionsCard,
+.paymentBanner {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.partyCard > *,
+.actionsCard > *,
+.paymentBanner > * {
+  max-width: 100%;
+}
+
+/* ── Message button stays full width ───────────────────────────────── */
+.messageBtn {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Referral slider: never overflow ───────────────────────────────── */
+.referralSlider {
+  max-width: 100%;
+}
+
+/* ── Payment rows: label wraps, value wraps ────────────────────────── */
+.paymentRow,
+.feeRow,
+.feeTotal,
+.workerPaymentRow {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.payValue,
+.feeTotalAmount,
+.workerPaymentValueTotal {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ── Meta rows in summary top: allow wrapping ──────────────────────── */
+.summaryTop {
+  flex-wrap: wrap;
+}
+
+/* ── Review cards: wrap reviewer info ──────────────────────────────── */
+.reviewCardTop {
+  flex-wrap: wrap;
+}
+
+.reviewerInfo {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.reviewComment {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
