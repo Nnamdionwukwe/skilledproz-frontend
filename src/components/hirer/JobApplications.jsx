@@ -67,9 +67,9 @@ export default function JobApplications() {
   // ── Full-screen avatar viewer ──
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
-  // ── Cancel confirmation state ──
+  // ── Undo confirmation state ──
   // Shape: { applicationId, workerName, hasBooking } | null
-  const [cancelTarget, setCancelTarget] = useState(null);
+  const [undoTarget, setUndoTarget] = useState(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -125,8 +125,11 @@ export default function JobApplications() {
     }
   };
 
-  // ── Unaccept / cancel booking ──
-  const handleUnaccept = async ({ applicationId }) => {
+  // ── Undo acceptance ──
+  // Resets the application to PENDING and reopens the job.
+  // Does NOT touch any booking that may exist — bookings are independent
+  // entities and are only cancelled from the booking detail page.
+  const handleUnaccept = async ({ applicationId, hasBooking }) => {
     setUpdating(applicationId);
     setError("");
     setSuccess("");
@@ -135,20 +138,21 @@ export default function JobApplications() {
 
       setApplications((prev) =>
         prev.map((a) =>
-          a.id === applicationId
-            ? { ...a, status: "PENDING", booking: undefined, bookingId: null }
-            : a,
+          a.id === applicationId ? { ...a, status: "PENDING" } : a,
         ),
       );
       setJob((prev) => ({ ...prev, status: "OPEN" }));
+
       setSuccess(
-        "Acceptance undone. The application is back in Pending Review and any booking has been cancelled.",
+        hasBooking
+          ? "Acceptance undone. The application is back in Pending Review and the job is open again. The existing booking was not affected."
+          : "Acceptance undone. The application is back in Pending Review and the job is open again.",
       );
-      setCancelTarget(null);
+      setUndoTarget(null);
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Failed to cancel. Please try again or contact support.",
+          "Failed to undo. Please try again or contact support.",
       );
     } finally {
       setUpdating(null);
@@ -294,7 +298,7 @@ export default function JobApplications() {
                       onAccept={() => handleDecision(app.id, "ACCEPTED")}
                       onReject={() => handleDecision(app.id, "REJECTED")}
                       onUnacceptRequest={() =>
-                        setCancelTarget({
+                        setUndoTarget({
                           applicationId: app.id,
                           workerName:
                             `${app.worker?.firstName || ""} ${app.worker?.lastName || ""}`.trim(),
@@ -329,7 +333,7 @@ export default function JobApplications() {
                       updating={updating}
                       decided
                       onUnacceptRequest={() =>
-                        setCancelTarget({
+                        setUndoTarget({
                           applicationId: app.id,
                           workerName:
                             `${app.worker?.firstName || ""} ${app.worker?.lastName || ""}`.trim(),
@@ -348,70 +352,56 @@ export default function JobApplications() {
         )}
       </div>
 
-      {/* ── Confirm cancel / unaccept modal ─────────────────────────── */}
-      {cancelTarget && (
+      {/* ── Confirm undo modal ──────────────────────────────────────── */}
+      {undoTarget && (
         <div
           className={styles.confirmOverlay}
-          onClick={() => setCancelTarget(null)}
+          onClick={() => setUndoTarget(null)}
           role="dialog"
           aria-modal="true"
-          aria-label="Confirm cancellation"
+          aria-label="Confirm undo acceptance"
         >
           <div
             className={styles.confirmBox}
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.confirmIcon}>
-              {cancelTarget.hasBooking ? (
-                <FaBan size={26} />
-              ) : (
-                <FaUndo size={26} />
-              )}
+              <FaUndo size={26} />
             </div>
-            <h3 className={styles.confirmTitle}>
-              {cancelTarget.hasBooking
-                ? "Cancel this booking?"
-                : "Undo this acceptance?"}
-            </h3>
+            <h3 className={styles.confirmTitle}>Undo this acceptance?</h3>
             <p className={styles.confirmText}>
-              {cancelTarget.hasBooking ? (
+              This will return{" "}
+              <strong>{undoTarget.workerName || "the worker"}</strong>'s
+              application to <strong>Pending Review</strong> and set the job
+              back to <strong>Open</strong>. You can accept a different
+              applicant, or accept this worker again afterwards.
+              {undoTarget.hasBooking && (
                 <>
-                  This will cancel the booking with{" "}
-                  <strong>{cancelTarget.workerName || "the worker"}</strong> and
-                  return the job to <strong>Open</strong>. The worker will be
-                  notified and their application will go back to{" "}
-                  <strong>Pending Review</strong>.
-                </>
-              ) : (
-                <>
-                  This will return{" "}
-                  <strong>{cancelTarget.workerName || "the worker"}</strong>'s
-                  application to <strong>Pending Review</strong> and set the job
-                  back to <strong>Open</strong>. You can accept a different
-                  applicant afterwards.
+                  {" "}
+                  <strong>
+                    The existing booking with this worker will not be affected
+                  </strong>{" "}
+                  — you can still view, cancel, or manage it from the booking
+                  detail page.
                 </>
               )}
             </p>
             <div className={styles.confirmActions}>
               <button
                 className={styles.confirmCancelBtn}
-                onClick={() => setCancelTarget(null)}
-                disabled={updating === cancelTarget.applicationId}
+                onClick={() => setUndoTarget(null)}
+                disabled={updating === undoTarget.applicationId}
               >
                 Keep it
               </button>
               <button
                 className={styles.confirmDangerBtn}
-                onClick={() => handleUnaccept(cancelTarget)}
-                disabled={updating === cancelTarget.applicationId}
+                onClick={() => handleUnaccept(undoTarget)}
+                disabled={updating === undoTarget.applicationId}
               >
-                {updating === cancelTarget.applicationId ? (
+                {updating === undoTarget.applicationId ? (
                   <>
-                    <span className={styles.spinner} /> Cancelling...
-                  </>
-                ) : cancelTarget.hasBooking ? (
-                  <>
-                    <FaBan size={13} /> Cancel Booking
+                    <span className={styles.spinner} /> Undoing...
                   </>
                 ) : (
                   <>
@@ -652,49 +642,35 @@ function ApplicationCard({
 
           <div className={styles.acceptedActions}>
             {hasBooking ? (
-              <>
-                <Link to={`/bookings/${bookingId}`} className={styles.bookLink}>
-                  View Booking →
-                </Link>
-                <button
-                  className={styles.unacceptBtn}
-                  disabled={updating === app.id}
-                  onClick={onUnacceptRequest}
-                  title="Cancel the booking and return this application to Pending Review"
-                >
-                  {updating === app.id ? (
-                    <span className={styles.spinner} />
-                  ) : (
-                    <>
-                      <FaBan size={12} /> Cancel Booking
-                    </>
-                  )}
-                </button>
-              </>
+              <Link to={`/bookings/${bookingId}`} className={styles.bookLink}>
+                View Booking →
+              </Link>
             ) : (
-              <>
-                <Link
-                  to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
-                  className={styles.bookLink}
-                >
-                  Create Booking →
-                </Link>
-                <button
-                  className={styles.unacceptBtn}
-                  disabled={updating === app.id}
-                  onClick={onUnacceptRequest}
-                  title="Undo the acceptance and return this application to Pending Review"
-                >
-                  {updating === app.id ? (
-                    <span className={styles.spinner} />
-                  ) : (
-                    <>
-                      <FaUndo size={12} /> Undo Acceptance
-                    </>
-                  )}
-                </button>
-              </>
+              <Link
+                to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
+                className={styles.bookLink}
+              >
+                Create Booking →
+              </Link>
             )}
+            <button
+              className={styles.unacceptBtn}
+              disabled={updating === app.id}
+              onClick={onUnacceptRequest}
+              title={
+                hasBooking
+                  ? "Return this application to Pending Review and reopen the job. The existing booking is not affected."
+                  : "Undo the acceptance and return this application to Pending Review"
+              }
+            >
+              {updating === app.id ? (
+                <span className={styles.spinner} />
+              ) : (
+                <>
+                  <FaUndo size={12} /> Undo Acceptance
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
