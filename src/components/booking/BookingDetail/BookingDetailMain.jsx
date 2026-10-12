@@ -1075,7 +1075,7 @@ export default function BookingDetailMain({
             ) : (
               <FaFileAlt />
             )}{" "}
-            Download Invoices
+            Download Invoice
           </button>
           {showRefundButton && (
             <button
