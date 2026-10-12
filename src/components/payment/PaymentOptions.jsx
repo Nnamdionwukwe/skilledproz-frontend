@@ -72,12 +72,15 @@ export default function PaymentOptions({
 
   const currency = booking?.currency || p.currency || "NGN";
 
-  // Platform fee = 5% of the agreed total (matches the backend's
-  // fee phase 1). Always positive.
+  // Platform fee — sourced from the canonical HIRER_FEE_RATE.
+  // For job-post bookings we compute it from agreedRate directly
+  // because calcPricing treats job-post bookings as zero-qty.
+  // For direct bookings we read `p.hirerFee` (the key calcPricing
+  // actually returns — it does not expose `platformFee`).
   const PLATFORM_FEE_PCT = HIRER_FEE_RATE;
   const platformFee = isJobPost
     ? Math.round(agreedTotal * PLATFORM_FEE_PCT * 100) / 100
-    : Number(p.platformFee || 0);
+    : Number(p.hirerFee || 0);
 
   // Referral deduction
   const referralDeduct =
