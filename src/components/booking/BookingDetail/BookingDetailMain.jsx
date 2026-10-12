@@ -26,10 +26,12 @@ import {
   FaSpinner,
   FaUndo,
 } from "react-icons/fa";
+
 import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
 import { RefundRequest } from "../Refund";
 import JobPostBookingDetails from "./JobPostBookingDetails";
+import BookingReleaseDetails from "./BookingReleaseDetails";
 
 // ── Inline helpers ──────────────────────────────────────────────────────
 function DetailItem({ icon, label, value, accent }) {
@@ -219,6 +221,7 @@ export default function BookingDetailMain({
   if (isJobPostBooking) {
     return (
       <>
+        <BookingReleaseDetails payment={payment} currency={booking.currency} />
         {/* Title block */}
         <div className={styles.titleBlock}>
           <div className={styles.titleRow}>
@@ -246,7 +249,6 @@ export default function BookingDetailMain({
             <FaExternalLinkAlt size={9} />
           </Link>
         </div>
-
         {/* Timeline */}
         {step >= 0 && (
           <div className={styles.timelineWrap}>
@@ -273,7 +275,6 @@ export default function BookingDetailMain({
             </div>
           </div>
         )}
-
         {/* Pending banner (hirer only) */}
         {booking.status === "PENDING" && isHirer && (
           <div className={styles.pendingBanner}>
@@ -293,10 +294,8 @@ export default function BookingDetailMain({
             </div>
           </div>
         )}
-
         {/* ── The full job-post detail block ── */}
         <JobPostBookingDetails booking={booking} />
-
         {/* Booking-level details (dates, agreement, GPS times) */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Booking Details</h2>
@@ -457,7 +456,6 @@ export default function BookingDetailMain({
             })()}
           </div>
         </section>
-
         {/* GPS section */}
         {(hasCheckInGps || hasCheckOutGps) && (
           <section className={styles.section}>
@@ -491,7 +489,6 @@ export default function BookingDetailMain({
             </div>
           </section>
         )}
-
         {/* Reviews */}
         {booking.status === "COMPLETED" && (
           <section className={styles.section}>
@@ -571,7 +568,6 @@ export default function BookingDetailMain({
             )}
           </section>
         )}
-
         {/* Cancellation reason */}
         {booking.cancelReason && (
           <section className={styles.section}>
@@ -584,7 +580,6 @@ export default function BookingDetailMain({
             </div>
           </section>
         )}
-
         {/* Bottom actions */}
         {booking.status === "COMPLETED" && (
           <div className={styles.bottomActions}>
@@ -611,7 +606,6 @@ export default function BookingDetailMain({
             )}
           </div>
         )}
-
         {/* Refund modal */}
         {showRefundModal && (
           <div className={styles.modalOverlay} onClick={handleCloseRefundModal}>
@@ -647,6 +641,7 @@ export default function BookingDetailMain({
   // ══════════════════════════════════════════════════════════════════════
   return (
     <>
+      <BookingReleaseDetails payment={payment} currency={booking.currency} />
       {/* Title block */}
       <div className={styles.titleBlock}>
         <div className={styles.titleRow}>

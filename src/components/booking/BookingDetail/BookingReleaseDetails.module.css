@@ -1,0 +1,390 @@
+/* src/components/booking/BookingReleaseDetails.module.css */
+
+.section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.header {
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 1rem 1.25rem;
+  font-family: var(--font-body);
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.headerIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.headerTitle {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 2px;
+}
+
+.headerSub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.progressWrap {
+  width: 90px;
+  height: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--orange-hover));
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.progressBarDone {
+  background: linear-gradient(90deg, var(--green), #16a34a);
+}
+
+.progressLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 34px;
+  text-align: right;
+}
+
+.chevron {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────── */
+.body {
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid var(--border);
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Summary ────────────────────────────────────────────────────────── */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0 16px;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.summaryLabel {
+  color: var(--text-dim);
+}
+
+.summaryValue {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.summaryLabelStrong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.summaryValueStrong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.summaryDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.fullyReleasedNote {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ── Timeline ───────────────────────────────────────────────────────── */
+.timelineWrap {
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+.timelineTitle {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 12px 0 10px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+.timelineMarkerCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.timelineDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  border: 2px solid var(--orange);
+  flex-shrink: 0;
+}
+
+.timelineDotLatest {
+  background: var(--orange);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
+}
+
+.timelineLine {
+  flex: 1;
+  width: 2px;
+  background: var(--border);
+  margin-top: 4px;
+  min-height: 20px;
+}
+
+.timelineBody {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 4px;
+}
+
+.timelineTopRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.timelineAmount {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.timelineBadge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.timelineMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-bottom: 4px;
+}
+
+.timelineMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.timelineMetaItem svg {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.timelineNote {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 4px 0 0;
+  font-style: italic;
+}
+
+.timelineNoteLabel {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.timelineSnapshot {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.snapshotItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.75rem;
+}
+
+.snapshotLabel {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.snapshotValue {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header {
+    padding: 0.875rem 1rem;
+    gap: 10px;
+  }
+
+  .headerIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .headerTitle {
+    font-size: 0.875rem;
+  }
+
+  .headerSub {
+    font-size: 0.72rem;
+  }
+
+  .progressWrap {
+    width: 60px;
+  }
+
+  .progressLabel {
+    font-size: 0.72rem;
+    min-width: 30px;
+  }
+
+  .body {
+    padding: 0 1rem 1rem;
+  }
+
+  .summaryRow {
+    font-size: 0.8rem;
+  }
+
+  .summaryValueStrong {
+    font-size: 0.95rem;
+  }
+
+  .timelineAmount {
+    font-size: 0.875rem;
+  }
+
+  .timelineMetaItem {
+    font-size: 0.72rem;
+  }
+
+  .timelineSnapshot {
+    padding: 6px 8px;
+  }
+
+  .snapshotItem {
+    font-size: 0.72rem;
+  }
+}
