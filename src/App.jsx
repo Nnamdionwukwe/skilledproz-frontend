@@ -696,7 +696,7 @@ export default function App() {
             </RequireWorker>
           }
         />
-        <Route
+        {/* <Route
           path="/dashboard/worker/profile"
           element={
             <RequireWorker>
@@ -705,7 +705,7 @@ export default function App() {
               </RequireAuth>
             </RequireWorker>
           }
-        />
+        /> */}
         <Route
           path="/dashboard/worker/reviews"
           element={

@@ -280,7 +280,7 @@ export default function WorkerDashboard() {
                 >
                   Complete your profile to attract more clients.{" "}
                   <Link
-                    to="/dashboard/worker/profile"
+                    to="/profile/me"
                     style={{ color: "var(--brand)", fontWeight: 700 }}
                     data-track-id="workerDashboard.profile.update"
                     onClick={() =>
