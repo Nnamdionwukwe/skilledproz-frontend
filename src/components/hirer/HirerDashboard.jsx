@@ -19,7 +19,7 @@ import tracker from "../../lib/analytics/tracker";
 export default function HirerDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { fmt, dashboardCurrency, getSymbol } = useCurrency();
+  const { fmt, dashboardCurrency } = useCurrency();
 
   // ── ANALYTICS: page view on mount ────────────────────────────────────────
   useEffect(() => {
@@ -43,6 +43,8 @@ export default function HirerDashboard() {
           totalBookings: d?.stats?.totalBookings || 0,
           activeBookings: d?.stats?.activeBookings || 0,
           completedBookings: d?.stats?.completedBookings || 0,
+          totalSpent: d?.stats?.totalSpent || 0,
+          inEscrow: d?.stats?.inEscrow || 0,
           hasRecentBookings: (d?.recentBookings?.length || 0) > 0,
           recentBookingsCount: d?.recentBookings?.length || 0,
           recentWorkersCount: d?.recentWorkers?.length || 0,
@@ -74,10 +76,9 @@ export default function HirerDashboard() {
 
   const { stats, recentBookings, recentWorkers } = data;
 
-  // Get currency symbol for display
-  const currencySymbol = getSymbol
-    ? getSymbol(dashboardCurrency)
-    : dashboardCurrency || "$";
+  const totalSpent = Number(stats.totalSpent) || 0;
+  const inEscrow = Number(stats.inEscrow) || 0;
+  const released = Math.max(0, totalSpent - inEscrow);
 
   return (
     <HirerLayout>
@@ -131,10 +132,14 @@ export default function HirerDashboard() {
           />
           <StatCard
             label="Total Spent"
-            value={fmt(stats.totalSpent || 0, dashboardCurrency)}
+            value={fmt(totalSpent, dashboardCurrency)}
             icon={<FiCreditCard />}
             delay={0.15}
-            currencySymbol={currencySymbol}
+            footer={
+              inEscrow > 0
+                ? `${fmt(inEscrow, dashboardCurrency)} in escrow · ${fmt(released, dashboardCurrency)} released`
+                : `${fmt(released, dashboardCurrency)} released`
+            }
           />
         </div>
 
@@ -190,44 +195,16 @@ export default function HirerDashboard() {
   );
 }
 
-function StatCard({ label, value, icon, accent, delay, currencySymbol }) {
-  // If value contains the currency code, replace with symbol
-  let displayValue = value;
-  if (currencySymbol && typeof value === "string") {
-    // Check if value contains currency code like "USD 1,000.00"
-    const currencyCodes = [
-      "USD",
-      "EUR",
-      "GBP",
-      "NGN",
-      "GHS",
-      "KES",
-      "ZAR",
-      "INR",
-      "CAD",
-      "AUD",
-      "JPY",
-      "CNY",
-      "BRL",
-      "AED",
-      "SAR",
-    ];
-    for (const code of currencyCodes) {
-      if (value.includes(code)) {
-        displayValue = value.replace(code, currencySymbol);
-        break;
-      }
-    }
-  }
-
+function StatCard({ label, value, icon, accent, delay, footer }) {
   return (
     <div
       className={`${styles.statCard} ${accent ? styles[`statCard_${accent}`] : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
       <span className={styles.statIcon}>{icon}</span>
-      <p className={styles.statValue}>{displayValue}</p>
+      <p className={styles.statValue}>{value}</p>
       <p className={styles.statLabel}>{label}</p>
+      {footer && <p className={styles.statFooter}>{footer}</p>}
     </div>
   );
 }
@@ -242,7 +219,8 @@ function BookingRow({ booking, delay }) {
     DISPUTED: "disputed",
   };
 
-  // Get currency symbol
+  // Currency symbol lookup — a minimal fallback so we don't have to pull
+  // the whole currency context into this pure presentational component.
   const currencySymbol = (currency) => {
     const symbols = {
       USD: "$",
