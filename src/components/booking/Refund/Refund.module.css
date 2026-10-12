@@ -1,6 +1,10 @@
 /* src/pages/refund/Refund.module.css */
 
-/* ── Page — full-bleed, hugs both screen edges ── */
+/* ─────────────────────────────────────────────────────────────────────────
+   Page — matches the flat, edge-hugging layout used across the platform.
+   The `-2rem` trick pulls the container into the layout's padding so cards
+   and grids can breathe to the screen edge on any viewport.
+   ───────────────────────────────────────────────────────────────────────── */
 .page {
   width: auto;
   margin-left: -2rem;
@@ -18,11 +22,12 @@
   }
 }
 
+/* ── Header ── */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -31,6 +36,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .headerIcon {
@@ -39,80 +45,113 @@
   justify-content: center;
   color: var(--orange);
   flex-shrink: 0;
+  font-size: 1.375rem;
 }
 
 .headerTitle {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-weight: 800;
   color: var(--text);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .headerCount {
   background: var(--bg-card);
+  border: 1px solid var(--border);
   padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--text-dim);
+  letter-spacing: 0.02em;
 }
 
-/* Stats Grid */
+/* ─────────────────────────────────────────────────────────────────────────
+   Stats grid — matches the platform's numeric card language.
+   Numbers use the display font, labels are uppercase muted micro-copy.
+   ───────────────────────────────────────────────────────────────────────── */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
 .statsCard {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 14px;
+  padding: 1.125rem 1rem;
   text-align: center;
+  transition: border-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.statsCard:hover {
+  border-color: var(--border-hover);
+}
+
+/* Subtle top accent line — matches the platform's stat cards */
+.statsCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--orange), transparent);
+  opacity: 0.5;
 }
 
 .statsCardValue {
-  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 3.5vw, 1.5rem);
   font-weight: 800;
   color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  word-break: break-word;
 }
 
 .statsCardLabel {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
-  font-weight: 500;
-  margin-top: 0.25rem;
+  font-weight: 700;
+  margin-top: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-/* Filters */
+/* ── Filters ── */
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
   align-items: center;
 }
 
 .filterTabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.375rem;
   flex-wrap: wrap;
 }
 
 .filterTab {
-  padding: 0.4rem 1rem;
+  padding: 0.4rem 0.875rem;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 999px;
   background: var(--bg-card);
   color: var(--text-dim);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
   font-family: var(--font-body);
+  white-space: nowrap;
 }
 
 .filterTab:hover {
@@ -121,31 +160,37 @@
 }
 
 .filterTabActive {
-  background: var(--orange);
-  color: #fff;
+  background: var(--orange-dim);
   border-color: var(--orange);
+  color: var(--orange);
 }
 
 .filterTabActive:hover {
-  background: var(--orange-hover);
-  color: #fff;
+  background: var(--orange-dim);
+  color: var(--orange);
 }
 
 .searchBox {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
   display: flex;
   align-items: center;
-  background: var(--bg-card);
+  background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  padding: 0.5rem 0.875rem;
   gap: 0.5rem;
+  transition: border-color 0.15s ease;
+}
+
+.searchBox:focus-within {
+  border-color: var(--border-focus);
 }
 
 .searchIcon {
   color: var(--text-muted);
   flex-shrink: 0;
+  font-size: 0.85rem;
 }
 
 .searchInput {
@@ -154,43 +199,51 @@
   background: none;
   outline: none;
   color: var(--text);
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-family: var(--font-body);
+  min-width: 0;
 }
 
 .searchInput::placeholder {
   color: var(--text-muted);
 }
 
-/* Refund List */
+/* ─────────────────────────────────────────────────────────────────────────
+   Refund list — rows now read like the platform's booking/worker rows:
+   avatar-style icon, primary title, muted metadata, right-aligned amount
+   and status badge.
+   ───────────────────────────────────────────────────────────────────────── */
 .refundList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.625rem;
 }
 
 .refundItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.125rem;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   text-decoration: none;
   color: var(--text);
-  transition: all 0.15s;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+  gap: 1rem;
 }
 
 .refundItem:hover {
   border-color: var(--orange);
-  transform: translateX(4px);
+  transform: translateX(2px);
 }
 
 .refundItemMain {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.875rem;
   flex: 1;
   min-width: 0;
 }
@@ -198,13 +251,15 @@
 .refundItemIcon {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 10px;
   background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--orange);
   flex-shrink: 0;
+  font-size: 1rem;
 }
 
 .refundItemInfo {
@@ -215,42 +270,62 @@
 .refundItemTop {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .refundItemTitle {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .refundItemReference {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
-  font-family: monospace;
+  font-family: "SF Mono", Menlo, monospace;
+  letter-spacing: 0.02em;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .refundItemMeta {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 0.25rem;
+  gap: 0.75rem;
+  margin-top: 0.375rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .refundItemAmount {
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
   color: var(--orange);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .refundItemType {
-  font-size: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 700;
   color: var(--text-dim);
   background: var(--bg-card);
-  padding: 0.1rem 0.5rem;
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .refundItemDate {
@@ -258,77 +333,106 @@
   color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  white-space: nowrap;
 }
 
 .refundItemDate svg {
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .refundItemRight {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.875rem;
   flex-shrink: 0;
 }
 
+/* Status badge — reads like the platform's pill badges */
 .statusBadge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 700;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  white-space: nowrap;
 }
 
 .statusBadge svg {
   flex-shrink: 0;
+  font-size: 0.65rem;
 }
 
 .refundItemArrow {
   color: var(--text-muted);
   flex-shrink: 0;
+  font-size: 0.75rem;
+  transition: transform 0.15s ease;
 }
 
-/* Empty State */
+.refundItem:hover .refundItemArrow {
+  color: var(--orange);
+  transform: translateX(2px);
+}
+
+/* ── Empty state ── */
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 4rem 2rem;
   text-align: center;
+  background: var(--bg-panel);
+  border: 1.5px dashed var(--border);
+  border-radius: 14px;
 }
 
 .emptyIcon {
   color: var(--text-muted);
   margin-bottom: 1rem;
+  font-size: 2.5rem;
+  opacity: 0.5;
 }
 
 .emptyState h3 {
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
   color: var(--text);
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.375rem;
+  letter-spacing: -0.01em;
 }
 
 .emptyState p {
   color: var(--text-dim);
   margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+  max-width: 380px;
 }
 
 .emptyAction {
-  padding: 0.6rem 1.5rem;
+  padding: 0.65rem 1.5rem;
   background: var(--orange);
   color: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background 0.15s ease;
 }
 
 .emptyAction:hover {
   background: var(--orange-hover);
 }
 
-/* Loading State */
+/* ── Loading state ── */
 .loadingState {
   display: flex;
   flex-direction: column;
@@ -347,49 +451,55 @@
   }
 }
 
-/* Detail Page */
+/* ─────────────────────────────────────────────────────────────────────────
+   Detail page — used by RefundStatus / RefundDetail screens
+   ───────────────────────────────────────────────────────────────────────── */
 .detailContainer {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .statusBanner {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 12px;
-  border: 2px solid;
+  padding: 1.125rem 1.25rem;
+  border-radius: 14px;
+  border: 1.5px solid;
 }
 
 .statusBannerLabel {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .statusBannerValue {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .referenceBadge {
   margin-left: auto;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   background: var(--bg-card);
+  border: 1px solid var(--border);
   padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-family: monospace;
+  border-radius: 999px;
+  font-family: "SF Mono", Menlo, monospace;
+  letter-spacing: 0.02em;
 }
 
 .detailGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 @media (max-width: 768px) {
@@ -401,17 +511,17 @@
 .detailSection {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1.25rem;
 }
 
 .detailSectionTitle {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 1rem;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.875rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -419,14 +529,16 @@
 
 .detailSectionTitle svg {
   flex-shrink: 0;
+  color: var(--orange);
 }
 
 .detailRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
+  padding: 0.625rem 0;
   border-bottom: 1px solid var(--border);
+  gap: 1rem;
 }
 
 .detailRow:last-child {
@@ -434,32 +546,39 @@
 }
 
 .detailLabel {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-dim);
+  font-weight: 500;
 }
 
 .detailValue {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--text);
+  text-align: right;
+  word-break: break-word;
 }
 
 .detailValueLarge {
+  font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--orange);
+  letter-spacing: -0.02em;
 }
 
 .detailValueText {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text);
   max-width: 60%;
   text-align: right;
+  line-height: 1.5;
 }
 
 .detailLink {
   color: var(--orange);
   text-decoration: none;
+  font-weight: 600;
 }
 
 .detailLink:hover {
@@ -468,23 +587,26 @@
 
 .actionsContainer {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   justify-content: flex-end;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .downloadBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
+  padding: 0.65rem 1.25rem;
   background: var(--orange);
   color: #fff;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
   cursor: pointer;
   font-family: var(--font-body);
+  transition: background 0.15s ease;
 }
 
 .downloadBtn:hover {
@@ -492,13 +614,15 @@
 }
 
 .backToHistory {
-  padding: 0.6rem 1.25rem;
+  padding: 0.65rem 1.25rem;
   background: transparent;
   color: var(--text-dim);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
 }
 
 .backToHistory:hover {
@@ -509,12 +633,13 @@
 .backLink {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   color: var(--text-dim);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 1rem;
+  transition: color 0.15s ease;
 }
 
 .backLink:hover {
@@ -532,10 +657,13 @@
 .errorIcon {
   color: var(--red);
   margin-bottom: 1rem;
+  font-size: 2.5rem;
 }
 
 .errorState h3 {
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
   color: var(--text);
   margin: 0 0 0.5rem;
 }
@@ -543,25 +671,31 @@
 .errorState p {
   color: var(--text-dim);
   margin: 0 0 1.5rem;
+  font-size: 0.875rem;
 }
 
 .backButton {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.5rem;
+  padding: 0.65rem 1.5rem;
   background: var(--orange);
   color: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background 0.15s ease;
 }
 
 .backButton:hover {
   background: var(--orange-hover);
 }
 
-/* ── Skeleton Loader Styles ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeleton loader — mirrors the platform's shimmer treatment used on
+   the worker/hirer dashboards, earnings, and withdrawals pages.
+   ───────────────────────────────────────────────────────────────────────── */
 .skeletonContainer {
   animation: fadeUp 0.4s ease both;
 }
@@ -635,4 +769,234 @@
 .skeleton .searchBox,
 .skeleton .refundItem {
   pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Tablet — tighten stat min-width so we still get 2-3 per row */
+@media (max-width: 900px) {
+  .statsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .filterTabs {
+    gap: 0.3rem;
+  }
+
+  .filterTab {
+    font-size: 0.72rem;
+    padding: 0.35rem 0.7rem;
+  }
+}
+
+/* Phone — stack the refund item rows vertically, keeping the icon on the
+   left, content in the middle, and amount/status on their own line.
+   The right column wraps to a full-width row under the meta block. */
+@media (max-width: 640px) {
+  .header {
+    margin-bottom: 1.25rem;
+  }
+
+  .headerIcon {
+    font-size: 1.15rem;
+  }
+
+  .headerCount {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.125rem;
+  }
+
+  .statsCard {
+    padding: 0.875rem 0.625rem;
+    border-radius: 12px;
+  }
+
+  .statsCardValue {
+    font-size: 1.05rem;
+  }
+
+  .statsCardLabel {
+    font-size: 0.6rem;
+    margin-top: 0.25rem;
+    letter-spacing: 0.08em;
+  }
+
+  .filters {
+    gap: 0.5rem;
+    margin-bottom: 1.125rem;
+  }
+
+  .filterTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+    width: 100%;
+  }
+
+  .filterTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filterTab {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.65rem;
+    flex-shrink: 0;
+  }
+
+  .searchBox {
+    min-width: 100%;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .searchInput {
+    font-size: 0.8rem;
+  }
+
+  /* Refund row: switch to a two-row column layout */
+  .refundItem {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+    padding: 0.875rem 0.875rem;
+    border-radius: 12px;
+  }
+
+  .refundItem:hover {
+    transform: none;
+  }
+
+  .refundItemMain {
+    gap: 0.75rem;
+  }
+
+  .refundItemIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+  }
+
+  .refundItemTitle {
+    font-size: 0.85rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.3;
+  }
+
+  .refundItemReference {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .refundItemMeta {
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+
+  .refundItemAmount {
+    font-size: 0.8rem;
+  }
+
+  .refundItemType {
+    font-size: 0.58rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .refundItemDate {
+    font-size: 0.65rem;
+  }
+
+  /* Right column becomes a full-width row beneath */
+  .refundItemRight {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+    gap: 0.5rem;
+  }
+
+  .statusBadge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.55rem;
+  }
+
+  .refundItemArrow {
+    transform: rotate(-90deg);
+  }
+
+  .refundItem:hover .refundItemArrow {
+    transform: rotate(-90deg);
+  }
+
+  .emptyState {
+    padding: 2.5rem 1.25rem;
+    border-radius: 12px;
+  }
+
+  .emptyIcon {
+    font-size: 2rem;
+  }
+
+  .emptyState h3 {
+    font-size: 1rem;
+  }
+
+  .emptyState p {
+    font-size: 0.8rem;
+  }
+
+  .emptyAction {
+    padding: 0.55rem 1.25rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Very small phones — single-column stats to avoid squishing the
+   currency totals */
+@media (max-width: 400px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsCardValue {
+    font-size: 1.15rem;
+  }
+
+  .refundItem {
+    padding: 0.75rem 0.75rem;
+  }
+
+  .refundItemIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .refundItemTitle {
+    font-size: 0.8rem;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reduced motion
+   ───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .refundItem,
+  .statsCard,
+  .skeleton::after,
+  .skeletonLine::after,
+  .skeletonCircle::after {
+    animation: none;
+    transition: none;
+  }
 }
