@@ -686,13 +686,16 @@ function ApplicationCard({
 
           <div className={styles.acceptedActions}>
             {hasBooking && (
-              <Link to={`/bookings/${bookingId}`} className={styles.bookLink}>
+              <Link
+                to={`/bookings/${bookingId}`}
+                className={styles.bookLinkSecondary}
+              >
                 View Latest Booking →
               </Link>
             )}
             <Link
               to={`/dashboard/hirer/bookings/new/from-job/${app.jobPostId}?workerId=${worker?.id}`}
-              className={styles.bookLink}
+              className={styles.bookLinkPrimary}
             >
               {hasBooking ? "Create Another Booking →" : "Create Booking →"}
             </Link>
