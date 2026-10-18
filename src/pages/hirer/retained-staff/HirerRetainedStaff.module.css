@@ -1,0 +1,393 @@
+/* src/pages/hirer/retained-staff/HirerRetainedStaff.module.css */
+.page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeUp 0.4s ease both;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--orange);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.btnPrimary {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnPrimary:hover {
+  background: var(--orange-hover);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+.statIcon.orange {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.statIcon.green {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 0.25rem;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 768px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.panelTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.listItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.listName {
+  font-weight: 600;
+  color: var(--text);
+}
+.listSub {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.listRight {
+  text-align: right;
+}
+.listAmount {
+  font-weight: 700;
+  color: var(--orange);
+}
+.listDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+.summaryRow span:last-child {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* List grid (Hirer List) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+.card:hover {
+  border-color: var(--orange);
+}
+
+.cardAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  overflow: hidden;
+}
+.cardAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardInfo {
+  flex: 1;
+}
+.cardInfo h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.125rem;
+}
+.cardInfo p {
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+.cardRate {
+  font-size: 0.75rem !important;
+  color: var(--orange) !important;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+.cardArrow {
+  color: var(--text-muted);
+}
+
+/* Profile Detail Header */
+.backLink {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.backLink:hover {
+  color: var(--orange);
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.profileAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  overflow: hidden;
+}
+.profileAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profileHeader h1 {
+  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+.profileHeader p {
+  color: var(--text-dim);
+}
+.profileActions {
+  margin-left: auto;
+}
+
+.btnSecondary {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.btnSecondary:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.tab {
+  background: none;
+  border: none;
+  padding: 0.75rem 0.5rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tabActive {
+  background: none;
+  border: none;
+  padding: 0.75rem 0.5rem;
+  color: var(--orange);
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 2px solid var(--orange);
+  margin-bottom: -1px;
+}
+
+/* Table */
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.released {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.awaiting_payment {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+.held {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+.cancelled {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--text-dim);
+}

@@ -27,6 +27,7 @@ import {
   FiLogOut,
   FiMenu,
   FiRotateCcw,
+  FiBriefcase,
 } from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
@@ -39,6 +40,11 @@ const NAV = [
     items: [
       { label: "Dashboard", path: "/dashboard/worker", icon: FiHome },
       { label: "My Bookings", path: "/bookings", icon: FiCalendar },
+      {
+        label: "My Employers",
+        path: "/dashboard/worker/employers",
+        icon: FiBriefcase,
+      },
       {
         label: "Categories",
         path: "/dashboard/worker/categories",
@@ -58,6 +64,11 @@ const NAV = [
       { label: "Disputes", path: "/disputes", icon: FiAlertCircle },
       { label: "Community Feed", path: "/feed", icon: FiFeather },
       { label: "My Posts", path: "/my-posts", icon: FiEdit },
+      {
+        label: "My Employers",
+        path: "/dashboard/worker/employers",
+        icon: FiBriefcase,
+      },
     ],
   },
   {

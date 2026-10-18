@@ -30,6 +30,7 @@ import {
   FaEnvelope,
   FaWallet,
   FaMoneyBillWave,
+  FaUsers,
 } from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
@@ -166,6 +167,16 @@ const NAV = [
         icon: <FaGem />,
       },
       { label: "Settings", path: "/settings", icon: <FaCog /> },
+    ],
+  },
+  {
+    group: "Payroll",
+    items: [
+      {
+        label: "Retained Staff",
+        path: "/dashboard/hirer/retained-staff",
+        icon: <FaUsers />,
+      },
     ],
   },
 ];

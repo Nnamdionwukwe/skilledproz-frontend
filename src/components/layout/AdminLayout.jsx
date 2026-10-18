@@ -154,6 +154,22 @@ const NAV = [
       { label: "Admin Logs", path: "/admin/adminlogs", icon: FiSettings },
     ],
   },
+
+  {
+    group: "HR & Payroll",
+    items: [
+      {
+        label: "Retained Staff",
+        path: "/admin/retained-staff",
+        icon: FiBriefcase,
+      },
+      {
+        label: "Retained Cycles",
+        path: "/admin/retained-cycles",
+        icon: FiDollarSign,
+      },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }) {

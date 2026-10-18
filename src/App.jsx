@@ -146,6 +146,16 @@ import VideoCallPage from "./components/booking/VideoCallPage.jsx";
 import ConversationVideoCallPage from "./components/booking/ConversationVideoCallPage.jsx";
 import EditJob from "./components/hirer/EditJob.jsx";
 
+import HirerRetainedStaffDashboard from "./pages/hirer/retained-staff/HirerRetainedStaffDashboard";
+import HirerRetainedStaffList from "./pages/hirer/retained-staff/HirerRetainedStaffList";
+import HirerRetainedStaffDetail from "./pages/hirer/retained-staff/HirerRetainedStaffDetail";
+import WorkerRetainedEmployers from "./pages/worker/retained-staff/WorkerRetainedEmployers";
+import AdminRetainedStaff from "./pages/admin/AdminRetainedStaff";
+import HirerRetainedStaffNew from "./pages/hirer/retained-staff/HirerRetainedStaffNew.jsx";
+import HirerCycleDetail from "./pages/hirer/retained-staff/HirerCycleDetail.jsx";
+import AdminRetainedCycleDetail from "./pages/admin/AdminRetainedCycleDetail.jsx";
+import AdminRetainedCycles from "./pages/admin/AdminRetainedCycles.jsx";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Returns the correct home path for a given role */
@@ -1225,6 +1235,88 @@ export default function App() {
             <RequireAuth>
               <InsuranceSuccess />
             </RequireAuth>
+          }
+        />
+
+        {/* Hirer Retained Staff */}
+        <Route
+          path="/dashboard/hirer/retained-staff"
+          element={
+            <RequireHirer>
+              <HirerRetainedStaffDashboard />
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/retained-staff/staff"
+          element={
+            <RequireHirer>
+              <HirerRetainedStaffList />
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/retained-staff/new"
+          element={
+            <RequireHirer>
+              <HirerRetainedStaffNew />
+            </RequireHirer>
+          }
+        />
+        <Route
+          path="/dashboard/hirer/retained-staff/:id"
+          element={
+            <RequireHirer>
+              <HirerRetainedStaffDetail />
+            </RequireHirer>
+          }
+        />
+
+        {/* Worker Retained Staff */}
+        <Route
+          path="/dashboard/worker/employers"
+          element={
+            <RequireWorker>
+              <WorkerRetainedEmployers />
+            </RequireWorker>
+          }
+        />
+
+        {/* Admin */}
+        <Route
+          path="/admin/retained-staff"
+          element={
+            <RequireAdmin>
+              <AdminRetainedStaff />
+            </RequireAdmin>
+          }
+        />
+
+        <Route
+          path="/dashboard/hirer/retained-staff/:id/cycles/:cycleId"
+          element={
+            <RequireHirer>
+              <RequireAuth requireVerified>
+                <HirerCycleDetail />
+              </RequireAuth>
+            </RequireHirer>
+          }
+        />
+
+        <Route
+          path="/admin/retained-cycles"
+          element={
+            <RequireAdmin>
+              <AdminRetainedCycles />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/retained-cycles/:cycleId"
+          element={
+            <RequireAdmin>
+              <AdminRetainedCycleDetail />
+            </RequireAdmin>
           }
         />
 

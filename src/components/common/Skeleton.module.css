@@ -1,0 +1,67 @@
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.textWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 1rem 0;
+}
+
+.tableRow {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.kpiCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
