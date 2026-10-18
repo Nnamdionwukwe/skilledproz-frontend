@@ -1,6 +1,5 @@
 // src/pages/hirer/retained-staff/CreateCycleModal.jsx
 import { useState, useEffect } from "react";
-import { retainedStaffApi } from "../../../lib/retainedStaffApi";
 import styles from "./CreateCycleModal.module.css";
 import {
   FiX,
@@ -9,6 +8,7 @@ import {
   FiLoader,
   FiDollarSign,
 } from "react-icons/fi";
+import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
 const CYCLE_TYPES = [
   {

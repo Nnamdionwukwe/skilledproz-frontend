@@ -1,6 +1,5 @@
 // src/pages/hirer/retained-staff/AddStaffModal.jsx
 import { useState, useEffect, useRef } from "react";
-import { retainedStaffApi } from "../../../lib/retainedStaffApi";
 import api from "../../../lib/api";
 import styles from "./AddStaffModal.module.css";
 import {
@@ -12,6 +11,7 @@ import {
   FiCheckCircle,
   FiLoader,
 } from "react-icons/fi";
+import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
 const PAY_FREQUENCIES = [
   { value: "WEEKLY", label: "Weekly" },
