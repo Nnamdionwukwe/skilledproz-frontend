@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
-import { retainedStaffApi } from "../../lib/retainedStaffApi";
 import Skeleton from "../../components/common/Skeleton";
 import styles from "./AdminRetainedCycles.module.css";
 import {
@@ -14,6 +13,7 @@ import {
   FiChevronRight,
   FiPlay,
 } from "react-icons/fi";
+import { retainedStaffApi } from "../../lib/etainedStaffApi";
 
 const STATUS_TABS = [
   { value: "", label: "All" },

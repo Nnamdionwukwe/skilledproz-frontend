@@ -101,6 +101,26 @@ const NAV = [
       },
       { label: "Referrals", path: "/referrals", icon: FiUsers },
       { label: "Campaigns", path: "/campaign", icon: FiSpeaker },
+      {
+        label: "My Employers",
+        path: "/dashboard/worker/employers",
+        icon: FiBriefcase,
+      },
+      {
+        label: "Retained Earnings",
+        path: "/dashboard/worker/retained-earnings",
+        icon: FiDollarSign,
+      },
+      {
+        label: "Retained Cycles",
+        path: "/dashboard/worker/retained-cycles",
+        icon: FiClock,
+      },
+      {
+        label: "Earnings",
+        path: "/dashboard/worker/earnings",
+        icon: FiDollarSign,
+      },
     ],
   },
   {

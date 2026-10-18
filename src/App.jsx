@@ -155,6 +155,8 @@ import HirerRetainedStaffNew from "./pages/hirer/retained-staff/HirerRetainedSta
 import HirerCycleDetail from "./pages/hirer/retained-staff/HirerCycleDetail.jsx";
 import AdminRetainedCycleDetail from "./pages/admin/AdminRetainedCycleDetail.jsx";
 import AdminRetainedCycles from "./pages/admin/AdminRetainedCycles.jsx";
+import WorkerRetainedEarnings from "./pages/worker/retained-staff/WorkerRetainedEarnings.jsx";
+import WorkerRetainedCycles from "./pages/worker/retained-staff/WorkerRetainedCycles.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1278,6 +1280,28 @@ export default function App() {
           element={
             <RequireWorker>
               <WorkerRetainedEmployers />
+            </RequireWorker>
+          }
+        />
+
+        <Route
+          path="/dashboard/worker/retained-earnings"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerRetainedEarnings />
+              </RequireAuth>
+            </RequireWorker>
+          }
+        />
+
+        <Route
+          path="/dashboard/worker/retained-cycles"
+          element={
+            <RequireWorker>
+              <RequireAuth requireVerified>
+                <WorkerRetainedCycles />
+              </RequireAuth>
             </RequireWorker>
           }
         />
