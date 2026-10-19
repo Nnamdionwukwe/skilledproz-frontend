@@ -333,8 +333,11 @@ export default function BookingDetailSidebar({
           />
         )}
 
+        {/* ✅ Updated to include "PAID" so disputes can be raised after full release */}
         {(isHirer || isWorker) &&
-          ["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(booking.status) && (
+          ["ACCEPTED", "IN_PROGRESS", "COMPLETED", "PAID"].includes(
+            booking.status,
+          ) && (
             <button
               className={`${styles.actionBtn} ${styles.actionBtn_red}`}
               onClick={onShowDispute}

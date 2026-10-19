@@ -145,6 +145,7 @@ export default function BookingDetailMain({
     ACCEPTED: { label: "Accepted", color: "orange" },
     IN_PROGRESS: { label: "In Progress", color: "indigo" },
     COMPLETED: { label: "Completed", color: "green" },
+    PAID: { label: "Paid", color: "green" },
     CANCELLED: { label: "Cancelled", color: "red" },
     DISPUTED: { label: "Disputed", color: "rose" },
   };
@@ -209,12 +210,16 @@ export default function BookingDetailMain({
     );
   };
 
-  // Check if refund button should be shown
+  // Check if refund button should be shown (Hidden for retained staff)
   const showRefundButton =
     isHirer &&
     paymentStatus === "RELEASED" &&
     !refundLoading &&
-    !hasActiveRefund;
+    !hasActiveRefund &&
+    !isRetainedStaff;
+
+  // ✅ Check if the booking is fully completed/paid
+  const isCompletedOrPaid = ["COMPLETED", "PAID"].includes(booking.status);
 
   // ══════════════════════════════════════════════════════════════════════
   // RETAINED STAFF BRANCH
@@ -241,9 +246,6 @@ export default function BookingDetailMain({
             <FaBriefcase /> Retained Staff Payroll
           </span>
         </div>
-
-        {/* Timeline - Hide for retained staff as it's a payroll, not a job */}
-        {/* (Or we can keep a simple one, but per instruction, we'll just show the details) */}
 
         {/* Job Details grid */}
         <section className={styles.section}>
@@ -361,8 +363,88 @@ export default function BookingDetailMain({
           )}
         </section>
 
+        {/* Reviews */}
+        {isCompletedOrPaid && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Reviews</h2>
+            {booking.reviews?.length > 0 && (
+              <div className={styles.reviewsList}>
+                {booking.reviews.map((review) => (
+                  <div key={review.id} className={styles.reviewCard}>
+                    <div className={styles.reviewCardTop}>
+                      <div className={styles.reviewerAvatar}>
+                        {review.giver?.avatar ? (
+                          <img src={review.giver.avatar} alt="" />
+                        ) : (
+                          <span>
+                            {review.giver?.firstName?.[0]}
+                            {review.giver?.lastName?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.reviewerInfo}>
+                        <p className={styles.reviewerName}>
+                          {review.giver?.firstName} {review.giver?.lastName}{" "}
+                          <span className={styles.reviewerRole}>
+                            ·{" "}
+                            {review.giver?.role === "HIRER"
+                              ? "Hirer"
+                              : "Worker"}
+                          </span>
+                        </p>
+                        <p className={styles.reviewDate}>
+                          {new Date(review.createdAt).toLocaleDateString(
+                            "en-GB",
+                            { day: "numeric", month: "short", year: "numeric" },
+                          )}
+                        </p>
+                      </div>
+                      <div className={styles.stars}>
+                        {[...Array(5)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={
+                              i < review.rating
+                                ? styles.starFilled
+                                : styles.starEmpty
+                            }
+                          >
+                            <FaStar />
+                          </span>
+                        ))}
+                        <span className={styles.ratingNum}>
+                          {review.rating}/5
+                        </span>
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className={styles.reviewComment}>"{review.comment}"</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {reviewCheckDone && !hasReviewed && (
+              <Link
+                to={`/bookings/${bookingId}/review`}
+                className={`${styles.actionBtn} ${styles.actionBtn_outline}`}
+                style={{ display: "inline-flex", marginTop: "1rem" }}
+              >
+                <FaStar /> Leave a Review
+              </Link>
+            )}
+            {reviewCheckDone && hasReviewed && (
+              <div className={styles.reviewedNote}>
+                <FaCheckCircle /> Your review has been submitted.{" "}
+                {(booking.reviews?.length ?? 0) < 2 &&
+                  " Waiting for the other party."}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Bottom actions */}
-        {booking.status === "COMPLETED" && (
+        {isCompletedOrPaid && (
           <div className={styles.bottomActions}>
             <button
               className={styles.invoiceBtn}
@@ -376,6 +458,7 @@ export default function BookingDetailMain({
               )}{" "}
               Download Invoice
             </button>
+            {/* Refund button is intentionally omitted for retained staff */}
           </div>
         )}
       </>
