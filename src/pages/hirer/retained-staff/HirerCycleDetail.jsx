@@ -1,11 +1,15 @@
 // src/pages/hirer/retained-staff/HirerCycleDetail.jsx
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  Link,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import HirerLayout from "../../../components/layout/HirerLayout";
 import Skeleton from "../../../components/common/Skeleton";
 import styles from "./HirerCycleDetail.module.css";
 import PayCycleModal from "./PayCycleModal";
-import ConfirmationModal from "../../../components/context/ConfirmationModal";
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -17,7 +21,6 @@ import {
   FiLoader,
   FiUser,
   FiCalendar,
-  FiTrash2,
 } from "react-icons/fi";
 import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
@@ -58,14 +61,16 @@ const STATUS_META = {
 export default function HirerCycleDetail() {
   const { id, cycleId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [cycle, setCycle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPayModal, setShowPayModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [releaseAmount, setReleaseAmount] = useState("");
   const [releaseNote, setReleaseNote] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
@@ -83,6 +88,19 @@ export default function HirerCycleDetail() {
   useEffect(() => {
     loadCycle();
   }, [loadCycle]);
+
+  // ✅ Check for payment success/error in URL
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+    if (paymentStatus === "success") {
+      setSuccessMessage("Payment successfully held in escrow!");
+      // Clean up the URL so the message doesn't persist on refresh
+      setSearchParams({}, { replace: true });
+    } else if (paymentStatus === "failed") {
+      setError("Payment failed. Please try again.");
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const payment = cycle?.booking?.payments?.[0];
   const releases = payment?.releases || [];
@@ -139,19 +157,6 @@ export default function HirerCycleDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    setActionLoading(true);
-    try {
-      await retainedStaffApi.deleteCycle(cycleId);
-      navigate(`/dashboard/hirer/retained-staff/${id}`);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete cycle.");
-      setShowDeleteConfirm(false);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <HirerLayout>
@@ -197,6 +202,25 @@ export default function HirerCycleDetail() {
         >
           <FiArrowLeft /> Back to Staff
         </Link>
+
+        {/* ✅ Success Banner */}
+        {successMessage && (
+          <div
+            style={{
+              background: "var(--green-dim)",
+              color: "var(--green)",
+              padding: "1rem",
+              borderRadius: "8px",
+              marginBottom: "1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontWeight: 600,
+            }}
+          >
+            <FiCheckCircle size={18} /> {successMessage}
+          </div>
+        )}
 
         {error && (
           <div className={styles.errorBanner}>
@@ -279,7 +303,7 @@ export default function HirerCycleDetail() {
           </div>
         </div>
 
-        {/* ═══ ACTION: Pay Now ═══ */}
+        {/* ACTION: Pay Now */}
         {cycle.status === "AWAITING_PAYMENT" && (
           <div className={styles.actionCard}>
             <div className={styles.actionHeader}>
@@ -307,28 +331,11 @@ export default function HirerCycleDetail() {
               >
                 Cancel Cycle
               </button>
-              <button
-                className={styles.btnDangerOutline}
-                onClick={() => setShowDeleteConfirm(true)}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--red)",
-                  marginLeft: "auto",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.25rem",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                <FiTrash2 /> Delete
-              </button>
             </div>
           </div>
         )}
 
-        {/* ═══ ACTION: Release Funds ═══ */}
+        {/* ACTION: Release Funds */}
         {["HELD", "PARTIALLY_RELEASED"].includes(cycle.status) &&
           !fullyReleased && (
             <div className={styles.actionCard}>
@@ -391,7 +398,7 @@ export default function HirerCycleDetail() {
             </div>
           )}
 
-        {/* ═══ Fully Released state ═══ */}
+        {/* Fully Released state */}
         {fullyReleased && (
           <div className={`${styles.actionCard} ${styles.successCard}`}>
             <FiCheckCircle size={24} className={styles.successIcon} />
@@ -405,7 +412,7 @@ export default function HirerCycleDetail() {
           </div>
         )}
 
-        {/* ═══ Release history ═══ */}
+        {/* Release history */}
         {releases.length > 0 && (
           <div className={styles.panel}>
             <h3 className={styles.panelTitle}>
@@ -449,7 +456,7 @@ export default function HirerCycleDetail() {
           </div>
         )}
 
-        {/* ═══ Cancellation box ═══ */}
+        {/* Cancellation box */}
         {showCancel && (
           <div className={styles.cancelBox}>
             <h3>Cancel this cycle?</h3>
@@ -484,17 +491,6 @@ export default function HirerCycleDetail() {
           </div>
         )}
       </div>
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDelete}
-        title="Delete Payroll Cycle?"
-        message="This will permanently remove this payroll cycle. This action cannot be undone."
-        confirmLabel="Yes, Delete Cycle"
-        confirmVariant="danger"
-      />
 
       {/* Pay Modal */}
       {cycle.member && (

@@ -1,5 +1,11 @@
+// src/components/payment/InitiatePayment.jsx
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
@@ -65,6 +71,8 @@ const METHODS = [
 export default function InitiatePayment() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo"); // ✅ Capture the custom redirect
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -257,9 +265,16 @@ export default function InitiatePayment() {
     });
 
     try {
+      // ✅ Construct the absolute URL for the backend if redirectTo is set
+      const callbackUrl = redirectTo
+        ? `${window.location.origin}${decodeURIComponent(redirectTo)}`
+        : undefined;
+
       const res = await api.post(`/payments/initiate/${bookingId}`, {
         referralAmount: referralApplied ? referralAmount : 0,
+        callbackUrl, // ✅ Pass it here
       });
+
       const { paymentUrl } = res.data.data;
       if (!paymentUrl) {
         setError("Payment URL not received. Try again.");
@@ -360,10 +375,17 @@ export default function InitiatePayment() {
         currency: p.currency,
       });
 
-      navigate("/payments/manual-success", {
-        state: { method: "bank", bookingId },
-        replace: true,
-      });
+      // ✅ Redirect based on redirectTo or default
+      if (redirectTo) {
+        navigate(`${decodeURIComponent(redirectTo)}&payment=success`, {
+          replace: true,
+        });
+      } else {
+        navigate("/payments/manual-success", {
+          state: { method: "bank", bookingId },
+          replace: true,
+        });
+      }
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed.");
       // ── ANALYTICS: bank confirmation failed ─────────────────────────────
@@ -462,10 +484,17 @@ export default function InitiatePayment() {
         currency: p.currency,
       });
 
-      navigate("/payments/manual-success", {
-        state: { method: "crypto", bookingId },
-        replace: true,
-      });
+      // ✅ Redirect based on redirectTo or default
+      if (redirectTo) {
+        navigate(`${decodeURIComponent(redirectTo)}&payment=success`, {
+          replace: true,
+        });
+      } else {
+        navigate("/payments/manual-success", {
+          state: { method: "crypto", bookingId },
+          replace: true,
+        });
+      }
     } catch (e) {
       setError(e.response?.data?.message || "Confirmation failed.");
       // ── ANALYTICS: crypto confirmation failed ───────────────────────────

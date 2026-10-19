@@ -23,11 +23,43 @@ export default function PaystackVerify() {
       .then((res) => {
         setStatus("success");
         const bookingId = res.data.data?.bookingId;
+
         if (bookingId) {
-          // Force a hard navigation to clear any cached state
-          setTimeout(() => {
-            navigate(`/bookings/${bookingId}?payment=success&t=${Date.now()}`);
-          }, 2000);
+          // ✅ Fetch the booking to check if it's a retained staff payment
+          api
+            .get(`/bookings/${bookingId}`)
+            .then((bRes) => {
+              const booking = bRes.data.data.booking;
+              if (
+                booking.source === "RETAINED_STAFF" &&
+                booking.retainedCycle
+              ) {
+                // ✅ Redirect back to the retained cycle detail
+                setTimeout(() => {
+                  navigate(
+                    `/dashboard/hirer/retained-staff/${booking.retainedCycle.memberId}/cycles/${booking.retainedCycle.id}?payment=success`,
+                    { replace: true },
+                  );
+                }, 2000);
+              } else {
+                // ✅ Standard booking redirect
+                setTimeout(() => {
+                  navigate(
+                    `/bookings/${bookingId}?payment=success&t=${Date.now()}`,
+                  );
+                }, 2000);
+              }
+            })
+            .catch(() => {
+              // Fallback
+              setTimeout(
+                () =>
+                  navigate(
+                    `/bookings/${bookingId}?payment=success&t=${Date.now()}`,
+                  ),
+                2000,
+              );
+            });
         } else {
           // Fallback: go to bookings list
           setTimeout(() => navigate("/bookings"), 2000);
@@ -73,7 +105,7 @@ export default function PaystackVerify() {
               Your funds are safely held in escrow. The worker has been
               notified.
             </p>
-            <p className={styles.successSub}>Redirecting to your booking...</p>
+            <p className={styles.successSub}>Redirecting...</p>
           </>
         )}
 
