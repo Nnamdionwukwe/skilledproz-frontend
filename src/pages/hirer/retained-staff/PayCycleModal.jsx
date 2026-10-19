@@ -12,6 +12,7 @@ import {
   FiLoader,
   FiDollarSign,
 } from "react-icons/fi";
+import PaymentSuccessModal from "./PaymentSuccessModal"; // ✅ Import the new modal
 import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
 export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
@@ -19,6 +20,10 @@ export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
   const [provider, setProvider] = useState("card");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ✅ Add state for the success modal
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [paidCycleId, setPaidCycleId] = useState(null);
 
   const [walletBalance, setWalletBalance] = useState(null);
   const [loadingWallet, setLoadingWallet] = useState(false);
@@ -54,7 +59,6 @@ export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
       desc: "Pay with Paystack (NGN) or Flutterwave",
       icon: <FiCreditCard />,
     },
-
     {
       key: "wallet",
       label: "Hirer Wallet",
@@ -81,7 +85,6 @@ export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
 
     setLoading(true);
     try {
-      // 1. Create the booking shell (or get existing one)
       const payRes = await retainedStaffApi.payCycle(member.id, cycle.id, {
         paymentMethod: "ESCROW",
         provider,
@@ -91,16 +94,12 @@ export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
       const cycleId = payRes.data.data.cycleId;
 
       if (provider === "wallet") {
-        // Call the direct wallet payment endpoint
         await api.post(`/payments/wallet/${bookingId}`);
-        // On success, navigate back to the cycle detail
-        navigate(
-          `/dashboard/hirer/retained-staff/${member.id}/cycles/${cycleId}?payment=success`,
-        );
+
+        // ✅ Instead of navigating, show the success modal
+        setPaidCycleId(cycleId);
+        setShowSuccess(true);
       } else {
-        // ✅ For Card and Bank Transfer, navigate to the standard payment page.
-        // The standard page handles the Paystack/Flutterwave redirect and will
-        // send the user back to the booking detail page automatically.
         navigate(`/bookings/${bookingId}/pay?method=${provider}`);
       }
     } catch (err) {
@@ -113,6 +112,26 @@ export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
       setLoading(false);
     }
   };
+
+  // ✅ If the success modal is open, render it instead (or on top) of the pay modal
+  if (showSuccess) {
+    return (
+      <PaymentSuccessModal
+        isOpen={showSuccess}
+        onClose={() => {
+          setShowSuccess(false);
+          onClose(); // Close the pay modal too
+        }}
+        onViewCycle={() => {
+          setShowSuccess(false);
+          onClose();
+          navigate(
+            `/dashboard/hirer/retained-staff/${member.id}/cycles/${paidCycleId}?payment=success`,
+          );
+        }}
+      />
+    );
+  }
 
   return (
     <div className={styles.overlay} onClick={onClose}>

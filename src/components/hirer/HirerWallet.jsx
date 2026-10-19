@@ -1,7 +1,4 @@
 // src/pages/hirer/HirerWallet.jsx
-// Complete Hirer Wallet with Multi-Currency Support & Withdrawal Confirmation
-// Styled to match the global design system (see global.css tokens)
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import HirerLayout from "../../components/layout/HirerLayout";
@@ -36,8 +33,12 @@ import {
   FaDownload,
   FaShareAlt,
   FaFileInvoice,
-  FaReceipt,
   FaPrint,
+  FaUniversity,
+  FaWallet as FaWalletIcon,
+  FaShieldAlt,
+  FaQrcode,
+  FaMobileAlt,
 } from "react-icons/fa";
 
 import { FiMail } from "react-icons/fi";
@@ -190,6 +191,42 @@ function getCurrencySymbol(currency) {
   return symbols[currency] || currency;
 }
 
+// ─── Payment Method Helpers ────────────────────────────────────────────────
+// The backend stores `meta.paymentProvider` on transaction creation and
+// falls back to `provider` on the payment row. But hirerTransactions don't
+// carry the provider column — only deposits carry `meta.paymentProvider`.
+// We use type + meta to distinguish the channel and label it.
+
+function getPaymentChannel(tx) {
+  if (tx.type === "DEPOSIT") {
+    const p = tx.meta?.paymentProvider;
+    if (p === "FLUTTERWAVE")
+      return { label: "Card / Mobile Money", icon: FaCreditCard };
+    if (p === "PAYSTACK")
+      return { label: "Card (Paystack)", icon: FaCreditCard };
+    return { label: "Card / Bank", icon: FaCreditCard };
+  }
+  if (tx.type === "WITHDRAWAL")
+    return { label: "Bank Transfer", icon: FaUniversity };
+  if (tx.type === "PAYMENT") {
+    const p = tx.meta?.paymentProvider || "WALLET";
+    if (p === "WALLET") return { label: "Wallet", icon: FaWalletIcon };
+    if (p === "PAYSTACK")
+      return { label: "Card (Paystack)", icon: FaCreditCard };
+    if (p === "FLUTTERWAVE")
+      return { label: "Card (Flutterwave)", icon: FaCreditCard };
+    if (p === "BANK_TRANSFER")
+      return { label: "Bank Transfer", icon: FaUniversity };
+    if (p === "CRYPTO") return { label: "Crypto", icon: FaBitcoin };
+    return { label: "Payment", icon: FaCreditCard };
+  }
+  if (tx.type === "SUBSCRIPTION")
+    return { label: "Subscription", icon: FaShieldAlt };
+  if (tx.type === "REFUND") return { label: "Refund", icon: FaArrowUp };
+  if (tx.type === "BONUS") return { label: "Bonus", icon: FaPlus };
+  return { label: "Adjustment", icon: FaMinus };
+}
+
 // ─── Copy Button ──────────────────────────────────────────────────────────
 
 function CopyButton({ text, label = "Copy" }) {
@@ -220,6 +257,299 @@ function CopyButton({ text, label = "Copy" }) {
   );
 }
 
+// ─── Receipt Generator ─────────────────────────────────────────────────────
+
+function generateReceiptHTML(transaction) {
+  const isCredit =
+    transaction.type === "DEPOSIT" ||
+    transaction.type === "REFUND" ||
+    transaction.type === "BONUS";
+  const amountPrefix = isCredit ? "+" : "-";
+  const channel = getPaymentChannel(transaction);
+  const isPaid =
+    transaction.status === "COMPLETED" || transaction.status === "SUCCESS";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipt - ${transaction.reference}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .receipt {
+      max-width: 520px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+    .receipt-header {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: #ffffff;
+      padding: 32px 32px 24px;
+      text-align: center;
+    }
+    .receipt-header .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 14px;
+      margin-bottom: 12px;
+    }
+    .receipt-header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .receipt-header .subtitle {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+    .receipt-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 16px;
+      padding: 6px 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .receipt-status.paid { background: rgba(255,255,255,0.28); }
+    .receipt-amount {
+      text-align: center;
+      padding: 28px 32px 24px;
+      border-bottom: 2px dashed #e5e7eb;
+    }
+    .receipt-amount .label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .receipt-amount .value {
+      font-size: 36px;
+      font-weight: 800;
+      margin-top: 8px;
+      letter-spacing: -0.02em;
+    }
+    .receipt-amount .value.credit { color: #22c55e; }
+    .receipt-amount .value.debit { color: #ef4444; }
+    .receipt-amount .channel {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 4px 12px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .receipt-body { padding: 24px 32px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+      gap: 16px;
+    }
+    .row:last-child { border-bottom: none; }
+    .row .label {
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .row .value {
+      color: #1a1a2e;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: right;
+      word-break: break-word;
+    }
+    .row .value.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; }
+    .row.section-title {
+      padding-top: 18px;
+      padding-bottom: 6px;
+      border-bottom: none;
+    }
+    .row.section-title .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+      font-weight: 800;
+    }
+    .fee-row { color: #f97316; }
+    .net-row {
+      margin-top: 8px;
+      padding-top: 16px;
+      border-top: 2px solid #e5e7eb;
+      border-bottom: none;
+    }
+    .net-row .label { font-weight: 700; color: #1a1a2e; }
+    .net-row .value { font-size: 16px; font-weight: 800; color: #22c55e; }
+    .receipt-footer {
+      padding: 24px 32px;
+      background: #f9fafb;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .receipt-footer strong { color: #6b7280; }
+    .tear-line {
+      height: 16px;
+      background-image: radial-gradient(circle, #ffffff 4px, transparent 4px);
+      background-size: 16px 16px;
+      background-position: -8px 50%;
+      background-color: #f9fafb;
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="receipt-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="M8 12h8" />
+          <path d="M8 8h4" />
+          <path d="M8 16h6" />
+        </svg>
+      </div>
+      <h1>SkilledProz</h1>
+      <p class="subtitle">Transaction Receipt</p>
+      <div class="receipt-status ${isPaid ? "paid" : ""}">
+        ${getStatusLabel(transaction.status)}
+      </div>
+    </div>
+
+    <div class="receipt-amount">
+      <div class="label">${isCredit ? "Amount Received" : "Amount Charged"}</div>
+      <div class="value ${isCredit ? "credit" : "debit"}">
+        ${amountPrefix} ${formatCurrency(transaction.amount, transaction.currency)}
+      </div>
+      <div class="channel">
+        ${channel.label}
+      </div>
+    </div>
+
+    <div class="receipt-body">
+      <div class="row section-title"><span class="label">Transaction</span></div>
+      <div class="row">
+        <span class="label">Reference</span>
+        <span class="value mono">${transaction.reference}</span>
+      </div>
+      <div class="row">
+        <span class="label">Type</span>
+        <span class="value">${getTransactionLabel(transaction.type)}</span>
+      </div>
+      <div class="row">
+        <span class="label">Date</span>
+        <span class="value">${formatDateLong(transaction.createdAt)}</span>
+      </div>
+      ${
+        transaction.completedAt
+          ? `
+      <div class="row">
+        <span class="label">Completed</span>
+        <span class="value">${formatDateLong(transaction.completedAt)}</span>
+      </div>`
+          : ""
+      }
+      ${
+        transaction.description
+          ? `
+      <div class="row">
+        <span class="label">Description</span>
+        <span class="value">${transaction.description}</span>
+      </div>`
+          : ""
+      }
+
+      <div class="row section-title"><span class="label">Breakdown</span></div>
+      <div class="row">
+        <span class="label">Gross Amount</span>
+        <span class="value">${formatCurrency(transaction.amount, transaction.currency)}</span>
+      </div>
+      <div class="row fee-row">
+        <span class="label">Platform Fee</span>
+        <span class="value">- ${formatCurrency(transaction.fee || 0, transaction.currency)}</span>
+      </div>
+      <div class="row net-row">
+        <span class="label">Net Amount</span>
+        <span class="value">${formatCurrency(transaction.netAmount || transaction.amount, transaction.currency)}</span>
+      </div>
+
+      ${
+        transaction.balanceBefore != null || transaction.balanceAfter != null
+          ? `
+      <div class="row section-title"><span class="label">Wallet Impact</span></div>
+      <div class="row">
+        <span class="label">Balance Before</span>
+        <span class="value">${formatCurrency(transaction.balanceBefore || 0, transaction.currency)}</span>
+      </div>
+      <div class="row">
+        <span class="label">Balance After</span>
+        <span class="value">${formatCurrency(transaction.balanceAfter || 0, transaction.currency)}</span>
+      </div>`
+          : ""
+      }
+
+      ${
+        transaction.meta?.paymentProvider
+          ? `
+      <div class="row section-title"><span class="label">Payment Details</span></div>
+      <div class="row">
+        <span class="label">Provider</span>
+        <span class="value">${transaction.meta.paymentProvider}</span>
+      </div>
+      ${
+        transaction.meta?.transactionId
+          ? `
+      <div class="row">
+        <span class="label">Provider Ref</span>
+        <span class="value mono">${transaction.meta.transactionId}</span>
+      </div>`
+          : ""
+      }
+      `
+          : ""
+      }
+    </div>
+
+    <div class="tear-line"></div>
+    <div class="receipt-footer">
+      <p>Thank you for using <strong>SkilledProz</strong></p>
+      <p style="margin-top: 6px;">This is an electronically generated receipt. No signature required.</p>
+      <p style="margin-top: 6px; font-size: 11px;">skilledproz.com · support@skilledproz.com</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 // ─── Transaction Detail Modal ──────────────────────────────────────────────
 
 function TransactionDetailModal({ transaction, onClose }) {
@@ -233,6 +563,8 @@ function TransactionDetailModal({ transaction, onClose }) {
     transaction.type === "BONUS";
   const amountColor = isCredit ? "var(--green)" : "var(--red)";
   const amountPrefix = isCredit ? "+" : "-";
+  const channel = getPaymentChannel(transaction);
+  const ChannelIcon = channel.icon;
 
   const handleDownloadReceipt = () => {
     setDownloading(true);
@@ -256,7 +588,7 @@ function TransactionDetailModal({ transaction, onClose }) {
   };
 
   const handleShare = async () => {
-    const shareText = `Transaction ${transaction.reference}\nType: ${getTransactionLabel(transaction.type)}\nAmount: ${formatCurrency(transaction.amount, transaction.currency)}\nStatus: ${getStatusLabel(transaction.status)}\nDate: ${formatDateLong(transaction.createdAt)}`;
+    const shareText = `Transaction ${transaction.reference}\nType: ${getTransactionLabel(transaction.type)}\nChannel: ${channel.label}\nAmount: ${formatCurrency(transaction.amount, transaction.currency)}\nStatus: ${getStatusLabel(transaction.status)}\nDate: ${formatDateLong(transaction.createdAt)}`;
 
     if (navigator.share) {
       try {
@@ -274,7 +606,7 @@ function TransactionDetailModal({ transaction, onClose }) {
       try {
         await navigator.clipboard.writeText(shareText);
         alert("Transaction details copied to clipboard!");
-      } catch (err) {
+      } catch {
         alert("Failed to share. Please copy the details manually.");
       }
     }
@@ -291,114 +623,78 @@ function TransactionDetailModal({ transaction, onClose }) {
     }
   };
 
+  const providerLabel =
+    transaction.meta?.paymentProvider ||
+    (transaction.provider && transaction.provider.toUpperCase()) ||
+    "—";
+  const providerRef =
+    transaction.meta?.transactionId ||
+    transaction.providerRef ||
+    transaction.reference;
+
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <div className={styles.modalFullScreenOverlay} onClick={onClose}>
       <div
-        className={`${styles.modalBox} ${styles.modalLarge}`}
+        className={styles.modalFullScreenBox}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FaFileInvoice /> Transaction Details
-          </h3>
-          <button className={styles.modalClose} onClick={onClose} type="button">
+        <div className={styles.modalFullScreenHeader}>
+          <div>
+            <h3 className={styles.modalTitle}>
+              <FaFileInvoice /> Transaction Details
+            </h3>
+            <p className={styles.modalSubtitle}>
+              {getTransactionLabel(transaction.type)} ·{" "}
+              {formatDateLong(transaction.createdAt)}
+            </p>
+          </div>
+          <button
+            className={styles.modalFullScreenClose}
+            onClick={onClose}
+            type="button"
+          >
             <FaTimes />
           </button>
         </div>
 
-        <div className={styles.modalBody}>
-          {/* Receipt Content for Printing */}
-          <div id="receipt-print" className={styles.receiptPrint}>
-            <div className={styles.receiptHeader}>
-              <div className={styles.receiptLogo}>
-                <FaWallet size={32} />
-                <h2>SkilledProz</h2>
-              </div>
-              <p className={styles.receiptSubtitle}>Transaction Receipt</p>
+        <div className={styles.modalFullScreenBody}>
+          {/* Header with channel */}
+          <div className={styles.detailHeader}>
+            <div className={styles.detailChannelIcon}>
+              <ChannelIcon size={20} />
             </div>
-
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Reference</span>
-              <span className={styles.receiptValue}>
-                {transaction.reference}
-              </span>
-            </div>
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Type</span>
-              <span className={styles.receiptValue}>
+            <div>
+              <div className={styles.detailChannelLabel}>{channel.label}</div>
+              <div className={styles.detailChannelSub}>
                 {getTransactionLabel(transaction.type)}
-              </span>
-            </div>
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Amount</span>
-              <span
-                className={styles.receiptValue}
-                style={{ color: amountColor, fontWeight: 700 }}
-              >
-                {amountPrefix}
-                {formatCurrency(transaction.amount, transaction.currency)}
-              </span>
-            </div>
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Fee</span>
-              <span className={styles.receiptValue}>
-                {formatCurrency(transaction.fee || 0, transaction.currency)}
-              </span>
-            </div>
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Net Amount</span>
-              <span className={styles.receiptValue} style={{ fontWeight: 700 }}>
-                {formatCurrency(
-                  transaction.netAmount || transaction.amount,
-                  transaction.currency,
-                )}
-              </span>
-            </div>
-            {transaction.description && (
-              <div className={styles.receiptRow}>
-                <span className={styles.receiptLabel}>Description</span>
-                <span className={styles.receiptValue}>
-                  {transaction.description}
-                </span>
               </div>
-            )}
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Status</span>
-              <span className={styles.receiptValue}>
-                <span
-                  className={styles.statusBadge}
-                  style={{
-                    backgroundColor: "rgba(249, 115, 22, 0.15)",
-                    color: getStatusColor(transaction.status),
-                  }}
-                >
-                  {getStatusLabel(transaction.status)}
-                </span>
-              </span>
             </div>
-            <div className={styles.receiptRow}>
-              <span className={styles.receiptLabel}>Date</span>
-              <span className={styles.receiptValue}>
-                {formatDateLong(transaction.createdAt)}
-              </span>
-            </div>
-            {transaction.completedAt && (
-              <div className={styles.receiptRow}>
-                <span className={styles.receiptLabel}>Completed</span>
-                <span className={styles.receiptValue}>
-                  {formatDateLong(transaction.completedAt)}
-                </span>
-              </div>
-            )}
-            <div className={styles.receiptFooter}>
-              <p>Thank you for using SkilledProz</p>
-              <p className={styles.receiptFooterSmall}>
-                This is an electronically generated receipt.
-              </p>
+            <div className={styles.detailAmount} style={{ color: amountColor }}>
+              {amountPrefix}
+              {formatCurrency(transaction.amount, transaction.currency)}
             </div>
           </div>
 
-          {/* Display Content */}
+          {/* Status pill */}
+          <div className={styles.detailStatusRow}>
+            <span
+              className={styles.statusBadge}
+              style={{
+                backgroundColor: "rgba(249, 115, 22, 0.15)",
+                color: getStatusColor(transaction.status),
+              }}
+            >
+              {getStatusIcon(transaction.status)}{" "}
+              {getStatusLabel(transaction.status)}
+            </span>
+            {transaction.completedAt && (
+              <span className={styles.detailCompletedAt}>
+                Completed {formatDateLong(transaction.completedAt)}
+              </span>
+            )}
+          </div>
+
+          {/* User block */}
           <div className={styles.detailUser}>
             <div className={styles.userAvatarLarge}>
               {transaction.hirer?.firstName?.[0] || "?"}
@@ -414,17 +710,29 @@ function TransactionDetailModal({ transaction, onClose }) {
             </div>
           </div>
 
+          {/* Reference block */}
           <div className={styles.detailGrid}>
             <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Reference</span>
+              <span className={styles.detailLabel}>Transaction Reference</span>
               <span className={styles.detailValue}>
                 {transaction.reference}
+                <CopyButton text={transaction.reference} label="Copy" />
               </span>
             </div>
             <div className={styles.detailItem}>
               <span className={styles.detailLabel}>Type</span>
               <span className={styles.detailValue}>
                 {getTransactionLabel(transaction.type)}
+              </span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Channel</span>
+              <span className={styles.detailValue}>{channel.label}</span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Status</span>
+              <span className={styles.detailValue}>
+                {getStatusLabel(transaction.status)}
               </span>
             </div>
             <div className={styles.detailItem}>
@@ -453,55 +761,120 @@ function TransactionDetailModal({ transaction, onClose }) {
               </span>
             </div>
             <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>Status</span>
-              <span className={styles.detailValue}>
-                <span
-                  className={styles.statusBadge}
-                  style={{
-                    backgroundColor: "rgba(249, 115, 22, 0.15)",
-                    color: getStatusColor(transaction.status),
-                  }}
-                >
-                  {getStatusIcon(transaction.status)}{" "}
-                  {getStatusLabel(transaction.status)}
-                </span>
-              </span>
-            </div>
-            <div className={styles.detailItem}>
               <span className={styles.detailLabel}>Date</span>
               <span className={styles.detailValue}>
                 {formatDateLong(transaction.createdAt)}
               </span>
             </div>
-            {transaction.completedAt && (
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Completed</span>
-                <span className={styles.detailValue}>
-                  {formatDateLong(transaction.completedAt)}
-                </span>
-              </div>
-            )}
-            {transaction.description && (
-              <div
-                className={styles.detailItem}
-                style={{ gridColumn: "1 / -1" }}
-              >
-                <span className={styles.detailLabel}>Description</span>
-                <span className={styles.detailValue}>
-                  {transaction.description}
-                </span>
-              </div>
-            )}
           </div>
 
-          <div className={styles.modalActions}>
-            <button
-              className={styles.modalCancel}
-              onClick={onClose}
-              type="button"
-            >
-              <FaTimes size={14} /> Close
-            </button>
+          {/* Provider block */}
+          {providerLabel !== "—" && (
+            <div className={styles.detailSection}>
+              <h4 className={styles.detailSectionTitle}>Payment Provider</h4>
+              <div className={styles.detailGrid}>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Provider</span>
+                  <span className={styles.detailValue}>{providerLabel}</span>
+                </div>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Provider Reference</span>
+                  <span className={styles.detailValue}>
+                    {providerRef}
+                    <CopyButton text={providerRef} label="Copy" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bank transfer metadata */}
+          {transaction.meta?.bankName && (
+            <div className={styles.detailSection}>
+              <h4 className={styles.detailSectionTitle}>Bank Details</h4>
+              <div className={styles.detailGrid}>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Bank</span>
+                  <span className={styles.detailValue}>
+                    {transaction.meta.bankName}
+                  </span>
+                </div>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Account Number</span>
+                  <span className={styles.detailValue}>
+                    {transaction.meta.accountNumber}
+                  </span>
+                </div>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Account Name</span>
+                  <span className={styles.detailValue}>
+                    {transaction.meta.accountName}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Wallet balance block */}
+          {(transaction.balanceBefore != null ||
+            transaction.balanceAfter != null) && (
+            <div className={styles.detailSection}>
+              <h4 className={styles.detailSectionTitle}>Wallet Impact</h4>
+              <div className={styles.detailGrid}>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Balance Before</span>
+                  <span className={styles.detailValue}>
+                    {formatCurrency(
+                      transaction.balanceBefore || 0,
+                      transaction.currency,
+                    )}
+                  </span>
+                </div>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Balance After</span>
+                  <span className={styles.detailValue}>
+                    {formatCurrency(
+                      transaction.balanceAfter || 0,
+                      transaction.currency,
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          {transaction.description && (
+            <div className={styles.detailSection}>
+              <h4 className={styles.detailSectionTitle}>Description</h4>
+              <p className={styles.detailDescription}>
+                {transaction.description}
+              </p>
+            </div>
+          )}
+
+          {/* Hidden printable receipt for Print button */}
+          <div id="receipt-print" style={{ display: "none" }}>
+            <div
+              dangerouslySetInnerHTML={{
+                __html: generateReceiptHTML(transaction).replace(
+                  /<html[^>]*>|<\/html>|<body[^>]*>|<\/body>|<head[^>]*>|<\/head>|<style[^>]*>[\s\S]*?<\/style>/gi,
+                  "",
+                ),
+              }}
+            />
+          </div>
+        </div>
+
+        <div className={styles.modalFullScreenFooter}>
+          <button
+            className={styles.modalCancel}
+            onClick={onClose}
+            type="button"
+          >
+            <FaTimes size={14} /> Close
+          </button>
+          <div className={styles.modalFullScreenActions}>
             <button
               className={`${styles.detailActionBtn} ${styles.detailActionPrimary}`}
               onClick={handlePrint}
@@ -532,185 +905,6 @@ function TransactionDetailModal({ transaction, onClose }) {
   );
 }
 
-// ─── Generate Receipt HTML ─────────────────────────────────────────────────
-
-function generateReceiptHTML(transaction) {
-  const isCredit =
-    transaction.type === "DEPOSIT" ||
-    transaction.type === "REFUND" ||
-    transaction.type === "BONUS";
-  const amountPrefix = isCredit ? "+" : "-";
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Receipt - ${transaction.reference}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f8f9fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .receipt {
-      max-width: 500px;
-      width: 100%;
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-    }
-    .receipt-header {
-      text-align: center;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 20px;
-      margin-bottom: 20px;
-    }
-    .receipt-header h1 {
-      color: #1a1a2e;
-      font-size: 24px;
-      font-weight: 800;
-      margin: 8px 0 4px;
-    }
-    .receipt-header .subtitle {
-      color: #6b7280;
-      font-size: 14px;
-    }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .row:last-child {
-      border-bottom: none;
-    }
-    .label {
-      color: #6b7280;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .value {
-      color: #1a1a2e;
-      font-size: 14px;
-      font-weight: 600;
-      text-align: right;
-    }
-    .value.amount {
-      font-size: 18px;
-      font-weight: 700;
-    }
-    .value.positive { color: #22c55e; }
-    .value.negative { color: #ef4444; }
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(249, 115, 22, 0.15);
-      color: #f97316;
-    }
-    .footer {
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 2px solid #f0f0f0;
-      text-align: center;
-      color: #9ca3af;
-      font-size: 12px;
-    }
-    .footer strong {
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="receipt">
-    <div class="receipt-header">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2">
-        <rect x="2" y="4" width="20" height="16" rx="2" />
-        <path d="M8 12h8" />
-        <path d="M8 8h4" />
-        <path d="M8 16h6" />
-      </svg>
-      <h1>SkilledProz</h1>
-      <p class="subtitle">Transaction Receipt</p>
-    </div>
-
-    <div class="row">
-      <span class="label">Reference</span>
-      <span class="value">${transaction.reference}</span>
-    </div>
-    <div class="row">
-      <span class="label">Type</span>
-      <span class="value">${getTransactionLabel(transaction.type)}</span>
-    </div>
-    <div class="row">
-      <span class="label">Amount</span>
-      <span class="value amount ${isCredit ? "positive" : "negative"}">
-        ${amountPrefix} ${formatCurrency(transaction.amount, transaction.currency)}
-      </span>
-    </div>
-    <div class="row">
-      <span class="label">Fee</span>
-      <span class="value">${formatCurrency(transaction.fee || 0, transaction.currency)}</span>
-    </div>
-    <div class="row" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
-      <span class="label" style="font-weight: 700;">Net Amount</span>
-      <span class="value amount" style="font-size: 20px; color: #22c55e;">
-        ${formatCurrency(transaction.netAmount || transaction.amount, transaction.currency)}
-      </span>
-    </div>
-    ${
-      transaction.description
-        ? `
-    <div class="row">
-      <span class="label">Description</span>
-      <span class="value" style="text-align: right; max-width: 60%; word-break: break-word;">${transaction.description}</span>
-    </div>
-    `
-        : ""
-    }
-    <div class="row">
-      <span class="label">Status</span>
-      <span class="value">
-        <span class="status-badge">
-          ${getStatusLabel(transaction.status)}
-        </span>
-      </span>
-    </div>
-    <div class="row">
-      <span class="label">Date</span>
-      <span class="value">${formatDateLong(transaction.createdAt)}</span>
-    </div>
-    ${
-      transaction.completedAt
-        ? `
-    <div class="row">
-      <span class="label">Completed</span>
-      <span class="value">${formatDateLong(transaction.completedAt)}</span>
-    </div>
-    `
-        : ""
-    }
-
-    <div class="footer">
-      <p>Thank you for using <strong>SkilledProz</strong></p>
-      <p style="margin-top: 4px;">This is an electronically generated receipt.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-}
-
 // ─── Skeleton Loader ──────────────────────────────────────────────────────
 
 function WalletSkeleton() {
@@ -738,14 +932,12 @@ function WalletSkeleton() {
         <div className={styles.skeletonTx} />
         <div className={styles.skeletonTx} />
         <div className={styles.skeletonTx} />
-        <div className={styles.skeletonTx} />
-        <div className={styles.skeletonTx} />
       </div>
     </div>
   );
 }
 
-// ─── Stat Card ──────────────────────────────────────────────────────────────
+// ─── Stat Card ────────────────────────────────────────────────────────────
 
 function StatCard({ icon: Icon, label, value, accent }) {
   return (
@@ -761,7 +953,7 @@ function StatCard({ icon: Icon, label, value, accent }) {
   );
 }
 
-// ─── Currency Tab ──────────────────────────────────────────────────────────
+// ─── Currency Tab ─────────────────────────────────────────────────────────
 
 function CurrencyTab({ currency, balance, isActive, onClick }) {
   const symbol = getCurrencySymbol(currency);
@@ -789,7 +981,7 @@ function CurrencyTab({ currency, balance, isActive, onClick }) {
   );
 }
 
-// ─── Transaction Row ───────────────────────────────────────────────────────
+// ─── Transaction Row ──────────────────────────────────────────────────────
 
 function TransactionRow({ transaction, onView }) {
   const isCredit =
@@ -798,6 +990,8 @@ function TransactionRow({ transaction, onView }) {
     transaction.type === "BONUS";
   const amountColor = isCredit ? "var(--green)" : "var(--red)";
   const amountPrefix = isCredit ? "+" : "-";
+  const channel = getPaymentChannel(transaction);
+  const ChannelIcon = channel.icon;
 
   return (
     <div
@@ -811,6 +1005,9 @@ function TransactionRow({ transaction, onView }) {
       <div className={styles.transactionInfo}>
         <div className={styles.transactionTitle}>
           {getTransactionLabel(transaction.type)}
+          <span className={styles.transactionChannelBadge}>
+            <ChannelIcon size={10} /> {channel.label}
+          </span>
         </div>
         <div className={styles.transactionDesc}>
           {transaction.description || transaction.reference}
@@ -847,7 +1044,7 @@ function TransactionRow({ transaction, onView }) {
   );
 }
 
-// ─── Deposit Modal ─────────────────────────────────────────────────────────
+// ─── Deposit Modal ────────────────────────────────────────────────────────
 
 function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
   const [amount, setAmount] = useState("");
@@ -947,7 +1144,7 @@ function DepositModal({ isOpen, onClose, onDeposit, loading, currencies }) {
   );
 }
 
-// ─── Withdrawal Confirmation Modal ──────────────────────────────────────────
+// ─── Withdrawal Confirmation Modal ─────────────────────────────────────────
 
 function WithdrawalConfirmModal({
   isOpen,
@@ -1131,7 +1328,7 @@ function WithdrawalConfirmModal({
   );
 }
 
-// ─── Withdraw Modal ─────────────────────────────────────────────────────────
+// ─── Withdraw Modal ───────────────────────────────────────────────────────
 
 function WithdrawModal({
   isOpen,
@@ -1328,7 +1525,7 @@ function WithdrawModal({
   );
 }
 
-// ─── Message Modal ─────────────────────────────────────────────────────────
+// ─── Message Modal ────────────────────────────────────────────────────────
 
 function MessageModal({ isOpen, onClose, title, message, type = "success" }) {
   if (!isOpen) return null;
@@ -1359,7 +1556,7 @@ function MessageModal({ isOpen, onClose, title, message, type = "success" }) {
   );
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────
 
 export default function HirerWallet() {
   const { user } = useAuthStore();
@@ -1390,6 +1587,7 @@ export default function HirerWallet() {
   const [activeCurrency, setActiveCurrency] = useState("NGN");
   const [currencyBalances, setCurrencyBalances] = useState({ NGN: 0 });
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const pendingVerifyRef = useRef(null);
 
   // ─── Show message modal ──────────────────────────────────────────────────
 
@@ -1529,8 +1727,83 @@ export default function HirerWallet() {
     [pagination.page, filterType, filterStatus],
   );
 
+  // ─── On mount: verify any pending deposit reference ──────────────────────
+
   useEffect(() => {
-    fetchWallet(true);
+    // ✅ Priority 1: check ?ref= in the URL (after Flutterwave redirect)
+    const params = new URLSearchParams(window.location.search);
+    const urlRef = params.get("ref");
+
+    // ✅ Priority 2: check sessionStorage (fallback if redirect back didn't carry ref)
+    const storedRef = sessionStorage.getItem("pendingDepositReference");
+    const pendingRef = urlRef || storedRef;
+
+    if (pendingRef && !pendingVerifyRef.current) {
+      pendingVerifyRef.current = pendingRef;
+
+      // Clean the URL so a refresh doesn't re-verify
+      if (urlRef) {
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("ref");
+        window.history.replaceState({}, "", cleanUrl.toString());
+      }
+
+      api
+        .get(`/wallet/verify/${pendingRef}`)
+        .then((res) => {
+          const status = res.data.data?.status;
+          if (status === "SUCCESS") {
+            showMessage(
+              "Deposit Confirmed 🎉",
+              `Your wallet has been funded with ${formatCurrency(res.data.data.amount, res.data.data.currency)}.`,
+              "success",
+            );
+            sessionStorage.removeItem("pendingDepositReference");
+          } else if (status === "FAILED") {
+            showMessage(
+              "Deposit Failed",
+              "Your deposit attempt did not complete. Please try again.",
+              "error",
+            );
+            sessionStorage.removeItem("pendingDepositReference");
+          } else if (status === "PENDING") {
+            // Still verifying — retry once after a short delay
+            setTimeout(async () => {
+              try {
+                const retry = await api.get(`/wallet/verify/${pendingRef}`);
+                if (retry.data.data?.status === "SUCCESS") {
+                  showMessage(
+                    "Deposit Confirmed 🎉",
+                    `Your wallet has been funded with ${formatCurrency(retry.data.data.amount, retry.data.data.currency)}.`,
+                    "success",
+                  );
+                  sessionStorage.removeItem("pendingDepositReference");
+                  await fetchWallet(false);
+                } else {
+                  showMessage(
+                    "Verification Pending",
+                    "We are still verifying your payment. Refresh the page or check your balance shortly.",
+                    "info",
+                  );
+                }
+              } catch {}
+            }, 4000);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          fetchWallet(true);
+        });
+    } else {
+      fetchWallet(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!pendingVerifyRef.current) {
+      fetchWallet(false);
+    }
   }, [pagination.page, filterType, filterStatus, fetchWallet]);
 
   const refreshWallet = () => {
@@ -1552,94 +1825,103 @@ export default function HirerWallet() {
       const res = await api.post("/wallet/fund", { amount, currency });
       const { paymentLink, reference } = res.data.data;
 
-      if (paymentLink) {
-        localStorage.setItem("pendingDepositAmount", amount.toString());
-        localStorage.setItem("pendingDepositCurrency", currency);
-        localStorage.setItem("pendingDepositReference", reference);
-
-        setShowDepositModal(false);
-
-        showMessage(
-          "Payment Initiated",
-          "Your payment page is opening. Please complete your payment.",
-          "info",
-        );
-
-        window.open(paymentLink, "_blank");
-
-        let attempts = 0;
-        const maxAttempts = 30;
-
-        const checkTransaction = async () => {
-          try {
-            const verifyRes = await api.get(`/wallet/verify/${reference}`);
-            const status = verifyRes.data.data?.status;
-
-            if (status === "SUCCESS") {
-              showMessage(
-                "Payment Successful! 🎉",
-                `Your wallet has been funded with ${formatCurrency(amount, currency)}.`,
-                "success",
-              );
-              await fetchWallet(false);
-              return true;
-            } else if (status === "FAILED") {
-              showMessage(
-                "Payment Failed",
-                "Your payment was not successful. Please try again.",
-                "error",
-              );
-              return true;
-            }
-            return false;
-          } catch (err) {
-            return false;
-          }
-        };
-
-        const interval = setInterval(async () => {
-          attempts++;
-          const done = await checkTransaction();
-          if (done || attempts >= maxAttempts) {
-            clearInterval(interval);
-            if (attempts >= maxAttempts && !done) {
-              showMessage(
-                "Verification Timeout",
-                "Please check your wallet balance manually to confirm the payment.",
-                "info",
-              );
-            }
-            await fetchWallet(false);
-          }
-        }, 5000);
-
-        const handleVisibilityChange = async () => {
-          if (document.visibilityState === "visible") {
-            const done = await checkTransaction();
-            if (done) {
-              clearInterval(interval);
-              await fetchWallet(false);
-            }
-          }
-        };
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-
-        setTimeout(() => {
-          clearInterval(interval);
-          document.removeEventListener(
-            "visibilitychange",
-            handleVisibilityChange,
-          );
-        }, 180000);
-      } else {
+      if (!paymentLink) {
         showMessage(
           "Payment Initiated",
           "Please check your email for payment instructions.",
           "info",
         );
         setShowDepositModal(false);
-        setTimeout(() => fetchWallet(false), 5000);
+        return;
       }
+
+      setShowDepositModal(false);
+
+      // Store for the redirect-back verify flow, but we won't count on it
+      sessionStorage.setItem("pendingDepositReference", reference);
+
+      // Open Flutterwave in a new tab so this tab keeps polling
+      window.open(paymentLink, "_blank");
+
+      // ✅ Poll the wallet balance directly — do NOT depend on verifyTransaction
+      // succeeding via Flutterwave's verify API (which may 404 for old refs or
+      // test-mode transactions). Instead, hit the manual credit path if the
+      // webhook never fires. On the first pass, we also call verifyTransaction
+      // as a best-effort trigger for the credit.
+      let attempts = 0;
+      const maxAttempts = 60; // 5 minutes
+      let finished = false;
+
+      // Best-effort: trigger verify immediately (backend may auto-credit
+      // in test mode, or verify with FLW in production).
+      api.get(`/wallet/verify/${reference}`).catch(() => {});
+
+      const poll = setInterval(async () => {
+        if (finished) return;
+        attempts++;
+
+        try {
+          const balanceRes = await api.get("/wallet/balances");
+          const raw = balanceRes.data.data?.balances || {};
+          const ngnBalance =
+            typeof raw[currency] === "object" && raw[currency] !== null
+              ? Number(raw[currency].balance) || 0
+              : Number(raw[currency]) || 0;
+
+          const existingBalance =
+            typeof currencyBalances[currency] === "number"
+              ? currencyBalances[currency]
+              : 0;
+
+          // If the balance has grown by at least ~amount, it's credited
+          if (ngnBalance >= existingBalance + amount - 0.01) {
+            finished = true;
+            clearInterval(poll);
+            sessionStorage.removeItem("pendingDepositReference");
+            showMessage(
+              "Deposit Confirmed 🎉",
+              `Your wallet has been funded with ${formatCurrency(amount, currency)}.`,
+              "success",
+            );
+            await fetchWallet(false);
+            return;
+          }
+
+          // Every 10th attempt, re-trigger verify in case the first call
+          // failed silently or Flutterwave was slow to settle the tx
+          if (attempts % 10 === 0) {
+            try {
+              const verifyRes = await api.get(`/wallet/verify/${reference}`);
+              if (verifyRes.data.data?.status === "SUCCESS") {
+                finished = true;
+                clearInterval(poll);
+                sessionStorage.removeItem("pendingDepositReference");
+                showMessage(
+                  "Deposit Confirmed 🎉",
+                  `Your wallet has been funded with ${formatCurrency(amount, currency)}.`,
+                  "success",
+                );
+                await fetchWallet(false);
+                return;
+              }
+            } catch {
+              /* swallow */
+            }
+          }
+
+          if (attempts >= maxAttempts) {
+            clearInterval(poll);
+            showMessage(
+              "Verification Pending",
+              "We're still waiting for Flutterwave to confirm. Your wallet will update automatically once the payment is verified by them. If you don't see it within 10 minutes, contact support with your reference: " +
+                reference,
+              "info",
+            );
+          }
+        } catch {
+          /* swallow and retry */
+        }
+      }, 5000);
     } catch (err) {
       showMessage(
         "Deposit Failed",
@@ -1672,7 +1954,6 @@ export default function HirerWallet() {
     } catch (err) {
       const status = err.response?.status;
       const msg = err.response?.data?.message || "Failed to process withdrawal";
-
       if (status === 401 || status === 403 || status === 429) {
         showMessage("PIN Verification Failed", msg, "error");
       } else {
@@ -1698,16 +1979,12 @@ export default function HirerWallet() {
     );
   });
 
-  // ─── Get available currencies with balance > 0 ──────────────────────────
-
   const availableCurrencies = Object.keys(currencyBalances).filter(
     (cur) =>
       (typeof currencyBalances[cur] === "number"
         ? currencyBalances[cur]
         : parseFloat(currencyBalances[cur]) || 0) > 0,
   );
-
-  // ─── Loading state ───────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -1723,7 +2000,6 @@ export default function HirerWallet() {
   return (
     <HirerLayout>
       <div className={styles.page}>
-        {/* ─── Header ────────────────────────────────────────────────────────── */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <h1 className={styles.title}>
@@ -1746,7 +2022,6 @@ export default function HirerWallet() {
           </div>
         </div>
 
-        {/* ─── Currency Tabs ────────────────────────────────────────────────── */}
         <div className={styles.currencyTabsContainer}>
           <div className={styles.currencyTabs}>
             {currencies.map((cur) => {
@@ -1780,7 +2055,6 @@ export default function HirerWallet() {
           </div>
         </div>
 
-        {/* ─── Balance Card ──────────────────────────────────────────────────── */}
         <div className={styles.balanceCard}>
           <div className={styles.balanceInfo}>
             <div className={styles.balanceLabel}>
@@ -1832,7 +2106,6 @@ export default function HirerWallet() {
           </div>
         </div>
 
-        {/* ─── Stats ────────────────────────────────────────────────────────── */}
         <div className={styles.statsGrid}>
           <StatCard
             icon={FaArrowDown}
@@ -1858,7 +2131,6 @@ export default function HirerWallet() {
           />
         </div>
 
-        {/* ─── Transactions ──────────────────────────────────────────────────── */}
         <div className={styles.transactionsSection}>
           <div className={styles.transactionsHeader}>
             <h2 className={styles.sectionTitle}>
@@ -1950,7 +2222,6 @@ export default function HirerWallet() {
           )}
         </div>
 
-        {/* ─── Deposit Modal ────────────────────────────────────────────────── */}
         <DepositModal
           isOpen={showDepositModal}
           onClose={() => setShowDepositModal(false)}
@@ -1959,7 +2230,6 @@ export default function HirerWallet() {
           currencies={currencies}
         />
 
-        {/* ─── Withdraw Modal ───────────────────────────────────────────────── */}
         <WithdrawModal
           isOpen={showWithdrawModal}
           onClose={() => setShowWithdrawModal(false)}
@@ -1970,7 +2240,6 @@ export default function HirerWallet() {
           currencies={currencies}
         />
 
-        {/* ─── Message Modal ────────────────────────────────────────────────── */}
         <MessageModal
           isOpen={showMessageModal}
           onClose={() => setShowMessageModal(false)}
@@ -1979,7 +2248,6 @@ export default function HirerWallet() {
           type={messageConfig.type}
         />
 
-        {/* ─── Transaction Detail Modal ────────────────────────────────────── */}
         <TransactionDetailModal
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}

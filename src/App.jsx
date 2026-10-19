@@ -158,6 +158,7 @@ import AdminRetainedCycles from "./pages/admin/AdminRetainedCycles.jsx";
 import WorkerRetainedEarnings from "./pages/worker/retained-staff/WorkerRetainedEarnings.jsx";
 import WorkerRetainedCycles from "./pages/worker/retained-staff/WorkerRetainedCycles.jsx";
 import WorkerEmployerDetail from "./pages/worker/retained-staff/WorkerEmployerDetail.jsx";
+import WalletDepositSuccess from "./pages/wallet/WalletDepositSuccess.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -992,6 +993,14 @@ export default function App() {
                 <HirerWallet />
               </RequireAuth>
             </RequireHirer>
+          }
+        />
+        <Route
+          path="/wallet/deposit/success"
+          element={
+            <RequireAuth>
+              <WalletDepositSuccess />
+            </RequireAuth>
           }
         />
         <Route
