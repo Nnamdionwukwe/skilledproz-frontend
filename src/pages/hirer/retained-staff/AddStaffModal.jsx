@@ -9,6 +9,8 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiLoader,
+  FiMapPin,
+  FiNavigation,
 } from "react-icons/fi";
 import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
@@ -28,6 +30,12 @@ const EMPLOYMENT_TYPES = [
   { value: "CASUAL", label: "Casual" },
 ];
 
+const LOCATION_TYPES = [
+  { value: "ON_SITE", label: "On-site" },
+  { value: "REMOTE", label: "Remote" },
+  { value: "HYBRID", label: "Hybrid" },
+];
+
 const WORK_DAYS = [
   { value: "MON", label: "Mon" },
   { value: "TUE", label: "Tue" },
@@ -41,7 +49,7 @@ const WORK_DAYS = [
 const CURRENCIES = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
 
 export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
-  const [step, setStep] = useState(1); // 1=find worker, 2=details
+  const [step, setStep] = useState(1);
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -49,12 +57,17 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [manualEmail, setManualEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [locating, setLocating] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
     jobTitle: "",
     department: "",
     employmentType: "FULL_TIME",
+    locationType: "ON_SITE",
+    location: "", // ✅ New field for location text
+    latitude: null, // ✅ New field for auto-detected lat
+    longitude: null, // ✅ New field for auto-detected lng
     description: "",
     payRate: "",
     currency: "NGN",
@@ -81,10 +94,15 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
       setSearchResults([]);
       setManualEmail("");
       setError("");
+      setLocating(false);
       setForm({
         jobTitle: "",
         department: "",
         employmentType: "FULL_TIME",
+        locationType: "ON_SITE",
+        location: "",
+        latitude: null,
+        longitude: null,
         description: "",
         payRate: "",
         currency: "NGN",
@@ -112,7 +130,6 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
     searchDebounce.current = setTimeout(async () => {
       setSearching(true);
       try {
-        // Use the new dedicated lookup endpoint
         const res = await retainedStaffApi.lookupWorker(searchQuery);
         setSearchResults(res.data.data?.workers || []);
       } catch {
@@ -139,7 +156,6 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setSearching(true);
     setError("");
     try {
-      // Use the new dedicated lookup endpoint
       const res = await retainedStaffApi.lookupWorker(manualEmail);
       const worker = res.data.data?.workers?.[0];
       if (!worker) {
@@ -166,6 +182,66 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }));
   };
 
+  // ✅ Auto-detect location handler
+  const handleAutoLocate = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setLocating(true);
+    setError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          // Reverse geocode using OpenStreetMap's free Nominatim API
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { "User-Agent": "SkilledProz/1.0" } },
+          );
+          const data = await res.json();
+
+          const address =
+            data.display_name ||
+            `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+          setForm((prev) => ({
+            ...prev,
+            location: address,
+            latitude,
+            longitude,
+          }));
+        } catch (err) {
+          // If reverse geocoding fails, fall back to raw coordinates
+          setForm((prev) => ({
+            ...prev,
+            location: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            latitude,
+            longitude,
+          }));
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        let msg = "Could not get your location.";
+        if (err.code === err.PERMISSION_DENIED) {
+          msg = "Location permission denied. Please enable it in your browser.";
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          msg = "Location information is unavailable.";
+        } else if (err.code === err.TIMEOUT) {
+          msg = "Location request timed out. Please try again.";
+        }
+        setError(msg);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+
   const handleSubmit = async () => {
     setError("");
     if (!form.jobTitle.trim()) {
@@ -176,6 +252,14 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
       setError("Pay rate must be greater than 0.");
       return;
     }
+    // Only validate location if on-site or hybrid
+    if (
+      ["ON_SITE", "HYBRID"].includes(form.locationType) &&
+      !form.location.trim()
+    ) {
+      setError("Please provide a work location or use the auto-detect button.");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -183,6 +267,10 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
         jobTitle: form.jobTitle.trim(),
         department: form.department.trim() || undefined,
         employmentType: form.employmentType,
+        locationType: form.locationType,
+        location: form.location.trim() || undefined,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
         description: form.description.trim() || undefined,
         payRate: parseFloat(form.payRate),
         currency: form.currency,
@@ -213,6 +301,8 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
   };
 
   if (!isOpen) return null;
+
+  const showLocationField = ["ON_SITE", "HYBRID"].includes(form.locationType);
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -387,6 +477,106 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     ))}
                   </select>
                 </div>
+
+                {/* Location Type Field */}
+                <div className={styles.field}>
+                  <label>Location Type</label>
+                  <select
+                    value={form.locationType}
+                    onChange={(e) =>
+                      setForm({ ...form, locationType: e.target.value })
+                    }
+                  >
+                    {LOCATION_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* ✅ Location input (only shown for ON_SITE / HYBRID) */}
+                {showLocationField && (
+                  <div className={`${styles.field} ${styles.fullWidth}`}>
+                    <label>Work Location</label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <div style={{ position: "relative", flex: 1 }}>
+                        <FiMapPin
+                          style={{
+                            position: "absolute",
+                            left: "0.75rem",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "var(--text-muted)",
+                            pointerEvents: "none",
+                          }}
+                        />
+                        <input
+                          type="text"
+                          value={form.location}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              location: e.target.value,
+                              latitude: null,
+                              longitude: null,
+                            })
+                          }
+                          placeholder="Street, city, state or full address"
+                          style={{ paddingLeft: "2rem", width: "100%" }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAutoLocate}
+                        disabled={locating}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.375rem",
+                          padding: "0.5rem 0.875rem",
+                          background: "var(--orange-dim)",
+                          border: "1px solid var(--orange)",
+                          borderRadius: "8px",
+                          color: "var(--orange)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          cursor: locating ? "wait" : "pointer",
+                          whiteSpace: "nowrap",
+                          opacity: locating ? 0.7 : 1,
+                        }}
+                      >
+                        {locating ? (
+                          <FiLoader
+                            style={{
+                              animation: "spin 0.8s linear infinite",
+                            }}
+                          />
+                        ) : (
+                          <FiNavigation />
+                        )}
+                        {locating ? "Locating…" : "Auto-detect"}
+                      </button>
+                    </div>
+                    {form.latitude && form.longitude && (
+                      <p
+                        style={{
+                          marginTop: "0.5rem",
+                          fontSize: "0.7rem",
+                          color: "var(--green)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                        }}
+                      >
+                        <FiCheckCircle size={12} /> GPS captured:{" "}
+                        {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className={styles.field}>
                   <label>Employee #</label>
                   <input
