@@ -157,6 +157,7 @@ import AdminRetainedCycleDetail from "./pages/admin/AdminRetainedCycleDetail.jsx
 import AdminRetainedCycles from "./pages/admin/AdminRetainedCycles.jsx";
 import WorkerRetainedEarnings from "./pages/worker/retained-staff/WorkerRetainedEarnings.jsx";
 import WorkerRetainedCycles from "./pages/worker/retained-staff/WorkerRetainedCycles.jsx";
+import WorkerEmployerDetail from "./pages/worker/retained-staff/WorkerEmployerDetail.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1282,6 +1283,11 @@ export default function App() {
               <WorkerRetainedEmployers />
             </RequireWorker>
           }
+        />
+
+        <Route
+          path="/dashboard/worker/employers/:memberId"
+          element={<WorkerEmployerDetail />}
         />
 
         <Route

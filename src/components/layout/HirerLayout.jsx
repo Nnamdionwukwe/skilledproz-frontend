@@ -173,7 +173,7 @@ const NAV = [
     group: "Payroll",
     items: [
       {
-        label: "Retained Staff",
+        label: "Retained Staffs",
         path: "/dashboard/hirer/retained-staff",
         icon: <FaUsers />,
       },

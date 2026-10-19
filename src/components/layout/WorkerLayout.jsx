@@ -41,11 +41,6 @@ const NAV = [
       { label: "Dashboard", path: "/dashboard/worker", icon: FiHome },
       { label: "My Bookings", path: "/bookings", icon: FiCalendar },
       {
-        label: "My Employers",
-        path: "/dashboard/worker/employers",
-        icon: FiBriefcase,
-      },
-      {
         label: "Categories",
         path: "/dashboard/worker/categories",
         icon: FiGrid,
@@ -64,11 +59,6 @@ const NAV = [
       { label: "Disputes", path: "/disputes", icon: FiAlertCircle },
       { label: "Community Feed", path: "/feed", icon: FiFeather },
       { label: "My Posts", path: "/my-posts", icon: FiEdit },
-      {
-        label: "My Employers",
-        path: "/dashboard/worker/employers",
-        icon: FiBriefcase,
-      },
     ],
   },
   {
