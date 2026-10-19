@@ -26,6 +26,7 @@ import {
   FaMap,
   FaSpinner,
   FaUndo,
+  FaUser,
 } from "react-icons/fa";
 
 import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
@@ -278,6 +279,81 @@ export default function BookingDetailMain({
                 icon={JOB_TYPES[booking.jobType]?.icon || <FaBriefcase />}
                 label="Job Type"
                 value={JOB_TYPES[booking.jobType]?.label || booking.jobType}
+              />
+            )}
+
+            {booking.locationType && (
+              <DetailItem
+                icon={LOC_TYPES[booking.locationType]?.icon || <FaMapPin />}
+                label="Location Type"
+                value={
+                  LOC_TYPES[booking.locationType]?.label || booking.locationType
+                }
+              />
+            )}
+
+            {booking.location && (
+              <DetailItem
+                icon={<FaMapMarkerAlt />}
+                label="Work Location"
+                value={
+                  <>
+                    {booking.location}
+                    {booking.latitude && booking.longitude && (
+                      <a
+                        href={mapsUrl(booking.latitude, booking.longitude)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.mapLink}
+                      >
+                        {" "}
+                        View map <FaExternalLinkAlt size={10} />
+                      </a>
+                    )}
+                  </>
+                }
+              />
+            )}
+
+            {booking.workDays?.length > 0 && (
+              <DetailItem
+                icon={<FaCalendarAlt />}
+                label="Work Days"
+                value={booking.workDays.join(", ")}
+              />
+            )}
+
+            {booking.workStart && booking.workEnd && (
+              <DetailItem
+                icon={<FaClock />}
+                label="Working Hours"
+                value={`${booking.workStart} — ${booking.workEnd}${
+                  booking.timezone ? ` (${booking.timezone})` : ""
+                }`}
+              />
+            )}
+
+            {booking.employeeNumber && (
+              <DetailItem
+                icon={<FaBriefcase />}
+                label="Employee #"
+                value={booking.employeeNumber}
+              />
+            )}
+
+            {booking.managerName && (
+              <DetailItem
+                icon={<FaUser />}
+                label="Manager"
+                value={booking.managerName}
+              />
+            )}
+
+            {booking.emergencyContact && (
+              <DetailItem
+                icon={<FaExclamationTriangle />}
+                label="Emergency Contact"
+                value={booking.emergencyContact}
               />
             )}
 
