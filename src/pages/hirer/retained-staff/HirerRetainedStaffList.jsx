@@ -1,3 +1,4 @@
+// src/pages/hirer/retained-staff/HirerRetainedStaffList.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import HirerLayout from "../../../components/layout/HirerLayout";
@@ -9,7 +10,7 @@ import {
   FiPlus,
   FiChevronRight,
   FiSearch,
-  FiRefreshCw,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
@@ -53,6 +54,11 @@ export default function HirerRetainedStaffList() {
   return (
     <HirerLayout>
       <div className={styles.page}>
+        {/* ✅ Back Button */}
+        <Link to="/dashboard/hirer/retained-staff" className={styles.backLink}>
+          <FiArrowLeft /> Back to Payroll Dashboard
+        </Link>
+
         <div className={styles.header}>
           <div>
             <p className={styles.eyebrow}>Retained Staff</p>
