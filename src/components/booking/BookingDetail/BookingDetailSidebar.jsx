@@ -1,12 +1,11 @@
+// src/components/booking/BookingDetail/BookingDetailSidebar.jsx
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
-// ── Feature components ──────────────────────────────────────────────────
 import EmergencyContact from "../EmergencyContact";
 import SOSButton from "../SOSButton";
 import GpsCheckIn from "../GpsCheckIn";
 import InsuranceAddon from "../../hirer/InsuranceAddon";
 import VideoCallButton from "../VideoCallButton";
-// ── React Icons ────────────────────────────────────────────────────────
 import {
   FaPhone,
   FaCommentDots,
@@ -17,7 +16,6 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 
-// ── Inline helpers ──────────────────────────────────────────────────────
 function Spinner() {
   return <FaSpinner className={styles.spinner} />;
 }
@@ -111,6 +109,9 @@ export default function BookingDetailSidebar({
       : `/hirers/${other.id}`
     : "#";
 
+  // Check if the booking is a retained staff payroll
+  const isRetainedStaff = booking.source === "RETAINED_STAFF";
+
   return (
     <>
       {/* Party card */}
@@ -161,7 +162,7 @@ export default function BookingDetailSidebar({
         </a>
       </div>
 
-      {/* Actions card – unchanged */}
+      {/* Actions card */}
       <div className={styles.actionsCard}>
         <p className={styles.actionsTitle}>Actions</p>
 
@@ -183,7 +184,8 @@ export default function BookingDetailSidebar({
               onUpdate={() => {}}
             />
 
-            {booking.status === "PENDING" && (
+            {/* Hide Accept Booking for retained staff as it's already accepted */}
+            {!isRetainedStaff && booking.status === "PENDING" && (
               <ActionBtn
                 label="Accept Booking"
                 color="green"
@@ -192,25 +194,29 @@ export default function BookingDetailSidebar({
               />
             )}
 
-            {booking.status === "ACCEPTED" && payment?.status === "HELD" && (
-              <GpsCheckIn
-                bookingId={booking.id}
-                status={booking.status}
-                isWorker={isWorker}
-                jobLatitude={booking.latitude}
-                jobLongitude={booking.longitude}
-                onSuccess={(updated) => {
-                  refetch();
-                  onSuccess(
-                    updated.status === "IN_PROGRESS"
-                      ? "Checked in — job is now in progress."
-                      : "Checked out — job marked as completed.",
-                  );
-                }}
-              />
-            )}
+            {/* Hide Check-in / Check-out for retained staff */}
+            {!isRetainedStaff &&
+              booking.status === "ACCEPTED" &&
+              payment?.status === "HELD" && (
+                <GpsCheckIn
+                  bookingId={booking.id}
+                  status={booking.status}
+                  isWorker={isWorker}
+                  jobLatitude={booking.latitude}
+                  jobLongitude={booking.longitude}
+                  onSuccess={(updated) => {
+                    refetch();
+                    onSuccess(
+                      updated.status === "IN_PROGRESS"
+                        ? "Checked in — job is now in progress."
+                        : "Checked out — job marked as completed.",
+                    );
+                  }}
+                />
+              )}
 
-            {booking.status === "ACCEPTED" &&
+            {!isRetainedStaff &&
+              booking.status === "ACCEPTED" &&
               (!payment || payment.status === "PENDING") && (
                 <div className={styles.waitingPayment}>
                   <FaExclamationCircle style={{ marginRight: "6px" }} />
@@ -218,7 +224,7 @@ export default function BookingDetailSidebar({
                 </div>
               )}
 
-            {booking.status === "IN_PROGRESS" && (
+            {!isRetainedStaff && booking.status === "IN_PROGRESS" && (
               <GpsCheckIn
                 bookingId={booking.id}
                 status={booking.status}
@@ -232,6 +238,7 @@ export default function BookingDetailSidebar({
               />
             )}
 
+            {/* Cancel is still allowed */}
             {["PENDING", "ACCEPTED"].includes(booking.status) && (
               <CancelBox
                 show={showCancel}
@@ -281,13 +288,16 @@ export default function BookingDetailSidebar({
                 )}
               </div>
             )}
-            {booking.status === "ACCEPTED" && (
+
+            {/* Hide Insurance for retained staff */}
+            {!isRetainedStaff && booking.status === "ACCEPTED" && (
               <InsuranceAddon
                 bookingId={booking.id}
                 booking={booking}
                 onPurchased={() => onSuccess("Insurance activated.")}
               />
             )}
+
             {payment?.status === "HELD" && (
               <Link
                 to={`/bookings/${booking.id}/release`}
@@ -297,6 +307,7 @@ export default function BookingDetailSidebar({
                 Payment
               </Link>
             )}
+
             {["PENDING", "ACCEPTED"].includes(booking.status) && (
               <CancelBox
                 show={showCancel}

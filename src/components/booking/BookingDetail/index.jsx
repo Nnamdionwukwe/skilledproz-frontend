@@ -1,3 +1,4 @@
+// src/components/booking/BookingDetail/index.jsx
 import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
@@ -12,7 +13,7 @@ import BookingDetailSidebar from "./BookingDetailSidebar";
 import { calcPricing } from "../../../utils/pricing";
 import WorkerPaymentPreview from "./WorkerPaymentPreview";
 import ConfirmationModal from "../../context/ConfirmationModal";
-import { RefundRequest, RefundStatus, RefundHistory } from "../Refund";
+import { RefundStatus } from "../Refund";
 import {
   FaArrowLeft,
   FaExclamationTriangle,
@@ -47,7 +48,6 @@ function formatDuration(booking) {
   const hours = booking.estimatedHours;
   const quantity = booking.quantity || 1;
 
-  // FALLBACK: no numeric duration, but notes may carry one
   if (!value && !hours && booking.notes) {
     const recurring = booking.notes.match(/Recurring:\s*([^.]*?)(?:\.|$)/i);
     if (recurring && recurring[1] && recurring[1].trim()) {
@@ -315,25 +315,6 @@ export default function BookingDetail() {
           .finally(() => {
             setRefundsLoading(false);
           });
-
-        // ── ANALYTICS: booking detail loaded ─────────────────────────────
-        tracker.track("bookingDetail.loaded", {
-          bookingId: id,
-          status: b.status,
-          viewerRole: user?.role || "GUEST",
-          viewerIsHirer: userId === b.hirerId,
-          viewerIsWorker: userId === b.workerId,
-          amount: b.agreedRate,
-          currency: b.currency,
-          categoryId: b.category?.id || null,
-          hasPayment: !!b.payment,
-          paymentStatus: b.payment?.status || null,
-          isNegotiated: !!b.isNegotiated,
-          jobType: b.jobType || null,
-          locationType: b.locationType || null,
-          isPast: b.scheduledAt ? new Date(b.scheduledAt) < new Date() : false,
-          source: b.source || "DIRECT",
-        });
       })
       .catch((e) => {
         tracker.track("bookingDetail.load.failed", {
@@ -369,16 +350,6 @@ export default function BookingDetail() {
   async function updateStatus(status, extra = {}) {
     setActing(true);
 
-    tracker.action("bookingDetail.status.attempt", {
-      bookingId: id,
-      fromStatus: booking?.status || null,
-      toStatus: status,
-      viewerRole: user?.role || "GUEST",
-      viewerIsHirer: userId === booking?.hirerId,
-      viewerIsWorker: userId === booking?.workerId,
-      hasCancelReason: !!extra.cancelReason,
-    });
-
     try {
       const res = await api.patch(`/bookings/${id}/status`, {
         status,
@@ -392,26 +363,11 @@ export default function BookingDetail() {
       setShowCancel(false);
       setCancelReason("");
       setCancelError("");
-
-      tracker.action("bookingDetail.status.changed", {
-        bookingId: id,
-        fromStatus: booking?.status || null,
-        toStatus: status,
-        viewerRole: user?.role || "GUEST",
-      });
     } catch (e) {
       showToastMessage(
         "error",
         e.response?.data?.message || "Action failed. Please try again.",
       );
-
-      tracker.action("bookingDetail.status.failed", {
-        bookingId: id,
-        fromStatus: booking?.status || null,
-        toStatus: status,
-        viewerRole: user?.role || "GUEST",
-        reason: e.response?.data?.message || "unknown",
-      });
     } finally {
       setActing(false);
     }
@@ -420,16 +376,8 @@ export default function BookingDetail() {
   function handleCancelSubmit() {
     if (!cancelReason.trim()) {
       setCancelError("Please provide a reason.");
-      tracker.action("bookingDetail.cancel.blocked", {
-        bookingId: id,
-        reason: "missing_reason",
-      });
       return;
     }
-    tracker.action("bookingDetail.cancel.submitted", {
-      bookingId: id,
-      reasonLength: cancelReason.trim().length,
-    });
     updateStatus("CANCELLED", { cancelReason: cancelReason.trim() });
   }
 
@@ -437,81 +385,24 @@ export default function BookingDetail() {
   const handleResolveSOS = async () => {
     setResolvingSOS(true);
 
-    tracker.action("bookingDetail.sos.resolve.attempt", {
-      bookingId: booking?.id,
-      viewerRole: user?.role || "GUEST",
-    });
-
     try {
       await api.patch(`/bookings/${booking.id}/sos/resolve`);
       showToastMessage("success", "SOS marked as resolved.");
       refetch();
-
-      tracker.action("bookingDetail.sos.resolved", {
-        bookingId: booking.id,
-      });
     } catch (err) {
       showToastMessage(
         "error",
         err.response?.data?.message || "Failed to resolve SOS",
       );
-
-      tracker.action("bookingDetail.sos.resolve.failed", {
-        bookingId: booking?.id,
-        reason: err.response?.data?.message || "unknown",
-      });
     } finally {
       setResolvingSOS(false);
       setShowSOSConfirm(false);
     }
   };
 
-  // ── Refund handlers ───────────────────────────────────────────────────
-  const handleRefundRequest = async (refundData) => {
-    setRefundLoading(true);
-
-    tracker.action("bookingDetail.refund.attempt", {
-      bookingId: id,
-      amount: refundData?.amount,
-      currency: refundData?.currency,
-      refundType: refundData?.refundType || refundData?.type || null,
-    });
-
-    try {
-      const response = await api.post("/refunds/request", refundData);
-      showToastMessage("success", "Refund request submitted successfully!");
-      refetch();
-      const res = await api.get(`/refunds/my?bookingId=${id}`);
-      setRefunds(res.data.data?.refunds || []);
-
-      tracker.action("bookingDetail.refund.submitted", {
-        bookingId: id,
-        refundId: response.data?.data?.refund?.id || null,
-        amount: refundData?.amount,
-        currency: refundData?.currency,
-      });
-    } catch (error) {
-      showToastMessage(
-        "error",
-        error.response?.data?.message || "Failed to submit refund request",
-      );
-
-      tracker.action("bookingDetail.refund.failed", {
-        bookingId: id,
-        reason: error.response?.data?.message || "unknown",
-      });
-    } finally {
-      setRefundLoading(false);
-    }
-  };
-
   // ── Invoice ──────────────────────────────────────────────────────────
   const handleDownloadInvoice = async () => {
     setInvoiceLoading(true);
-
-    tracker.action("bookingDetail.invoice.download.attempt", {
-      bookingId: booking.id,
-    });
 
     try {
       const res = await api.get(`/payments/invoice/${booking.id}`, {
@@ -525,16 +416,8 @@ export default function BookingDetail() {
       link.download = `invoice-${booking.id.slice(0, 8)}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
-
-      tracker.action("bookingDetail.invoice.downloaded", {
-        bookingId: booking.id,
-      });
     } catch {
       showToastMessage("error", "Failed to download invoice");
-
-      tracker.action("bookingDetail.invoice.failed", {
-        bookingId: booking?.id,
-      });
     } finally {
       setInvoiceLoading(false);
     }
@@ -616,26 +499,11 @@ export default function BookingDetail() {
     setReferralPercent(pct);
     setReferralAmount(final);
     setReferralApplied(final > 0);
-
-    tracker.action("bookingDetail.referral.slider.changed", {
-      bookingId: id,
-      percent: pct,
-      amount: final,
-      walletBalance,
-      applied: final > 0,
-    });
   };
 
   const handleReferralToggle = () => {
     const next = !referralApplied;
     setReferralApplied(next);
-
-    tracker.action("bookingDetail.referral.toggle.changed", {
-      bookingId: id,
-      applied: next,
-      percent: referralPercent,
-      amount: referralAmount,
-    });
   };
 
   // ── Get refunds for this specific booking ──────────────────────────────
@@ -646,11 +514,6 @@ export default function BookingDetail() {
   const activeRefund = bookingRefunds.find((r) =>
     ["PENDING", "APPROVED", "PROCESSING", "DISPUTED"].includes(r.status),
   );
-
-  const showRefundForm =
-    booking.status === "COMPLETED" &&
-    payment?.status === "RELEASED" &&
-    !activeRefund;
 
   const showRefundStatus = !!activeRefund;
 
@@ -706,7 +569,6 @@ export default function BookingDetail() {
 
         <div className={styles.layout}>
           <div className={styles.main}>
-            {/* BookingDetailMain internally branches on isJobPostBooking */}
             <BookingDetailMain
               booking={booking}
               step={step}
@@ -727,7 +589,6 @@ export default function BookingDetail() {
               paymentStatus={payment?.status}
               isWorker={isWorker}
               workerName={booking.worker?.firstName}
-              onRefundRequest={handleRefundRequest}
               refundLoading={refundLoading}
               hasActiveRefund={!!activeRefund}
             />
@@ -795,10 +656,6 @@ export default function BookingDetail() {
               onCancelOpen={() => {
                 setShowCancel(true);
                 setCancelError("");
-                tracker.action("bookingDetail.cancel.opened", {
-                  bookingId: id,
-                  status: booking.status,
-                });
               }}
               onCancelClose={() => {
                 setShowCancel(false);
@@ -810,13 +667,7 @@ export default function BookingDetail() {
                 setCancelError("");
               }}
               onCancelSubmit={handleCancelSubmit}
-              onShowDispute={() => {
-                setShowDispute(true);
-                tracker.action("bookingDetail.dispute.opened", {
-                  bookingId: id,
-                  status: booking.status,
-                });
-              }}
+              onShowDispute={() => setShowDispute(true)}
               onSuccess={(msg) => showToastMessage("success", msg)}
               refetch={refetch}
               updateStatus={updateStatus}
@@ -825,23 +676,14 @@ export default function BookingDetail() {
         </div>
 
         {/* Refund Section */}
-        {(showRefundForm || showRefundStatus) && (
+        {showRefundStatus && (
           <div className={styles.refundSection}>
             <div className={styles.section}>
-              {activeRefund && (
-                <RefundStatus
-                  refund={activeRefund}
-                  onViewDetails={() => {
-                    tracker.action("bookingDetail.refund.details.clicked", {
-                      bookingId: id,
-                      refundId: activeRefund.id,
-                      refundStatus: activeRefund.status,
-                    });
-                    navigate(`/refunds/${activeRefund.id}`);
-                  }}
-                  isHirer={isHirer}
-                />
-              )}
+              <RefundStatus
+                refund={activeRefund}
+                onViewDetails={() => navigate(`/refunds/${activeRefund.id}`)}
+                isHirer={isHirer}
+              />
             </div>
           </div>
         )}

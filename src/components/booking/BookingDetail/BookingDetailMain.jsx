@@ -1,3 +1,4 @@
+// src/components/booking/BookingDetail/BookingDetailMain.jsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
@@ -27,7 +28,6 @@ import {
   FaUndo,
 } from "react-icons/fa";
 
-import ConfirmationModal from "../../context/ConfirmationModal";
 import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
 import { RefundRequest } from "../Refund";
 import JobPostBookingDetails from "./JobPostBookingDetails";
@@ -167,8 +167,9 @@ export default function BookingDetailMain({
   const showMapLink =
     booking.latitude && booking.longitude && booking.locationType !== "REMOTE";
 
-  // ── Job-post booking flag ──────────────────────────────────────────
+  // ── Booking Source Flags ──────────────────────────────────────────
   const isJobPostBooking = booking.source === "JOB_POST";
+  const isRetainedStaff = booking.source === "RETAINED_STAFF";
 
   // ── Helper to render duration with unit (direct bookings only) ─────
   const renderDuration = () => {
@@ -214,6 +215,172 @@ export default function BookingDetailMain({
     paymentStatus === "RELEASED" &&
     !refundLoading &&
     !hasActiveRefund;
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RETAINED STAFF BRANCH
+  // ══════════════════════════════════════════════════════════════════════
+  if (isRetainedStaff) {
+    return (
+      <>
+        <BookingReleaseDetails payment={payment} currency={booking.currency} />
+
+        {/* Title block */}
+        <div className={styles.titleBlock}>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{booking.title}</h1>
+            <span
+              className={`${styles.badge} ${styles[`badge_${meta.color}`]}`}
+            >
+              {meta.label}
+            </span>
+          </div>
+          {booking.category && (
+            <span className={styles.categoryPill}>{booking.category.name}</span>
+          )}
+          <span className={styles.negotiatedPill}>
+            <FaBriefcase /> Retained Staff Payroll
+          </span>
+        </div>
+
+        {/* Timeline - Hide for retained staff as it's a payroll, not a job */}
+        {/* (Or we can keep a simple one, but per instruction, we'll just show the details) */}
+
+        {/* Job Details grid */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Retained Staff Details</h2>
+          <div className={styles.detailGrid}>
+            <DetailItem
+              icon={<FaCalendarAlt />}
+              label="Pay Period"
+              value={new Date(booking.scheduledAt).toLocaleDateString("en-GB", {
+                month: "short",
+                year: "numeric",
+              })}
+            />
+
+            <DetailItem
+              icon={<FaMoneyBillWave />}
+              label="Base Rate"
+              value={`${booking.currency} ${booking.agreedRate?.toLocaleString()}`}
+              accent
+            />
+
+            <DetailItem
+              icon={<FaFileAlt />}
+              label="Role"
+              value={booking.description || "Standard Retained Role"}
+            />
+
+            {booking.jobType && (
+              <DetailItem
+                icon={JOB_TYPES[booking.jobType]?.icon || <FaBriefcase />}
+                label="Job Type"
+                value={JOB_TYPES[booking.jobType]?.label || booking.jobType}
+              />
+            )}
+
+            <DetailItem
+              icon={<FaClock />}
+              label="Status"
+              value={
+                booking.status === "PAID"
+                  ? "Paid & Completed"
+                  : booking.status === "ACCEPTED"
+                    ? "Active Payroll"
+                    : booking.status
+              }
+              accent={booking.status === "PAID"}
+            />
+
+            {(() => {
+              const p = calcPricing(booking);
+              const currency = p.currency || booking.currency || "NGN";
+              const subtotal = p.subtotal || 0;
+              const platformFee = p.hirerFee || 0;
+              const workerPayout = p.workerPayout || 0;
+              const grossTotal = p.grossTotal || 0;
+
+              return isHirer ? (
+                <>
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Subtotal"
+                    value={`${currency} ${subtotal.toLocaleString()}`}
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                    value={`${currency} ${platformFee.toLocaleString()}`}
+                    accent
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Total Payment"
+                    value={`${currency} ${grossTotal.toLocaleString()}`}
+                    accent
+                  />
+                </>
+              ) : (
+                <>
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Total Earnings"
+                    value={`${currency} ${subtotal.toLocaleString()}`}
+                    accent
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                    value={`${currency} ${platformFee.toLocaleString()}`}
+                  />
+                  <DetailItem
+                    icon={<FaMoneyBillWave />}
+                    label="Your Payout"
+                    value={`${currency} ${workerPayout.toLocaleString()}`}
+                    accent
+                  />
+                </>
+              );
+            })()}
+          </div>
+        </section>
+
+        {/* Description */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Description</h2>
+          <Translator
+            text={booking.description || "No additional description provided."}
+          />
+          {booking.notes && (
+            <div className={styles.notes}>
+              <span className={styles.notesIcon}>
+                <FaFileAlt />
+              </span>
+              <p>{booking.notes}</p>
+            </div>
+          )}
+        </section>
+
+        {/* Bottom actions */}
+        {booking.status === "COMPLETED" && (
+          <div className={styles.bottomActions}>
+            <button
+              className={styles.invoiceBtn}
+              onClick={onDownloadInvoice}
+              disabled={invoiceLoading}
+            >
+              {invoiceLoading ? (
+                <FaSpinner className={styles.spinner} />
+              ) : (
+                <FaFileAlt />
+              )}{" "}
+              Download Invoice
+            </button>
+          </div>
+        )}
+      </>
+    );
+  }
 
   // ══════════════════════════════════════════════════════════════════════
   // JOB-POST BRANCH
@@ -637,7 +804,7 @@ export default function BookingDetailMain({
   }
 
   // ══════════════════════════════════════════════════════════════════════
-  // DIRECT BOOKING BRANCH — unchanged
+  // DIRECT BOOKING BRANCH
   // ══════════════════════════════════════════════════════════════════════
   return (
     <>
