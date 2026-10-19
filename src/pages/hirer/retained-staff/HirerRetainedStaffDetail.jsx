@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import HirerLayout from "../../../components/layout/HirerLayout";
 import Skeleton from "../../../components/common/Skeleton";
 import CreateCycleModal from "./CreateCycleModal";
-import EditRetainedStaffModal from "./EditRetainedStaffModal"; // ✅ Import Edit Modal
+import EditRetainedStaffModal from "./EditRetainedStaffModal";
 import ConfirmationModal from "../../../components/context/ConfirmationModal";
 import styles from "./HirerRetainedStaff.module.css";
 import {
@@ -47,11 +47,16 @@ export default function HirerRetainedStaffDetail() {
   const [member, setMember] = useState(null);
   const [cycles, setCycles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cyclesLoading, setCyclesLoading] = useState(false);
   const [tab, setTab] = useState("payroll");
+
+  // Modal states
   const [showCycleModal, setShowCycleModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false); // ✅ State for Edit
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // ✅ State for Delete Staff
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // ✅ New state for cycle deletion confirmation
+  const [cycleToDelete, setCycleToDelete] = useState(null);
+
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -110,17 +115,16 @@ export default function HirerRetainedStaffDetail() {
     }
   };
 
-  const handleDeleteCycle = async (cycleId) => {
-    if (
-      !window.confirm("Are you sure you want to permanently delete this cycle?")
-    )
-      return;
+  const handleDeleteCycle = async () => {
+    if (!cycleToDelete) return;
     setActionLoading(true);
     try {
-      await retainedStaffApi.deleteCycle(cycleId);
+      await retainedStaffApi.deleteCycle(cycleToDelete.id);
+      setCycleToDelete(null); // Close modal
       loadMember(); // Refresh cycles list
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete cycle.");
+      setCycleToDelete(null);
     } finally {
       setActionLoading(false);
     }
@@ -410,7 +414,8 @@ export default function HirerRetainedStaffDetail() {
                             {(cycle.status === "AWAITING_PAYMENT" ||
                               cycle.status === "CANCELLED") && (
                               <button
-                                onClick={() => handleDeleteCycle(cycle.id)}
+                                // ✅ Open modal instead of browser confirm
+                                onClick={() => setCycleToDelete(cycle)}
                                 className={styles.viewBtn}
                                 style={{
                                   color: "var(--red)",
@@ -521,6 +526,17 @@ export default function HirerRetainedStaffDetail() {
         title="Delete Staff Member?"
         message="This will permanently remove this worker from your retained staff. This action cannot be undone."
         confirmLabel="Yes, Delete"
+        confirmVariant="danger"
+      />
+
+      {/* ✅ New: Delete Cycle Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!cycleToDelete}
+        onClose={() => setCycleToDelete(null)}
+        onConfirm={handleDeleteCycle}
+        title="Delete Payroll Cycle?"
+        message={`Are you sure you want to delete the cycle "${cycleToDelete?.label}"? This action cannot be undone.`}
+        confirmLabel="Yes, Delete Cycle"
         confirmVariant="danger"
       />
     </HirerLayout>
