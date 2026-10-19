@@ -27,6 +27,7 @@ import {
   FaSpinner,
   FaUndo,
   FaUser,
+  FaBuilding,
 } from "react-icons/fa";
 
 import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
@@ -279,6 +280,24 @@ export default function BookingDetailMain({
                 icon={JOB_TYPES[booking.jobType]?.icon || <FaBriefcase />}
                 label="Job Type"
                 value={JOB_TYPES[booking.jobType]?.label || booking.jobType}
+              />
+            )}
+
+            {booking.employmentType && (
+              <DetailItem
+                icon={<FaBriefcase />}
+                label="Employment Type"
+                value={booking.employmentType
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+              />
+            )}
+
+            {booking.department && (
+              <DetailItem
+                icon={<FaBuilding />}
+                label="Department"
+                value={booking.department}
               />
             )}
 
