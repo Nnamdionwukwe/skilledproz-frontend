@@ -116,11 +116,6 @@ const NAV = [
         path: "/dashboard/worker/retained-cycles",
         icon: FiClock,
       },
-      {
-        label: "Earnings",
-        path: "/dashboard/worker/earnings",
-        icon: FiDollarSign,
-      },
     ],
   },
   {
