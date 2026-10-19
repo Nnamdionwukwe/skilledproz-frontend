@@ -80,7 +80,6 @@ export default function EditRetainedStaffModal({
     rateChangeReason: "",
   });
 
-  // Populate form when member changes
   useEffect(() => {
     if (isOpen && member) {
       setForm({
@@ -121,7 +120,6 @@ export default function EditRetainedStaffModal({
     }));
   };
 
-  // ✅ Auto-detect location handler
   const handleAutoLocate = () => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
@@ -271,7 +269,6 @@ export default function EditRetainedStaffModal({
         )}
 
         <div className={styles.body}>
-          {/* Section: Role */}
           <h3 className={styles.sectionTitle}>Role & Position</h3>
           <div className={styles.formGrid}>
             <div className={styles.field}>
@@ -327,7 +324,6 @@ export default function EditRetainedStaffModal({
               </select>
             </div>
 
-            {/* ✅ Location input (only shown for ON_SITE / HYBRID) */}
             {showLocationField && (
               <div className={`${styles.field} ${styles.fullWidth}`}>
                 <label>Work Location</label>
@@ -431,7 +427,6 @@ export default function EditRetainedStaffModal({
             </div>
           </div>
 
-          {/* Section: Compensation */}
           <h3 className={styles.sectionTitle}>Compensation</h3>
           <div className={styles.formGrid}>
             <div className={styles.field}>
@@ -504,7 +499,6 @@ export default function EditRetainedStaffModal({
             </div>
           </div>
 
-          {/* Rate Change Confirmation */}
           {rateChanged && (
             <div
               className={styles.rateChangeBox}
@@ -577,7 +571,6 @@ export default function EditRetainedStaffModal({
             </div>
           )}
 
-          {/* Section: Schedule */}
           <h3 className={styles.sectionTitle}>Working Schedule</h3>
           <div className={styles.field}>
             <label>Work Days</label>
@@ -617,7 +610,6 @@ export default function EditRetainedStaffModal({
             </div>
           </div>
 
-          {/* Section: HR Info (optional) */}
           <h3 className={styles.sectionTitle}>HR Information (optional)</h3>
           <div className={styles.formGrid}>
             <div className={styles.field}>

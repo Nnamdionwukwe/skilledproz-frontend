@@ -54,12 +54,7 @@ export default function PayCycleModal({ isOpen, onClose, cycle, member }) {
       desc: "Pay with Paystack (NGN) or Flutterwave",
       icon: <FiCreditCard />,
     },
-    {
-      key: "bank_transfer",
-      label: "Manual Bank Transfer",
-      desc: "Transfer to platform account (1-2 hours)",
-      icon: <FiBriefcase />,
-    },
+
     {
       key: "wallet",
       label: "Hirer Wallet",
