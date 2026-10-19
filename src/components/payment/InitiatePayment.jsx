@@ -255,7 +255,6 @@ export default function InitiatePayment() {
     setPaying(true);
     setError("");
 
-    // ── ANALYTICS: card payment initiated ────────────────────────────────
     tracker.action("initiatePayment.card.attempt", {
       bookingId,
       amount: p.totalCharged,
@@ -265,20 +264,24 @@ export default function InitiatePayment() {
     });
 
     try {
-      // ✅ Construct the absolute URL for the backend if redirectTo is set
-      const callbackUrl = redirectTo
-        ? `${window.location.origin}${decodeURIComponent(redirectTo)}`
-        : undefined;
+      // ✅ Construct the verify URL with the redirectTo parameter included
+      // so the verify page knows where to send the user *after* it succeeds.
+      const verifyUrl = new URL(
+        "/payments/verify/paystack",
+        window.location.origin,
+      );
+      if (redirectTo) {
+        verifyUrl.searchParams.set("redirectTo", redirectTo);
+      }
 
       const res = await api.post(`/payments/initiate/${bookingId}`, {
         referralAmount: referralApplied ? referralAmount : 0,
-        callbackUrl, // ✅ Pass it here
+        callbackUrl: verifyUrl.toString(), // ✅ Send Paystack to the verify page
       });
 
       const { paymentUrl } = res.data.data;
       if (!paymentUrl) {
         setError("Payment URL not received. Try again.");
-        // ── ANALYTICS: no payment URL returned ──────────────────────────
         tracker.action("initiatePayment.card.failed", {
           bookingId,
           reason: "no_payment_url",
@@ -286,7 +289,6 @@ export default function InitiatePayment() {
         return;
       }
 
-      // ── ANALYTICS: card payment redirecting ─────────────────────────────
       tracker.action("initiatePayment.card.redirecting", {
         bookingId,
         amount: p.totalCharged,
@@ -296,7 +298,6 @@ export default function InitiatePayment() {
       window.location.href = paymentUrl;
     } catch (e) {
       setError(e.response?.data?.message || "Payment initiation failed.");
-      // ── ANALYTICS: card payment failed ──────────────────────────────────
       tracker.action("initiatePayment.card.failed", {
         bookingId,
         reason: e.response?.data?.message || "unknown",

@@ -12,6 +12,8 @@ export default function PaystackVerify() {
   useEffect(() => {
     const reference =
       searchParams.get("reference") || searchParams.get("trxref");
+    const redirectTo = searchParams.get("redirectTo"); // ✅ Read the custom redirect
+
     if (!reference) {
       setStatus("failed");
       setErrorMsg("No payment reference found.");
@@ -25,16 +27,27 @@ export default function PaystackVerify() {
         const bookingId = res.data.data?.bookingId;
 
         if (bookingId) {
-          // ✅ Fetch the booking to check if it's a retained staff payment
           api
             .get(`/bookings/${bookingId}`)
             .then((bRes) => {
               const booking = bRes.data.data.booking;
+
+              // ✅ If redirectTo was passed, use it
+              if (redirectTo) {
+                setTimeout(() => {
+                  navigate(
+                    `${decodeURIComponent(redirectTo)}&payment=success&t=${Date.now()}`,
+                    { replace: true },
+                  );
+                }, 2000);
+                return;
+              }
+
+              // Otherwise handle default redirects
               if (
                 booking.source === "RETAINED_STAFF" &&
                 booking.retainedCycle
               ) {
-                // ✅ Redirect back to the retained cycle detail
                 setTimeout(() => {
                   navigate(
                     `/dashboard/hirer/retained-staff/${booking.retainedCycle.memberId}/cycles/${booking.retainedCycle.id}?payment=success`,
@@ -42,7 +55,6 @@ export default function PaystackVerify() {
                   );
                 }, 2000);
               } else {
-                // ✅ Standard booking redirect
                 setTimeout(() => {
                   navigate(
                     `/bookings/${bookingId}?payment=success&t=${Date.now()}`,
@@ -51,7 +63,6 @@ export default function PaystackVerify() {
               }
             })
             .catch(() => {
-              // Fallback
               setTimeout(
                 () =>
                   navigate(
@@ -61,7 +72,6 @@ export default function PaystackVerify() {
               );
             });
         } else {
-          // Fallback: go to bookings list
           setTimeout(() => navigate("/bookings"), 2000);
         }
       })
