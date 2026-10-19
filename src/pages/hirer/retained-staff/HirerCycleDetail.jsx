@@ -1,6 +1,8 @@
+// src/pages/hirer/retained-staff/HirerCycleDetail.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import HirerLayout from "../../../components/layout/HirerLayout";
+import Skeleton from "../../../components/common/Skeleton";
 import styles from "./HirerCycleDetail.module.css";
 import PayCycleModal from "./PayCycleModal";
 import {
@@ -134,11 +136,17 @@ export default function HirerCycleDetail() {
     }
   };
 
+  // ── Full Page Skeleton ──────────────────────────────────────────────
   if (loading) {
     return (
       <HirerLayout>
         <div className={styles.page}>
-          <p style={{ color: "var(--text-dim)" }}>Loading cycle…</p>
+          <Skeleton width={120} height={16} style={{ marginBottom: 16 }} />
+          <Skeleton width="50%" height={28} style={{ marginBottom: 8 }} />
+          <Skeleton width="40%" height={14} style={{ marginBottom: 24 }} />
+
+          <Skeleton.Card height={220} style={{ marginBottom: 16 }} />
+          <Skeleton.Card height={160} />
         </div>
       </HirerLayout>
     );

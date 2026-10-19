@@ -1,3 +1,4 @@
+// src/pages/hirer/retained-staff/HirerRetainedStaffDetail.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import HirerLayout from "../../../components/layout/HirerLayout";
@@ -62,15 +63,6 @@ export default function HirerRetainedStaffDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const loadCycles = useCallback(() => {
-    setCyclesLoading(true);
-    retainedStaffApi
-      .listCycles(id, { limit: 30 })
-      .then((res) => setCycles(res.data.data.cycles))
-      .catch(() => {})
-      .finally(() => setCyclesLoading(false));
-  }, [id]);
-
   useEffect(() => {
     loadMember();
   }, [loadMember]);
@@ -99,11 +91,13 @@ export default function HirerRetainedStaffDetail() {
     }
   };
 
+  // ── Full Page Skeleton ──────────────────────────────────────────────
   if (loading) {
     return (
       <HirerLayout>
         <div className={styles.page}>
           <Skeleton width={160} height={16} style={{ marginBottom: 16 }} />
+
           <div className={styles.profileHeaderSkeleton}>
             <Skeleton.Circle size={80} />
             <div style={{ flex: 1 }}>
@@ -111,7 +105,19 @@ export default function HirerRetainedStaffDetail() {
               <Skeleton width="60%" height={14} />
             </div>
           </div>
-          <Skeleton.Table rows={4} cols={4} />
+
+          {/* KPI Skeleton */}
+          <div className={styles.statsGrid}>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} height={90} radius={12} />
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <div className={styles.panel} style={{ marginTop: "1.5rem" }}>
+            <Skeleton width="30%" height={20} style={{ marginBottom: 16 }} />
+            <Skeleton.Table rows={4} cols={4} />
+          </div>
         </div>
       </HirerLayout>
     );
@@ -153,7 +159,7 @@ export default function HirerRetainedStaffDetail() {
           </div>
         )}
 
-        {/* Profile header */}
+        {/* ── Profile Header ── */}
         <div className={styles.profileHeader}>
           <div className={styles.profileAvatar}>
             {member.worker.avatar ? (
@@ -206,7 +212,7 @@ export default function HirerRetainedStaffDetail() {
           </div>
         </div>
 
-        {/* KPI row */}
+        {/* ── KPI Row ── */}
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statIcon}>
@@ -254,7 +260,7 @@ export default function HirerRetainedStaffDetail() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* ── Tabs ── */}
         <div className={styles.tabs}>
           <button
             className={tab === "payroll" ? styles.tabActive : styles.tab}
@@ -276,7 +282,7 @@ export default function HirerRetainedStaffDetail() {
           </button>
         </div>
 
-        {/* Payroll tab */}
+        {/* ── Payroll Tab ── */}
         {tab === "payroll" && (
           <div className={styles.panel}>
             <div className={styles.panelHeader}>
@@ -289,9 +295,7 @@ export default function HirerRetainedStaffDetail() {
               </button>
             </div>
 
-            {cyclesLoading ? (
-              <Skeleton.Table rows={5} cols={5} />
-            ) : cycles.length === 0 ? (
+            {cycles.length === 0 ? (
               <div className={styles.emptyPanel}>
                 <FiClock size={32} />
                 <p>No cycles yet. Create your first cycle above.</p>
@@ -354,7 +358,7 @@ export default function HirerRetainedStaffDetail() {
           </div>
         )}
 
-        {/* Documents tab */}
+        {/* ── Documents Tab ── */}
         {tab === "documents" && (
           <div className={styles.panel}>
             <h3 className={styles.panelTitle}>Employment Documents</h3>
@@ -389,7 +393,7 @@ export default function HirerRetainedStaffDetail() {
           </div>
         )}
 
-        {/* Notes tab */}
+        {/* ── Notes Tab ── */}
         {tab === "notes" && (
           <div className={styles.panel}>
             <h3 className={styles.panelTitle}>HR Notes</h3>

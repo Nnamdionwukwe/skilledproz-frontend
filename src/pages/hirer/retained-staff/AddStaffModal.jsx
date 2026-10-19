@@ -1,6 +1,5 @@
 // src/pages/hirer/retained-staff/AddStaffModal.jsx
 import { useState, useEffect, useRef } from "react";
-import api from "../../../lib/api";
 import styles from "./AddStaffModal.module.css";
 import {
   FiSearch,
@@ -113,9 +112,8 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
     searchDebounce.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await api.get("/search", {
-          params: { q: searchQuery, type: "workers", limit: 8 },
-        });
+        // Use the new dedicated lookup endpoint
+        const res = await retainedStaffApi.lookupWorker(searchQuery);
         setSearchResults(res.data.data?.workers || []);
       } catch {
         setSearchResults([]);
@@ -141,10 +139,8 @@ export default function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setSearching(true);
     setError("");
     try {
-      // Lookup by email via the search endpoint as fallback
-      const res = await api.get("/search", {
-        params: { q: manualEmail, type: "workers", limit: 1 },
-      });
+      // Use the new dedicated lookup endpoint
+      const res = await retainedStaffApi.lookupWorker(manualEmail);
       const worker = res.data.data?.workers?.[0];
       if (!worker) {
         setError(

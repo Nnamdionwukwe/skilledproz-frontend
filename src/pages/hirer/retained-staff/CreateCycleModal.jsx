@@ -1,5 +1,6 @@
 // src/pages/hirer/retained-staff/CreateCycleModal.jsx
 import { useState, useEffect } from "react";
+import { HIRER_FEE_RATE } from "../../../utils/pricing"; // ✅ Import central fee
 import styles from "./CreateCycleModal.module.css";
 import {
   FiX,
@@ -57,7 +58,6 @@ export default function CreateCycleModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Reset on open — prefill base amount for regular salaries
   useEffect(() => {
     if (!isOpen || !member) return;
     setType("BONUS");
@@ -74,26 +74,22 @@ export default function CreateCycleModal({
     setError("");
   }, [isOpen, member]);
 
-  // Live preview
+  // Live preview — Uses central fee rate
   const grossAmount =
     (parseFloat(form.baseAmount) || 0) + (parseFloat(form.bonusAmount) || 0);
-  const netAmount = Math.max(
+  const workerPayout = Math.max(
     0,
     grossAmount - (parseFloat(form.deductionAmount) || 0),
   );
-  const platformFee = Math.round(((netAmount * 5) / 100) * 100) / 100;
-  const workerPayout = Math.max(
-    0,
-    Math.round((netAmount - platformFee) * 100) / 100,
-  );
+  const platformFee = Math.round(workerPayout * HIRER_FEE_RATE * 100) / 100;
+  const netAmount = Math.round((workerPayout + platformFee) * 100) / 100;
+
   const currency = member?.currency || "NGN";
 
   const handleSubmit = async () => {
     setError("");
 
-    const gross =
-      (parseFloat(form.baseAmount) || 0) + (parseFloat(form.bonusAmount) || 0);
-    if (gross <= 0) {
+    if (grossAmount <= 0) {
       setError("Total amount must be greater than 0.");
       return;
     }
@@ -150,7 +146,6 @@ export default function CreateCycleModal({
         )}
 
         <div className={styles.body}>
-          {/* Cycle type picker */}
           <div className={styles.field}>
             <label>Cycle Type</label>
             <div className={styles.typeGrid}>
@@ -170,7 +165,6 @@ export default function CreateCycleModal({
             </div>
           </div>
 
-          {/* Dates */}
           <div className={styles.formGrid}>
             <div className={styles.field}>
               <label>Period Start</label>
@@ -202,7 +196,6 @@ export default function CreateCycleModal({
             </div>
           </div>
 
-          {/* Amounts */}
           <div className={styles.formGrid}>
             <div className={styles.field}>
               <label>Base Amount ({currency})</label>
@@ -263,7 +256,6 @@ export default function CreateCycleModal({
             </div>
           </div>
 
-          {/* Live preview */}
           {netAmount > 0 && (
             <div className={styles.preview}>
               <div className={styles.previewHeader}>
@@ -286,21 +278,21 @@ export default function CreateCycleModal({
                 </div>
               )}
               <div className={styles.previewRow}>
-                <span>Net Amount</span>
-                <span>
-                  {currency} {netAmount.toLocaleString()}
-                </span>
-              </div>
-              <div className={styles.previewRow}>
-                <span>Platform Fee (5%)</span>
-                <span>
-                  − {currency} {platformFee.toLocaleString()}
-                </span>
-              </div>
-              <div className={styles.previewTotal}>
                 <span>Worker Receives</span>
                 <span>
                   {currency} {workerPayout.toLocaleString()}
+                </span>
+              </div>
+              <div className={styles.previewRow}>
+                <span>Platform Fee ({(HIRER_FEE_RATE * 100).toFixed(1)}%)</span>
+                <span>
+                  + {currency} {platformFee.toLocaleString()}
+                </span>
+              </div>
+              <div className={styles.previewTotal}>
+                <span>You Pay (Hirer)</span>
+                <span>
+                  {currency} {netAmount.toLocaleString()}
                 </span>
               </div>
             </div>

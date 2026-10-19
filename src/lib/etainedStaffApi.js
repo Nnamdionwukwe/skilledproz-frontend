@@ -14,6 +14,9 @@ export const retainedStaffApi = {
   deleteStaff: (id) => api.delete(`/retained-staff/${id}`),
   getDashboard: () => api.get("/retained-staff/dashboard"),
 
+  // ✅ ADD THIS LINE
+  lookupWorker: (q) => api.get("/retained-staff/lookup", { params: { q } }),
+
   // ── Cycles (Hirer) ──
   listCycles: (memberId, params) =>
     api.get(`/retained-staff/${memberId}/cycles`, { params }),
