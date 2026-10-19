@@ -28,6 +28,8 @@ import {
   FaUndo,
   FaUser,
   FaBuilding,
+  FaPlusCircle,
+  FaMinusCircle,
 } from "react-icons/fa";
 
 import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
@@ -401,9 +403,26 @@ export default function BookingDetailMain({
                 <>
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label="Subtotal"
+                    label="Base Amount"
                     value={`${currency} ${subtotal.toLocaleString()}`}
                   />
+
+                  {booking.bonusAmount > 0 && (
+                    <DetailItem
+                      icon={<FaPlusCircle style={{ color: "var(--green)" }} />}
+                      label="Bonus"
+                      value={`+ ${currency} ${booking.bonusAmount.toLocaleString()}`}
+                    />
+                  )}
+
+                  {booking.deductionAmount > 0 && (
+                    <DetailItem
+                      icon={<FaMinusCircle style={{ color: "var(--rose)" }} />}
+                      label="Deduction"
+                      value={`- ${currency} ${booking.deductionAmount.toLocaleString()}`}
+                    />
+                  )}
+
                   <DetailItem
                     icon={<FaMoneyBillWave />}
                     label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
@@ -421,10 +440,26 @@ export default function BookingDetailMain({
                 <>
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label="Total Earnings"
+                    label="Base Amount"
                     value={`${currency} ${subtotal.toLocaleString()}`}
-                    accent
                   />
+
+                  {booking.bonusAmount > 0 && (
+                    <DetailItem
+                      icon={<FaPlusCircle style={{ color: "var(--green)" }} />}
+                      label="Bonus"
+                      value={`+ ${currency} ${booking.bonusAmount.toLocaleString()}`}
+                    />
+                  )}
+
+                  {booking.deductionAmount > 0 && (
+                    <DetailItem
+                      icon={<FaMinusCircle style={{ color: "var(--rose)" }} />}
+                      label="Deduction"
+                      value={`- ${currency} ${booking.deductionAmount.toLocaleString()}`}
+                    />
+                  )}
+
                   <DetailItem
                     icon={<FaMoneyBillWave />}
                     label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
