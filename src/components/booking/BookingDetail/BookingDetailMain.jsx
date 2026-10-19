@@ -311,7 +311,7 @@ export default function BookingDetailMain({
               />
             )}
 
-            {booking.location && (
+            {booking.location && booking.locationType !== "REMOTE" && (
               <DetailItem
                 icon={<FaMapMarkerAlt />}
                 label="Work Location"
@@ -662,24 +662,22 @@ export default function BookingDetailMain({
                 })
               }
             />
-            {booking.address && (
+            {booking.address && showMapLink && (
               <DetailItem
                 icon={<FaMapMarkerAlt />}
                 label="Job Site Address"
                 value={
                   <>
                     {booking.address}
-                    {showMapLink && (
-                      <a
-                        href={mapsUrl(booking.latitude, booking.longitude)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.mapLink}
-                      >
-                        {" "}
-                        View map <FaExternalLinkAlt size={10} />
-                      </a>
-                    )}
+                    <a
+                      href={mapsUrl(booking.latitude, booking.longitude)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.mapLink}
+                    >
+                      {" "}
+                      View map <FaExternalLinkAlt size={10} />
+                    </a>
                   </>
                 }
               />
@@ -1120,7 +1118,7 @@ export default function BookingDetailMain({
               })
             }
           />
-          {booking.address && (
+          {booking.address && booking.locationType !== "REMOTE" && (
             <DetailItem
               icon={<FaMapMarkerAlt />}
               label="Job Site Address"

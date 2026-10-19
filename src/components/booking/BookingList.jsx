@@ -1,3 +1,4 @@
+// src/pages/bookings/BookingList.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -281,6 +282,9 @@ function BookingCard({ booking, index }) {
       .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  // Condition to hide location on remote jobs
+  const isRemote = booking.locationType === "REMOTE";
+
   return (
     <Link
       to={`/bookings/${booking.id}`}
@@ -372,7 +376,10 @@ function BookingCard({ booking, index }) {
           text={`${scheduled.toLocaleDateString()} · ${scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
           faded={isPast}
         />
-        <Detail icon={<FaMapMarkerAlt />} text={booking.address} truncate />
+        {/* Hide address for remote jobs */}
+        {!isRemote && booking.address && (
+          <Detail icon={<FaMapMarkerAlt />} text={booking.address} truncate />
+        )}
       </div>
 
       <div className={styles.cardFooter}>
