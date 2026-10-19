@@ -30,6 +30,7 @@ export const retainedStaffApi = {
     api.post(`/retained-staff/cycles/${cycleId}/release`, data),
   cancelCycle: (cycleId, reason) =>
     api.post(`/retained-staff/cycles/${cycleId}/cancel`, { reason }),
+  deleteCycle: (cycleId) => api.delete(`/retained-staff/cycles/${cycleId}`),
 
   // ── Documents & Notes ──
   uploadDocument: (memberId, data) =>

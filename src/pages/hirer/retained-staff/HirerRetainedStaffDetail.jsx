@@ -4,6 +4,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import HirerLayout from "../../../components/layout/HirerLayout";
 import Skeleton from "../../../components/common/Skeleton";
 import CreateCycleModal from "./CreateCycleModal";
+import EditRetainedStaffModal from "./EditRetainedStaffModal"; // ✅ Import Edit Modal
+import ConfirmationModal from "../../../components/context/ConfirmationModal";
 import styles from "./HirerRetainedStaff.module.css";
 import {
   FiArrowLeft,
@@ -17,6 +19,8 @@ import {
   FiAlertCircle,
   FiDollarSign,
   FiChevronRight,
+  FiEdit2,
+  FiTrash2,
 } from "react-icons/fi";
 import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
@@ -46,6 +50,8 @@ export default function HirerRetainedStaffDetail() {
   const [cyclesLoading, setCyclesLoading] = useState(false);
   const [tab, setTab] = useState("payroll");
   const [showCycleModal, setShowCycleModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false); // ✅ State for Edit
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // ✅ State for Delete Staff
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -91,6 +97,35 @@ export default function HirerRetainedStaffDetail() {
     }
   };
 
+  const handleDeleteStaff = async () => {
+    setActionLoading(true);
+    try {
+      await retainedStaffApi.deleteStaff(id);
+      navigate("/dashboard/hirer/retained-staff/staff");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete staff member");
+      setShowDeleteModal(false);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteCycle = async (cycleId) => {
+    if (
+      !window.confirm("Are you sure you want to permanently delete this cycle?")
+    )
+      return;
+    setActionLoading(true);
+    try {
+      await retainedStaffApi.deleteCycle(cycleId);
+      loadMember(); // Refresh cycles list
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete cycle.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // ── Full Page Skeleton ──────────────────────────────────────────────
   if (loading) {
     return (
@@ -106,14 +141,12 @@ export default function HirerRetainedStaffDetail() {
             </div>
           </div>
 
-          {/* KPI Skeleton */}
           <div className={styles.statsGrid}>
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} height={90} radius={12} />
             ))}
           </div>
 
-          {/* Table Skeleton */}
           <div className={styles.panel} style={{ marginTop: "1.5rem" }}>
             <Skeleton width="30%" height={20} style={{ marginBottom: 16 }} />
             <Skeleton.Table rows={4} cols={4} />
@@ -185,6 +218,24 @@ export default function HirerRetainedStaffDetail() {
             </span>
           </div>
           <div className={styles.profileActions}>
+            {/* ✅ Edit & Delete Buttons */}
+            <button
+              className={styles.btnIcon}
+              onClick={() => setShowEditModal(true)}
+              title="Edit Details"
+            >
+              <FiEdit2 />
+            </button>
+            {member._count?.cycles === 0 && (
+              <button
+                className={styles.btnIconDanger}
+                onClick={() => setShowDeleteModal(true)}
+                title="Delete Staff Member"
+              >
+                <FiTrash2 />
+              </button>
+            )}
+
             {member.status === "ACTIVE" && (
               <button
                 className={styles.btnSecondary}
@@ -342,12 +393,37 @@ export default function HirerRetainedStaffDetail() {
                           </span>
                         </td>
                         <td>
-                          <Link
-                            to={`/dashboard/hirer/retained-staff/${id}/cycles/${cycle.id}`}
-                            className={styles.viewBtn}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.5rem",
+                              justifyContent: "flex-end",
+                            }}
                           >
-                            <FiChevronRight />
-                          </Link>
+                            <Link
+                              to={`/dashboard/hirer/retained-staff/${id}/cycles/${cycle.id}`}
+                              className={styles.viewBtn}
+                              title="View Cycle"
+                            >
+                              <FiChevronRight />
+                            </Link>
+                            {(cycle.status === "AWAITING_PAYMENT" ||
+                              cycle.status === "CANCELLED") && (
+                              <button
+                                onClick={() => handleDeleteCycle(cycle.id)}
+                                className={styles.viewBtn}
+                                style={{
+                                  color: "var(--red)",
+                                  background: "var(--red-dim)",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                                title="Delete Cycle"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -418,6 +494,7 @@ export default function HirerRetainedStaffDetail() {
         )}
       </div>
 
+      {/* ✅ Modals */}
       <CreateCycleModal
         isOpen={showCycleModal}
         onClose={() => setShowCycleModal(false)}
@@ -426,6 +503,25 @@ export default function HirerRetainedStaffDetail() {
           navigate(`/dashboard/hirer/retained-staff/${id}/cycles/${cycle.id}`);
         }}
         member={member}
+      />
+
+      <EditRetainedStaffModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSuccess={(updated) => {
+          setMember(updated);
+        }}
+        member={member}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteStaff}
+        title="Delete Staff Member?"
+        message="This will permanently remove this worker from your retained staff. This action cannot be undone."
+        confirmLabel="Yes, Delete"
+        confirmVariant="danger"
       />
     </HirerLayout>
   );

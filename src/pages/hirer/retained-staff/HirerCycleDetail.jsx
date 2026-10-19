@@ -5,6 +5,7 @@ import HirerLayout from "../../../components/layout/HirerLayout";
 import Skeleton from "../../../components/common/Skeleton";
 import styles from "./HirerCycleDetail.module.css";
 import PayCycleModal from "./PayCycleModal";
+import ConfirmationModal from "../../../components/context/ConfirmationModal";
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -16,6 +17,7 @@ import {
   FiLoader,
   FiUser,
   FiCalendar,
+  FiTrash2,
 } from "react-icons/fi";
 import { retainedStaffApi } from "../../../lib/etainedStaffApi";
 
@@ -59,6 +61,7 @@ export default function HirerCycleDetail() {
   const [cycle, setCycle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [releaseAmount, setReleaseAmount] = useState("");
   const [releaseNote, setReleaseNote] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -136,7 +139,19 @@ export default function HirerCycleDetail() {
     }
   };
 
-  // ── Full Page Skeleton ──────────────────────────────────────────────
+  const handleDelete = async () => {
+    setActionLoading(true);
+    try {
+      await retainedStaffApi.deleteCycle(cycleId);
+      navigate(`/dashboard/hirer/retained-staff/${id}`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete cycle.");
+      setShowDeleteConfirm(false);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <HirerLayout>
@@ -144,7 +159,6 @@ export default function HirerCycleDetail() {
           <Skeleton width={120} height={16} style={{ marginBottom: 16 }} />
           <Skeleton width="50%" height={28} style={{ marginBottom: 8 }} />
           <Skeleton width="40%" height={14} style={{ marginBottom: 24 }} />
-
           <Skeleton.Card height={220} style={{ marginBottom: 16 }} />
           <Skeleton.Card height={160} />
         </div>
@@ -292,6 +306,23 @@ export default function HirerCycleDetail() {
                 onClick={() => setShowCancel(true)}
               >
                 Cancel Cycle
+              </button>
+              <button
+                className={styles.btnDangerOutline}
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--red)",
+                  marginLeft: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                <FiTrash2 /> Delete
               </button>
             </div>
           </div>
@@ -453,6 +484,17 @@ export default function HirerCycleDetail() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Payroll Cycle?"
+        message="This will permanently remove this payroll cycle. This action cannot be undone."
+        confirmLabel="Yes, Delete Cycle"
+        confirmVariant="danger"
+      />
 
       {/* Pay Modal */}
       {cycle.member && (
