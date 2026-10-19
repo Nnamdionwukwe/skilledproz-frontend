@@ -983,7 +983,9 @@ function CurrencyTab({ currency, balance, isActive, onClick }) {
 
 // ─── Transaction Row ──────────────────────────────────────────────────────
 
-function TransactionRow({ transaction, onView }) {
+function TransactionRow({ transaction }) {
+  const navigate = useNavigate();
+
   const isCredit =
     transaction.type === "DEPOSIT" ||
     transaction.type === "REFUND" ||
@@ -993,11 +995,24 @@ function TransactionRow({ transaction, onView }) {
   const channel = getPaymentChannel(transaction);
   const ChannelIcon = channel.icon;
 
+  const handleClick = () => {
+    navigate(`/dashboard/hirer/wallet/${transaction.id}`);
+  };
+
   return (
-    <div
+    <button
+      type="button"
       className={styles.transactionRow}
-      onClick={() => onView(transaction)}
-      style={{ cursor: "pointer" }}
+      onClick={handleClick}
+      style={{
+        cursor: "pointer",
+        width: "100%",
+        textAlign: "left",
+        border: "1px solid var(--border)",
+        background: "var(--bg-panel)",
+        fontFamily: "var(--font-body)",
+        appearance: "none",
+      }}
     >
       <div className={styles.transactionIcon}>
         {getTransactionIcon(transaction.type)}
@@ -1040,7 +1055,7 @@ function TransactionRow({ transaction, onView }) {
           {getStatusLabel(transaction.status)}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 

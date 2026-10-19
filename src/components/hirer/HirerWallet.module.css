@@ -2138,3 +2138,38 @@
     justify-content: center;
   }
 }
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: var(--orange);
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailDescription {
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 0;
+}
