@@ -1,4 +1,4 @@
-// HirerPaymentHistory.jsx - Fixed Layout
+// HirerPaymentHistory.jsx
 import { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./HirerPaymentHistory.module.css";

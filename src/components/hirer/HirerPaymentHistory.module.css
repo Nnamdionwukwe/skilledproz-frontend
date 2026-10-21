@@ -887,6 +887,58 @@
   }
 }
 
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .summaryRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tableHead {
+    display: none;
+  }
+
+  .tableRow {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  /* Reset text alignment for mobile to left */
+  .jobCell,
+  .workerCell,
+  .dateCell,
+  .amountCell,
+  .statusCell {
+    text-align: left;
+  }
+
+  .actionsCell {
+    justify-content: flex-start;
+    text-align: left;
+    margin-top: 0.5rem;
+  }
+
+  .dateCell,
+  .amountSub {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .summaryRow {
+    grid-template-columns: 1fr;
+  }
+  .page {
+    padding: 1.5rem 1rem 3rem;
+  }
+}
+
+/* Green color variable fallback */
+:root {
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.12);
+}
+
 /* ── Modal responsive — mobile & narrow screens ── */
 @media (max-width: 560px) {
   .backdrop {
