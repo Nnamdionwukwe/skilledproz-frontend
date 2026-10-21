@@ -33,7 +33,7 @@ import {
   FaInfoCircle,
 } from "react-icons/fa";
 
-// ─── Helpers (mirror RefundDetail's STATUS_CONFIG shape) ─────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   PENDING: {
     icon: FaClock,
@@ -162,10 +162,8 @@ function getPaymentChannel(tx) {
 }
 
 // ─── Copy Button ──────────────────────────────────────────────────────────
-
 function CopyButton({ text, label = "Copy" }) {
   const [copied, setCopied] = useState(false);
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text);
@@ -182,7 +180,6 @@ function CopyButton({ text, label = "Copy" }) {
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
   return (
     <button className={styles.copyBtn} onClick={handleCopy} type="button">
       {copied ? <FaCheck size={12} /> : <FaCopy size={12} />}
@@ -191,7 +188,7 @@ function CopyButton({ text, label = "Copy" }) {
   );
 }
 
-// ─── Receipt Generator (unchanged) ───────────────────────────────────────
+// ─── Receipt Generator (Optimized for Single Page Print) ───────────────────
 function generateReceiptHTML(transaction) {
   const isCredit =
     transaction.type === "DEPOSIT" ||
@@ -210,20 +207,86 @@ function generateReceiptHTML(transaction) {
   <title>Receipt - ${transaction.reference}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-    .receipt { max-width: 520px; width: 100%; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
-    .receipt-header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; padding: 32px 32px 24px; text-align: center; }
-    .receipt-header .logo { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 14px; margin-bottom: 12px; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #f8f9fa; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      padding: 20px; 
+    }
+    .receipt { 
+      max-width: 520px; 
+      width: 100%; 
+      background: #ffffff; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1); 
+    }
+    .receipt-header { 
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+      color: #ffffff; 
+      padding: 32px 32px 24px; 
+      text-align: center; 
+    }
+    .receipt-header .logo { 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      width: 56px; 
+      height: 56px; 
+      background: rgba(255,255,255,0.2); 
+      border-radius: 14px; 
+      margin-bottom: 12px; 
+    }
     .receipt-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
     .receipt-header .subtitle { font-size: 13px; opacity: 0.9; margin-top: 4px; }
-    .receipt-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 6px 16px; background: rgba(255,255,255,0.2); border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-    .receipt-status.paid { background: rgba(255,255,255,0.28); }
-    .receipt-amount { text-align: center; padding: 28px 32px 24px; border-bottom: 2px dashed #e5e7eb; }
-    .receipt-amount .label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
-    .receipt-amount .value { font-size: 36px; font-weight: 800; margin-top: 8px; letter-spacing: -0.02em; }
+    .receipt-status { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      margin-top: 16px; 
+      padding: 6px 16px; 
+      background: rgba(255,255,255,0.2); 
+      border-radius: 999px; 
+      font-size: 12px; 
+      font-weight: 700; 
+      letter-spacing: 0.05em; 
+      text-transform: uppercase; 
+    }
+    .receipt-amount { 
+      text-align: center; 
+      padding: 28px 32px 24px; 
+      border-bottom: 2px dashed #e5e7eb; 
+    }
+    .receipt-amount .label { 
+      font-size: 12px; 
+      color: #6b7280; 
+      text-transform: uppercase; 
+      letter-spacing: 0.08em; 
+      font-weight: 700; 
+    }
+    .receipt-amount .value { 
+      font-size: 36px; 
+      font-weight: 800; 
+      margin-top: 8px; 
+      letter-spacing: -0.02em; 
+    }
     .receipt-amount .value.credit { color: #22c55e; }
     .receipt-amount .value.debit { color: #ef4444; }
-    .receipt-amount .channel { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 4px 12px; background: #fef3c7; color: #92400e; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .receipt-amount .channel { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      margin-top: 12px; 
+      padding: 4px 12px; 
+      background: #fef3c7; 
+      color: #92400e; 
+      border-radius: 999px; 
+      font-size: 11px; 
+      font-weight: 700; 
+    }
     .receipt-body { padding: 24px 32px; }
     .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; gap: 16px; }
     .row:last-child { border-bottom: none; }
@@ -239,6 +302,25 @@ function generateReceiptHTML(transaction) {
     .receipt-footer { padding: 24px 32px; background: #f9fafb; text-align: center; font-size: 12px; color: #9ca3af; }
     .receipt-footer strong { color: #6b7280; }
     .tear-line { height: 16px; background-image: radial-gradient(circle, #ffffff 4px, transparent 4px); background-size: 16px 16px; background-position: -8px 50%; background-color: #f9fafb; }
+
+    /* --- PRINT SPECIFIC STYLES --- */
+    @media print {
+      @page { size: auto; margin: 0; }
+      body { background: #fff; display: block; padding: 0; }
+      .receipt { 
+        max-width: 100%; 
+        box-shadow: none; 
+        border-radius: 0; 
+        page-break-inside: avoid;
+        transform: scale(0.85); 
+        transform-origin: top center;
+        margin: 0 auto;
+      }
+      .receipt-body { padding: 16px 32px; }
+      .row { padding: 8px 0; }
+      .receipt-header { padding: 24px 32px 16px; }
+      .receipt-amount { padding: 20px 32px; }
+    }
   </style>
 </head>
 <body>
@@ -305,7 +387,6 @@ function generateReceiptHTML(transaction) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────
-
 export default function WalletTransactionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -323,19 +404,15 @@ export default function WalletTransactionDetail() {
       .then((res) => {
         const list = res.data.data?.transactions || [];
         const match = list.find((t) => t.id === id);
-        if (!match) {
-          setError("Transaction not found.");
-        } else {
-          setTransaction(match);
-        }
+        if (!match) setError("Transaction not found.");
+        else setTransaction(match);
       })
       .catch((err) => {
         setError(
           err.response?.data?.message || "Failed to load transaction details.",
         );
-        if (err.response?.status === 404) {
+        if (err.response?.status === 404)
           setTimeout(() => navigate("/dashboard/hirer/wallet"), 3000);
-        }
       })
       .finally(() => setLoading(false));
   }, [id, navigate]);
@@ -364,10 +441,8 @@ export default function WalletTransactionDetail() {
   const handlePrint = () => {
     if (!transaction) return;
     const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      alert("Please allow pop-ups to print the receipt.");
-      return;
-    }
+    if (!printWindow)
+      return alert("Please allow pop-ups to print the receipt.");
     printWindow.document.write(generateReceiptHTML(transaction));
     printWindow.document.close();
     printWindow.focus();
@@ -401,7 +476,6 @@ export default function WalletTransactionDetail() {
       bg: "rgba(136, 136, 136, 0.1)",
     };
 
-  // ── Loading ──
   if (loading) {
     return (
       <HirerLayout>
@@ -418,7 +492,6 @@ export default function WalletTransactionDetail() {
     );
   }
 
-  // ── Error ──
   if (error || !transaction) {
     return (
       <HirerLayout>
@@ -456,7 +529,6 @@ export default function WalletTransactionDetail() {
         </div>
 
         <div className={styles.detailContainer}>
-          {/* Status Banner */}
           <div
             className={styles.statusBanner}
             style={{
@@ -479,9 +551,7 @@ export default function WalletTransactionDetail() {
             </span>
           </div>
 
-          {/* Main Details */}
           <div className={styles.detailGrid}>
-            {/* Amount */}
             <div className={styles.detailSection}>
               <h3 className={styles.detailSectionTitle}>
                 <FaMoneyBillWave /> Transaction Information
@@ -490,9 +560,7 @@ export default function WalletTransactionDetail() {
                 <span className={styles.detailLabel}>Amount</span>
                 <span
                   className={styles.detailValueLarge}
-                  style={{
-                    color: isCredit ? "var(--green)" : "var(--orange)",
-                  }}
+                  style={{ color: isCredit ? "var(--green)" : "var(--orange)" }}
                 >
                   {amountPrefix}{" "}
                   {formatCurrency(transaction.amount, transaction.currency)}
@@ -526,7 +594,6 @@ export default function WalletTransactionDetail() {
               </div>
             </div>
 
-            {/* Reference & dates */}
             <div className={styles.detailSection}>
               <h3 className={styles.detailSectionTitle}>
                 <FaCalendarAlt /> Reference & Dates
@@ -576,7 +643,6 @@ export default function WalletTransactionDetail() {
               )}
             </div>
 
-            {/* Provider or bank details */}
             {(transaction.meta?.paymentProvider ||
               transaction.meta?.bankName) && (
               <div className={styles.detailSection}>
@@ -632,7 +698,6 @@ export default function WalletTransactionDetail() {
               </div>
             )}
 
-            {/* Description */}
             {transaction.description && (
               <div className={styles.detailSection}>
                 <h3 className={styles.detailSectionTitle}>
@@ -647,7 +712,6 @@ export default function WalletTransactionDetail() {
             )}
           </div>
 
-          {/* Actions */}
           <div className={styles.actionsContainer}>
             <button
               type="button"
