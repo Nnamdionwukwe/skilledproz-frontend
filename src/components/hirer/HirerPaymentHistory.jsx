@@ -1014,7 +1014,7 @@ export default function HirerPaymentHistory() {
                           >
                             Receipt
                           </button>
-                          {payment.status === "HELD" && (
+                          {/* {payment.status === "HELD" && (
                             <button
                               className={styles.releaseBtn}
                               onClick={() => setReleaseModalPayment(payment)}
@@ -1022,7 +1022,7 @@ export default function HirerPaymentHistory() {
                             >
                               Release
                             </button>
-                          )}
+                          )} */}
                         </div>
                       </div>
                     );
