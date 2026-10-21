@@ -246,7 +246,7 @@
 
 .balanceAmount {
   font-family: var(--font-display);
-  /* Uses clamp to scale down dynamically on smaller screens */
+  /* Dynamic scaling + wrapping to prevent overflow on small screens */
   font-size: clamp(1.5rem, 8vw, 2.5rem);
   font-weight: 900;
   color: var(--orange);
@@ -497,6 +497,137 @@
 
 .filterSelect:focus {
   border-color: var(--border-focus);
+}
+
+/* ─── Transaction List ──────────────────────────────────────────────────── */
+
+.transactionsList {
+  padding: 0.5rem 0;
+}
+
+.transactionRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+
+.transactionRow:last-child {
+  border-bottom: none;
+}
+
+.transactionRow:hover {
+  background: var(--bg-card);
+}
+
+.transactionIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.depositIcon {
+  color: var(--green);
+}
+
+.withdrawIcon {
+  color: var(--red);
+}
+
+.paymentIcon {
+  color: #3b82f6;
+}
+
+.subscriptionIcon {
+  color: #8b5cf6;
+}
+
+.refundIcon {
+  color: var(--green);
+}
+
+.bonusIcon {
+  color: var(--orange);
+}
+
+.adjustmentIcon {
+  color: var(--text-muted);
+}
+
+.transactionInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.transactionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.transactionDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transactionMeta {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.transactionDate {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.transactionCurrency {
+  background: var(--bg-card);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.transactionAmount {
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.transactionStatus {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
 }
 
 /* ─── Empty State ───────────────────────────────────────────────────────── */
@@ -1081,6 +1212,19 @@
   flex-shrink: 0;
 }
 
+.pinCta {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange);
+  text-decoration: underline;
+  margin-top: 0.25rem;
+}
+
+.pinCta:hover {
+  opacity: 0.85;
+}
+
 /* ─── Copy Button ────────────────────────────────────────────────────────── */
 
 .copyBtn {
@@ -1108,6 +1252,152 @@
 
 .copyBtn span {
   font-size: 10px;
+}
+
+/* ─── Detail Action Buttons ────────────────────────────────────────────── */
+
+.detailActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+  border: none;
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+
+.detailActionBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.detailActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.detailActionBtn svg {
+  flex-shrink: 0;
+}
+
+.detailActionPrimary {
+  background: var(--orange);
+  color: #000;
+}
+
+.detailActionPrimary:hover:not(:disabled) {
+  opacity: 0.85;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.detailActionSuccess {
+  background: var(--green);
+  color: #fff;
+}
+
+.detailActionSuccess:hover:not(:disabled) {
+  opacity: 0.85;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* ─── Detail User ───────────────────────────────────────────────────────── */
+
+.detailUser {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.detailName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.detailEmail {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2px;
+}
+
+/* ─── Detail Grid ───────────────────────────────────────────────────────── */
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.25rem;
+}
+
+.detailLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.detailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  word-break: break-word;
+}
+
+.detailValue .statusBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* ─── User Avatar Large ─────────────────────────────────────────────────── */
+
+.userAvatarLarge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--orange-dim);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  border: 1px solid var(--orange-glow);
 }
 
 /* ─── Message Modal ────────────────────────────────────────────────────── */
@@ -1289,7 +1579,913 @@
   }
 }
 
-/* ─── Refund-style transaction cards ───────────────────────────────────── */
+/* ─── Receipt Print Styles ─────────────────────────────────────────────── */
+
+.receiptPrint {
+  display: none;
+}
+
+@media print {
+  .receiptPrint {
+    display: block !important;
+    padding: 40px;
+    max-width: 500px;
+    margin: 0 auto;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fff;
+  }
+
+  .receiptHeader {
+    text-align: center;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+
+  .receiptLogo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .receiptLogo h2 {
+    color: #1a1a2e;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .receiptSubtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 4px 0 0;
+  }
+
+  .receiptRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .receiptRow:last-child {
+    border-bottom: none;
+  }
+
+  .receiptLabel {
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .receiptValue {
+    color: #1a1a2e;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .receiptFooter {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid #e5e7eb;
+    text-align: center;
+  }
+
+  .receiptFooter p {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .receiptFooterSmall {
+    font-size: 12px !important;
+    color: #9ca3af !important;
+    margin-top: 4px !important;
+  }
+
+  .modalOverlay {
+    background: white !important;
+    backdrop-filter: none !important;
+    position: fixed !important;
+  }
+
+  .modalBox {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  .modalHeader,
+  .modalActions,
+  .detailUser,
+  .detailGrid .detailItem:not(.receipt-show) {
+    display: none !important;
+  }
+
+  .modalBody {
+    padding: 0 !important;
+  }
+}
+
+/* ─── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .balanceCard {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .balanceInfo {
+    text-align: center;
+  }
+
+  .balanceLabel {
+    justify-content: center;
+  }
+
+  .balanceAmount {
+    justify-content: center;
+  }
+
+  .balanceMeta {
+    justify-content: center;
+  }
+
+  .balanceQuickActions {
+    justify-content: center;
+  }
+
+  .balanceQuickActions .quickAction {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .transactionsHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .transactionControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchWrapper {
+    width: 100%;
+  }
+
+  .searchInput {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
+  .transactionRow {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+  }
+
+  .transactionAmount {
+    width: 100%;
+    text-align: left;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .modalBox {
+    max-width: 100%;
+    margin: 0.5rem;
+  }
+
+  .modalLarge {
+    margin: 0;
+    max-width: 100vw;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  .modalLarge .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalLarge .modalBody {
+    padding: 1.25rem 1rem;
+  }
+
+  .modalLarge .modalActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .modalLarge .modalActions .modalCancel,
+  .modalLarge .modalActions .detailActionBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .modalCancel,
+  .modalConfirm {
+    width: 100%;
+  }
+
+  .currencyTabs {
+    padding: 0.5rem;
+    gap: 0.375rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .currencyTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .currencyTab {
+    min-width: 110px;
+    padding: 0.375rem 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .confirmDetail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+    padding: 0.375rem 0;
+  }
+
+  .confirmValue {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalActions .modalCancel,
+  .modalActions .detailActionBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .statCard {
+    padding: 10px;
+    gap: 0.5rem;
+  }
+
+  .statIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .statValue {
+    font-size: 0.875rem;
+  }
+
+  .statLabel {
+    font-size: 9px;
+  }
+
+  .currencyTab {
+    min-width: 90px;
+    padding: 0.25rem 0.5rem;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .currencyTabIcon {
+    font-size: 0.875rem;
+  }
+
+  .currencyTabCode,
+  .currencyTabBalance {
+    font-size: 0.65rem;
+  }
+
+  .currencyTabZeroBadge {
+    font-size: 0.5rem;
+    padding: 0px 4px;
+  }
+
+  .confirmDisclaimer {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .disclaimerIcon {
+    margin-top: 0;
+  }
+
+  .messageIconSuccess,
+  .messageIconError,
+  .messageIconInfo {
+    font-size: 36px;
+  }
+
+  .messageTitle {
+    font-size: 17px;
+  }
+
+  .messageText {
+    font-size: 13px;
+  }
+
+  .messageBtn {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .transactionRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .transactionAmount {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .page {
+    padding: 0.75rem 8px 60px;
+    gap: 10px;
+  }
+
+  .balanceCard {
+    padding: 12px;
+  }
+
+  .balanceAmount {
+    font-size: 1.35rem;
+    gap: 0.375rem;
+  }
+
+  .quickAction {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statCard {
+    padding: 10px;
+  }
+
+  .statValue {
+    font-size: 1rem;
+  }
+
+  .transactionControls {
+    gap: 0.375rem;
+  }
+
+  .searchWrapper {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .searchInput {
+    font-size: 12px;
+  }
+
+  .refundList {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .refundItem {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .refundItemTitle {
+    font-size: 0.8rem;
+  }
+
+  .refundItemMeta {
+    gap: 0.375rem;
+  }
+
+  .statusBadge {
+    font-size: 0.55rem;
+    padding: 0.15rem 0.4rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.25rem;
+  }
+
+  .statCard {
+    padding: 8px;
+    gap: 0.375rem;
+  }
+
+  .statIcon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .statValue {
+    font-size: 0.75rem;
+  }
+
+  .statLabel {
+    font-size: 8px;
+  }
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────── */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* ─────────────────────────────────────────────────────────────────────────
+   Full-Screen Transaction Detail Modal
+   ───────────────────────────────────────────────────────────────────────── */
+.modalFullScreenOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.15s ease both;
+}
+
+.modalFullScreenBox {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s ease both;
+}
+
+.modalFullScreenHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 1.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.modalSubtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
+.modalFullScreenClose {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.modalFullScreenClose:hover {
+  background: var(--bg-panel);
+  color: var(--text);
+  border-color: var(--orange);
+}
+
+.modalFullScreenBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.modalFullScreenFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.modalFullScreenActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .modalFullScreenOverlay {
+    padding: 0;
+  }
+  .modalFullScreenBox {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    height: 100vh;
+  }
+  .modalFullScreenHeader {
+    padding: 1rem 1.25rem;
+  }
+  .modalFullScreenBody {
+    padding: 1.25rem;
+  }
+  .modalFullScreenFooter {
+    padding: 1rem 1.25rem;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .modalFullScreenActions {
+    flex-direction: column;
+  }
+  .modalFullScreenActions > * {
+    width: 100%;
+    justify-content: center;
+  }
+}
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: var(--orange);
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailDescription {
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 0;
+}
+/* ─── Refund-style detail page classes (used by WalletTransactionDetail) ── */
+
+.headerTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: var(--orange);
+}
+
+.detailContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.statusBanner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem;
+  border-radius: 14px;
+  border: 1.5px solid;
+}
+
+.statusBannerLabel {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.statusBannerValue {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.referenceBadge {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-family: "SF Mono", Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailSection {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+}
+
+.detailSectionTitle {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detailSectionTitle svg {
+  flex-shrink: 0;
+  color: var(--orange);
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailLabel {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.detailValue {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
+
+.detailValueLarge {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.detailValueText {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.actionsContainer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.downloadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.15s ease;
+}
+
+.downloadBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+
+.downloadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.backToHistory {
+  padding: 0.65rem 1.25rem;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.backToHistory:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.errorIcon {
+  color: var(--red);
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+}
+
+.errorState h3 {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+
+.errorState p {
+  color: var(--text-dim);
+  margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  background: var(--orange);
+  color: #fff;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background 0.15s ease;
+}
+
+.backButton:hover {
+  background: var(--orange-hover);
+}
+/* ─────────────────────────────────────────────────────────────────────────
+   Refund-style transaction cards (matches RefundHistory's list UX)
+   ───────────────────────────────────────────────────────────────────────── */
 
 .refundList {
   display: flex;
@@ -1439,7 +2635,7 @@
   transform: translateX(2px);
 }
 
-/* Shared status pill */
+/* Shared status pill — matches RefundHistory's statusBadge */
 .statusBadge {
   display: inline-flex;
   align-items: center;
@@ -1460,71 +2656,8 @@
   font-size: 0.65rem;
 }
 
-/* ─── Responsive Breakpoints ───────────────────────────────────────────── */
-
-/* Tablets & small laptops */
-@media (max-width: 768px) {
-  .balanceCard {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-    padding: 16px;
-  }
-
-  .balanceInfo {
-    text-align: center;
-  }
-
-  .balanceLabel,
-  .balanceAmount,
-  .balanceMeta {
-    justify-content: center;
-  }
-
-  .balanceQuickActions {
-    justify-content: center;
-    flex-direction: column;
-  }
-
-  .balanceQuickActions .quickAction {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .headerActions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .transactionsHeader {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1rem;
-  }
-
-  .transactionControls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .searchWrapper {
-    width: 100%;
-  }
-
-  .searchInput {
-    min-width: unset;
-    width: 100%;
-  }
-
-  .filterSelect {
-    width: 100%;
-  }
-
+/* Mobile — stack the card just like RefundHistory does */
+@media (max-width: 640px) {
   .refundList {
     padding: 0.75rem 1rem;
     gap: 0.5rem;
@@ -1534,7 +2667,7 @@
     flex-direction: column;
     align-items: stretch;
     gap: 0.625rem;
-    padding: 0.875rem;
+    padding: 0.875rem 0.875rem;
     border-radius: 12px;
   }
 
@@ -1546,10 +2679,42 @@
     gap: 0.75rem;
   }
 
+  .refundItemIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+  }
+
   .refundItemTitle {
     font-size: 0.85rem;
     white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
     line-height: 1.3;
+  }
+
+  .refundItemReference {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .refundItemMeta {
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+
+  .refundItemAmount {
+    font-size: 0.8rem;
+  }
+
+  .refundItemType {
+    font-size: 0.58rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .refundItemDate {
+    font-size: 0.65rem;
   }
 
   .refundItemRight {
@@ -1557,245 +2722,19 @@
     justify-content: space-between;
     padding-top: 0.5rem;
     border-top: 1px dashed var(--border);
+    gap: 0.5rem;
+  }
+
+  .statusBadge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.55rem;
   }
 
   .refundItemArrow {
     transform: rotate(-90deg);
   }
 
-  .modalBox {
-    max-width: 100%;
-    margin: 0.5rem;
-  }
-
-  .modalLarge {
-    margin: 0;
-    max-width: 100vw;
-    width: 100vw;
-    height: 100vh;
-  }
-
-  .modalLarge .detailGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .modalActions {
-    flex-direction: column;
-  }
-
-  .modalCancel,
-  .modalConfirm {
-    width: 100%;
-  }
-
-  .currencyTabs {
-    padding: 0.5rem;
-    gap: 0.375rem;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .currencyTabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .currencyTab {
-    min-width: 110px;
-    padding: 0.375rem 0.75rem;
-    flex-shrink: 0;
-  }
-
-  .confirmDetail {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.125rem;
-  }
-
-  .confirmValue {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
-/* Standard Mobile Phones */
-@media (max-width: 480px) {
-  .page {
-    padding: 0.875rem 10px 60px;
-  }
-
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-  }
-
-  .statCard {
-    padding: 10px 8px;
-    gap: 0.5rem;
-  }
-
-  .statIcon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .statIcon svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .statValue {
-    font-size: 0.85rem;
-  }
-
-  .statLabel {
-    font-size: 9px;
-  }
-
-  .currencyTab {
-    min-width: 90px;
-    padding: 0.25rem 0.5rem;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  .currencyTabIcon {
-    font-size: 0.875rem;
-  }
-
-  .currencyTabCode,
-  .currencyTabBalance {
-    font-size: 0.65rem;
-  }
-
-  .currencyTabZeroBadge {
-    font-size: 0.5rem;
-    padding: 0px 4px;
-  }
-
-  .confirmDisclaimer {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .messageIconSuccess,
-  .messageIconError,
-  .messageIconInfo {
-    font-size: 36px;
-  }
-
-  .messageTitle {
-    font-size: 17px;
-  }
-
-  .messageText {
-    font-size: 13px;
-  }
-
-  .messageBtn {
-    width: 100%;
-    padding: 12px;
-  }
-}
-
-/* Extremely Small Devices (e.g. iPhone SE, Galaxy Fold outer screen) */
-@media (max-width: 360px) {
-  .page {
-    padding: 0.75rem 8px 60px;
-    gap: 10px;
-  }
-
-  .balanceCard {
-    padding: 12px;
-  }
-
-  .balanceAmount {
-    font-size: 1.35rem; /* Forces the massive balance to shrink */
-    gap: 0.375rem;
-  }
-
-  .quickAction {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-  }
-
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .statCard {
-    padding: 10px;
-  }
-
-  .statValue {
-    font-size: 1rem;
-  }
-
-  .transactionControls {
-    gap: 0.375rem;
-  }
-
-  .searchWrapper {
-    padding: 0.25rem 0.5rem;
-  }
-
-  .searchInput {
-    font-size: 12px;
-  }
-
-  .refundList {
-    padding: 0.5rem 0.5rem;
-  }
-
-  .refundItem {
-    padding: 0.75rem 0.5rem;
-  }
-
-  .refundItemTitle {
-    font-size: 0.8rem;
-  }
-
-  .refundItemMeta {
-    gap: 0.375rem;
-  }
-
-  .statusBadge {
-    font-size: 0.55rem;
-    padding: 0.15rem 0.4rem;
-  }
-}
-
-/* ─── Animations ──────────────────────────────────────────────────────── */
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  .refundItem:hover .refundItemArrow {
+    transform: rotate(-90deg);
   }
 }
