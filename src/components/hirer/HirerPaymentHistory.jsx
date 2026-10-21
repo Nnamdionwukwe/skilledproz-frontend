@@ -1,4 +1,4 @@
-// HirerPaymentHistory.jsx - Modal Preview with Unified Print Receipt
+// HirerPaymentHistory.jsx - Fixed Layout
 import { useState, useEffect, useRef } from "react";
 import api from "../../lib/api";
 import styles from "./HirerPaymentHistory.module.css";
@@ -6,16 +6,7 @@ import HirerLayout from "../layout/HirerLayout";
 import { useCurrency, CURRENCY_META } from "../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
 import { HIRER_FEE_RATE } from "../../utils/pricing";
-import {
-  FaCreditCard,
-  FaUniversity,
-  FaWallet,
-  FaBitcoin,
-  FaShieldAlt,
-  FaPlus,
-  FaMinus,
-  FaArrowUp,
-} from "react-icons/fa";
+import BookingReleaseDetails from "../booking/BookingDetail/BookingReleaseDetails";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_META = {
@@ -315,7 +306,7 @@ function generateReceiptHTML(payment) {
 </html>`;
 }
 
-// ── Receipt modal preview ─────────────────────────────────────────────────────
+// ── Receipt Modal Preview ─────────────────────────────────────────────────────
 function ReceiptModal({ payment, onClose }) {
   const ref = useRef();
 
@@ -351,7 +342,6 @@ function ReceiptModal({ payment, onClose }) {
     cls: "pending",
   };
 
-  const platformFeePercent = HIRER_FEE_RATE * 100;
   const workerPayout = payment.workerPayout ?? payment.amount * 0.95;
   const platformFee = payment.platformFee ?? payment.amount * HIRER_FEE_RATE;
 
@@ -444,16 +434,6 @@ function ReceiptModal({ payment, onClose }) {
                 {booking.category.name}
               </span>
             )}
-            {booking.scheduledAt && (
-              <span className={styles.receiptDate}>
-                Scheduled: {fmtDate(booking.scheduledAt)}
-              </span>
-            )}
-            {booking.completedAt && (
-              <span className={styles.receiptDate}>
-                Completed: {fmtDate(booking.completedAt)}
-              </span>
-            )}
           </div>
         )}
 
@@ -490,7 +470,6 @@ function ReceiptModal({ payment, onClose }) {
           </span>
         </div>
 
-        {/* Escrow release timestamp */}
         {payment.escrowReleasedAt && (
           <div className={styles.escrowNote}>
             Funds released to worker on {fmtDateTime(payment.escrowReleasedAt)}
@@ -502,31 +481,111 @@ function ReceiptModal({ payment, onClose }) {
           </div>
         )}
 
-        {payment.currency && (
-          <span
-            style={{
-              background: ["USDC", "USDT"].includes(payment.currency)
-                ? "rgba(139,92,246,0.12)"
-                : "var(--orange-dim)",
-              color: ["USDC", "USDT"].includes(payment.currency)
-                ? "#a78bfa"
-                : "var(--orange)",
-              border: "1px solid var(--orange-glow)",
-              borderRadius: 999,
-              padding: "1px 6px",
-              fontSize: "0.65rem",
-              fontWeight: 700,
-            }}
-          >
-            {payment.currency}
-          </span>
-        )}
-
         {/* Footer */}
         <div className={styles.receiptFooter}>
           <span>SkilledPro · Global Skills Marketplace</span>
           <button className={styles.printBtn} onClick={handlePrint}>
             Print / Save PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Release Modal ─────────────────────────────────────────────────────────────
+function ReleaseModal({ payment, onClose, onSuccess, loading }) {
+  const ref = useRef();
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function handleBackdrop(e) {
+    if (ref.current && !ref.current.contains(e.target)) onClose();
+  }
+
+  if (!payment) return null;
+
+  return (
+    <div className={styles.backdrop} onMouseDown={handleBackdrop}>
+      <div className={styles.modal} ref={ref} style={{ padding: 0 }}>
+        {/* Fixed Header */}
+        <div
+          style={{
+            padding: "1.5rem 1.75rem",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          <div className={styles.modalHeader}>
+            <div className={styles.modalLogo}>
+              <span className={styles.logoMark}>SP</span>
+              <span className={styles.logoText}>Release Payment</span>
+            </div>
+            <button className={styles.closeBtn} onClick={onClose}>
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Body */}
+        <div style={{ padding: "1.75rem", overflowY: "auto", flex: 1 }}>
+          <BookingReleaseDetails
+            payment={payment}
+            currency={payment.currency}
+            defaultOpen={true}
+          />
+        </div>
+
+        {/* Fixed Footer with Action */}
+        <div
+          style={{
+            padding: "1.25rem 1.75rem",
+            borderTop: "1px solid var(--border)",
+            background: "var(--bg-card)",
+            display: "flex",
+            gap: "0.75rem",
+            justifyContent: "flex-end",
+            borderRadius: "0 0 16px 16px",
+          }}
+        >
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{
+              padding: "0.65rem 1.25rem",
+              background: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              color: "var(--text-dim)",
+              fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSuccess}
+            disabled={loading}
+            style={{
+              padding: "0.65rem 1.25rem",
+              background: "var(--orange)",
+              border: "none",
+              borderRadius: "8px",
+              color: "#000",
+              fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            {loading ? "Releasing..." : "Release Funds"}
           </button>
         </div>
       </div>
@@ -615,13 +674,14 @@ export default function HirerPaymentHistory() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [receipt, setReceipt] = useState(null); // selected payment for modal
+  const [receipt, setReceipt] = useState(null);
+  const [releaseModalPayment, setReleaseModalPayment] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatus] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [releasing, setReleasing] = useState(null); // bookingId being released
+  const [releasing, setReleasing] = useState(null);
   const [currencyFilter, setCurrency] = useState("ALL");
   const [availableCurrencies, setAvailableCurrencies] = useState([]);
   const { dashboardCurrency, fmt: ctxFmt } = useCurrency();
@@ -652,12 +712,6 @@ export default function HirerPaymentHistory() {
 
   // ── Release escrow ──────────────────────────────────────────────────────────
   async function handleRelease(bookingId) {
-    if (
-      !window.confirm(
-        "Release payment to worker? This confirms the job is complete.",
-      )
-    )
-      return;
     setReleasing(bookingId);
     try {
       await api.post(`/payments/release/${bookingId}`);
@@ -672,6 +726,8 @@ export default function HirerPaymentHistory() {
             : p,
         ),
       );
+      setReleaseModalPayment(null);
+      alert("Payment released successfully!");
     } catch {
       alert("Release failed. Please try again.");
     } finally {
@@ -961,13 +1017,10 @@ export default function HirerPaymentHistory() {
                           {payment.status === "HELD" && (
                             <button
                               className={styles.releaseBtn}
-                              onClick={() => handleRelease(payment.bookingId)}
-                              disabled={releasing === payment.bookingId}
+                              onClick={() => setReleaseModalPayment(payment)}
                               title="Release payment to worker"
                             >
-                              {releasing === payment.bookingId
-                                ? "…"
-                                : "Release"}
+                              Release
                             </button>
                           )}
                         </div>
@@ -1003,9 +1056,20 @@ export default function HirerPaymentHistory() {
           </div>
         )}
 
-        {/* ── Receipt modal ── */}
+        {/* ── Modals ── */}
         {receipt && (
           <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
+        )}
+
+        {releaseModalPayment && (
+          <ReleaseModal
+            payment={releaseModalPayment}
+            onClose={() => setReleaseModalPayment(null)}
+            onSuccess={() => {
+              handleRelease(releaseModalPayment.bookingId);
+            }}
+            loading={releasing === releaseModalPayment.bookingId}
+          />
         )}
       </div>
     </HirerLayout>

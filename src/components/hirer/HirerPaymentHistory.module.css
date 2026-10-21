@@ -211,6 +211,7 @@
   flex-direction: column;
   gap: 0.2rem;
   min-width: 0;
+  text-align: left;
 }
 
 .jobTitle {
@@ -220,11 +221,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 .jobCat {
   font-size: 0.75rem;
   color: var(--text-dim);
+  text-align: left;
 }
 
 .bookingBadge {
@@ -235,6 +238,7 @@
   font-weight: 500;
   width: fit-content;
   margin-top: 0.1rem;
+  text-align: left;
 }
 
 /* ── Worker cell ── */
@@ -243,6 +247,7 @@
   align-items: center;
   gap: 0.625rem;
   min-width: 0;
+  text-align: left;
 }
 
 .workerAvatar {
@@ -273,12 +278,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 /* ── Date cell ── */
 .dateCell {
   font-size: 0.8rem;
   color: var(--text-dim);
+  text-align: left;
 }
 
 /* ── Amount cell ── */
@@ -286,6 +293,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  text-align: left;
 }
 
 .amount {
@@ -293,11 +301,13 @@
   font-weight: 600;
   color: var(--text);
   font-family: var(--font-display);
+  text-align: left;
 }
 
 .amountSub {
   font-size: 0.7rem;
   color: var(--text-muted);
+  text-align: left;
 }
 
 .amountSub strong {
@@ -307,6 +317,7 @@
 /* ── Status pills ── */
 .statusCell {
   display: flex;
+  text-align: left;
 }
 
 .statusPill {
@@ -343,6 +354,7 @@
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
+  text-align: right;
 }
 
 .receiptBtn {
@@ -480,370 +492,6 @@
   text-align: center;
   color: var(--red);
   font-size: 0.875rem;
-}
-
-/* ── Modal backdrop ── */
-.backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(8, 8, 16, 0.85);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-  animation: fadeUp 0.2s ease both;
-}
-
-/* ── Receipt modal ── */
-.modal {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-hover);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 1.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-}
-
-.modalHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modalLogo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logoMark {
-  background: var(--orange);
-  color: var(--bg);
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.25rem 0.4rem;
-  border-radius: 5px;
-  letter-spacing: 0.04em;
-}
-
-.logoText {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.closeBtn {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  width: 30px;
-  height: 30px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.closeBtn:hover {
-  border-color: var(--border-hover);
-  color: var(--text);
-}
-
-.receiptTitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.receiptHeading {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
-}
-
-.receiptDivider {
-  height: 1px;
-  background: var(--border);
-}
-
-.receiptMeta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1.5rem;
-}
-
-.receiptMetaItem {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.receiptMetaLabel {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.receiptMetaValue {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  font-family: var(--font-display);
-  word-break: break-all;
-}
-
-/* Parties */
-.receiptParties {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.receiptParty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.partyLabel {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.partyName {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.partyEmail {
-  font-size: 0.75rem;
-  color: var(--text-dim);
-}
-
-.receiptArrow {
-  font-size: 1.1rem;
-  color: var(--orange);
-  flex-shrink: 0;
-}
-
-/* Job */
-.receiptJob {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.receiptJobTitle {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text);
-  margin-top: 0.25rem;
-}
-
-.receiptCategory {
-  font-size: 0.8rem;
-  color: var(--orange);
-  background: var(--orange-dim);
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  width: fit-content;
-}
-
-.receiptDate {
-  font-size: 0.78rem;
-  color: var(--text-dim);
-}
-
-/* Breakdown */
-.breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.breakdownRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
-  color: var(--text-dim);
-}
-
-.feeAmount {
-  color: var(--red);
-}
-
-.workerEarnings {
-  color: var(--green);
-  font-weight: 600;
-}
-
-.breakdownTotal {
-  border-top: 1px solid var(--border);
-  padding-top: 0.75rem;
-  margin-top: 0.25rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.totalAmount {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  color: var(--orange);
-}
-
-/* Notes */
-.escrowNote {
-  font-size: 0.78rem;
-  color: var(--green);
-  background: var(--green-dim);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  padding: 0.6rem 0.875rem;
-  border-radius: 8px;
-}
-
-.refundNote {
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.2);
-}
-
-/* Worker Note — shows 100% payout */
-.workerNote {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 8px;
-  padding: 0.6rem 0.875rem;
-  margin-top: 0.25rem;
-}
-
-.workerNoteIcon {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.workerNoteText {
-  font-size: 0.78rem;
-  color: var(--text-dim);
-}
-
-.workerNoteText strong {
-  color: var(--green);
-  font-weight: 600;
-}
-
-/* Footer */
-.receiptFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-  margin-top: 0.25rem;
-}
-
-.receiptFooter span {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.printBtn {
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-glow);
-  border-radius: 6px;
-  color: var(--orange);
-  font-size: 0.75rem;
-  padding: 0.4rem 0.875rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.printBtn:hover {
-  background: var(--orange);
-  color: var(--bg);
-  border-color: var(--orange);
-}
-
-/* ── Print styles ── */
-@media print {
-  .backdrop {
-    position: static;
-    background: white;
-  }
-  .modal {
-    border: none;
-    box-shadow: none;
-    max-height: none;
-    color: black;
-  }
-  .closeBtn,
-  .printBtn {
-    display: none;
-  }
-}
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .summaryRow {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .tableHead {
-    display: none;
-  }
-
-  .tableRow {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-    padding: 1rem;
-  }
-
-  .actionsCell {
-    justify-content: flex-start;
-  }
-
-  .dateCell,
-  .amountSub {
-    font-size: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .summaryRow {
-    grid-template-columns: 1fr;
-  }
-  .page {
-    padding: 1.5rem 1rem 3rem;
-  }
-}
-
-/* Green color variable fallback */
-:root {
-  --green: #22c55e;
-  --green-dim: rgba(34, 197, 94, 0.12);
 }
 
 /* ── Modal backdrop ── */
