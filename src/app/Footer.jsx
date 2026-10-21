@@ -105,7 +105,7 @@ export default function Footer() {
 
       <div className={styles.footerBottom}>
         <span className={styles.footerCopy}>
-          © {currentYear} SkilledProz Technologies Ltd. All rights reserved.
+          © {currentYear} SkilledProz Marketplace Ltd. All rights reserved.
         </span>
         <div className={styles.footerLegal}>
           <Link to="/privacy">Privacy</Link>

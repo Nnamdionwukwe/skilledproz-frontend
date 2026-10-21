@@ -28,11 +28,11 @@ const sections = [
   },
   {
     title: "7. Payments & Escrow",
-    content: `SkilledPro uses an escrow system — hirers pay upfront, funds are held securely, and released to the worker upon job completion. Platform fees range from 10–20% of the transaction value. All fees are disclosed before booking confirmation. Refunds are subject to our refund policy.`,
+    content: `SkilledProz uses an escrow system — hirers pay upfront, funds are held securely, and released to the worker upon job completion. Platform fees range from 1–2% of the transaction value. All fees are disclosed before booking confirmation. Refunds are subject to our refund policy.`,
   },
   {
     title: "8. Multi-Currency & Regional Compliance",
-    content: `Payments are processed in local currencies through regional partners (Paystack, Stripe, Flutterwave, etc.). Users are responsible for understanding their local tax obligations. SkilledPro will provide transaction records for tax purposes where required.`,
+    content: `Payments are processed in local currencies through regional partners (Paystack, Flutterwave, etc.). Users are responsible for understanding their local tax obligations. SkilledProz will provide transaction records for tax purposes where required.`,
   },
   {
     title: "9. Prohibited Conduct",
@@ -90,8 +90,8 @@ export default function Terms() {
           <div className={styles.badge}>Legal</div>
           <h1 className={styles.title}>Terms of Service</h1>
           <p className={styles.meta}>
-            Last updated: <strong>March 2026</strong> &nbsp;·&nbsp; Effective:{" "}
-            <strong>March 2026</strong>
+            Last updated: <strong>October 2026</strong> &nbsp;·&nbsp; Effective:{" "}
+            <strong>October 2026</strong>
           </p>
           <p className={styles.intro}>
             These Terms of Service govern your use of SkilledProz — the global
@@ -111,7 +111,7 @@ export default function Terms() {
 
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          © {new Date().getFullYear()} SkilledProz Marketplace Ltd. All rights
           reserved.
         </span>
         <div className={styles.footerLinks}>

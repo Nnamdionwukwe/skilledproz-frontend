@@ -12,7 +12,7 @@ const sections = [
   },
   {
     title: "3. Data Sharing",
-    content: `We share your information with: payment processors (Paystack, Stripe) to handle transactions; identity verification providers; cloud storage providers for file hosting; and analytics providers. We may share data with law enforcement when required by law.`,
+    content: `We share your information with: payment processors (Paystack, Flutterwave) to handle transactions; identity verification providers; cloud storage providers for file hosting; and analytics providers. We may share data with law enforcement when required by law.`,
   },
   {
     title: "4. Multi-Currency & Payment Data",
@@ -28,7 +28,7 @@ const sections = [
   },
   {
     title: "7. Your Rights",
-    content: `Depending on your region, you may have the right to: access your personal data, correct inaccurate data, request deletion, withdraw consent, export your data, and object to processing. Contact privacy@SkilledProz.com to exercise these rights.`,
+    content: `Depending on your region, you may have the right to: access your personal data, correct inaccurate data, request deletion, withdraw consent, export your data, and object to processing. Contact privacy@skilledproz.com to exercise these rights.`,
   },
   {
     title: "8. Cookies",
@@ -36,7 +36,7 @@ const sections = [
   },
   {
     title: "9. Children's Privacy",
-    content: `SkilledPro is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we discover we have collected data from a minor, we will delete it immediately.`,
+    content: `SkilledProz is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we discover we have collected data from a minor, we will delete it immediately.`,
   },
   {
     title: "10. Changes to This Policy",
@@ -44,7 +44,7 @@ const sections = [
   },
   {
     title: "11. Contact",
-    content: `For privacy-related queries, contact our Data Protection Officer at privacy@SkilledProz.com or write to: SkilledPro, Lagos, Nigeria.`,
+    content: `For privacy-related queries, contact our Data Protection Officer at privacy@skilledproz.com or write to: SkilledProz, Abuja, Nigeria.`,
   },
 ];
 
@@ -80,8 +80,8 @@ export default function PrivacyPolicy() {
           <div className={styles.badge}>Legal</div>
           <h1 className={styles.title}>Privacy Policy</h1>
           <p className={styles.meta}>
-            Last updated: <strong>March 2026</strong> &nbsp;·&nbsp; Effective:{" "}
-            <strong>March 2026</strong>
+            Last updated: <strong>October 2026</strong> &nbsp;·&nbsp; Effective:{" "}
+            <strong>October 2026</strong>
           </p>
           <p className={styles.intro}>
             SkilledProz ("we", "our", "us") is committed to protecting your
@@ -101,7 +101,7 @@ export default function PrivacyPolicy() {
 
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          © {new Date().getFullYear()} SkilledProz Marketplace Ltd. All rights
           reserved.
         </span>
         <div className={styles.footerLinks}>

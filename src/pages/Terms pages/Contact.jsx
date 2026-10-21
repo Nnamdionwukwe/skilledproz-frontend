@@ -12,9 +12,9 @@ const contactMethods = [
   { icon: "💬", label: "Live Chat", value: "Available in-app", href: null },
   {
     icon: "🐦",
-    label: "Twitter / X",
-    value: "@SkilledProz",
-    href: "https://twitter.com/skilledproz",
+    label: "Instagram",
+    value: "@skilledproz",
+    href: "https://www.instagram.com/skilledproz?exln=MWltanU2ZmY4Ym51ag%3D%3D&utm_source=qr",
   },
   { icon: "📍", label: "Headquarters", value: "Abuja, Nigeria 🇳🇬", href: null },
 ];
@@ -190,7 +190,7 @@ export default function Contact() {
 
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          © {new Date().getFullYear()} SkilledProz Marketplace Ltd. All rights
           reserved.
         </span>
         <div className={styles.footerLinks}>

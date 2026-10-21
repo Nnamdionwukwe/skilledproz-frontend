@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import styles from "./About.module.css";
 
 const stats = [
-  { value: "500+", label: "Skill Categories" },
+  { value: "1000+", label: "Skill Categories" },
   { value: "50+", label: "Countries Supported" },
   { value: "100%", label: "Escrow Safe" },
   { value: "98%", label: "Satisfaction Rate" },
@@ -28,12 +28,12 @@ const values = [
   {
     icon: "💰",
     title: "Fair for Everyone",
-    desc: "Workers keep more of what they earn. Hirers get transparent pricing. No hidden fees. No surprises.",
+    desc: "Workers keep 100% of what they earn. Hirers get transparent pricing. No hidden fees. No surprises.",
   },
 ];
 
 const team = [
-  { name: "Nnamdi Onwukwe", role: "Founder & CEO", flag: "🇳🇬" },
+  // { name: "Nnamdi Onwukwe", role: "Founder & CEO", flag: "🇳🇬" },
   { name: "Global Team", role: "Engineering & Design", flag: "🌍" },
   { name: "You", role: "Join the Mission", flag: "✨" },
 ];
@@ -69,10 +69,10 @@ export default function About() {
           <span className={styles.accent}>one platform.</span>
         </h1>
         <p className={styles.heroSub}>
-          SkilledProz was built to solve a simple but massive Problem — skilled
-          workers and professionals exist everywhere, but hirers can never find
-          them fast enough. We're changing that, globally, one booking at a
-          time.
+          SkilledProz Marketplace was built to solve a simple but massive
+          Problem — skilled workers and professionals exist everywhere, but
+          hirers can never find them fast enough. We're changing that, globally,
+          one booking at a time.
         </p>
         <div className={styles.heroDivider} />
       </section>
@@ -162,7 +162,8 @@ export default function About() {
       <section className={styles.cta}>
         <h2 className={styles.ctaTitle}>Ready to join the movement?</h2>
         <p className={styles.ctaSub}>
-          Whether you hire or you work — SkilledProz is built for you.
+          Whether you hire or you work — SkilledProz Marketplace is built for
+          you.
         </p>
         <div className={styles.ctaButtons}>
           <Link to="/register/hirer" className={styles.ctaPrimary}>
@@ -177,7 +178,7 @@ export default function About() {
       {/* Footer */}
       <footer className={styles.footer}>
         <span>
-          © {new Date().getFullYear()} SkilledProz Technologies Ltd. All rights
+          © {new Date().getFullYear()} SkilledProz Marketplace Ltd. All rights
           reserved.
         </span>
         <div className={styles.footerLinks}>

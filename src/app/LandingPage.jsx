@@ -138,7 +138,7 @@ const FEATURES = [
 const STATS = [
   { value: "50+", label: "Countries" },
   { value: "29", label: "Currencies" },
-  { value: "500+", label: "Categories" },
+  { value: "1000+", label: "Categories" },
   { value: "100%", label: "Escrow Safe" },
 ];
 
@@ -147,7 +147,7 @@ const HIRER_STEPS = [
   {
     num: "01",
     title: "Post a job or search workers",
-    desc: "Describe what you need or browse 500+ categories. Filter by location, rating, rate, and availability.",
+    desc: "Describe what you need or browse 1000+ categories. Filter by location, rating, rate, and availability.",
   },
   {
     num: "02",
@@ -447,7 +447,7 @@ export default function LandingPage() {
           <div className={styles.heroContent}>
             <div className={styles.heroBadge}>
               <span className={styles.heroBadgeDot} />
-              Live in 50+ countries · 29 currencies · 500+ trades
+              Live in 50+ countries · 29 currencies · 1000+ trades
             </div>
 
             <h1 className={styles.heroTitle}>
@@ -686,7 +686,7 @@ export default function LandingPage() {
                   Every Profession, Every Country
                 </span>
                 <h2 className={styles.sectionTitle}>
-                  {categories.length > 0 ? `${categories.length}+` : "500+"}{" "}
+                  {categories.length > 0 ? `${categories.length}+` : "1000+"}{" "}
                   categories — and growing
                 </h2>
               </div>
@@ -888,7 +888,7 @@ export default function LandingPage() {
                   {[
                     "Free to post jobs",
                     "Pay only when satisfied",
-                    "500+ trade categories",
+                    "1000+ trade categories",
                     "29 currencies accepted",
                     "Dispute resolution included",
                   ].map((item) => (
