@@ -582,7 +582,7 @@ export default function WalletTransactionDetail() {
               <h3 className={styles.detailSectionTitle}>
                 <FaMoneyBillWave /> Transaction Information
               </h3>
-              <div className={styles.detailRow}>
+              <div className={`${styles.detailRow} ${styles.detailRowRight}`}>
                 <span className={styles.detailLabel}>Amount</span>
                 <span
                   className={styles.detailValueLarge}
@@ -592,23 +592,23 @@ export default function WalletTransactionDetail() {
                   {formatCurrency(transaction.amount, transaction.currency)}
                 </span>
               </div>
-              <div className={styles.detailRow}>
+              <div className={`${styles.detailRow} ${styles.detailRowRight}`}>
                 <span className={styles.detailLabel}>Type</span>
                 <span className={styles.detailValue}>
                   {getTransactionLabel(transaction.type)}
                 </span>
               </div>
-              <div className={styles.detailRow}>
+              <div className={`${styles.detailRow} ${styles.detailRowRight}`}>
                 <span className={styles.detailLabel}>Channel</span>
                 <span className={styles.detailValue}>{channel.label}</span>
               </div>
-              <div className={styles.detailRow}>
+              <div className={`${styles.detailRow} ${styles.detailRowRight}`}>
                 <span className={styles.detailLabel}>Fee</span>
                 <span className={styles.detailValue}>
                   {formatCurrency(transaction.fee || 0, transaction.currency)}
                 </span>
               </div>
-              <div className={styles.detailRow}>
+              <div className={`${styles.detailRow} ${styles.detailRowRight}`}>
                 <span className={styles.detailLabel}>Net Amount</span>
                 <span className={styles.detailValue}>
                   {amountPrefix}{" "}
