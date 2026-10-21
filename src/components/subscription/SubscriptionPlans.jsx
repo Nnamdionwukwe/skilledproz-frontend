@@ -1,3 +1,4 @@
+// src/pages/subscription/SubscriptionPlans.jsx
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/authStore";
 import api from "../../lib/api";
@@ -10,8 +11,273 @@ import {
   FiX,
   FiTag,
   FiCheck,
+  FiDownload,
+  FiPrinter,
 } from "react-icons/fi";
 import tracker from "../../lib/analytics/tracker";
+
+// ─── Receipt Generator (Exact copy from WalletTransactionDetail) ──────────
+const STATUS_CONFIG = {
+  PENDING: { label: "Pending Review" },
+  PROCESSING: { label: "Processing" },
+  COMPLETED: { label: "Completed" },
+  SUCCESS: { label: "Success" },
+  FAILED: { label: "Failed" },
+  REVERSED: { label: "Reversed" },
+  CANCELLED: { label: "Cancelled" },
+  INITIATED: { label: "Initiated" },
+};
+
+function formatCurrency(amount, currency = "NGN") {
+  const numAmount =
+    typeof amount === "number" ? amount : parseFloat(amount) || 0;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(numAmount);
+}
+
+function formatDateLong(date) {
+  if (!date) return "—";
+  return new Date(date).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getTransactionLabel(type) {
+  const labels = {
+    DEPOSIT: "Deposit",
+    WITHDRAWAL: "Withdrawal",
+    PAYMENT: "Payment",
+    SUBSCRIPTION: "Subscription",
+    REFUND: "Refund",
+    BONUS: "Bonus",
+    ADJUSTMENT: "Adjustment",
+  };
+  return labels[type] || type;
+}
+
+function getPaymentChannel(tx) {
+  if (tx.type === "SUBSCRIPTION") return { label: "Subscription" };
+  return { label: "Payment" };
+}
+
+function generateReceiptHTML(transaction) {
+  const isCredit = false; // Subscriptions are always debits
+  const amountPrefix = "-";
+  const channel = getPaymentChannel(transaction);
+  const isPaid =
+    transaction.status === "COMPLETED" || transaction.status === "SUCCESS";
+
+  // Get the current platform theme
+  const isDark =
+    document.documentElement.getAttribute("data-theme") === "dark" ||
+    (!document.documentElement.hasAttribute("data-theme") &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  // Theme Colors
+  const bg = isDark ? "#080810" : "#f8f9fa";
+  const panel = isDark ? "#0c0c18" : "#ffffff";
+  const text = isDark ? "#ffffff" : "#1a1a2e";
+  const textDim = isDark ? "#a1a1aa" : "#6b7280";
+  const border = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const borderDash = isDark ? "rgba(255,255,255,0.15)" : "#e5e7eb";
+  const footerBg = isDark ? "#0c0c18" : "#f9fafb";
+  const tearColor = isDark ? "#080810" : "#f9fafb";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipt - ${transaction.reference}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: ${bg}; 
+      color: ${text};
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      padding: 20px; 
+    }
+    .receipt { 
+      max-width: 520px; 
+      width: 100%; 
+      background: ${panel}; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      box-shadow: 0 4px 24px rgba(0,0,0,${isDark ? "0.4" : "0.1"}); 
+      border: 1px solid ${border};
+    }
+    .receipt-header { 
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
+      color: #ffffff; 
+      padding: 32px 32px 24px; 
+      text-align: center; 
+    }
+    .receipt-header .logo { 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      width: 56px; 
+      height: 56px; 
+      background: rgba(255,255,255,0.2); 
+      border-radius: 14px; 
+      margin-bottom: 12px; 
+    }
+    .receipt-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+    .receipt-header .subtitle { font-size: 13px; opacity: 0.9; margin-top: 4px; color: #fff; }
+    .receipt-status { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      margin-top: 16px; 
+      padding: 6px 16px; 
+      background: rgba(255,255,255,0.2); 
+      border-radius: 999px; 
+      font-size: 12px; 
+      font-weight: 700; 
+      letter-spacing: 0.05em; 
+      text-transform: uppercase; 
+      color: #fff;
+    }
+    .receipt-amount { 
+      text-align: center; 
+      padding: 28px 32px 24px; 
+      border-bottom: 2px dashed ${borderDash}; 
+    }
+    .receipt-amount .label { 
+      font-size: 12px; 
+      color: ${textDim}; 
+      text-transform: uppercase; 
+      letter-spacing: 0.08em; 
+      font-weight: 700; 
+    }
+    .receipt-amount .value { 
+      font-size: 36px; 
+      font-weight: 800; 
+      margin-top: 8px; 
+      letter-spacing: -0.02em; 
+    }
+    .receipt-amount .value.credit { color: #22c55e; }
+    .receipt-amount .value.debit { color: #ef4444; }
+    .receipt-amount .channel { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      margin-top: 12px; 
+      padding: 4px 12px; 
+      background: rgba(249, 115, 22, 0.15); 
+      color: #f97316; 
+      border-radius: 999px; 
+      font-size: 11px; 
+      font-weight: 700; 
+    }
+    .receipt-body { padding: 24px 32px; }
+    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid ${border}; gap: 16px; }
+    .row:last-child { border-bottom: none; }
+    .row .label { color: ${textDim}; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+    .row .value { color: ${text}; font-size: 13px; font-weight: 600; text-align: right; word-break: break-word; }
+    .row .value.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; }
+    .row.section-title { padding-top: 18px; padding-bottom: 6px; border-bottom: none; }
+    .row.section-title .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: ${textDim}; font-weight: 800; }
+    .fee-row { color: #f97316; }
+    .net-row { margin-top: 8px; padding-top: 16px; border-top: 2px solid ${border}; border-bottom: none; }
+    .net-row .label { font-weight: 700; color: ${text}; }
+    .net-row .value { font-size: 16px; font-weight: 800; color: #22c55e; }
+    .receipt-footer { padding: 24px 32px; background: ${footerBg}; text-align: center; font-size: 12px; color: ${textDim}; }
+    .receipt-footer strong { color: ${text}; }
+    .tear-line { height: 16px; background-image: radial-gradient(circle, ${tearColor} 4px, transparent 4px); background-size: 16px 16px; background-position: -8px 50%; background-color: ${footerBg}; }
+
+    /* --- PRINT SPECIFIC STYLES --- */
+    @media print {
+      @page { size: auto; margin: 0; }
+      body { background: #fff; color: #000; display: block; padding: 0; }
+      .receipt { 
+        max-width: 100%; 
+        box-shadow: none; 
+        border-radius: 0; 
+        border: none;
+        page-break-inside: avoid;
+        transform: scale(0.85); 
+        transform-origin: top center;
+        margin: 0 auto;
+      }
+      /* Force white background and dark text for printing */
+      .receipt { background: #fff !important; }
+      .receipt-body { background: #fff !important; padding: 16px 32px; }
+      .receipt-footer { background: #fff !important; border-top: 1px solid #eee; }
+      .row .value, .net-row .label { color: #000 !important; }
+      .row .label, .receipt-amount .label, .receipt-footer { color: #555 !important; }
+      .tear-line { display: none; }
+      .row { padding: 8px 0; border-bottom: 1px solid #eee; }
+      .receipt-header { padding: 24px 32px 16px; }
+      .receipt-amount { padding: 20px 32px; border-bottom: 2px dashed #eee; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="receipt-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M8 12h8" /><path d="M8 8h4" /><path d="M8 16h6" />
+        </svg>
+      </div>
+      <h1>SkilledProz</h1>
+      <p class="subtitle">Transaction Receipt</p>
+      <div class="receipt-status ${isPaid ? "paid" : ""}">${STATUS_CONFIG[transaction.status]?.label || transaction.status}</div>
+    </div>
+
+    <div class="receipt-amount">
+      <div class="label">${isCredit ? "Amount Received" : "Amount Charged"}</div>
+      <div class="value ${isCredit ? "credit" : "debit"}">${amountPrefix} ${formatCurrency(transaction.amount, transaction.currency)}</div>
+      <div class="channel">${channel.label}</div>
+    </div>
+
+    <div class="receipt-body">
+      <div class="row section-title"><span class="label">Transaction</span></div>
+      <div class="row"><span class="label">Reference</span><span class="value mono">${transaction.reference}</span></div>
+      <div class="row"><span class="label">Type</span><span class="value">${getTransactionLabel(transaction.type)}</span></div>
+      <div class="row"><span class="label">Date</span><span class="value">${formatDateLong(transaction.createdAt)}</span></div>
+      ${transaction.completedAt ? `<div class="row"><span class="label">Completed</span><span class="value">${formatDateLong(transaction.completedAt)}</span></div>` : ""}
+      ${transaction.description ? `<div class="row"><span class="label">Description</span><span class="value">${transaction.description}</span></div>` : ""}
+
+      <div class="row section-title"><span class="label">Breakdown</span></div>
+      <div class="row"><span class="label">Gross Amount</span><span class="value">${formatCurrency(transaction.amount, transaction.currency)}</span></div>
+      <div class="row fee-row"><span class="label">Platform Fee</span><span class="value">- ${formatCurrency(transaction.fee || 0, transaction.currency)}</span></div>
+      <div class="row net-row"><span class="label">Net Amount</span><span class="value">${formatCurrency(transaction.netAmount || transaction.amount, transaction.currency)}</span></div>
+
+      ${
+        transaction.meta?.paymentProvider
+          ? `
+      <div class="row section-title"><span class="label">Payment Details</span></div>
+      <div class="row"><span class="label">Provider</span><span class="value">${transaction.meta.paymentProvider}</span></div>
+      ${transaction.meta?.transactionId ? `<div class="row"><span class="label">Provider Ref</span><span class="value mono">${transaction.meta.transactionId}</span></div>` : ""}
+      `
+          : ""
+      }
+    </div>
+
+    <div class="tear-line"></div>
+    <div class="receipt-footer">
+      <p>Thank you for using <strong>SkilledProz</strong></p>
+      <p style="margin-top: 6px;">This is an electronically generated receipt. No signature required.</p>
+      <p style="margin-top: 6px; font-size: 11px;">skilledproz.com · support@skilledproz.com</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
 
 export default function SubscriptionPlans({ onClose }) {
   const { user } = useAuthStore();
@@ -259,6 +525,43 @@ export default function SubscriptionPlans({ onClose }) {
     }
   };
 
+  const handleDownloadReceipt = () => {
+    if (!current) return;
+
+    // Construct the transaction object for the receipt
+    const transaction = {
+      reference:
+        current.subscription?.reference || `SUB-${current.planId || "PLAN"}`,
+      type: "SUBSCRIPTION",
+      amount: current.plan?.price || 0,
+      currency: current.plan?.currency || "NGN",
+      status: "COMPLETED",
+      createdAt: current.createdAt || new Date().toISOString(),
+      completedAt: current.createdAt || new Date().toISOString(),
+      description: `Subscription for ${current.plan?.name || "Plan"}`,
+      fee: 0,
+      netAmount: current.plan?.price || 0,
+      meta: {
+        paymentProvider: "Paystack",
+      },
+    };
+
+    try {
+      const html = generateReceiptHTML(transaction);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-${transaction.reference}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to download receipt. Please try again.");
+    }
+  };
+
   return (
     <Layout>
       <div className={styles.wrap}>
@@ -303,14 +606,37 @@ export default function SubscriptionPlans({ onClose }) {
                 </p>
               )}
             </div>
-            <button
-              className={styles.cancelLink}
-              onClick={requestCancel}
-              type="button"
-              data-track-id="subscriptionPlans.cancel.open"
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                marginLeft: "auto",
+                alignItems: "center",
+              }}
             >
-              Cancel
-            </button>
+              <button
+                className={styles.cancelLink}
+                onClick={handleDownloadReceipt}
+                type="button"
+                style={{ margin: 0, color: "var(--orange)" }}
+                data-track-id="subscriptionPlans.receipt.download"
+              >
+                <FiDownload
+                  size={14}
+                  style={{ marginRight: "4px", verticalAlign: "middle" }}
+                />{" "}
+                Receipt
+              </button>
+              <button
+                className={styles.cancelLink}
+                onClick={requestCancel}
+                type="button"
+                style={{ margin: 0 }}
+                data-track-id="subscriptionPlans.cancel.open"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
