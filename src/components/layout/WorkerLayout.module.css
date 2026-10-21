@@ -479,6 +479,7 @@
 /* ── Page content ── */
 .content {
   padding: 2rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
   margin-top: 60px; /* offset for fixed header */
   flex: 1;
   overflow-y: auto;
@@ -510,6 +511,7 @@
 @media (max-width: 640px) {
   .content {
     padding: 1.25rem;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
   }
   .header {
     padding: 0 1.25rem;
@@ -557,6 +559,7 @@
   }
   .content {
     padding: 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
     margin-top: 56px;
     height: calc(100vh - 56px);
     height: calc(100dvh - 56px);
@@ -600,126 +603,4 @@
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--text);
-  margin: 0 0 0.5rem;
-}
-
-.modalMessage {
-  font-size: 0.95rem;
-  color: var(--text-dim);
-  line-height: 1.6;
-  margin: 0 0 1.5rem;
-}
-
-.modalActions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.modalCancelBtn,
-.modalConfirmBtn {
-  flex: 1;
-  padding: 0.7rem 1rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: all 0.15s;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-dim);
-}
-
-.modalCancelBtn:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-hover);
-  color: var(--text);
-}
-
-.modalConfirmBtn {
-  border: none;
-  color: #fff;
-}
-.modalConfirm_danger {
-  background: var(--red);
-}
-.modalConfirm_danger:hover {
-  background: var(--red-hover);
-}
-.modalConfirm_primary {
-  background: var(--orange);
-  color: #000;
-}
-.modalConfirm_primary:hover {
-  background: var(--orange-hover);
-}
-.modalConfirm_warning {
-  background: #eab308;
-  color: #000;
-}
-.modalConfirm_warning:hover {
-  background: #d97706;
-}
-
-/* ── Animations ── */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ── Reduced motion ── */
-@media (prefers-reduced-motion: reduce) {
-  .navGroupChevron,
-  .navGroupItems,
-  .sidebar,
-  .content,
-  .modalBox,
-  .modalOverlay {
-    animation: none;
-    transition: none;
-  }
-  .sidebarNav {
-    scroll-behavior: auto;
-  }
-  .toggleThumb {
-    transition: none;
-  }
-}
-
-/* ── Safe-area support for notched devices ── */
-@supports (padding: env(safe-area-inset-left)) {
-  @media (max-width: 640px) {
-    .header {
-      padding-left: max(1.25rem, env(safe-area-inset-left));
-      padding-right: max(1.25rem, env(safe-area-inset-right));
-    }
-    .content {
-      padding-left: max(1.25rem, env(safe-area-inset-left));
-      padding-right: max(1.25rem, env(safe-area-inset-right));
-    }
-  }
-}
+  margin:
