@@ -1,47 +1,30 @@
 /* src/pages/support/TicketThread.module.css */
 
-/* ── Full-bleed page matching MyReports ── */
+/* ── Shell matching Messages.jsx ── */
 .container {
-  width: auto;
-  margin-left: -2rem;
-  margin-right: -2rem;
-  padding: 20px 16px 64px;
-  max-width: none;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 60px);
-  animation: fadeUp 0.3s ease both;
+  /* Force it to fill the exact height of the layout, just like Messages */
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
 }
 
-@media (max-width: 640px) {
-  .container {
-    margin-left: -1.25rem;
-    margin-right: -1.25rem;
-    padding: 16px 12px 64px;
-  }
-}
-
-@media (min-width: 640px) {
-  .container {
-    padding: 28px 24px 64px;
-  }
-}
-
-.loading,
-.error {
-  text-align: center;
-  padding: 4rem;
-  color: var(--text-muted);
-}
-.error {
-  color: var(--red);
-}
-
-/* ── Header ── */
+/* ── Header (fixed at top) ── */
 .header {
-  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
+
 .backBtn {
   display: flex;
   align-items: center;
@@ -52,8 +35,9 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 1rem;
-  font-size: 13px;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  width: fit-content;
 }
 .backBtn:hover {
   color: var(--text);
@@ -65,8 +49,6 @@
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 1rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 1rem;
 }
 .titleRow {
   display: flex;
@@ -75,29 +57,32 @@
 }
 .titleRow h1 {
   font-family: var(--font-display);
-  font-size: clamp(20px, 4vw, 24px);
-  font-weight: 900;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--text);
-  letter-spacing: -0.02em;
   margin: 0;
 }
 .metaRow {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 .dot {
   color: var(--border);
 }
 
-.headerActions .closeBtn,
-.headerActions .reopenBtn {
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
-  font-size: 13px;
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+.closeBtn,
+.reopenBtn {
+  padding: 0.4rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   background: transparent;
@@ -108,7 +93,6 @@
   color: var(--text-muted);
 }
 .closeBtn:hover {
-  border-color: var(--border-hover);
   background: var(--bg-input);
   color: var(--text);
 }
@@ -122,64 +106,51 @@
 
 /* ── Badges ── */
 .badge {
-  font-size: 11px;
+  font-size: 0.65rem;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
+  padding: 3px 8px;
+  border-radius: 999px;
   text-transform: uppercase;
 }
 .badge.open {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 .badge.progress {
-  background: rgba(234, 179, 8, 0.12);
+  background: rgba(234, 179, 8, 0.15);
   color: #eab308;
-  border: 1px solid rgba(234, 179, 8, 0.25);
 }
 .badge.waiting {
-  background: rgba(249, 115, 22, 0.12);
+  background: rgba(249, 115, 22, 0.15);
   color: #f97316;
-  border: 1px solid rgba(249, 115, 22, 0.25);
 }
 .badge.resolved {
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
 }
 .badge.closed {
-  background: var(--bg-card);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
 }
 
-/* ── Thread ── */
+/* ── Thread (Scrollable Area) ── */
 .threadContainer {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding-right: 1rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 1.25rem;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.systemMessage {
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-muted);
-  padding: 0.5rem;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  align-self: center;
-}
-
+/* ── Messages ── */
 .messageWrapper {
   display: flex;
-  gap: 1rem;
-  max-width: 85%;
+  gap: 0.75rem;
+  max-width: 80%;
 }
 .myMessage {
   align-self: flex-end;
@@ -190,65 +161,80 @@
 }
 
 .messageAvatar {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--bg-input);
-  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 0.65rem;
   font-weight: 700;
   color: var(--text-muted);
   flex-shrink: 0;
+  margin-top: auto; /* Aligns to bottom of the bubble */
 }
 .myMessage .messageAvatar {
   background: var(--orange-dim);
   color: var(--orange);
-  border-color: var(--orange-glow);
 }
 
 .messageContent {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .messageBubble {
-  padding: 12px 16px;
+  padding: 0.65rem 0.875rem;
   border-radius: 16px;
-  font-size: 13px;
+  font-size: 0.875rem;
   line-height: 1.5;
+  word-break: break-word;
 }
 .myMessage .messageBubble {
   background: var(--orange);
   color: #fff;
-  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
 }
 .theirMessage .messageBubble {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   color: var(--text);
-  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.messageBubble p {
+  margin: 0;
 }
 
 .messageTime {
-  font-size: 11px;
+  font-size: 0.65rem;
   color: var(--text-muted);
 }
 .myMessage .messageTime {
   text-align: right;
 }
 
+.systemMessage {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.5rem;
+  background: var(--bg-panel);
+  border-radius: 8px;
+  align-self: center;
+}
+
 /* ── Reply Preview ── */
 .replyPreview {
-  background: rgba(0, 0, 0, 0.15);
-  border-left: 3px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid rgba(255, 255, 255, 0.5);
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 12px;
-  margin-bottom: 8px;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -263,49 +249,71 @@
   color: var(--text-dim);
 }
 
-/* ── Attachments ── */
-.attachments {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.attachmentLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(0, 0, 0, 0.15);
-  padding: 6px 10px;
-  border-radius: 6px;
-  color: inherit;
-  text-decoration: none;
-  font-size: 12px;
-}
-.myMessage .attachmentLink {
-  background: rgba(255, 255, 255, 0.2);
-}
-.attachmentLink:hover {
-  text-decoration: underline;
-}
-
-/* ── Reply Box ── */
+/* ── Reply Box (Bottom Input) ── */
 .replyBox {
   background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1rem;
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem;
   flex-shrink: 0;
 }
 
-.replyInputWrap textarea {
-  width: 100%;
+.replyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+.replyHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.replyHeaderText span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--orange);
+}
+.replyHeaderText p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.replyHeader button {
   background: transparent;
   border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.replyInputWrap {
+  display: flex;
+  flex-direction: column;
+}
+.replyInputWrap textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
   color: var(--text);
-  font-size: 13px;
+  font-size: 0.875rem;
   resize: none;
   outline: none;
   font-family: inherit;
+  line-height: 1.5;
+  max-height: 120px;
+}
+.replyInputWrap textarea:focus {
+  border-color: var(--border-focus);
 }
 
 .replyActions {
@@ -313,8 +321,6 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 0.5rem;
-  border-top: 1px solid var(--border);
-  padding-top: 0.75rem;
 }
 
 .attachLabel {
@@ -323,7 +329,7 @@
   justify-content: center;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border-radius: 8px;
 }
 .attachLabel:hover {
@@ -338,10 +344,10 @@
   background: var(--orange);
   color: #fff;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 .sendBtn:disabled {
@@ -359,9 +365,9 @@
 .fileChip {
   background: var(--bg-input);
   border: 1px solid var(--border);
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -378,59 +384,56 @@
   color: var(--red);
 }
 
-/* ── Closed Banner & CSAT ── */
-.closedBanner {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  padding: 1.25rem;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 13px;
-  font-weight: 500;
-}
-
+/* ── CSAT ── */
 .csatBanner {
   background: var(--orange-dim);
-  border: 1px solid var(--orange-glow);
-  padding: 1.5rem;
-  border-radius: 12px;
+  border-top: 1px solid var(--orange-glow);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   text-align: center;
 }
 .csatBanner p {
   color: var(--text);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 0.875rem;
   margin: 0;
 }
 .csatBanner button {
   background: var(--orange);
   color: #fff;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.875rem;
   cursor: pointer;
+}
+
+.closedBanner {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .csatForm {
   background: var(--bg-panel);
-  border: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   padding: 1.5rem;
-  border-radius: 12px;
 }
 .csatForm h3 {
-  margin-bottom: 1rem;
+  margin: 0 0 1rem 0;
   color: var(--text);
-  font-size: 15px;
+  font-size: 0.95rem;
 }
 .stars {
   display: flex;
@@ -456,7 +459,7 @@
   border-radius: 8px;
   padding: 0.75rem;
   color: var(--text);
-  font-size: 13px;
+  font-size: 0.875rem;
   margin-bottom: 1rem;
   outline: none;
   font-family: inherit;
@@ -464,14 +467,14 @@
 .csatActions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 .csatActions button {
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.875rem;
 }
 .csatActions button:first-child {
   background: transparent;
@@ -484,13 +487,27 @@
   color: #fff;
 }
 
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .container {
+    height: calc(100dvh - 56px); /* Fit mobile header */
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .header {
+    padding: 0.75rem 1rem;
+  }
+  .backBtn {
+    margin-bottom: 0.5rem;
+  }
+  .titleRow h1 {
+    font-size: 1.1rem;
+  }
+  .threadContainer {
+    padding: 1rem;
+  }
+  .messageWrapper {
+    max-width: 90%;
+  }
+  .replyBox {
+    padding: 0.75rem 1rem;
   }
 }

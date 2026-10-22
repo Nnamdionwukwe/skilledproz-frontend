@@ -16,7 +16,11 @@
   cursor: grab;
   transition: background 0.2s;
   z-index: 1000;
-  touch-action: none; /* Prevents scrolling while dragging on mobile */
+  touch-action: none;
+  /* Ensure no padding or margins shift the coordinates */
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 .floatingBtn:active {
   cursor: grabbing;
@@ -41,6 +45,10 @@
   overflow: hidden;
   z-index: 1000;
   animation: slideUp 0.2s ease;
+  /* Ensure coordinates match exactly */
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 @keyframes slideUp {
@@ -63,6 +71,8 @@
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+  user-select: none; /* Add this */
+  touch-action: none; /* Add this */
 }
 .header h3 {
   font-size: 0.95rem;
@@ -89,7 +99,7 @@
 /* ── Messages Area ── */
 .messagesArea {
   flex: 1;
-  min-height: 0; /* Crucial for flex children to scroll properly inside a fixed-height container */
+  min-height: 0;
   padding: 1rem;
   overflow-y: auto;
   display: flex;
@@ -225,13 +235,45 @@
   cursor: pointer;
 }
 
+/* ── File Previews ── */
+.filePreviews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+}
+.fileChip {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.fileChip button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.fileChip button:hover {
+  color: var(--red);
+}
+
+/* ── Input Form ── */
 .inputArea {
   padding: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-.inputArea input {
+.inputArea input[type="text"] {
   flex: 1;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -241,22 +283,31 @@
   font-size: 0.85rem;
   outline: none;
 }
-.inputArea input:focus {
+.inputArea input[type="text"]:focus {
   border-color: var(--border-focus);
 }
 
-.attachBtn,
+.attachBtn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.4rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+}
+.attachBtn:hover {
+  color: var(--text);
+}
+
 .sendBtn {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--orange);
   cursor: pointer;
   padding: 0.4rem;
   display: flex;
   align-items: center;
-}
-.sendBtn {
-  color: var(--orange);
 }
 .sendBtn:disabled {
   color: var(--text-muted);

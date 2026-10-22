@@ -13,9 +13,9 @@ import styles from "./SupportChatWidget.module.css";
 import { linkify } from "../../utils/linkify";
 import AttachmentPreview from "./AttachmentPreview";
 
+const BTN_SIZE = 56;
 const WIDGET_WIDTH = 360;
 const WIDGET_HEIGHT = 550;
-const BTN_SIZE = 56;
 
 export default function SupportChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,18 +37,27 @@ export default function SupportChatWidget() {
   } = useSupportChat();
 
   // ── Draggable Logic ──
-  const [position, setPosition] = useState(() => {
-    const saved = localStorage.getItem("support_widget_pos");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
-      x: window.innerWidth - BTN_SIZE - 24,
-      y: window.innerHeight - BTN_SIZE - 24,
-    };
+  // We keep separate states for the button and the window.
+  const [btnPos, setBtnPos] = useState(() => {
+    const saved = localStorage.getItem("support_btn_pos");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          x: window.innerWidth - BTN_SIZE - 24,
+          y: window.innerHeight - BTN_SIZE - 24,
+        };
   });
+
+  const [winPos, setWinPos] = useState(() => {
+    const saved = localStorage.getItem("support_win_pos");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          x: window.innerWidth - WIDGET_WIDTH - 24,
+          y: window.innerHeight - WIDGET_HEIGHT - 24,
+        };
+  });
+
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({
     startX: 0,
@@ -58,19 +67,26 @@ export default function SupportChatWidget() {
     moved: false,
   });
 
+  // Save to localStorage whenever positions change
   useEffect(() => {
-    localStorage.setItem("support_widget_pos", JSON.stringify(position));
-  }, [position]);
+    localStorage.setItem("support_btn_pos", JSON.stringify(btnPos));
+  }, [btnPos]);
+  useEffect(() => {
+    localStorage.setItem("support_win_pos", JSON.stringify(winPos));
+  }, [winPos]);
 
   const handlePointerDown = (e) => {
     if (e.button !== 0) return;
     e.target.setPointerCapture(e.pointerId);
     setIsDragging(true);
+
+    // Grab the correct starting position based on whether it's open
+    const currentPos = isOpen ? winPos : btnPos;
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      posX: position.x,
-      posY: position.y,
+      posX: currentPos.x,
+      posY: currentPos.y,
       moved: false,
     };
   };
@@ -80,33 +96,50 @@ export default function SupportChatWidget() {
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragRef.current.moved = true;
-    setPosition({
-      x: Math.max(
-        10,
-        Math.min(window.innerWidth - BTN_SIZE - 10, dragRef.current.posX + dx),
-      ),
-      y: Math.max(
-        10,
-        Math.min(window.innerHeight - BTN_SIZE - 10, dragRef.current.posY + dy),
-      ),
-    });
+
+    // Clamp bounds based on whether it's open
+    const w = isOpen ? WIDGET_WIDTH : BTN_SIZE;
+    const h = isOpen ? WIDGET_HEIGHT : BTN_SIZE;
+
+    const newX = Math.max(
+      10,
+      Math.min(window.innerWidth - w - 10, dragRef.current.posX + dx),
+    );
+    const newY = Math.max(
+      10,
+      Math.min(window.innerHeight - h - 10, dragRef.current.posY + dy),
+    );
+
+    if (isOpen) {
+      setWinPos({ x: newX, y: newY });
+    } else {
+      setBtnPos({ x: newX, y: newY });
+    }
   };
 
   const handlePointerUp = (e) => {
     e.target.releasePointerCapture(e.pointerId);
     setIsDragging(false);
+
+    // If clicked (not dragged) and currently closed → open it
     if (!dragRef.current.moved && !isOpen) {
+      // Ensure the window opens in a position that fits the screen
       const safeX = Math.max(
         20,
-        Math.min(position.x, window.innerWidth - WIDGET_WIDTH - 20),
+        Math.min(btnPos.x, window.innerWidth - WIDGET_WIDTH - 20),
       );
       const safeY = Math.max(
         20,
-        Math.min(position.y, window.innerHeight - WIDGET_HEIGHT - 20),
+        Math.min(btnPos.y, window.innerHeight - WIDGET_HEIGHT - 20),
       );
-      setPosition({ x: safeX, y: safeY });
+      setWinPos({ x: safeX, y: safeY });
       setIsOpen(true);
     }
+  };
+
+  const handleClose = () => {
+    // When closing, we don't touch btnPos. It stays exactly where the user last left the button.
+    setIsOpen(false);
   };
 
   // ── Chat Logic ──
@@ -142,7 +175,6 @@ export default function SupportChatWidget() {
     let uploadedAttachments = [];
 
     try {
-      // Upload files first if any
       if (files.length > 0) {
         const formData = new FormData();
         files.forEach((f) => formData.append("attachments", f));
@@ -150,10 +182,8 @@ export default function SupportChatWidget() {
         uploadedAttachments = uploadRes.data.attachments || [];
       }
 
-      // Send the message with text and uploaded attachments
       sendMessage(inputText.trim(), uploadedAttachments, replyTo);
 
-      // Reset state
       setInputText("");
       setFiles([]);
       setReplyTo(null);
@@ -171,13 +201,14 @@ export default function SupportChatWidget() {
     setTyping(true);
   };
 
+  // ── Render Closed State ──
   if (!isOpen) {
     return (
       <button
         className={styles.floatingBtn}
         style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+          left: `${btnPos.x}px`,
+          top: `${btnPos.y}px`,
           right: "auto",
           bottom: "auto",
         }}
@@ -190,24 +221,31 @@ export default function SupportChatWidget() {
     );
   }
 
+  // ── Render Open State ──
   return (
     <div
       className={styles.widgetContainer}
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
+        left: `${winPos.x}px`,
+        top: `${winPos.y}px`,
         right: "auto",
         bottom: "auto",
       }}
     >
-      <div className={styles.header}>
+      <div
+        className={styles.header}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{ cursor: isDragging ? "grabbing" : "grab" }}
+      >
         <div>
           <h3>Support Chat</h3>
           <span className={styles.status}>
             {isConnected ? "🟢 Online" : "🔴 Connecting..."}
           </span>
         </div>
-        <button onClick={() => setIsOpen(false)} className={styles.closeBtn}>
+        <button onClick={handleClose} className={styles.closeBtn}>
           <FiX size={20} />
         </button>
       </div>
@@ -246,7 +284,6 @@ export default function SupportChatWidget() {
                 )}
                 {msg.body && <p>{linkify(msg.body)}</p>}
 
-                {/* Attachment Render */}
                 {msg.attachments && msg.attachments.length > 0 && (
                   <AttachmentPreview
                     attachments={msg.attachments}
@@ -287,7 +324,6 @@ export default function SupportChatWidget() {
           </div>
         )}
 
-        {/* File Previews for Upload */}
         {files.length > 0 && (
           <div className={styles.filePreviews}>
             {files.map((f, i) => (
