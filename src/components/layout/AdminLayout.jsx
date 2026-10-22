@@ -45,6 +45,7 @@ import { FaBullhorn, FaRocket, FaGem } from "react-icons/fa";
 
 // Ionicons (Io5)
 import { IoDiamond } from "react-icons/io5";
+import SupportNotificationListener from "../support/SupportNotificationListener";
 
 // ── REARRANGED NAVIGATION ───────────────────────────────────────────────────
 const NAV = [
@@ -217,6 +218,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className={styles.shell}>
+      <SupportNotificationListener />
       {open && (
         <div className={styles.overlay} onClick={() => setOpen(false)} />
       )}

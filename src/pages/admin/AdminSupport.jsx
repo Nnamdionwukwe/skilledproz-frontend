@@ -9,6 +9,9 @@ import {
   FiX,
   FiArrowLeft,
   FiCornerUpLeft,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiInfo,
 } from "react-icons/fi";
 import AdminLayout from "../../components/layout/AdminLayout";
 import { supportApi, createSupportSocket } from "../../lib/supportApi";
@@ -39,8 +42,17 @@ export default function AdminSupport() {
   const [replyTo, setReplyTo] = useState(null);
   const [userIsTyping, setUserIsTyping] = useState(false);
 
+  // Toast State
+  const [toast, setToast] = useState(null);
+
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  // ── Helper: Show Toast ──
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   // ── 1. Data Fetching ──
   const fetchData = async (silent = false) => {
@@ -52,17 +64,24 @@ export default function AdminSupport() {
       ]);
 
       const fetchedChats = chatsRes.data.chats || [];
-      setChats(fetchedChats);
-      setTickets(ticketsRes.data.tickets || []);
+      const fetchedTickets = ticketsRes.data.tickets || [];
 
-      // Update global store count based on fresh data
-      const totalUnread = fetchedChats.reduce(
+      setChats(fetchedChats);
+      setTickets(fetchedTickets);
+
+      // Update global store count based on fresh data (Chats + Tickets)
+      const chatUnread = fetchedChats.reduce(
         (sum, c) => sum + (c.unreadCount || 0),
         0,
       );
-      setUnreadCount(totalUnread);
+      const ticketUnread = fetchedTickets.reduce(
+        (sum, t) => sum + (t.unreadCount || 0),
+        0,
+      );
+      setUnreadCount(chatUnread + ticketUnread);
     } catch (err) {
       console.error(err);
+      if (!silent) showToast("Failed to load support data", "error");
     } finally {
       if (!silent) setLoading(false);
     }
@@ -70,7 +89,6 @@ export default function AdminSupport() {
 
   useEffect(() => {
     fetchData();
-    // Poll every 5s
     const interval = setInterval(() => fetchData(true), 5000);
     return () => clearInterval(interval);
   }, [setUnreadCount]);
@@ -137,17 +155,24 @@ export default function AdminSupport() {
       }
     } catch (err) {
       console.error("Failed to load chat:", err);
+      showToast("Failed to load chat details", "error");
     }
   };
 
   const handleSelectTicket = async (ticket) => {
     try {
+      setTickets((prev) =>
+        prev.map((t) => (t.id === ticket.id ? { ...t, unreadCount: 0 } : t)),
+      );
+      decrementUnread(ticket.unreadCount || 0);
+
       const res = await supportApi.adminGetTicket(ticket.id);
       setActiveTicket(res.data.ticket || res.data);
       setActiveChat(null);
       setMobileView("chat");
     } catch (err) {
       console.error("Failed to load ticket:", err);
+      showToast("Failed to load ticket details", "error");
     }
   };
 
@@ -181,8 +206,10 @@ export default function AdminSupport() {
           if (ack.ok) {
             setActiveChat((prev) => ({
               ...prev,
-              messages: [...prev.messages, ack.message],
+              messages: [...(prev.messages || []), ack.message],
             }));
+          } else {
+            showToast(ack.error || "Failed to send message", "error");
           }
         },
       );
@@ -195,7 +222,11 @@ export default function AdminSupport() {
         isTyping: false,
       });
     } catch (err) {
-      alert("Failed to send.");
+      console.error("Send error:", err);
+      showToast(
+        "Failed to send message. Please check your connection.",
+        "error",
+      );
     } finally {
       setIsUploading(false);
     }
@@ -217,14 +248,30 @@ export default function AdminSupport() {
       setActiveTicket((prev) => ({
         ...prev,
         status: res.data.ticketStatus,
-        messages: [...prev.messages, res.data.message],
+        messages: [...(prev.messages || []), res.data.message],
       }));
 
       setInputText("");
       setFiles([]);
       setReplyTo(null);
+      showToast("Reply sent successfully", "success");
     } catch (err) {
-      alert("Failed to send reply.");
+      console.error("Ticket reply error:", err);
+
+      if (
+        err.response?.status === 400 &&
+        err.response?.data?.message?.includes("closed")
+      ) {
+        showToast(
+          "This ticket is closed. Please reopen it to reply.",
+          "warning",
+        );
+      } else {
+        showToast(
+          err.response?.data?.message || "Failed to send reply",
+          "error",
+        );
+      }
     } finally {
       setIsUploading(false);
     }
@@ -236,10 +283,18 @@ export default function AdminSupport() {
       const res = await supportApi.adminUpdateStatus(activeTicket.id, {
         status,
       });
-      setActiveTicket(res.data.ticket);
+
+      // 1. Re-fetch the full ticket to ensure messages are synced
+      const refreshed = await supportApi.adminGetTicket(activeTicket.id);
+      setActiveTicket(refreshed.data.ticket || refreshed.data);
+
+      // 2. Refresh the sidebar list so badges update
       fetchData(true);
+
+      showToast(`Ticket marked as ${status.replace("_", " ")}`, "success");
     } catch (err) {
-      alert("Failed to update status.");
+      console.error("Status update error:", err);
+      showToast("Failed to update ticket status", "error");
     }
   };
 
@@ -254,13 +309,28 @@ export default function AdminSupport() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase()),
   );
+
   const totalUnreadChats = chats.reduce(
     (sum, c) => sum + (c.unreadCount || 0),
+    0,
+  );
+  const totalUnreadTickets = tickets.reduce(
+    (sum, t) => sum + (t.unreadCount || 0),
     0,
   );
 
   return (
     <AdminLayout>
+      {/* ── Toast Notification ── */}
+      {toast && (
+        <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+          {toast.type === "success" && <FiCheckCircle size={16} />}
+          {toast.type === "error" && <FiAlertTriangle size={16} />}
+          {toast.type === "warning" && <FiInfo size={16} />}
+          <span>{toast.msg}</span>
+        </div>
+      )}
+
       <div className={styles.container}>
         <div
           className={`${styles.sidebar} ${mobileView === "chat" ? styles.hideMobile : ""}`}
@@ -290,6 +360,9 @@ export default function AdminSupport() {
             >
               <FiFileText />
               <span>Tickets</span>
+              {totalUnreadTickets > 0 && (
+                <span className={styles.tabBadge}>{totalUnreadTickets}</span>
+              )}
             </button>
           </div>
 
@@ -303,7 +376,6 @@ export default function AdminSupport() {
             />
           </div>
 
-          {/* SKELETON LOADER MATCHING ADMINUSERS */}
           {loading ? (
             <div className={styles.list}>
               {Array.from({ length: 8 }).map((_, i) => (
@@ -355,6 +427,11 @@ export default function AdminSupport() {
                           {ticket.ticketNumber} • {ticket.user?.firstName}
                         </p>
                       </div>
+                      {ticket.unreadCount > 0 && (
+                        <span className={styles.unreadBadge}>
+                          {ticket.unreadCount}
+                        </span>
+                      )}
                     </div>
                   ))}
             </div>
