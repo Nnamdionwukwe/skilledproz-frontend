@@ -1,3 +1,4 @@
+// src/components/layout/WorkerLayout.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
@@ -32,6 +33,7 @@ import {
 } from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
+import { useSupportStore } from "../../store/supportStore";
 import api from "../../lib/api";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
@@ -41,11 +43,6 @@ const NAV = [
     items: [
       { label: "Dashboard", path: "/dashboard/worker", icon: FiHome },
       { label: "My Bookings", path: "/bookings", icon: FiCalendar },
-      {
-        label: "Categories",
-        path: "/dashboard/worker/categories",
-        icon: FiGrid,
-      },
       { label: "Browse Jobs", path: "/jobs", icon: FiSearch },
       {
         label: "Saved Jobs",
@@ -57,23 +54,15 @@ const NAV = [
         path: "/dashboard/worker/applications",
         icon: FiClipboard,
       },
-      { label: "Disputes", path: "/disputes", icon: FiAlertCircle },
-      { label: "Community Feed", path: "/feed", icon: FiFeather },
-      { label: "My Posts", path: "/my-posts", icon: FiEdit },
-    ],
-  },
-  {
-    group: "History",
-    items: [
       {
-        label: "Completed Jobs",
-        path: "/dashboard/worker/completed-jobs",
-        icon: FiAward,
+        label: "Categories",
+        path: "/dashboard/worker/categories",
+        icon: FiGrid,
       },
     ],
   },
   {
-    group: "Payouts",
+    group: "Finances & History",
     items: [
       {
         label: "Earnings",
@@ -90,8 +79,11 @@ const NAV = [
         path: "/dashboard/worker/refunds",
         icon: FiRotateCcw,
       },
-      { label: "Referrals", path: "/referrals", icon: FiUsers },
-      { label: "Campaigns", path: "/campaign", icon: FiSpeaker },
+      {
+        label: "Completed Jobs",
+        path: "/dashboard/worker/completed-jobs",
+        icon: FiAward,
+      },
       {
         label: "My Employers",
         path: "/dashboard/worker/employers",
@@ -107,6 +99,7 @@ const NAV = [
         path: "/dashboard/worker/retained-cycles",
         icon: FiClock,
       },
+      { label: "Disputes", path: "/disputes", icon: FiAlertCircle },
     ],
   },
   {
@@ -132,27 +125,35 @@ const NAV = [
         path: "/dashboard/worker/verification",
         icon: FiShield,
       },
+    ],
+  },
+  {
+    group: "Community & Growth",
+    items: [
+      { label: "Community Feed", path: "/feed", icon: FiFeather },
+      { label: "My Posts", path: "/my-posts", icon: FiEdit },
+      { label: "Campaigns", path: "/campaign", icon: FiSpeaker },
+      { label: "Referrals", path: "/referrals", icon: FiUsers },
       { label: "Reports", path: "/my-reports", icon: FiFlag },
     ],
   },
   {
-    group: "Inbox",
+    group: "Account & Support",
     items: [
       { label: "Reviews", path: "/dashboard/worker/reviews", icon: FiStar },
+      { label: "Messages", path: "/messages", icon: FiMail, badge: "message" },
+      {
+        label: "Support Hub",
+        path: "/support",
+        icon: FiHelpCircle,
+        badge: "support",
+      },
       {
         label: "Notifications",
         path: "/dashboard/worker/notifications",
         icon: FiBell,
         badge: "unread",
       },
-      { label: "Messages", path: "/messages", icon: FiMail, badge: "message" },
-      // In your NAV array in HirerLayout.jsx / WorkerLayout.jsx
-      { label: "Support Hub", path: "/support", icon: <FiHelpCircle /> },
-    ],
-  },
-  {
-    group: "Subscriptions & Features",
-    items: [
       {
         label: "Subscriptions",
         path: "/dashboard/worker/subscription",
@@ -199,6 +200,7 @@ const PAGE_TITLES = {
     sub: "Jobs you applied to",
   },
   "/messages": { title: "Messages", sub: "Your conversations" },
+  "/support": { title: "Support Hub", sub: "Get help and view tickets" },
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
   "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
@@ -226,6 +228,8 @@ function getPageInfo(pathname) {
   if (pathname.startsWith("/jobs/")) return { title: "Job Detail", sub: "" };
   if (pathname.startsWith("/dashboard/worker/refunds/"))
     return { title: "Refund Detail", sub: "Full refund breakdown" };
+  if (pathname.startsWith("/support/ticket/"))
+    return { title: "Ticket Details", sub: "Support conversation" };
   return { title: "Worker Portal", sub: "Manage your work" };
 }
 
@@ -233,10 +237,10 @@ function isNavActive(itemPath, pathname) {
   if (itemPath === "/bookings" && pathname.startsWith("/bookings/"))
     return true;
   if (itemPath === "/jobs" && pathname.startsWith("/jobs/")) return true;
+  if (itemPath === "/support" && pathname.startsWith("/support/")) return true;
   return pathname === itemPath;
 }
 
-// ─── Confirmation Modal ──────────────────────────────────────────────────
 function ConfirmationModal({
   isOpen,
   onClose,
@@ -248,7 +252,6 @@ function ConfirmationModal({
   confirmVariant = "danger",
 }) {
   if (!isOpen) return null;
-
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
@@ -270,9 +273,10 @@ function ConfirmationModal({
   );
 }
 
-// ─── Main Layout ──────────────────────────────────────────────────────────
 export default function WorkerLayout({ children }) {
   const { user, logout } = useAuthStore();
+  const { unreadCount: supportUnread } = useSupportStore(); // Support Store
+
   const location = useLocation();
   const navigate = useNavigate();
   const [available, setAvailable] = useState(true);
@@ -283,65 +287,52 @@ export default function WorkerLayout({ children }) {
   const [loadingAvailability, setLoadingAvailability] = useState(true);
   const isFirstRender = useRef(true);
 
-  // ── Refs for auto-scrolling the active nav item into view ───────────────
   const navRef = useRef(null);
   const activeItemRef = useRef(null);
 
-  // ── Fetch unread notifications ──────────────────────────────────────────
   const fetchUnread = useCallback(async () => {
     try {
       const res = await api.get("/notifications?limit=1");
       setUnreadCount(res.data.data?.unreadCount || 0);
-    } catch (e) {
-      // Silent fail
-    }
+    } catch (e) {}
   }, []);
 
-  // ── Fetch unread messages ──────────────────────────────────────────────
   const fetchUnreadMessages = useCallback(async () => {
     try {
       const res = await api.get("/messages/conversations");
       const conversations = res.data.data?.conversations || [];
-      const total = conversations.reduce(
-        (sum, c) => sum + (c.unreadCount || 0),
-        0,
+      setUnreadMessageCount(
+        conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
       );
-      setUnreadMessageCount(total);
     } catch (e) {
       setUnreadMessageCount(0);
     }
   }, []);
 
-  // ── Fetch worker availability on mount ──────────────────────────────────
   useEffect(() => {
     if (!user?.id) return;
     api
       .get("/workers/dashboard")
       .then((res) => {
         const profile = res.data.data?.profile;
-        if (profile && typeof profile.isAvailable === "boolean") {
+        if (profile && typeof profile.isAvailable === "boolean")
           setAvailable(profile.isAvailable);
-        }
       })
       .catch(() => {})
       .finally(() => setLoadingAvailability(false));
   }, [user?.id]);
 
-  // ── Sync availability toggle to backend ──────────────────────────────────
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
     if (!user?.id || loadingAvailability) return;
-
-    api.put("/workers/profile", { isAvailable: available }).catch(() => {
-      // Revert on error
-      setAvailable((prev) => !prev);
-    });
+    api
+      .put("/workers/profile", { isAvailable: available })
+      .catch(() => setAvailable((prev) => !prev));
   }, [available, user?.id, loadingAvailability]);
 
-  // ── Periodic fetch for notifications & messages ──────────────────────────
   useEffect(() => {
     fetchUnread();
     fetchUnreadMessages();
@@ -352,9 +343,6 @@ export default function WorkerLayout({ children }) {
     return () => clearInterval(interval);
   }, [fetchUnread, fetchUnreadMessages]);
 
-  // ── AUTO-SCROLL: On route change, scroll the active nav item into view ──
-  // Runs whenever the URL changes. Uses a rAF so the DOM has already painted
-  // the new active class before we calculate positions.
   useEffect(() => {
     if (!activeItemRef.current) return;
     const raf = requestAnimationFrame(() => {
@@ -366,11 +354,8 @@ export default function WorkerLayout({ children }) {
     return () => cancelAnimationFrame(raf);
   }, [location.pathname]);
 
-  // ── AUTO-SCROLL: When the mobile sidebar is opened, scroll active item ──
-  // Only matters on mobile (sidebarOpen), but harmless on desktop.
   useEffect(() => {
-    if (!sidebarOpen) return;
-    if (!activeItemRef.current) return;
+    if (!sidebarOpen || !activeItemRef.current) return;
     const t = setTimeout(() => {
       activeItemRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -383,7 +368,6 @@ export default function WorkerLayout({ children }) {
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "WK";
-
   const pageInfo = getPageInfo(location.pathname);
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -444,23 +428,32 @@ export default function WorkerLayout({ children }) {
                     key={item.path}
                     to={item.path}
                     ref={isActive ? activeItemRef : null}
-                    className={`${styles.navItem} ${
-                      isActive ? styles.active : ""
-                    }`}
+                    className={`${styles.navItem} ${isActive ? styles.active : ""}`}
                     onClick={closeSidebar}
                   >
                     <span className={styles.navIcon}>
                       <item.icon size={18} />
                     </span>
                     {item.label}
-                    {item.badge === "unread" && unreadCount > 0 && (
-                      <span className={styles.navBadge}>
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    )}
+
+                    {/* Message Badge */}
                     {item.badge === "message" && unreadMessageCount > 0 && (
                       <span className={styles.navBadge}>
                         {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+
+                    {/* Support Badge */}
+                    {item.badge === "support" && supportUnread > 0 && (
+                      <span className={styles.navBadge}>
+                        {supportUnread > 99 ? "99+" : supportUnread}
+                      </span>
+                    )}
+
+                    {/* Notification Badge */}
+                    {item.badge === "unread" && unreadCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
                   </Link>
@@ -515,7 +508,6 @@ export default function WorkerLayout({ children }) {
           </div>
 
           <div className={styles.headerRight}>
-            {/* ── Notification Bell ── */}
             <Link
               to="/dashboard/worker/notifications"
               className={styles.headerIconBtn}
@@ -529,7 +521,6 @@ export default function WorkerLayout({ children }) {
               )}
             </Link>
 
-            {/* ── Message Icon ── */}
             <Link
               to="/messages"
               className={styles.headerIconBtn}
@@ -543,7 +534,6 @@ export default function WorkerLayout({ children }) {
               )}
             </Link>
 
-            {/* ── User Avatar ── */}
             <Link to="/profile/me" className={styles.headerIconBtn}>
               <div className={styles.headerAvatar}>
                 {user?.avatar ? (
@@ -568,7 +558,6 @@ export default function WorkerLayout({ children }) {
         <div className={styles.content}>{children}</div>
       </div>
 
-      {/* ─── Logout Confirmation Modal ─── */}
       <ConfirmationModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}

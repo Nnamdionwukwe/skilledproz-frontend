@@ -1,7 +1,9 @@
+// src/components/layout/HirerLayout.jsx
 import { useEffect, useState, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import styles from "./HirerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
+import { useSupportStore } from "../../store/supportStore";
 import api from "../../lib/api";
 import {
   FaHome,
@@ -42,11 +44,6 @@ const NAV = [
       { label: "Dashboard", path: "/dashboard/hirer", icon: <FaHome /> },
       { label: "My Bookings", path: "/bookings", icon: <FaBook /> },
       {
-        label: "Payment History",
-        path: "/dashboard/hirer/payment-history",
-        icon: <FaCreditCard />,
-      },
-      {
         label: "Post a Job",
         path: "/dashboard/hirer/post-job",
         icon: <FaPlus />,
@@ -56,9 +53,6 @@ const NAV = [
         path: "/dashboard/hirer/jobs-management",
         icon: <FaClipboardList />,
       },
-      { label: "Disputes", path: "/disputes", icon: <FaGavel /> },
-      { label: "Community Feed", path: "/feed", icon: <FaNewspaper /> },
-      { label: "My Posts", path: "/my-posts", icon: <FaPenFancy /> },
     ],
   },
   {
@@ -69,16 +63,48 @@ const NAV = [
         path: "/dashboard/hirer/saved-workers",
         icon: <FaBookmark />,
       },
-      {
-        label: "Browse Workers",
-        path: "/search",
-        icon: <FaSearch />,
-      },
+      { label: "Browse Workers", path: "/search", icon: <FaSearch /> },
       { label: "Browse By Categories", path: "/categories", icon: <FaTools /> },
     ],
   },
   {
-    group: "Reviews",
+    group: "Finances",
+    items: [
+      {
+        label: "Payment History",
+        path: "/dashboard/hirer/payment-history",
+        icon: <FaCreditCard />,
+      },
+      {
+        label: "My Wallet",
+        path: "/dashboard/hirer/wallet",
+        icon: <FaWallet />,
+      },
+      { label: "Refund History", path: "/refunds", icon: <FaMoneyBillWave /> },
+      { label: "Disputes", path: "/disputes", icon: <FaGavel /> },
+    ],
+  },
+  {
+    group: "Payroll",
+    items: [
+      {
+        label: "Retained Staffs",
+        path: "/dashboard/hirer/retained-staff",
+        icon: <FaUsers />,
+      },
+    ],
+  },
+  {
+    group: "Community",
+    items: [
+      { label: "Community Feed", path: "/feed", icon: <FaNewspaper /> },
+      { label: "My Posts", path: "/my-posts", icon: <FaPenFancy /> },
+      { label: "Campaigns", path: "/campaign", icon: <FaBullhorn /> },
+      { label: "Referrals", path: "/referrals", icon: <FaUserFriends /> },
+    ],
+  },
+  {
+    group: "Reviews & Reports",
     items: [
       {
         label: "Reviews Received",
@@ -90,55 +116,11 @@ const NAV = [
         path: "/dashboard/hirer/reviews/given",
         icon: <FaPenFancy />,
       },
+      { label: "Reports", path: "/my-reports", icon: <FaFlag /> },
     ],
   },
   {
-    group: "Payments & Refunds",
-    items: [
-      {
-        label: "My Wallet",
-        path: "/dashboard/hirer/wallet",
-        icon: <FaWallet />,
-      },
-      {
-        label: "Refund History",
-        path: "/refunds",
-        icon: <FaMoneyBillWave />,
-      },
-    ],
-  },
-  {
-    group: "Referrals",
-    items: [
-      {
-        label: "Referals",
-        path: "/referrals",
-        icon: <FaUserFriends />,
-      },
-    ],
-  },
-  {
-    group: "Reports",
-    items: [
-      {
-        label: "Reports",
-        path: "/my-reports",
-        icon: <FaFlag />,
-      },
-    ],
-  },
-  {
-    group: "Campaigns",
-    items: [
-      {
-        label: "Campaigns",
-        path: "/campaign",
-        icon: <FaBullhorn />,
-      },
-    ],
-  },
-  {
-    group: "Account",
+    group: "Account & Support",
     items: [
       {
         label: "Messages",
@@ -146,7 +128,12 @@ const NAV = [
         icon: <FaComments />,
         badge: "message",
       },
-      { label: "Support Hub", path: "/support", icon: <FiHelpCircle /> },
+      {
+        label: "Support Hub",
+        path: "/support",
+        icon: <FiHelpCircle />,
+        badge: "support",
+      },
       {
         label: "Notifications",
         path: "/dashboard/hirer/notifications",
@@ -158,27 +145,12 @@ const NAV = [
         path: "/dashboard/hirer/verification",
         icon: <FaShieldAlt />,
       },
-    ],
-  },
-  {
-    group: "Subscriptions & Features",
-    items: [
       {
         label: "Subscriptions",
         path: "/dashboard/hirer/subscription",
         icon: <FaGem />,
       },
       { label: "Settings", path: "/settings", icon: <FaCog /> },
-    ],
-  },
-  {
-    group: "Payroll",
-    items: [
-      {
-        label: "Retained Staffs",
-        path: "/dashboard/hirer/retained-staff",
-        icon: <FaUsers />,
-      },
     ],
   },
 ];
@@ -192,10 +164,7 @@ const PAGE_TITLES = {
     title: "Post a Job",
     sub: "Find the right worker",
   },
-  "/search": {
-    title: "Browse Jobs",
-    sub: "Get the right worker",
-  },
+  "/search": { title: "Browse Jobs", sub: "Get the right worker" },
   "/categories": {
     title: "Browse By Categories",
     sub: "Find workers by skill",
@@ -213,6 +182,8 @@ const PAGE_TITLES = {
     sub: "Feedback from workers",
   },
   "/messages": { title: "Messages", sub: "Your conversations" },
+  "/support": { title: "Support Hub", sub: "Get help and view tickets" },
+  "/support/ticket": { title: "Ticket Details", sub: "Support conversation" },
   "/dashboard/hirer/profile": {
     title: "Profile",
     sub: "Your account information",
@@ -262,26 +233,21 @@ function getPageInfo(pathname) {
   if (pathname.startsWith("/profile/")) return { title: "Profile", sub: "" };
   if (pathname.startsWith("/refunds/"))
     return { title: "Refund Details", sub: "Refund request details" };
+  if (pathname.startsWith("/support/ticket/"))
+    return { title: "Ticket Details", sub: "Support conversation" };
   return { title: "SkilledProz", sub: "" };
 }
 
 function isNavActive(itemPath, pathname) {
   if (itemPath === "/bookings")
     return pathname === "/bookings" || pathname.startsWith("/bookings/");
-  if (itemPath === "/dashboard/hirer/reviews/received")
-    return pathname === "/dashboard/hirer/reviews/received";
-  if (itemPath === "/dashboard/hirer/reviews/given")
-    return pathname === "/dashboard/hirer/reviews/given";
-  if (itemPath === "/dashboard/hirer/payment-history")
-    return pathname === "/dashboard/hirer/payment-history";
-  if (itemPath === "/dashboard/hirer/wallet")
-    return pathname === "/dashboard/hirer/wallet";
+  if (itemPath === "/support")
+    return pathname === "/support" || pathname.startsWith("/support/");
   if (itemPath === "/refunds")
     return pathname === "/refunds" || pathname.startsWith("/refunds/");
   return pathname === itemPath;
 }
 
-// ─── Confirmation Modal ──────────────────────────────────────────────────
 function ConfirmationModal({
   isOpen,
   onClose,
@@ -293,7 +259,6 @@ function ConfirmationModal({
   confirmVariant = "danger",
 }) {
   if (!isOpen) return null;
-
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
@@ -315,20 +280,18 @@ function ConfirmationModal({
   );
 }
 
-// ─── Main Layout ──────────────────────────────────────────────────────────
 export default function HirerLayout({ children }) {
   const { user, logout } = useAuthStore();
+  const { unreadCount: supportUnread } = useSupportStore(); // Support Store
+
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // ── Ref for auto-scrolling the active nav item ─────────────────────────
   const activeItemRef = useRef(null);
 
-  // ── Fetch unread notifications ──────────────────────────────────────────
   useEffect(() => {
     api
       .get("/notifications?limit=1")
@@ -336,22 +299,18 @@ export default function HirerLayout({ children }) {
       .catch(() => {});
   }, [location.pathname]);
 
-  // ── Fetch unread messages ──────────────────────────────────────────────
   useEffect(() => {
     api
       .get("/messages/conversations")
       .then((res) => {
         const conversations = res.data.data?.conversations || [];
-        const total = conversations.reduce(
-          (sum, c) => sum + (c.unreadCount || 0),
-          0,
+        setUnreadMessageCount(
+          conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
         );
-        setUnreadMessageCount(total);
       })
       .catch(() => setUnreadMessageCount(0));
   }, [location.pathname]);
 
-  // ── Auto-scroll to active item on route change ────────────────────────
   useEffect(() => {
     if (!activeItemRef.current) return;
     const raf = requestAnimationFrame(() => {
@@ -363,10 +322,8 @@ export default function HirerLayout({ children }) {
     return () => cancelAnimationFrame(raf);
   }, [location.pathname]);
 
-  // ── Auto-scroll when mobile sidebar opens ─────────────────────────────
   useEffect(() => {
-    if (!sidebarOpen) return;
-    if (!activeItemRef.current) return;
+    if (!sidebarOpen || !activeItemRef.current) return;
     const t = setTimeout(() => {
       activeItemRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -379,7 +336,6 @@ export default function HirerLayout({ children }) {
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "H";
-
   const pageInfo = getPageInfo(location.pathname);
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -440,21 +396,30 @@ export default function HirerLayout({ children }) {
                     key={item.path}
                     to={item.path}
                     ref={isActive ? activeItemRef : null}
-                    className={`${styles.navItem} ${
-                      isActive ? styles.active : ""
-                    }`}
+                    className={`${styles.navItem} ${isActive ? styles.active : ""}`}
                     onClick={closeSidebar}
                   >
                     <span className={styles.navIcon}>{item.icon}</span>
                     {item.label}
-                    {item.badge === "unread" && unreadCount > 0 && (
-                      <span className={styles.navBadge}>
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    )}
+
+                    {/* Message Badge */}
                     {item.badge === "message" && unreadMessageCount > 0 && (
                       <span className={styles.navBadge}>
                         {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+
+                    {/* Support Badge */}
+                    {item.badge === "support" && supportUnread > 0 && (
+                      <span className={styles.navBadge}>
+                        {supportUnread > 99 ? "99+" : supportUnread}
+                      </span>
+                    )}
+
+                    {/* Notification Badge */}
+                    {item.badge === "unread" && unreadCount > 0 && (
+                      <span className={styles.navBadge}>
+                        {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
                   </Link>

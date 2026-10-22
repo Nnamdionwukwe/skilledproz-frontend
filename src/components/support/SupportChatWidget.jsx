@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import { useSupportChat } from "../../hooks/useSupportChat";
 import { supportApi } from "../../lib/supportApi";
+import { useSupportStore } from "../../store/supportStore"; // <-- IMPORT STORE
 import styles from "./SupportChatWidget.module.css";
 import { linkify } from "../../utils/linkify";
 import AttachmentPreview from "./AttachmentPreview";
@@ -26,6 +27,9 @@ export default function SupportChatWidget() {
   const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
 
+  // Get the unread count from the global store
+  const { unreadCount, setUnreadCount, clearUnread } = useSupportStore();
+
   const {
     conversation,
     setConversation,
@@ -37,7 +41,6 @@ export default function SupportChatWidget() {
   } = useSupportChat();
 
   // ── Draggable Logic ──
-  // We keep separate states for the button and the window.
   const [btnPos, setBtnPos] = useState(() => {
     const saved = localStorage.getItem("support_btn_pos");
     return saved
@@ -67,7 +70,6 @@ export default function SupportChatWidget() {
     moved: false,
   });
 
-  // Save to localStorage whenever positions change
   useEffect(() => {
     localStorage.setItem("support_btn_pos", JSON.stringify(btnPos));
   }, [btnPos]);
@@ -79,8 +81,6 @@ export default function SupportChatWidget() {
     if (e.button !== 0) return;
     e.target.setPointerCapture(e.pointerId);
     setIsDragging(true);
-
-    // Grab the correct starting position based on whether it's open
     const currentPos = isOpen ? winPos : btnPos;
     dragRef.current = {
       startX: e.clientX,
@@ -97,7 +97,6 @@ export default function SupportChatWidget() {
     const dy = e.clientY - dragRef.current.startY;
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragRef.current.moved = true;
 
-    // Clamp bounds based on whether it's open
     const w = isOpen ? WIDGET_WIDTH : BTN_SIZE;
     const h = isOpen ? WIDGET_HEIGHT : BTN_SIZE;
 
@@ -110,20 +109,14 @@ export default function SupportChatWidget() {
       Math.min(window.innerHeight - h - 10, dragRef.current.posY + dy),
     );
 
-    if (isOpen) {
-      setWinPos({ x: newX, y: newY });
-    } else {
-      setBtnPos({ x: newX, y: newY });
-    }
+    if (isOpen) setWinPos({ x: newX, y: newY });
+    else setBtnPos({ x: newX, y: newY });
   };
 
   const handlePointerUp = (e) => {
     e.target.releasePointerCapture(e.pointerId);
     setIsDragging(false);
-
-    // If clicked (not dragged) and currently closed → open it
     if (!dragRef.current.moved && !isOpen) {
-      // Ensure the window opens in a position that fits the screen
       const safeX = Math.max(
         20,
         Math.min(btnPos.x, window.innerWidth - WIDGET_WIDTH - 20),
@@ -137,15 +130,33 @@ export default function SupportChatWidget() {
     }
   };
 
-  const handleClose = () => {
-    // When closing, we don't touch btnPos. It stays exactly where the user last left the button.
-    setIsOpen(false);
-  };
-
   // ── Chat Logic ──
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Track unread messages when the widget is closed
+  const prevMessagesLengthRef = useRef(messages.length);
+  useEffect(() => {
+    if (!isOpen && messages.length > prevMessagesLengthRef.current) {
+      // If a new message arrived while closed, increment the global store
+      const newMessages = messages.slice(prevMessagesLengthRef.current);
+      const unreadIncoming = newMessages.filter(
+        (m) => m.senderType === "ADMIN",
+      ).length;
+      if (unreadIncoming > 0) {
+        setUnreadCount(unreadCount + unreadIncoming);
+      }
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, isOpen, unreadCount, setUnreadCount]);
+
+  // Clear unread count when opened
+  useEffect(() => {
+    if (isOpen) {
+      clearUnread();
+    }
+  }, [isOpen, clearUnread]);
 
   const handleStartChat = async () => {
     setIsStarting(true);
@@ -183,7 +194,6 @@ export default function SupportChatWidget() {
       }
 
       sendMessage(inputText.trim(), uploadedAttachments, replyTo);
-
       setInputText("");
       setFiles([]);
       setReplyTo(null);
@@ -217,6 +227,11 @@ export default function SupportChatWidget() {
         onPointerUp={handlePointerUp}
       >
         <FiMessageSquare size={24} />
+        {unreadCount > 0 && (
+          <span className={styles.floatingBadge}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </button>
     );
   }
@@ -245,7 +260,7 @@ export default function SupportChatWidget() {
             {isConnected ? "🟢 Online" : "🔴 Connecting..."}
           </span>
         </div>
-        <button onClick={handleClose} className={styles.closeBtn}>
+        <button onClick={() => setIsOpen(false)} className={styles.closeBtn}>
           <FiX size={20} />
         </button>
       </div>
@@ -283,14 +298,12 @@ export default function SupportChatWidget() {
                   </div>
                 )}
                 {msg.body && <p>{linkify(msg.body)}</p>}
-
                 {msg.attachments && msg.attachments.length > 0 && (
                   <AttachmentPreview
                     attachments={msg.attachments}
                     isMe={isMe}
                   />
                 )}
-
                 <span className={styles.time}>
                   {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
