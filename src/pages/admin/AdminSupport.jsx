@@ -13,12 +13,29 @@ import {
 import AdminLayout from "../../components/layout/AdminLayout";
 import { supportApi, createSupportSocket } from "../../lib/supportApi";
 import { useAuthStore } from "../../store/authStore";
+import { useAdminSupportStore } from "../../store/adminSupportStore";
 import { linkify } from "../../utils/linkify";
 import AttachmentPreview from "../../components/support/AttachmentPreview";
 import styles from "./AdminSupport.module.css";
 
+// Skeleton Loader for the sidebar list
+const SidebarSkeleton = () => (
+  <div className={styles.list}>
+    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+      <div key={i} className={styles.skeletonItem}>
+        <div className={styles.skeletonAvatar} />
+        <div className={styles.skeletonInfo}>
+          <div className={styles.skeletonTitle} />
+          <div className={styles.skeletonText} />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function AdminSupport() {
   const { user, accessToken } = useAuthStore();
+  const { setUnreadCount, decrementUnread } = useAdminSupportStore();
 
   // State
   const [activeTab, setActiveTab] = useState("chats");
@@ -35,14 +52,12 @@ export default function AdminSupport() {
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
-
-  // Typing state for user (when admin is viewing)
   const [userIsTyping, setUserIsTyping] = useState(false);
 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // ── 1. Data Fetching (Background Silent Polling) ──
+  // ── 1. Data Fetching ──
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -50,8 +65,17 @@ export default function AdminSupport() {
         supportApi.adminListChats(),
         supportApi.adminListTickets(),
       ]);
-      setChats(chatsRes.data.chats || []);
+
+      const fetchedChats = chatsRes.data.chats || [];
+      setChats(fetchedChats);
       setTickets(ticketsRes.data.tickets || []);
+
+      // Update global store count based on fresh data
+      const totalUnread = fetchedChats.reduce(
+        (sum, c) => sum + (c.unreadCount || 0),
+        0,
+      );
+      setUnreadCount(totalUnread);
     } catch (err) {
       console.error(err);
     } finally {
@@ -59,12 +83,12 @@ export default function AdminSupport() {
     }
   };
 
-  // Runs on mount AND sets up the 5-second background poller
   useEffect(() => {
     fetchData();
+    // Poll every 5s
     const interval = setInterval(() => fetchData(true), 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [setUnreadCount]);
 
   // ── 2. Socket Setup ──
   useEffect(() => {
@@ -73,31 +97,25 @@ export default function AdminSupport() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      if (activeChat) {
+      if (activeChat)
         socket.emit("support:join", { conversationId: activeChat.id });
-      }
     });
 
-    // Receive new message while admin is in the chat
     socket.on("support:message", (msg) => {
       if (activeChat && msg.conversationId === activeChat.id) {
         setActiveChat((prev) => {
           if (prev.messages.some((m) => m.id === msg.id)) return prev;
           return { ...prev, messages: [...prev.messages, msg] };
         });
-        // Mark as read immediately since we are viewing it
         socket.emit("support:read", { conversationId: activeChat.id });
       }
-      // Silent refresh to update the sidebar list and unread counts
       fetchData(true);
     });
 
-    // User is typing
     socket.on("support:typing", ({ isTyping: typing, userId }) => {
       if (userId !== user?.id) setUserIsTyping(typing);
     });
 
-    // Read receipts (admin's messages get read by user)
     socket.on("support:read", ({ byUserId, at }) => {
       if (byUserId !== user?.id && activeChat) {
         setActiveChat((prev) => ({
@@ -119,15 +137,15 @@ export default function AdminSupport() {
   // ── 3. Actions ──
   const handleSelectChat = async (chat) => {
     try {
+      setChats((prev) =>
+        prev.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c)),
+      );
+      decrementUnread(chat.unreadCount || 0);
+
       const res = await supportApi.adminGetChat(chat.id);
       setActiveChat(res.data.chat || res.data);
       setActiveTicket(null);
       setMobileView("chat");
-
-      // Clear local unread badge instantly
-      setChats((prev) =>
-        prev.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c)),
-      );
 
       if (socketRef.current) {
         socketRef.current.emit("support:read", { conversationId: chat.id });
@@ -246,13 +264,11 @@ export default function AdminSupport() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase()),
   );
-
   const filteredTickets = tickets.filter((t) =>
     `${t.ticketNumber} ${t.subject}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase()),
   );
-
   const totalUnreadChats = chats.reduce(
     (sum, c) => sum + (c.unreadCount || 0),
     0,
@@ -261,7 +277,6 @@ export default function AdminSupport() {
   return (
     <AdminLayout>
       <div className={styles.container}>
-        {/* ── Sidebar (List) ── */}
         <div
           className={`${styles.sidebar} ${mobileView === "chat" ? styles.hideMobile : ""}`}
         >
@@ -303,56 +318,56 @@ export default function AdminSupport() {
             />
           </div>
 
-          <div className={styles.list}>
-            {loading ? (
-              <div className={styles.loading}>Loading...</div>
-            ) : activeTab === "chats" ? (
-              filteredChats.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={`${styles.listItem} ${activeChat?.id === chat.id ? styles.activeItem : ""}`}
-                  onClick={() => handleSelectChat(chat)}
-                >
-                  <div className={styles.avatar}>
-                    {chat.user?.firstName?.[0]}
-                    {chat.user?.lastName?.[0]}
-                  </div>
-                  <div className={styles.itemInfo}>
-                    <h4>
-                      {chat.user?.firstName} {chat.user?.lastName}
-                    </h4>
-                    <p>{chat.lastMessagePreview || "No messages yet"}</p>
-                  </div>
-                  {chat.unreadCount > 0 && (
-                    <span className={styles.unreadBadge}>
-                      {chat.unreadCount}
-                    </span>
-                  )}
-                </div>
-              ))
-            ) : (
-              filteredTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className={`${styles.listItem} ${activeTicket?.id === ticket.id ? styles.activeItem : ""}`}
-                  onClick={() => handleSelectTicket(ticket)}
-                >
-                  <div className={styles.ticketIcon}>
-                    <FiFileText />
-                  </div>
-                  <div className={styles.itemInfo}>
-                    <h4>{ticket.subject}</h4>
-                    <p>
-                      {ticket.ticketNumber} • {ticket.user?.firstName}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          {/* SKELETON LOADER LOGIC */}
+          {loading ? (
+            <SidebarSkeleton />
+          ) : (
+            <div className={styles.list}>
+              {activeTab === "chats"
+                ? filteredChats.map((chat) => (
+                    <div
+                      key={chat.id}
+                      className={`${styles.listItem} ${activeChat?.id === chat.id ? styles.activeItem : ""}`}
+                      onClick={() => handleSelectChat(chat)}
+                    >
+                      <div className={styles.avatar}>
+                        {chat.user?.firstName?.[0]}
+                        {chat.user?.lastName?.[0]}
+                      </div>
+                      <div className={styles.itemInfo}>
+                        <h4>
+                          {chat.user?.firstName} {chat.user?.lastName}
+                        </h4>
+                        <p>{chat.lastMessagePreview || "No messages yet"}</p>
+                      </div>
+                      {chat.unreadCount > 0 && (
+                        <span className={styles.unreadBadge}>
+                          {chat.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  ))
+                : filteredTickets.map((ticket) => (
+                    <div
+                      key={ticket.id}
+                      className={`${styles.listItem} ${activeTicket?.id === ticket.id ? styles.activeItem : ""}`}
+                      onClick={() => handleSelectTicket(ticket)}
+                    >
+                      <div className={styles.ticketIcon}>
+                        <FiFileText />
+                      </div>
+                      <div className={styles.itemInfo}>
+                        <h4>{ticket.subject}</h4>
+                        <p>
+                          {ticket.ticketNumber} • {ticket.user?.firstName}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+            </div>
+          )}
         </div>
 
-        {/* ── Main Chat/Thread Area ── */}
         <div
           className={`${styles.main} ${mobileView === "list" ? styles.hideMobile : ""}`}
         >
@@ -406,7 +421,6 @@ export default function AdminSupport() {
                     const isSystem =
                       msg.senderType === "SYSTEM" ||
                       msg.authorType === "SYSTEM";
-
                     if (isSystem)
                       return (
                         <div key={idx} className={styles.systemMsg}>
@@ -460,7 +474,6 @@ export default function AdminSupport() {
                   },
                 )}
 
-                {/* Typing Indicator */}
                 {userIsTyping && activeChat && (
                   <div className={`${styles.messageRow} ${styles.theirMsg}`}>
                     <div className={`${styles.bubble} ${styles.typingBubble}`}>
@@ -470,7 +483,6 @@ export default function AdminSupport() {
                     </div>
                   </div>
                 )}
-
                 <div ref={messagesEndRef} />
               </div>
 

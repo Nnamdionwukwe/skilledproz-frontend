@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { useAdminSupportStore } from "../../store/adminSupportStore"; // NEW
+import { createSupportSocket } from "../../lib/supportApi"; // NEW
 import api from "../../lib/api";
 import styles from "./AdminLayout.module.css";
 import ConfirmationModal from "../ui/ConfirmationModal";
@@ -38,14 +40,11 @@ import {
   FiTrendingUp,
   FiHelpCircle,
 } from "react-icons/fi";
-
-// Font Awesome Icons (Fa)
 import { FaBullhorn, FaRocket } from "react-icons/fa";
-
-// Ionicons (Io5)
 import { IoDiamond } from "react-icons/io5";
 
 const NAV = [
+  // ... (Keep your exact NAV array from before)
   {
     group: "Overview",
     items: [
@@ -53,92 +52,7 @@ const NAV = [
       { label: "Analytics", path: "/admin/analytics", icon: FiBarChart2 },
     ],
   },
-  {
-    group: "User Analytics",
-    items: [
-      { label: "User Insights", path: "/admin/analytics/users", icon: FiUsers },
-      { label: "Live Feed", path: "/admin/analytics/live", icon: FiRadio },
-      { label: "Segments", path: "/admin/analytics/segments", icon: FiTarget },
-      {
-        label: "Funnel Builder",
-        path: "/admin/analytics/funnel-builder",
-        icon: FiFilter,
-      },
-      {
-        label: "Top Workers",
-        path: "/admin/analytics/top-workers",
-        icon: FiTrendingUp,
-      },
-      {
-        label: "Payment Funnel",
-        path: "/admin/analytics/payment-funnel",
-        icon: FiCreditCard,
-      },
-      {
-        label: "Category Demand",
-        path: "/admin/analytics/category-demand",
-        icon: FiTag,
-      },
-    ],
-  },
-  {
-    group: "User Management",
-    items: [
-      { label: "All Users", path: "/admin/users", icon: FiUsers },
-      { label: "Verifications", path: "/admin/verifications", icon: FiShield },
-      { label: "Disputes", path: "/admin/disputes", icon: FiAlertCircle },
-      { label: "Booking Refunds", path: "/admin/refunds", icon: FiBookOpen },
-    ],
-  },
-  {
-    group: "Financials",
-    items: [
-      { label: "Payments", path: "/admin/payments", icon: FiCreditCard },
-      {
-        label: "Manual Payments",
-        path: "/admin/manual-payments",
-        icon: FiDollarSign,
-      },
-      {
-        label: "Withdrawals",
-        path: "/admin/withdrawals",
-        icon: FiTrendingDown,
-      },
-      { label: "Hirer Wallet", path: "/admin/wallet", icon: FiDollarSign },
-      { label: "Subscriptions", path: "/admin/subscriptions", icon: IoDiamond },
-      { label: "Promo Codes", path: "/admin/promocodes", icon: FiTag },
-      { label: "Featured", path: "/admin/featured", icon: FaRocket },
-      { label: "Insurance", path: "/admin/insurance", icon: FiShield },
-    ],
-  },
-  {
-    group: "Jobs & HR",
-    items: [
-      {
-        label: "Platform Jobs",
-        path: "/admin/platform/jobs",
-        icon: FiBriefcase,
-      },
-      { label: "External Jobs", path: "/admin/external/jobs", icon: FiLink },
-      { label: "Retained Staff", path: "/admin/retained-staff", icon: FiUsers },
-      {
-        label: "Retained Cycles",
-        path: "/admin/retained-cycles",
-        icon: FiCalendar,
-      },
-    ],
-  },
-  {
-    group: "Content & Community",
-    items: [
-      { label: "Posts", path: "/admin/posts", icon: FiEdit3 },
-      { label: "Reviews", path: "/admin/reviews", icon: FiStar },
-      { label: "Categories", path: "/admin/categories", icon: FiTool },
-      { label: "Surveys", path: "/admin/surveys", icon: FiBookOpen },
-      { label: "Waitlist", path: "/admin/waitlist", icon: FiUsers },
-      { label: "Feedback", path: "/admin/feedback", icon: FiMessageSquare },
-    ],
-  },
+  // ... paste the rest of your NAV here ...
   {
     group: "Engagement & Support",
     items: [
@@ -157,58 +71,59 @@ const NAV = [
       { label: "Audit Logs", path: "/admin/audit-logs", icon: FiFileText },
     ],
   },
-  {
-    group: "System",
-    items: [
-      { label: "Broadcast", path: "/admin/broadcast", icon: FaBullhorn },
-      { label: "Settings", path: "/admin/settings", icon: FiSettings },
-      { label: "Admin Logs", path: "/admin/adminlogs", icon: FiSettings },
-    ],
-  },
+  // ...
 ];
 
 export default function AdminLayout({ children }) {
-  const { user, logout } = useAuthStore();
+  const { user, logout, accessToken } = useAuthStore();
+  const { unreadCount: supportUnread, setUnreadCount } = useAdminSupportStore();
+
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
-  const [supportUnread, setSupportUnread] = useState(0);
 
   const navRef = useRef(null);
   const activeRef = useRef(null);
 
-  // Fetch top-level stats
+  // 1. Fetch initial stats and unread count
   useEffect(() => {
     api
       .get("/admin/stats")
       .then((r) => setStats(r.data.data?.overview))
       .catch(() => {});
-  }, []);
 
-  // Silently poll for unread support messages every 15 seconds
-  useEffect(() => {
-    const fetchSupportUnread = async () => {
-      try {
-        const res = await api.get("/support/admin/chats");
+    // Initial fetch of unread count
+    api
+      .get("/support/admin/chats")
+      .then((res) => {
         const chats = res.data.chats || [];
         const totalUnread = chats.reduce(
           (sum, c) => sum + (c.unreadCount || 0),
           0,
         );
-        setSupportUnread(totalUnread);
-      } catch (err) {
-        // silent fail
-      }
-    };
+        setUnreadCount(totalUnread);
+      })
+      .catch(() => {});
+  }, [setUnreadCount]);
 
-    fetchSupportUnread();
-    const interval = setInterval(fetchSupportUnread, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  // 2. Socket Listener for Global New Messages
+  useEffect(() => {
+    if (!accessToken) return;
+    const socket = createSupportSocket(accessToken);
 
-  // Scroll the active nav item into view whenever the route changes.
+    socket.on("support:inbox:new_message", () => {
+      // Instantly increment the badge so the admin sees it pulse
+      useAdminSupportStore.setState((state) => ({
+        unreadCount: state.unreadCount + 1,
+      }));
+    });
+
+    return () => socket.disconnect();
+  }, [accessToken]);
+
+  // Scroll the active nav item into view
   useEffect(() => {
     if (!activeRef.current || !navRef.current) return;
     const t = setTimeout(() => {
@@ -217,9 +132,7 @@ export default function AdminLayout({ children }) {
           block: "nearest",
           behavior: "smooth",
         });
-      } catch {
-        /* older browsers */
-      }
+      } catch {}
     }, 50);
     return () => clearTimeout(t);
   }, [location.pathname, open]);
@@ -227,7 +140,6 @@ export default function AdminLayout({ children }) {
   const initials = user
     ? `${user.firstName?.[0]}${user.lastName?.[0]}`.toUpperCase()
     : "AD";
-
   const currentTitle =
     NAV.flatMap((g) => g.items).find((i) => location.pathname === i.path)
       ?.label || "Admin";
@@ -238,7 +150,6 @@ export default function AdminLayout({ children }) {
         <div className={styles.overlay} onClick={() => setOpen(false)} />
       )}
 
-      {/* ── Sidebar ── */}
       <aside className={`${styles.sidebar} ${open ? styles.open : ""}`}>
         <div className={styles.sidebarTop}>
           <div className={styles.logo}>
@@ -248,7 +159,6 @@ export default function AdminLayout({ children }) {
               <div className={styles.logoRole}>Admin Console</div>
             </div>
           </div>
-
           {stats && (
             <div className={styles.quickStats}>
               <div className={styles.qStat}>
@@ -298,7 +208,6 @@ export default function AdminLayout({ children }) {
                       <Icon size={18} />
                     </span>
                     <span>{item.label}</span>
-                    {/* Support Unread Badge */}
                     {item.badge === "support" && supportUnread > 0 && (
                       <span className={`${styles.navBadge} ${styles.pulse}`}>
                         {supportUnread > 99 ? "99+" : supportUnread}
@@ -333,7 +242,6 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* ── Main ── */}
       <div className={styles.main}>
         <header className={styles.header}>
           <div className={styles.headerLeft}>
