@@ -93,7 +93,8 @@ export default function AttachmentPreview({ attachments, isMe }) {
                 >
                   <FiDownload size={20} />
                 </a>
-                <button onClick={() => setActiveMedia(null)}>
+                {/* Close Button */}
+                <button onClick={() => setActiveMedia(null)} title="Close">
                   <FiX size={24} />
                 </button>
               </div>
