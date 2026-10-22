@@ -295,61 +295,52 @@
   cursor: pointer;
 }
 
-.replyInputWrap {
+/* ── Input Area (Matching Admin) ── */
+.inputArea {
   display: flex;
-  flex-direction: column;
-}
-.replyInputWrap textarea {
-  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  color: var(--text);
-  font-size: 0.875rem;
-  resize: none;
+  border-radius: 10px;
+  padding: 0.5rem;
+  transition: border-color 0.15s;
+}
+.inputArea:focus-within {
+  border-color: var(--orange);
+}
+.inputArea input {
+  flex: 1;
+  background: none;
+  border: none;
   outline: none;
-  font-family: inherit;
-  line-height: 1.5;
-  max-height: 120px;
+  color: var(--text);
+  font-size: 0.9rem;
 }
-.replyInputWrap textarea:focus {
-  border-color: var(--border-focus);
-}
-
-.replyActions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.5rem;
+.inputArea input::placeholder {
+  color: var(--text-muted);
 }
 
-.attachLabel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.attachBtn {
   color: var(--text-muted);
   cursor: pointer;
   padding: 0.4rem;
-  border-radius: 8px;
+  display: flex;
 }
-.attachLabel:hover {
-  background: var(--bg-input);
+.attachBtn:hover {
   color: var(--text);
 }
 
 .sendBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   background: var(--orange);
   color: #fff;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .sendBtn:disabled {
   opacity: 0.5;
@@ -361,7 +352,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 .fileChip {
   background: var(--bg-input);
@@ -540,5 +531,12 @@
   }
   .replyBox {
     padding: 0.5rem 0.75rem;
+  }
+  .inputArea {
+    padding: 0.4rem;
+    gap: 0.5rem;
+  }
+  .inputArea input {
+    font-size: 0.85rem;
   }
 }

@@ -391,60 +391,53 @@ export default function TicketThread() {
                 </button>
               </div>
             )}
-            <form onSubmit={handleReply}>
-              <div className={styles.replyInputWrap}>
-                <textarea
-                  value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
-                  placeholder="Type your reply here..."
-                  rows={3}
+
+            <form onSubmit={handleReply} className={styles.inputArea}>
+              <label className={styles.attachBtn}>
+                <FiPaperclip size={18} />
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime"
+                  onChange={(e) => setFiles(Array.from(e.target.files))}
+                  hidden
                 />
-                {files.length > 0 && (
-                  <div className={styles.filePreviews}>
-                    {files.map((f, i) => (
-                      <div key={i} className={styles.fileChip}>
-                        <span>{f.name}</span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFiles(files.filter((_, idx) => idx !== i))
-                          }
-                        >
-                          <FiX size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className={styles.replyActions}>
-                <label className={styles.attachLabel}>
-                  <FiPaperclip size={18} />
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime"
-                    onChange={(e) => setFiles(Array.from(e.target.files))}
-                    hidden
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className={styles.sendBtn}
-                  disabled={
-                    isSending || (!replyBody.trim() && files.length === 0)
-                  }
-                >
-                  {isSending ? (
-                    "Sending..."
-                  ) : (
-                    <>
-                      <FiSend size={18} /> Send
-                    </>
-                  )}
-                </button>
-              </div>
+              </label>
+              <input
+                type="text"
+                value={replyBody}
+                onChange={(e) => setReplyBody(e.target.value)}
+                placeholder="Type a reply..."
+                disabled={isSending}
+              />
+              <button
+                type="submit"
+                className={styles.sendBtn}
+                disabled={
+                  isSending || (!replyBody.trim() && files.length === 0)
+                }
+              >
+                {isSending ? "⏳" : <FiSend size={18} />}
+              </button>
             </form>
+
+            {files.length > 0 && (
+              <div className={styles.filePreviews}>
+                {files.map((f, i) => (
+                  <div key={i} className={styles.fileChip}>
+                    <span>{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFiles(files.filter((_, idx) => idx !== i))
+                      }
+                    >
+                      <FiX size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
