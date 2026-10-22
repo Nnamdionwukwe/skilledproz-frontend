@@ -132,6 +132,7 @@ const NAV = [
         label: "Live Support Chat",
         path: "/support/chat",
         icon: <FaComments />, // <-- ADDED
+        badge: "support",
       },
       {
         label: "Support Hub",
@@ -246,10 +247,13 @@ function getPageInfo(pathname) {
 function isNavActive(itemPath, pathname) {
   if (itemPath === "/bookings")
     return pathname === "/bookings" || pathname.startsWith("/bookings/");
-  if (itemPath === "/support")
-    return pathname === "/support" || pathname.startsWith("/support/");
+
+  // Exact match for support hub so it doesn't catch "/support/chat"
+  if (itemPath === "/support") return pathname === "/support";
+
   if (itemPath === "/refunds")
     return pathname === "/refunds" || pathname.startsWith("/refunds/");
+
   return pathname === itemPath;
 }
 

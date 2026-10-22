@@ -147,6 +147,7 @@ const NAV = [
         label: "Live Support Chat",
         path: "/support/chat",
         icon: FiMessageCircle,
+        badge: "support",
       },
       {
         label: "Support Hub",
@@ -207,6 +208,7 @@ const PAGE_TITLES = {
   },
   "/messages": { title: "Messages", sub: "Your conversations" },
   "/support": { title: "Support Hub", sub: "Get help and view tickets" },
+  "/support/chat": { title: "Live Support", sub: "Chat with an agent" }, // Added explicit title
   "/profile/me": { title: "My Profile", sub: "Your public profile" },
   "/jobs": { title: "Browse Jobs", sub: "Find your next job" },
   "/disputes": { title: "My Disputes", sub: "Track and manage your disputes" },
@@ -239,11 +241,15 @@ function getPageInfo(pathname) {
   return { title: "Worker Portal", sub: "Manage your work" };
 }
 
+// ─── FIXED ACTIVE HIGHLIGHT LOGIC ───
 function isNavActive(itemPath, pathname) {
   if (itemPath === "/bookings" && pathname.startsWith("/bookings/"))
     return true;
   if (itemPath === "/jobs" && pathname.startsWith("/jobs/")) return true;
-  if (itemPath === "/support" && pathname.startsWith("/support/")) return true;
+
+  // FIX: Exact match for support hub so it doesn't catch /support/chat
+  if (itemPath === "/support") return pathname === "/support";
+
   return pathname === itemPath;
 }
 
