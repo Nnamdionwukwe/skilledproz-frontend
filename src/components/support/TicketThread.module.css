@@ -8,20 +8,18 @@
   height: calc(100vh - 60px);
   height: calc(100dvh - 60px);
   width: 100%;
-  overflow: hidden;
+  overflow: hidden; /* Prevents the whole page from scrolling */
   background: var(--bg);
 }
 
-/* ── Header (fixed at top) ── */
+/* ── Header (Fixed at top) ── */
 .header {
   display: flex;
   flex-direction: column;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
+  flex-shrink: 0; /* Prevents header from shrinking */
   z-index: 30;
 }
 
@@ -133,10 +131,10 @@
   color: #6b7280;
 }
 
-/* ── Thread (Scrollable Area) ── */
+/* ── Thread (The ONLY scrollable area) ── */
 .threadContainer {
   flex: 1;
-  min-height: 0;
+  min-height: 0; /* Critical for flex layout to allow scrolling */
   overflow-y: auto;
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -249,12 +247,12 @@
   color: var(--text-dim);
 }
 
-/* ── Reply Box (Bottom Input) ── */
+/* ── Reply Box (Fixed at bottom) ── */
 .replyBox {
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
   padding: 1rem 1.5rem;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Prevents input from shrinking */
 }
 
 .replyHeader {
@@ -384,7 +382,7 @@
   color: var(--red);
 }
 
-/* ── CSAT ── */
+/* ── CSAT & Banners ── */
 .csatBanner {
   background: var(--orange-dim);
   border-top: 1px solid var(--orange-glow);
@@ -394,6 +392,7 @@
   align-items: center;
   gap: 0.75rem;
   text-align: center;
+  flex-shrink: 0;
 }
 .csatBanner p {
   color: var(--text);
@@ -423,12 +422,14 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .csatForm {
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
   padding: 1.5rem;
+  flex-shrink: 0;
 }
 .csatForm h3 {
   margin: 0 0 1rem 0;
