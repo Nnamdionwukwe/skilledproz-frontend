@@ -9,7 +9,7 @@ import {
 } from "react-icons/fi";
 import { useSupportChat } from "../../hooks/useSupportChat";
 import { supportApi } from "../../lib/supportApi";
-import { useSupportStore } from "../../store/supportStore"; // <-- IMPORT STORE
+import { useSupportStore } from "../../store/supportStore";
 import styles from "./SupportChatWidget.module.css";
 import { linkify } from "../../utils/linkify";
 import AttachmentPreview from "./AttachmentPreview";
@@ -26,6 +26,10 @@ export default function SupportChatWidget() {
   const [isStarting, setIsStarting] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Highlight State for Double Tap
+  const [highlightedMsgId, setHighlightedMsgId] = useState(null);
+  const lastTapRef = useRef(0);
 
   // Get the unread count from the global store
   const { unreadCount, setUnreadCount, clearUnread } = useSupportStore();
@@ -130,6 +134,21 @@ export default function SupportChatWidget() {
     }
   };
 
+  // ── Double Tap Logic ──
+  const handleBubbleClick = (msg) => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_PRESS_DELAY) {
+      if (msg.senderType === "SYSTEM") return;
+
+      setReplyTo(msg);
+      setHighlightedMsgId(msg.id);
+      setTimeout(() => setHighlightedMsgId(null), 1000);
+    }
+    lastTapRef.current = now;
+  };
+
   // ── Chat Logic ──
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -139,7 +158,6 @@ export default function SupportChatWidget() {
   const prevMessagesLengthRef = useRef(messages.length);
   useEffect(() => {
     if (!isOpen && messages.length > prevMessagesLengthRef.current) {
-      // If a new message arrived while closed, increment the global store
       const newMessages = messages.slice(prevMessagesLengthRef.current);
       const unreadIncoming = newMessages.filter(
         (m) => m.senderType === "ADMIN",
@@ -151,11 +169,8 @@ export default function SupportChatWidget() {
     prevMessagesLengthRef.current = messages.length;
   }, [messages, isOpen, unreadCount, setUnreadCount]);
 
-  // Clear unread count when opened
   useEffect(() => {
-    if (isOpen) {
-      clearUnread();
-    }
+    if (isOpen) clearUnread();
   }, [isOpen, clearUnread]);
 
   const handleStartChat = async () => {
@@ -287,9 +302,9 @@ export default function SupportChatWidget() {
               className={`${styles.messageRow} ${isMe ? styles.myMsg : styles.theirMsg}`}
             >
               <div
-                className={styles.bubble}
-                onDoubleClick={() => setReplyTo(msg)}
-                title="Double-click to reply"
+                className={`${styles.bubble} ${highlightedMsgId === msg.id ? styles.highlighted : ""}`}
+                onClick={() => handleBubbleClick(msg)}
+                title="Double-tap to reply"
               >
                 {msg.replyTo && (
                   <div className={styles.replyPreview}>
@@ -322,6 +337,11 @@ export default function SupportChatWidget() {
       </div>
 
       <div className={styles.replyBoxWrap}>
+        {/* ADDED: Hint Text */}
+        <div className={styles.hintText}>
+          <FiCornerUpLeft size={12} /> double-tap a message to reply
+        </div>
+
         {replyTo && (
           <div className={styles.replyHeader}>
             <div className={styles.replyHeaderText}>

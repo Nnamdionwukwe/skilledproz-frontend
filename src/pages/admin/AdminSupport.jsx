@@ -42,6 +42,10 @@ export default function AdminSupport() {
   const [replyTo, setReplyTo] = useState(null);
   const [userIsTyping, setUserIsTyping] = useState(false);
 
+  // Highlight State for Double Tap
+  const [highlightedMsgId, setHighlightedMsgId] = useState(null);
+  const lastTapRef = useRef(0);
+
   // Toast State
   const [toast, setToast] = useState(null);
 
@@ -52,6 +56,26 @@ export default function AdminSupport() {
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Helper: Double Tap / Double Click ──
+  const handleBubbleClick = (msg) => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_PRESS_DELAY) {
+      // It's a double tap!
+      const isSystem =
+        msg.senderType === "SYSTEM" || msg.authorType === "SYSTEM";
+      if (isSystem) return; // Can't reply to system messages
+
+      setReplyTo(msg);
+      setHighlightedMsgId(msg.id || msg.tempId);
+
+      // Remove highlight after 1 second
+      setTimeout(() => setHighlightedMsgId(null), 1000);
+    }
+    lastTapRef.current = now;
   };
 
   // ── 1. Data Fetching ──
@@ -504,9 +528,9 @@ export default function AdminSupport() {
                         className={`${styles.messageRow} ${isAdmin ? styles.myMsg : styles.theirMsg}`}
                       >
                         <div
-                          className={styles.bubble}
-                          onDoubleClick={() => setReplyTo(msg)}
-                          title="Double-click to reply"
+                          className={`${styles.bubble} ${highlightedMsgId === (msg.id || msg.tempId) ? styles.highlighted : ""}`}
+                          onClick={() => handleBubbleClick(msg)}
+                          title="Double-tap to reply"
                         >
                           {msg.replyTo && (
                             <div className={styles.replyPreview}>
@@ -557,6 +581,12 @@ export default function AdminSupport() {
               </div>
 
               <div className={styles.replyBox}>
+                {/* ADDED: Hint Text */}
+                <div className={styles.hintText}>
+                  <FiCornerUpLeft size={12} /> Double-click or double-tap a
+                  message to reply
+                </div>
+
                 {replyTo && (
                   <div className={styles.replyHeader}>
                     <div className={styles.replyHeaderText}>

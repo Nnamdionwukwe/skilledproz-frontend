@@ -626,3 +626,39 @@
     transform: translateX(0);
   }
 }
+/* Add these to the bottom of src/pages/admin/AdminSupport.module.css */
+
+/* ── Hint Text ── */
+.hintText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  opacity: 0.8;
+}
+
+/* ── Message Highlight on Double-Tap ── */
+.bubble {
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+  cursor: pointer;
+}
+
+.highlighted {
+  animation: flashHighlight 1s ease-out;
+}
+
+@keyframes flashHighlight {
+  0% {
+    background-color: rgba(249, 115, 22, 0.3);
+    transform: scale(0.98);
+  }
+  100% {
+    background-color: inherit;
+    transform: scale(1);
+  }
+}
