@@ -11,6 +11,7 @@ import { useSupportChat } from "../../hooks/useSupportChat";
 import { supportApi } from "../../lib/supportApi";
 import styles from "./SupportChatWidget.module.css";
 import { linkify } from "../../utils/linkify";
+import AttachmentPreview from "./AttachmentPreview";
 
 const WIDGET_WIDTH = 360;
 const WIDGET_HEIGHT = 550;
@@ -19,6 +20,8 @@ const BTN_SIZE = 56;
 export default function SupportChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [files, setFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
@@ -127,13 +130,40 @@ export default function SupportChatWidget() {
     if (isOpen && !conversation && !isStarting) handleStartChat();
   }, [isOpen, conversation, isStarting]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!inputText.trim() || conversation?.status === "ENDED") return;
-    sendMessage(inputText.trim(), [], replyTo);
-    setInputText("");
-    setReplyTo(null);
-    setTyping(false);
+    if (
+      (!inputText.trim() && files.length === 0) ||
+      conversation?.status === "ENDED"
+    )
+      return;
+
+    setIsUploading(true);
+    let uploadedAttachments = [];
+
+    try {
+      // Upload files first if any
+      if (files.length > 0) {
+        const formData = new FormData();
+        files.forEach((f) => formData.append("attachments", f));
+        const uploadRes = await supportApi.uploadChatAttachments(formData);
+        uploadedAttachments = uploadRes.data.attachments || [];
+      }
+
+      // Send the message with text and uploaded attachments
+      sendMessage(inputText.trim(), uploadedAttachments, replyTo);
+
+      // Reset state
+      setInputText("");
+      setFiles([]);
+      setReplyTo(null);
+      setTyping(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload attachment. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleTyping = (e) => {
@@ -215,6 +245,15 @@ export default function SupportChatWidget() {
                   </div>
                 )}
                 {msg.body && <p>{linkify(msg.body)}</p>}
+
+                {/* Attachment Render */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <AttachmentPreview
+                    attachments={msg.attachments}
+                    isMe={isMe}
+                  />
+                )}
+
                 <span className={styles.time}>
                   {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
@@ -247,10 +286,35 @@ export default function SupportChatWidget() {
             </button>
           </div>
         )}
+
+        {/* File Previews for Upload */}
+        {files.length > 0 && (
+          <div className={styles.filePreviews}>
+            {files.map((f, i) => (
+              <div key={i} className={styles.fileChip}>
+                <span>{f.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setFiles(files.filter((_, idx) => idx !== i))}
+                >
+                  <FiX size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <form onSubmit={handleSend} className={styles.inputArea}>
-          <button type="button" className={styles.attachBtn}>
+          <label className={styles.attachBtn} title="Attach file">
             <FiPaperclip size={18} />
-          </button>
+            <input
+              type="file"
+              multiple
+              accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime"
+              onChange={(e) => setFiles(Array.from(e.target.files))}
+              hidden
+            />
+          </label>
           <input
             type="text"
             value={inputText}
@@ -260,14 +324,18 @@ export default function SupportChatWidget() {
                 ? "Chat ended."
                 : "Type a message..."
             }
-            disabled={conversation?.status === "ENDED"}
+            disabled={conversation?.status === "ENDED" || isUploading}
           />
           <button
             type="submit"
             className={styles.sendBtn}
-            disabled={!inputText.trim() || conversation?.status === "ENDED"}
+            disabled={
+              (!inputText.trim() && files.length === 0) ||
+              conversation?.status === "ENDED" ||
+              isUploading
+            }
           >
-            <FiSend size={18} />
+            {isUploading ? "⏳" : <FiSend size={18} />}
           </button>
         </form>
       </div>

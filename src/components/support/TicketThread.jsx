@@ -16,6 +16,7 @@ import WorkerLayout from "../../components/layout/WorkerLayout";
 import { supportApi } from "../../lib/supportApi";
 import styles from "./TicketThread.module.css";
 import { linkify } from "../../utils/linkify";
+import AttachmentPreview from "../../components/support/AttachmentPreview";
 
 // Simple shimmer block for loading state
 const Skeleton = ({ width, height, style }) => (
@@ -303,20 +304,13 @@ export default function TicketThread() {
                       </div>
                     )}
                     <p>{linkify(msg.body)}</p>
+
+                    {/* Attachment Render */}
                     {msg.attachments && msg.attachments.length > 0 && (
-                      <div className={styles.attachments}>
-                        {msg.attachments.map((att, i) => (
-                          <a
-                            key={i}
-                            href={att.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={styles.attachmentLink}
-                          >
-                            <FiPaperclip size={14} /> {att.name}
-                          </a>
-                        ))}
-                      </div>
+                      <AttachmentPreview
+                        attachments={msg.attachments}
+                        isMe={isMe}
+                      />
                     )}
                   </div>
                   <span className={styles.messageTime}>
