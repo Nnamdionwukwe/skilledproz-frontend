@@ -1,0 +1,196 @@
+/* src/components/support/SupportChatWidget.module.css */
+
+/* ── Floating Action Button ── */
+.floatingBtn {
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  cursor: grab;
+  transition: background 0.2s; /* Removed transform so dragging feels snappy */
+  z-index: 1000;
+  touch-action: none; /* Prevents scrolling while dragging on mobile */
+}
+.floatingBtn:active {
+  cursor: grabbing;
+}
+.floatingBtn:hover {
+  background: var(--orange-hover);
+}
+
+/* ── Chat Window ── */
+.widgetContainer {
+  position: fixed;
+  width: 360px;
+  height: 520px;
+  max-height: calc(100vh - 4rem);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+  animation: slideUp 0.2s ease;
+}
+
+/* Keep the rest of the CSS exactly the same as before... */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  padding: 1rem 1.25rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.header h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.status {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.closeBtn:hover {
+  color: var(--text);
+}
+
+.messagesArea {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg);
+}
+
+.emptyState {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 2rem;
+}
+
+.messageRow {
+  display: flex;
+  width: 100%;
+}
+.myMsg {
+  justify-content: flex-end;
+}
+.theirMsg {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.myMsg .bubble {
+  background: var(--orange);
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+.theirMsg .bubble {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 2px;
+}
+
+.time {
+  display: block;
+  font-size: 0.62rem;
+  margin-top: 4px;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.systemMsg {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0;
+}
+.typingIndicator {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: 4px;
+}
+
+.inputArea {
+  padding: 1rem;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.inputArea input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+}
+.inputArea input:focus {
+  border-color: var(--border-focus);
+}
+.attachBtn,
+.sendBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+}
+.sendBtn {
+  color: var(--orange);
+}
+.sendBtn:disabled {
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: not-allowed;
+}

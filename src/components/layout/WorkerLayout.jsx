@@ -28,6 +28,7 @@ import {
   FiMenu,
   FiRotateCcw,
   FiBriefcase,
+  FiHelpCircle,
 } from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
@@ -145,6 +146,8 @@ const NAV = [
         badge: "unread",
       },
       { label: "Messages", path: "/messages", icon: FiMail, badge: "message" },
+      // In your NAV array in HirerLayout.jsx / WorkerLayout.jsx
+      { label: "Support Hub", path: "/support", icon: <FiHelpCircle /> },
     ],
   },
   {

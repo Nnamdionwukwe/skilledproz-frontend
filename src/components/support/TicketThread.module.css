@@ -1,0 +1,423 @@
+/* src/pages/support/TicketThread.module.css */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px); /* Adjust for layout header */
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 4rem;
+  color: var(--text-muted);
+}
+.error {
+  color: var(--red);
+}
+
+/* ── Header ── */
+.header {
+  margin-bottom: 2rem;
+  flex-shrink: 0;
+}
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.backBtn:hover {
+  color: var(--text);
+}
+
+.headerMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.titleRow h1 {
+  font-size: 1.4rem;
+  color: var(--text);
+  margin: 0;
+}
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+.dot {
+  color: var(--border);
+}
+
+.headerActions .closeBtn,
+.headerActions .reopenBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+}
+.closeBtn {
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.closeBtn:hover {
+  background: var(--bg-input);
+  color: var(--text);
+}
+.reopenBtn {
+  border: 1px solid var(--green);
+  color: var(--green);
+}
+.reopenBtn:hover {
+  background: var(--green-dim);
+}
+
+/* ── Badges ── */
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.badge.open {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+.badge.progress {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+}
+.badge.waiting {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+.badge.resolved {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+.badge.closed {
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
+}
+
+/* ── Thread ── */
+.threadContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.systemMessage {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0.5rem;
+  background: var(--bg-panel);
+  border-radius: 8px;
+  align-self: center;
+}
+
+.messageWrapper {
+  display: flex;
+  gap: 1rem;
+  max-width: 85%;
+}
+.myMessage {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.theirMessage {
+  align-self: flex-start;
+}
+
+.messageAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.myMessage .messageAvatar {
+  background: var(--orange-dim);
+  color: var(--orange);
+}
+
+.messageContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.messageBubble {
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.myMessage .messageBubble {
+  background: var(--orange);
+  color: #fff;
+  border-top-right-radius: 4px;
+}
+.theirMessage .messageBubble {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-top-left-radius: 4px;
+}
+
+.messageTime {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.myMessage .messageTime {
+  text-align: right;
+}
+
+/* ── Attachments ── */
+.attachments {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.attachmentLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.myMessage .attachmentLink {
+  background: rgba(255, 255, 255, 0.2);
+}
+.attachmentLink:hover {
+  text-decoration: underline;
+}
+
+/* ── Reply Box ── */
+.replyBox {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  flex-shrink: 0;
+}
+
+.replyInputWrap textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.replyActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.attachLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+.attachLabel:hover {
+  background: var(--bg-input);
+  color: var(--text);
+}
+
+.sendBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── File Previews ── */
+.filePreviews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.fileChip {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.fileChip button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.fileChip button:hover {
+  color: var(--red);
+}
+
+/* ── Closed Banner & CSAT ── */
+.closedBanner {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.csatBanner {
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-glow);
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+.csatBanner p {
+  color: var(--text);
+  font-weight: 500;
+}
+.csatBanner button {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.csatForm {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+.csatForm h3 {
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+.stars {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.starActive {
+  color: var(--orange);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.starInactive {
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.csatForm textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--text);
+  margin-bottom: 1rem;
+  outline: none;
+  font-family: inherit;
+}
+.csatActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+.csatActions button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.csatActions button:first-child {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.csatActions button:last-child {
+  background: var(--orange);
+  border: none;
+  color: #fff;
+}

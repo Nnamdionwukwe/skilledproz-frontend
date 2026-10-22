@@ -160,6 +160,9 @@ import WorkerRetainedCycles from "./pages/worker/retained-staff/WorkerRetainedCy
 import WorkerEmployerDetail from "./pages/worker/retained-staff/WorkerEmployerDetail.jsx";
 import WalletDepositSuccess from "./pages/wallet/WalletDepositSuccess.jsx";
 import WalletTransactionDetail from "./components/hirer/WalletTransactionDetail.jsx";
+import SupportChatWidget from "./components/support/SupportChatWidget.jsx";
+import SupportHub from "./components/support/SupportHub.jsx";
+import TicketThread from "./components/support/TicketThread.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -228,6 +231,7 @@ function RoleRedirect() {
 // NOTE: BrowserRouter, IncomingCallBanner, and RouteTracker now live in
 // main.jsx. This component is a pure route table — no shell, no globals.
 export default function App() {
+  const { user } = useAuthStore();
   return (
     <>
       <div id="google_translate_element" style={{ display: "none" }} />
@@ -1371,6 +1375,23 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/support"
+          element={
+            <RequireAuth>
+              <SupportHub />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/support/ticket/:id"
+          element={
+            <RequireAuth>
+              <TicketThread />
+            </RequireAuth>
+          }
+        />
+
         {/* ── Public pages ── */}
         <Route path="/categories" element={<CategoriesBrowse />} />
         <Route path="/categories/:slug" element={<CategoryDetail />} />
@@ -1393,6 +1414,8 @@ export default function App() {
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      {/* ── Global Support Chat Widget ── */}
+      {user && <SupportChatWidget />}
     </>
   );
 }

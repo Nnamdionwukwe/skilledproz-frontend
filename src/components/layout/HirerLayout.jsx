@@ -32,6 +32,7 @@ import {
   FaMoneyBillWave,
   FaUsers,
 } from "react-icons/fa";
+import { FiHelpCircle } from "react-icons/fi";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
 const NAV = [
@@ -74,12 +75,6 @@ const NAV = [
         icon: <FaSearch />,
       },
       { label: "Browse By Categories", path: "/categories", icon: <FaTools /> },
-      {
-        label: "Messages",
-        path: "/messages",
-        icon: <FaComments />,
-        badge: "message",
-      },
     ],
   },
   {
@@ -145,6 +140,13 @@ const NAV = [
   {
     group: "Account",
     items: [
+      {
+        label: "Messages",
+        path: "/messages",
+        icon: <FaComments />,
+        badge: "message",
+      },
+      { label: "Support Hub", path: "/support", icon: <FiHelpCircle /> },
       {
         label: "Notifications",
         path: "/dashboard/hirer/notifications",
