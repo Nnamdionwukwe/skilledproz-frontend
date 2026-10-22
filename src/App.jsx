@@ -165,6 +165,7 @@ import SupportHub from "./components/support/SupportHub.jsx";
 import TicketThread from "./components/support/TicketThread.jsx";
 import AdminSupport from "./pages/admin/AdminSupport.jsx";
 import AdminContacts from "./pages/admin/AdminContacts.jsx";
+import SupportChat from "./components/support/SupportChat.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1417,6 +1418,14 @@ export default function App() {
         />
 
         <Route
+          path="/support/chat"
+          element={
+            <RequireAuth>
+              <SupportChat />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/support"
           element={
             <RequireAuth>
@@ -1456,7 +1465,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       {/* ── Global Support Chat Widget ── */}
-      {showSupportWidget && <SupportChatWidget />}
+      {/* {showSupportWidget && <SupportChatWidget />} */}
     </>
   );
 }

@@ -1,0 +1,293 @@
+/* src/pages/support/SupportChat.module.css */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px); /* Adjust 64px if your top navbar is taller */
+  height: calc(100dvh - 64px);
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.header {
+  padding: 1rem 1.25rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.status {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* CRITICAL FIX: Flex 1 + min-height 0 forces isolated scrolling */
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.messagesArea {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg);
+}
+
+.emptyState {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 2rem;
+}
+
+.messageRow {
+  display: flex;
+  width: 100%;
+}
+.myMsg {
+  justify-content: flex-end;
+}
+.theirMsg {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+  cursor: pointer;
+}
+.myMsg .bubble {
+  background: var(--orange);
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+.theirMsg .bubble {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 2px;
+}
+
+.time {
+  display: block;
+  font-size: 0.62rem;
+  margin-top: 4px;
+  opacity: 0.7;
+  text-align: right;
+}
+
+/* ── Reply Preview ── */
+.replyPreview {
+  background: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid rgba(255, 255, 255, 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theirMsg .replyPreview {
+  background: var(--bg-input);
+  border-left-color: var(--orange);
+  color: var(--text-dim);
+}
+
+/* ── System Messages & Indicators ── */
+.systemMsg {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0;
+}
+.typingIndicator {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: 4px;
+}
+
+/* ── Input Area ── */
+.replyBoxWrap {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.hintText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding: 8px 0 0;
+  opacity: 0.8;
+}
+
+.replyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+}
+.replyHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.replyHeaderText span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--orange);
+}
+.replyHeaderText p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.replyHeader button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* ── File Previews ── */
+.filePreviews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+}
+.fileChip {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.fileChip button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.fileChip button:hover {
+  color: var(--red);
+}
+
+/* ── Input Form ── */
+.inputArea {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.inputArea input[type="text"] {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+}
+.inputArea input[type="text"]:focus {
+  border-color: var(--border-focus);
+}
+
+.attachBtn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.4rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+}
+.attachBtn:hover {
+  color: var(--text);
+}
+
+.sendBtn {
+  background: transparent;
+  border: none;
+  color: var(--orange);
+  cursor: pointer;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+}
+.sendBtn:disabled {
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Message Highlight on Double-Tap ── */
+.highlighted {
+  animation: flashHighlight 1s ease-out;
+}
+
+@keyframes flashHighlight {
+  0% {
+    background-color: rgba(249, 115, 22, 0.3);
+    transform: scale(0.98);
+  }
+  100% {
+    background-color: inherit;
+    transform: scale(1);
+  }
+}

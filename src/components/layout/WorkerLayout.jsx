@@ -30,6 +30,7 @@ import {
   FiRotateCcw,
   FiBriefcase,
   FiHelpCircle,
+  FiMessageCircle,
 } from "react-icons/fi";
 import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
@@ -142,6 +143,11 @@ const NAV = [
     items: [
       { label: "Reviews", path: "/dashboard/worker/reviews", icon: FiStar },
       { label: "Messages", path: "/messages", icon: FiMail, badge: "message" },
+      {
+        label: "Live Support Chat",
+        path: "/support/chat",
+        icon: FiMessageCircle,
+      },
       {
         label: "Support Hub",
         path: "/support",

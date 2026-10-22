@@ -129,6 +129,11 @@ const NAV = [
         badge: "message",
       },
       {
+        label: "Live Support Chat",
+        path: "/support/chat",
+        icon: <FaComments />, // <-- ADDED
+      },
+      {
         label: "Support Hub",
         path: "/support",
         icon: <FiHelpCircle />,
