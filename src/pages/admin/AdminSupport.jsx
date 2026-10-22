@@ -7,14 +7,11 @@ import {
   FiSend,
   FiPaperclip,
   FiX,
-  FiClock,
-  FiCheckCircle,
-  FiUser,
+  FiArrowLeft,
   FiCornerUpLeft,
 } from "react-icons/fi";
 import AdminLayout from "../../components/layout/AdminLayout";
-import { supportApi } from "../../lib/supportApi";
-import { createSupportSocket } from "../../lib/supportApi"; // Import socket creator
+import { supportApi, createSupportSocket } from "../../lib/supportApi";
 import { useAuthStore } from "../../store/authStore";
 import { linkify } from "../../utils/linkify";
 import AttachmentPreview from "../../components/support/AttachmentPreview";
@@ -29,6 +26,9 @@ export default function AdminSupport() {
   const [tickets, setTickets] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [activeTicket, setActiveTicket] = useState(null);
+
+  // Mobile: "list" or "chat"
+  const [mobileView, setMobileView] = useState("list");
 
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,7 +68,7 @@ export default function AdminSupport() {
     );
   }, []);
 
-  // ── 2. Socket Setup (Live Chats Only) ──
+  // ── 2. Socket Setup ──
   useEffect(() => {
     if (!accessToken) return;
     const socket = createSupportSocket(accessToken);
@@ -81,7 +81,6 @@ export default function AdminSupport() {
     });
 
     socket.on("support:message", (msg) => {
-      // If the message belongs to the active chat, append it
       if (activeChat && msg.conversationId === activeChat.id) {
         setActiveChat((prev) => {
           if (prev.messages.some((m) => m.id === msg.id)) return prev;
@@ -89,7 +88,6 @@ export default function AdminSupport() {
         });
         socket.emit("support:read", { conversationId: activeChat.id });
       }
-      // Update the list preview
       fetchChats();
     });
 
@@ -111,7 +109,6 @@ export default function AdminSupport() {
     return () => socket.disconnect();
   }, [accessToken, activeChat?.id, user?.id]);
 
-  // Re-join room if activeChat changes
   useEffect(() => {
     if (socketRef.current && activeChat) {
       socketRef.current.emit("support:join", { conversationId: activeChat.id });
@@ -126,21 +123,29 @@ export default function AdminSupport() {
   const handleSelectChat = async (chat) => {
     try {
       const res = await supportApi.adminGetChat(chat.id);
-      setActiveChat(res.data.chat);
+      setActiveChat(res.data.chat || res.data);
       setActiveTicket(null);
+      setMobileView("chat");
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load chat:", err);
     }
   };
 
   const handleSelectTicket = async (ticket) => {
     try {
       const res = await supportApi.adminGetTicket(ticket.id);
-      setActiveTicket(res.data.ticket);
+      setActiveTicket(res.data.ticket || res.data);
       setActiveChat(null);
+      setMobileView("chat");
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load ticket:", err);
     }
+  };
+
+  const handleMobileBack = () => {
+    setMobileView("list");
+    // Optional: clear active chat/ticket on mobile to save memory,
+    // but keeping it allows for quick switching.
   };
 
   const handleSendMessage = async (e) => {
@@ -234,7 +239,6 @@ export default function AdminSupport() {
   };
 
   // ── 4. Render ──
-
   const filteredChats = chats.filter((c) =>
     `${c.user?.firstName} ${c.user?.lastName}`
       .toLowerCase()
@@ -250,8 +254,12 @@ export default function AdminSupport() {
   return (
     <AdminLayout>
       <div className={styles.container}>
-        {/* ── Sidebar ── */}
-        <div className={styles.sidebar}>
+        {/* ── Sidebar (List) ── */}
+        <div
+          className={`${styles.sidebar} ${
+            mobileView === "chat" ? styles.hideMobile : ""
+          }`}
+        >
           <div className={styles.tabs}>
             <button
               className={activeTab === "chats" ? styles.activeTab : styles.tab}
@@ -260,7 +268,7 @@ export default function AdminSupport() {
                 setActiveTicket(null);
               }}
             >
-              <FiMessageSquare /> Live Chats
+              <FiMessageSquare /> Chats
             </button>
             <button
               className={
@@ -292,7 +300,9 @@ export default function AdminSupport() {
               filteredChats.map((chat) => (
                 <div
                   key={chat.id}
-                  className={`${styles.listItem} ${activeChat?.id === chat.id ? styles.activeItem : ""}`}
+                  className={`${styles.listItem} ${
+                    activeChat?.id === chat.id ? styles.activeItem : ""
+                  }`}
                   onClick={() => handleSelectChat(chat)}
                 >
                   <div className={styles.avatar}>
@@ -314,7 +324,9 @@ export default function AdminSupport() {
               filteredTickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  className={`${styles.listItem} ${activeTicket?.id === ticket.id ? styles.activeItem : ""}`}
+                  className={`${styles.listItem} ${
+                    activeTicket?.id === ticket.id ? styles.activeItem : ""
+                  }`}
                   onClick={() => handleSelectTicket(ticket)}
                 >
                   <div className={styles.ticketIcon}>
@@ -333,7 +345,11 @@ export default function AdminSupport() {
         </div>
 
         {/* ── Main Chat/Thread Area ── */}
-        <div className={styles.main}>
+        <div
+          className={`${styles.main} ${
+            mobileView === "list" ? styles.hideMobile : ""
+          }`}
+        >
           {!activeChat && !activeTicket ? (
             <div className={styles.emptyState}>
               <FiMessageSquare size={48} />
@@ -346,7 +362,16 @@ export default function AdminSupport() {
             <>
               {/* Header */}
               <div className={styles.chatHeader}>
-                <div>
+                {/* Mobile Back Button */}
+                <button
+                  className={styles.backBtn}
+                  onClick={handleMobileBack}
+                  aria-label="Back to list"
+                >
+                  <FiArrowLeft size={20} />
+                </button>
+
+                <div className={styles.headerInfo}>
                   <h2>
                     {activeChat
                       ? `${activeChat.user?.firstName} ${activeChat.user?.lastName}`
@@ -358,6 +383,7 @@ export default function AdminSupport() {
                       : `Ticket ${activeTicket?.ticketNumber}`}
                   </span>
                 </div>
+
                 {activeTicket && (
                   <div className={styles.ticketActions}>
                     <select
@@ -394,7 +420,9 @@ export default function AdminSupport() {
                     return (
                       <div
                         key={idx}
-                        className={`${styles.messageRow} ${isAdmin ? styles.myMsg : styles.theirMsg}`}
+                        className={`${styles.messageRow} ${
+                          isAdmin ? styles.myMsg : styles.theirMsg
+                        }`}
                       >
                         <div
                           className={styles.bubble}
