@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 
 // Auth pages
@@ -234,6 +234,28 @@ function RoleRedirect() {
 // main.jsx. This component is a pure route table — no shell, no globals.
 export default function App() {
   const { user } = useAuthStore();
+  const location = useLocation(); // Get the current route
+
+  // Define pages where the widget should NOT appear
+  const hiddenPaths = [
+    "/landingpage",
+    "/",
+    "/login",
+    "/register",
+    "/register/hirer",
+    "/register/worker",
+  ];
+
+  // The widget should only show if:
+  // 1. The user is logged in
+  // 2. The user is NOT an admin
+  // 3. We are not on the landing page or auth pages
+  const showSupportWidget =
+    user &&
+    user.role !== "ADMIN" &&
+    !hiddenPaths.includes(location.pathname) &&
+    !location.pathname.startsWith("/admin");
+
   return (
     <>
       <div id="google_translate_element" style={{ display: "none" }} />
@@ -1434,7 +1456,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       {/* ── Global Support Chat Widget ── */}
-      {user && <SupportChatWidget />}
+      {showSupportWidget && <SupportChatWidget />}
     </>
   );
 }
