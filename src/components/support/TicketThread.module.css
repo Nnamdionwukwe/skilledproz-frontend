@@ -4,7 +4,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  /* Force it to fill the exact height of the layout, just like Messages */
+  /* Force it to fill the exact height of the layout */
   height: calc(100vh - 60px);
   height: calc(100dvh - 60px);
   width: 100%;
@@ -172,7 +172,7 @@
   font-weight: 700;
   color: var(--text-muted);
   flex-shrink: 0;
-  margin-top: auto; /* Aligns to bottom of the bubble */
+  margin-top: auto;
 }
 .myMessage .messageAvatar {
   background: var(--orange-dim);
@@ -490,7 +490,9 @@
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .container {
-    height: calc(100dvh - 56px); /* Fit mobile header */
+    /* Fully fills the screen right beneath the 56px mobile header */
+    height: calc(100vh - 56px);
+    height: calc(100dvh - 56px);
   }
   .header {
     padding: 0.75rem 1rem;
