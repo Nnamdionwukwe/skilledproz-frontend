@@ -1,0 +1,85 @@
+/* src/components/support/GlobalSupportBanner.module.css */
+.bannerContainer {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--orange);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  padding: 1rem;
+  width: 90%;
+  max-width: 480px;
+  cursor: pointer;
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.bannerContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bannerIcon {
+  background: var(--orange-dim);
+  color: var(--orange);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+}
+.bannerText strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.bannerText p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+.closeBtn:hover {
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .bannerContainer {
+    top: 1rem;
+    width: calc(100% - 2rem);
+  }
+}

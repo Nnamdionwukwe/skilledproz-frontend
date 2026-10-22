@@ -15,19 +15,16 @@ export default function SupportNotificationListener() {
   const [toasts, setToasts] = useState([]);
   const socketRef = useRef(null);
 
-  // Play a subtle notification sound
   const playSound = () => {
     try {
-      // Optional: You can replace this with a real MP3 file
       const audio = new Audio(
         "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
       );
-      audio.volume = 0.5;
-      audio.play().catch(() => {}); // Ignore autoplay block errors
+      audio.volume = 0.4;
+      audio.play().catch(() => {});
     } catch (e) {}
   };
 
-  // Refresh the unread count in the global store
   const refreshUnreadCount = async () => {
     try {
       const [chatsRes, ticketsRes] = await Promise.all([
@@ -36,7 +33,6 @@ export default function SupportNotificationListener() {
       ]);
       const chats = chatsRes.data.chats || [];
       const tickets = ticketsRes.data.tickets || [];
-
       const chatUnread = chats.reduce(
         (sum, c) => sum + (c.unreadCount || 0),
         0,
@@ -45,21 +41,20 @@ export default function SupportNotificationListener() {
         (sum, t) => sum + (t.unreadCount || 0),
         0,
       );
-
       setUnreadCount(chatUnread + ticketUnread);
     } catch (err) {}
   };
 
   const addToast = (toast) => {
-    // Avoid duplicate toasts for the same conversation/ticket within 5 seconds
     setToasts((prev) => {
-      const exists = prev.find((t) => t.id === toast.id);
+      // Prevent identical toasts stacking up in the same second
+      const exists = prev.find(
+        (t) => t.id === toast.id && Date.now() - t.toastId < 2000,
+      );
       if (exists) return prev;
 
-      const newToast = { ...toast, toastId: Date.now() };
-      return [...prev, newToast];
+      return [...prev, { ...toast, toastId: Date.now() }];
     });
-
     playSound();
   };
 
@@ -73,45 +68,38 @@ export default function SupportNotificationListener() {
     const socket = createSupportSocket(accessToken);
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("[Admin Notifier] Connected to support socket");
-    });
-
-    // Listen for new chat messages
-    socket.on("support:message", async (msg) => {
-      // Ignore messages sent by this admin
-      if (msg.senderId === user.id) return;
-
-      // Get the conversation details to show the user's name
-      try {
-        const res = await supportApi.adminGetChat(msg.conversationId);
-        const chat = res.data.chat || res.data;
-
-        addToast({
-          id: chat.id,
-          type: "chat",
-          title: `${chat.user?.firstName} ${chat.user?.lastName}`,
-          message: msg.body || "Sent an attachment",
-          link: "/admin/support", // Navigate to support hub
-        });
-
-        refreshUnreadCount();
-      } catch (err) {
-        // Fallback if fetching details fails
-        addToast({
-          id: msg.conversationId,
-          type: "chat",
-          title: "New Chat Message",
-          message: msg.body || "Sent an attachment",
-          link: "/admin/support",
-        });
-      }
-    });
-
-    // Listen for new inbox notifications (triggered by new tickets or messages when no admin is assigned)
+    // 1. Listen for Live Chat Messages
     socket.on("support:inbox:new_message", (data) => {
-      // We handle this via the support:message event to get the full text,
-      // but this is a good fallback if needed.
+      addToast({
+        id: `chat-${data.conversationId}`,
+        type: "chat",
+        title: data.senderName || "New Chat Message",
+        message: data.body || "Sent an attachment",
+        link: "/admin/support",
+      });
+      refreshUnreadCount();
+    });
+
+    // 2. Listen for New Tickets and Ticket Replies
+    socket.on("support:inbox:new_ticket", (data) => {
+      addToast({
+        id: `ticket-${data.ticketId}`,
+        type: "ticket",
+        title: `New Ticket: ${data.ticketNumber}`,
+        message: data.body || data.subject,
+        link: "/admin/support",
+      });
+      refreshUnreadCount();
+    });
+
+    socket.on("support:inbox:new_ticket_reply", (data) => {
+      addToast({
+        id: `ticket-reply-${data.ticketId}`,
+        type: "ticket",
+        title: `Reply on ${data.ticketNumber}`,
+        message: data.body || "User replied",
+        link: "/admin/support",
+      });
       refreshUnreadCount();
     });
 

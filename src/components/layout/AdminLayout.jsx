@@ -2,10 +2,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
-import { useAdminSupportStore } from "../../store/adminSupportStore"; // ADDED
+import { useAdminSupportStore } from "../../store/adminSupportStore";
 import api from "../../lib/api";
 import styles from "./AdminLayout.module.css";
 import ConfirmationModal from "../ui/ConfirmationModal";
+import SupportNotificationListener from "../support/SupportNotificationListener";
 
 // Feather Icons (Fi)
 import {
@@ -37,15 +38,14 @@ import {
   FiTarget,
   FiFilter,
   FiTrendingUp,
-  FiHelpCircle, // ADDED
+  FiHelpCircle,
 } from "react-icons/fi";
 
 // Font Awesome Icons (Fa)
-import { FaBullhorn, FaRocket, FaGem } from "react-icons/fa";
+import { FaBullhorn, FaRocket } from "react-icons/fa";
 
 // Ionicons (Io5)
 import { IoDiamond } from "react-icons/io5";
-import SupportNotificationListener from "../support/SupportNotificationListener";
 
 // ── REARRANGED NAVIGATION ───────────────────────────────────────────────────
 const NAV = [
@@ -111,7 +111,7 @@ const NAV = [
       { label: "Promo Codes", path: "/admin/promocodes", icon: FiTag },
       { label: "Featured", path: "/admin/featured", icon: FaRocket },
       { label: "Insurance", path: "/admin/insurance", icon: FiShield },
-      { label: "Hirer Wallet", path: "/admin/wallet", icon: FiShield },
+      { label: "Hirer Wallet", path: "/admin/wallet", icon: FiDollarSign },
     ],
   },
   {
@@ -123,15 +123,11 @@ const NAV = [
         icon: FiBriefcase,
       },
       { label: "External Jobs", path: "/admin/external/jobs", icon: FiLink },
-      {
-        label: "Retained Staff",
-        path: "/admin/retained-staff",
-        icon: FiBriefcase,
-      },
+      { label: "Retained Staff", path: "/admin/retained-staff", icon: FiUsers },
       {
         label: "Retained Cycles",
         path: "/admin/retained-cycles",
-        icon: FiDollarSign,
+        icon: FiCalendar,
       },
     ],
   },
@@ -156,7 +152,7 @@ const NAV = [
         path: "/admin/support",
         icon: FiHelpCircle,
         badge: "support",
-      }, // ADDED
+      },
       { label: "Video Calls", path: "/admin/video-calls", icon: FiVideo },
       { label: "Reports", path: "/admin/reports", icon: FiFlag },
       { label: "Campaigns", path: "/admin/campaigns", icon: FaBullhorn },
@@ -176,7 +172,7 @@ const NAV = [
 
 export default function AdminLayout({ children }) {
   const { user, logout } = useAuthStore();
-  const { unreadCount: supportUnread } = useAdminSupportStore(); // ADDED
+  const { unreadCount: supportUnread } = useAdminSupportStore();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -218,7 +214,9 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className={styles.shell}>
+      {/* Global Support Banner / Toast Listener */}
       <SupportNotificationListener />
+
       {open && (
         <div className={styles.overlay} onClick={() => setOpen(false)} />
       )}
@@ -285,7 +283,7 @@ export default function AdminLayout({ children }) {
                     </span>
                     <span>{item.label}</span>
 
-                    {/* Support Badge ADDED */}
+                    {/* Support Badge */}
                     {item.badge === "support" && supportUnread > 0 && (
                       <span className={`${styles.navBadge} ${styles.pulse}`}>
                         {supportUnread > 99 ? "99+" : supportUnread}
