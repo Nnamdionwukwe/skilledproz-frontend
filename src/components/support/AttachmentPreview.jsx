@@ -83,7 +83,7 @@ export default function AttachmentPreview({ attachments, isMe }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.lightboxHeader}>
-              <span>{activeMedia.name}</span>
+              <span className={styles.lightboxTitle}>{activeMedia.name}</span>
               <div className={styles.lightboxActions}>
                 <a
                   href={activeMedia.url}
@@ -93,8 +93,11 @@ export default function AttachmentPreview({ attachments, isMe }) {
                 >
                   <FiDownload size={20} />
                 </a>
-                {/* Close Button */}
-                <button onClick={() => setActiveMedia(null)} title="Close">
+                <button
+                  onClick={() => setActiveMedia(null)}
+                  title="Close"
+                  aria-label="Close media"
+                >
                   <FiX size={24} />
                 </button>
               </div>

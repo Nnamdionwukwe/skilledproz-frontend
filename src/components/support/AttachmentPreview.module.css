@@ -1,4 +1,5 @@
 /* src/components/support/AttachmentPreview.module.css */
+
 .attachmentsGrid {
   display: flex;
   flex-wrap: wrap;
@@ -125,33 +126,52 @@
 .lightboxOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.9);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0; /* Remove padding to allow full screen video */
   animation: fadeIn 0.2s ease;
 }
 
 .lightboxContent {
   width: 100%;
   height: 100%;
-  max-width: 1200px;
   display: flex;
   flex-direction: column;
+  position: relative;
   animation: popIn 0.2s ease;
 }
 
 .lightboxHeader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 1rem;
+  padding: 1.5rem;
   color: #fff;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.8) 0%,
+    transparent 100%
+  );
+  z-index: 10;
+  /* Respect iOS notch */
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+}
+
+.lightboxTitle {
   font-size: 15px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
 }
 
 .lightboxActions {
@@ -160,31 +180,38 @@
   gap: 16px;
 }
 
+/* The Close & Download Buttons */
 .lightboxActions a,
 .lightboxActions button {
-  color: #ccc;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
-  padding: 8px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  /* Prevent zooming on double tap */
+  touch-action: manipulation;
 }
 .lightboxActions a:hover,
 .lightboxActions button:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
 }
 
+/* The Media Area */
 .lightboxBody {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  padding: 4rem 1rem 1rem; /* Space for the absolute header */
 }
 
 .lightboxBody img,
