@@ -35,12 +35,14 @@ export default function AdminSupport() {
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
-  const [isTyping, setIsTyping] = useState(false);
+
+  // Typing state for user (when admin is viewing)
+  const [userIsTyping, setUserIsTyping] = useState(false);
 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // ── 1. Data Fetching (Silent Polling) ──
+  // ── 1. Data Fetching (Background Silent Polling) ──
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -57,9 +59,9 @@ export default function AdminSupport() {
     }
   };
 
+  // Runs on mount AND sets up the 5-second background poller
   useEffect(() => {
     fetchData();
-    // Silently poll every 5 seconds for new messages/tickets
     const interval = setInterval(() => fetchData(true), 5000);
     return () => clearInterval(interval);
   }, []);
@@ -76,23 +78,26 @@ export default function AdminSupport() {
       }
     });
 
+    // Receive new message while admin is in the chat
     socket.on("support:message", (msg) => {
-      // If the message is for the active chat, append it
       if (activeChat && msg.conversationId === activeChat.id) {
         setActiveChat((prev) => {
           if (prev.messages.some((m) => m.id === msg.id)) return prev;
           return { ...prev, messages: [...prev.messages, msg] };
         });
+        // Mark as read immediately since we are viewing it
         socket.emit("support:read", { conversationId: activeChat.id });
       }
       // Silent refresh to update the sidebar list and unread counts
       fetchData(true);
     });
 
+    // User is typing
     socket.on("support:typing", ({ isTyping: typing, userId }) => {
-      if (userId !== user?.id) setIsTyping(typing);
+      if (userId !== user?.id) setUserIsTyping(typing);
     });
 
+    // Read receipts (admin's messages get read by user)
     socket.on("support:read", ({ byUserId, at }) => {
       if (byUserId !== user?.id && activeChat) {
         setActiveChat((prev) => ({
@@ -109,7 +114,7 @@ export default function AdminSupport() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeChat?.messages, activeTicket?.messages, isTyping]);
+  }, [activeChat?.messages, activeTicket?.messages, userIsTyping]);
 
   // ── 3. Actions ──
   const handleSelectChat = async (chat) => {
@@ -119,12 +124,11 @@ export default function AdminSupport() {
       setActiveTicket(null);
       setMobileView("chat");
 
-      // Clear the unread badge locally so it disappears instantly
+      // Clear local unread badge instantly
       setChats((prev) =>
         prev.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c)),
       );
 
-      // Tell the server we read it
       if (socketRef.current) {
         socketRef.current.emit("support:read", { conversationId: chat.id });
       }
@@ -236,7 +240,7 @@ export default function AdminSupport() {
     }
   };
 
-  // ── 4. Render ──
+  // ── 4. Derived Data ──
   const filteredChats = chats.filter((c) =>
     `${c.user?.firstName} ${c.user?.lastName}`
       .toLowerCase()
@@ -269,7 +273,8 @@ export default function AdminSupport() {
                 setActiveTicket(null);
               }}
             >
-              <FiMessageSquare /> Chats
+              <FiMessageSquare />
+              <span>Chats</span>
               {totalUnreadChats > 0 && (
                 <span className={styles.tabBadge}>{totalUnreadChats}</span>
               )}
@@ -283,7 +288,8 @@ export default function AdminSupport() {
                 setActiveChat(null);
               }}
             >
-              <FiFileText /> Tickets
+              <FiFileText />
+              <span>Tickets</span>
             </button>
           </div>
 
@@ -436,18 +442,35 @@ export default function AdminSupport() {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
-                            {isAdmin && (msg.readAt ? " ✓✓" : " ✓")}
+                            {isAdmin && (
+                              <span
+                                style={{
+                                  marginLeft: "4px",
+                                  color: msg.readAt ? "#3b82f6" : "inherit",
+                                  opacity: 0.8,
+                                }}
+                              >
+                                {msg.readAt ? "✓✓" : "✓"}
+                              </span>
+                            )}
                           </span>
                         </div>
                       </div>
                     );
                   },
                 )}
-                {isTyping && (
-                  <div className={styles.typingIndicator}>
-                    User is typing...
+
+                {/* Typing Indicator */}
+                {userIsTyping && activeChat && (
+                  <div className={`${styles.messageRow} ${styles.theirMsg}`}>
+                    <div className={`${styles.bubble} ${styles.typingBubble}`}>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
                   </div>
                 )}
+
                 <div ref={messagesEndRef} />
               </div>
 
@@ -504,11 +527,12 @@ export default function AdminSupport() {
                     value={inputText}
                     onChange={(e) => {
                       setInputText(e.target.value);
-                      if (activeChat)
+                      if (activeChat && socketRef.current) {
                         socketRef.current.emit("support:typing", {
                           conversationId: activeChat.id,
                           isTyping: true,
                         });
+                      }
                     }}
                     placeholder="Type a reply..."
                     disabled={isUploading}
