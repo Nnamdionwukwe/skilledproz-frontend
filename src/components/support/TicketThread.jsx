@@ -64,9 +64,23 @@ export default function TicketThread() {
   const [csatRating, setCsatRating] = useState(5);
   const [csatComment, setCsatComment] = useState("");
 
+  // Inject style to override parent layout's padding and overflow
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .content { 
+        padding: 0 !important; 
+        overflow: hidden !important; 
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   useEffect(() => {
     fetchTicket();
   }, [id]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [ticket?.messages]);
@@ -234,6 +248,7 @@ export default function TicketThread() {
   return (
     <Layout>
       <div className={styles.container}>
+        {/* ── Fixed Header ── */}
         <div className={styles.header}>
           <button
             className={styles.backBtn}
@@ -271,6 +286,7 @@ export default function TicketThread() {
           </div>
         </div>
 
+        {/* ── Scrollable Thread ── */}
         <div className={styles.threadContainer}>
           {ticket.messages.map((msg, idx) => {
             const isMe = msg.authorType === "USER";
@@ -304,8 +320,6 @@ export default function TicketThread() {
                       </div>
                     )}
                     <p>{linkify(msg.body)}</p>
-
-                    {/* Attachment Render */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <AttachmentPreview
                         attachments={msg.attachments}
@@ -326,6 +340,7 @@ export default function TicketThread() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* ── Fixed Input / Banners ── */}
         {ticket.status === "RESOLVED" && !ticket.csatRating && !showCsat && (
           <div className={styles.csatBanner}>
             <p>This ticket was marked as resolved. How did we do?</p>

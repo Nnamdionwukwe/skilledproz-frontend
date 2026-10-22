@@ -488,10 +488,10 @@
   color: #fff;
 }
 
-/* ── Responsive ── */
+/* ── Responsive (Mobile) ── */
 @media (max-width: 768px) {
   .container {
-    /* Fully fills the screen right beneath the 56px mobile header */
+    /* Matches the mobile header height exactly, like Messages.jsx */
     height: calc(100vh - 56px);
     height: calc(100dvh - 56px);
   }
@@ -512,5 +512,9 @@
   }
   .replyBox {
     padding: 0.75rem 1rem;
+    padding-bottom: max(
+      0.75rem,
+      env(safe-area-inset-bottom)
+    ); /* iOS safe area */
   }
 }
