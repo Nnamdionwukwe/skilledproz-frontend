@@ -9,6 +9,7 @@ import {
   FiStar,
   FiX,
   FiCornerUpLeft,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../../components/layout/HirerLayout";
@@ -60,9 +61,41 @@ export default function TicketThread() {
   const [isSending, setIsSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
 
+  // Highlight State for Double Tap
+  const [highlightedMsgId, setHighlightedMsgId] = useState(null);
+  const lastTapRef = useRef(0);
+
+  // Modals & Toasts State
+  const [toast, setToast] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, type: null });
+
   const [showCsat, setShowCsat] = useState(false);
   const [csatRating, setCsatRating] = useState(5);
   const [csatComment, setCsatComment] = useState("");
+
+  // ── Helper: Show Toast ──
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // ── Helper: Double Tap / Double Click ──
+  const handleBubbleClick = (msg) => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_PRESS_DELAY) {
+      // It's a double tap!
+      if (msg.authorType === "SYSTEM") return; // Can't reply to system messages
+
+      setReplyTo(msg);
+      setHighlightedMsgId(msg.id);
+
+      // Remove highlight after 1 second
+      setTimeout(() => setHighlightedMsgId(null), 1000);
+    }
+    lastTapRef.current = now;
+  };
 
   useEffect(() => {
     fetchTicket();
@@ -105,29 +138,44 @@ export default function TicketThread() {
       setReplyBody("");
       setFiles([]);
       setReplyTo(null);
+      showToast("Reply sent successfully", "success");
     } catch (err) {
-      alert("Failed to send reply.");
+      console.error(err);
+      if (
+        err.response?.status === 400 &&
+        err.response?.data?.message?.includes("closed")
+      ) {
+        showToast("This ticket is closed. Reopen it to reply.", "warning");
+      } else {
+        showToast(
+          err.response?.data?.message || "Failed to send reply",
+          "error",
+        );
+      }
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleCloseTicket = async () => {
-    if (!window.confirm("Are you sure you want to close this ticket?")) return;
+  const executeCloseTicket = async () => {
+    setConfirmModal({ open: false, type: null });
     try {
       await supportApi.closeTicket(id);
       fetchTicket();
+      showToast("Ticket closed", "success");
     } catch (err) {
-      alert("Failed.");
+      showToast("Failed to close ticket", "error");
     }
   };
 
-  const handleReopenTicket = async () => {
+  const executeReopenTicket = async () => {
+    setConfirmModal({ open: false, type: null });
     try {
       await supportApi.reopenTicket(id);
       fetchTicket();
+      showToast("Ticket reopened", "success");
     } catch (err) {
-      alert("Failed.");
+      showToast("Failed to reopen ticket", "error");
     }
   };
 
@@ -139,8 +187,9 @@ export default function TicketThread() {
       });
       setShowCsat(false);
       fetchTicket();
+      showToast("Thank you for your feedback!", "success");
     } catch (err) {
-      alert("Failed.");
+      showToast("Failed to submit rating", "error");
     }
   };
 
@@ -237,6 +286,57 @@ export default function TicketThread() {
 
   return (
     <Layout>
+      {/* ── Toast Notification ── */}
+      {toast && (
+        <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
+          {toast.type === "success" && <FiCheckCircle size={16} />}
+          {toast.type === "error" && <FiAlertTriangle size={16} />}
+          {toast.type === "warning" && <FiAlertTriangle size={16} />}
+          <span>{toast.msg}</span>
+        </div>
+      )}
+
+      {/* ── Confirmation Modal ── */}
+      {confirmModal.open && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setConfirmModal({ open: false, type: null })}
+        >
+          <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>
+              {confirmModal.type === "close"
+                ? "Close Ticket?"
+                : "Reopen Ticket?"}
+            </h3>
+            <p className={styles.modalMessage}>
+              {confirmModal.type === "close"
+                ? "Are you sure you want to close this ticket? You won't be able to reply until it's reopened."
+                : "Are you sure you want to reopen this ticket? This will notify support."}
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.cancelBtn}
+                onClick={() => setConfirmModal({ open: false, type: null })}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmBtn}
+                onClick={
+                  confirmModal.type === "close"
+                    ? executeCloseTicket
+                    : executeReopenTicket
+                }
+              >
+                {confirmModal.type === "close"
+                  ? "Close Ticket"
+                  : "Reopen Ticket"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.container}>
         {/* ── Fixed Header ── */}
         <div className={styles.header}>
@@ -265,11 +365,17 @@ export default function TicketThread() {
 
           <div className={styles.headerActions}>
             {!isClosed ? (
-              <button className={styles.closeBtn} onClick={handleCloseTicket}>
+              <button
+                className={styles.closeBtn}
+                onClick={() => setConfirmModal({ open: true, type: "close" })}
+              >
                 Close Ticket
               </button>
             ) : (
-              <button className={styles.reopenBtn} onClick={handleReopenTicket}>
+              <button
+                className={styles.reopenBtn}
+                onClick={() => setConfirmModal({ open: true, type: "reopen" })}
+              >
                 Reopen
               </button>
             )}
@@ -299,9 +405,9 @@ export default function TicketThread() {
                 </div>
                 <div className={styles.messageContent}>
                   <div
-                    className={styles.messageBubble}
-                    onDoubleClick={() => setReplyTo(msg)}
-                    title="Double-click to reply"
+                    className={`${styles.messageBubble} ${highlightedMsgId === msg.id ? styles.highlighted : ""}`}
+                    onClick={() => handleBubbleClick(msg)}
+                    title="Double-tap to reply"
                   >
                     {msg.replyTo && (
                       <div className={styles.replyPreview}>
