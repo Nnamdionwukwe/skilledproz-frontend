@@ -1,22 +1,42 @@
+// src/pages/Terms pages/Contact.jsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  FiMail,
+  FiMessageCircle,
+  FiInstagram,
+  FiMapPin,
+  FiCheckCircle,
+  FiArrowRight,
+} from "react-icons/fi";
+import api from "../../lib/api";
 import styles from "./Contact.module.css";
 
 const contactMethods = [
   {
-    icon: "📧",
+    icon: <FiMail size={20} />,
     label: "Email",
     value: "support@skilledproz.com",
     href: "mailto:support@skilledproz.com",
   },
-  { icon: "💬", label: "Live Chat", value: "Available in-app", href: null },
   {
-    icon: "🐦",
+    icon: <FiMessageCircle size={20} />,
+    label: "Live Chat",
+    value: "Available in-app",
+    href: null,
+  },
+  {
+    icon: <FiInstagram size={20} />,
     label: "Instagram",
     value: "@skilledproz",
     href: "https://www.instagram.com/skilledproz?exln=MWltanU2ZmY4Ym51ag%3D%3D&utm_source=qr",
   },
-  { icon: "📍", label: "Headquarters", value: "Abuja, Nigeria 🇳🇬", href: null },
+  {
+    icon: <FiMapPin size={20} />,
+    label: "Headquarters",
+    value: "Abuja, Nigeria 🇳🇬",
+    href: null,
+  },
 ];
 
 export default function Contact() {
@@ -36,15 +56,25 @@ export default function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     if (!form.name || !form.email || !form.message) {
       setError("Please fill in all required fields.");
       return;
     }
+
     setLoading(true);
-    // Simulate submission
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSubmitted(true);
+    try {
+      // API Endpoint defined in earlier steps
+      await api.post("/contact", form);
+      setSubmitted(true);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to send message. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,7 +93,7 @@ export default function Contact() {
       </nav>
 
       <div className={styles.layout}>
-        {/* Left */}
+        {/* Left Side */}
         <div className={styles.left}>
           <div className={styles.badge}>Get in Touch</div>
           <h1 className={styles.title}>
@@ -83,7 +113,12 @@ export default function Contact() {
                 <div>
                   <div className={styles.methodLabel}>{m.label}</div>
                   {m.href ? (
-                    <a href={m.href} className={styles.methodValue}>
+                    <a
+                      href={m.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.methodValue}
+                    >
                       {m.value}
                     </a>
                   ) : (
@@ -95,11 +130,13 @@ export default function Contact() {
           </div>
         </div>
 
-        {/* Right — Form */}
+        {/* Right Side — Form */}
         <div className={styles.right}>
           {submitted ? (
             <div className={styles.success}>
-              <span className={styles.successIcon}>✅</span>
+              <span className={styles.successIcon}>
+                <FiCheckCircle />
+              </span>
               <h3>Message sent!</h3>
               <p>
                 We'll get back to you at <strong>{form.email}</strong> within 24
@@ -112,7 +149,7 @@ export default function Contact() {
                   setForm({ name: "", email: "", subject: "", message: "" });
                 }}
               >
-                Send another message
+                Send another message <FiArrowRight size={14} />
               </button>
             </div>
           ) : (
