@@ -1,6 +1,8 @@
+// src/components/layout/AdminLayout.jsx
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { useAdminSupportStore } from "../../store/adminSupportStore"; // ADDED
 import api from "../../lib/api";
 import styles from "./AdminLayout.module.css";
 import ConfirmationModal from "../ui/ConfirmationModal";
@@ -31,10 +33,11 @@ import {
   FiSettings,
   FiLogOut,
   FiMenu,
-  FiRadio, // ← ADD
+  FiRadio,
   FiTarget,
   FiFilter,
   FiTrendingUp,
+  FiHelpCircle, // ADDED
 } from "react-icons/fi";
 
 // Font Awesome Icons (Fa)
@@ -43,14 +46,12 @@ import { FaBullhorn, FaRocket, FaGem } from "react-icons/fa";
 // Ionicons (Io5)
 import { IoDiamond } from "react-icons/io5";
 
-// OR Material Design (Md)
-// import { MdDiamond } from "react-icons/md";
-
+// ── REARRANGED NAVIGATION ───────────────────────────────────────────────────
 const NAV = [
   {
-    group: "Dashboard",
+    group: "Overview",
     items: [
-      { label: "Overview", path: "/admin", icon: FiGrid },
+      { label: "Dashboard", path: "/admin", icon: FiGrid },
       { label: "Analytics", path: "/admin/analytics", icon: FiBarChart2 },
     ],
   },
@@ -92,17 +93,6 @@ const NAV = [
     ],
   },
   {
-    group: "Job Management",
-    items: [
-      {
-        label: "Platform Jobs",
-        path: "/admin/platform/jobs",
-        icon: FiBriefcase,
-      },
-      { label: "External Jobs", path: "/admin/external/jobs", icon: FiLink },
-    ],
-  },
-  {
     group: "Financials",
     items: [
       { label: "Payments", path: "/admin/payments", icon: FiCreditCard },
@@ -116,11 +106,32 @@ const NAV = [
         path: "/admin/withdrawals",
         icon: FiTrendingDown,
       },
-      { label: "Subscriptions", path: "/admin/subscriptions", icon: IoDiamond }, // ← Fixed
+      { label: "Subscriptions", path: "/admin/subscriptions", icon: IoDiamond },
       { label: "Promo Codes", path: "/admin/promocodes", icon: FiTag },
       { label: "Featured", path: "/admin/featured", icon: FaRocket },
       { label: "Insurance", path: "/admin/insurance", icon: FiShield },
       { label: "Hirer Wallet", path: "/admin/wallet", icon: FiShield },
+    ],
+  },
+  {
+    group: "Jobs & HR",
+    items: [
+      {
+        label: "Platform Jobs",
+        path: "/admin/platform/jobs",
+        icon: FiBriefcase,
+      },
+      { label: "External Jobs", path: "/admin/external/jobs", icon: FiLink },
+      {
+        label: "Retained Staff",
+        path: "/admin/retained-staff",
+        icon: FiBriefcase,
+      },
+      {
+        label: "Retained Cycles",
+        path: "/admin/retained-cycles",
+        icon: FiDollarSign,
+      },
     ],
   },
   {
@@ -139,6 +150,12 @@ const NAV = [
     items: [
       { label: "Bookings", path: "/admin/bookings", icon: FiCalendar },
       { label: "Messages", path: "/admin/messages", icon: FiMessageSquare },
+      {
+        label: "Support Hub",
+        path: "/admin/support",
+        icon: FiHelpCircle,
+        badge: "support",
+      }, // ADDED
       { label: "Video Calls", path: "/admin/video-calls", icon: FiVideo },
       { label: "Reports", path: "/admin/reports", icon: FiFlag },
       { label: "Campaigns", path: "/admin/campaigns", icon: FaBullhorn },
@@ -154,33 +171,18 @@ const NAV = [
       { label: "Admin Logs", path: "/admin/adminlogs", icon: FiSettings },
     ],
   },
-
-  {
-    group: "HR & Payroll",
-    items: [
-      {
-        label: "Retained Staff",
-        path: "/admin/retained-staff",
-        icon: FiBriefcase,
-      },
-      {
-        label: "Retained Cycles",
-        path: "/admin/retained-cycles",
-        icon: FiDollarSign,
-      },
-    ],
-  },
 ];
 
 export default function AdminLayout({ children }) {
   const { user, logout } = useAuthStore();
+  const { unreadCount: supportUnread } = useAdminSupportStore(); // ADDED
+
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
 
-  // Refs used to auto-scroll the sidebar so the active item is always visible.
   const navRef = useRef(null);
   const activeRef = useRef(null);
 
@@ -191,10 +193,8 @@ export default function AdminLayout({ children }) {
       .catch(() => {});
   }, []);
 
-  // Scroll the active nav item into view whenever the route changes.
   useEffect(() => {
     if (!activeRef.current || !navRef.current) return;
-    // Small delay lets the sidebar finish painting (especially on mobile open).
     const t = setTimeout(() => {
       try {
         activeRef.current.scrollIntoView({
@@ -282,6 +282,13 @@ export default function AdminLayout({ children }) {
                       <Icon size={18} />
                     </span>
                     <span>{item.label}</span>
+
+                    {/* Support Badge ADDED */}
+                    {item.badge === "support" && supportUnread > 0 && (
+                      <span className={`${styles.navBadge} ${styles.pulse}`}>
+                        {supportUnread > 99 ? "99+" : supportUnread}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
