@@ -6,12 +6,19 @@ import { useAuthStore } from "../store/authStore";
 export function useSupportChat(initialConversation = null) {
   const { user, accessToken } = useAuthStore();
   const [conversation, setConversation] = useState(initialConversation);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(initialConversation?.messages || []);
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // 1. Load historical messages when the conversation is fetched from the API
+  useEffect(() => {
+    if (conversation?.messages) {
+      setMessages(conversation.messages);
+    }
+  }, [conversation]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -30,10 +37,10 @@ export function useSupportChat(initialConversation = null) {
 
     socket.on("support:message", (msg) => {
       setMessages((prev) => {
-        // 1. If message exists by real ID, ignore
+        // 1. Prevent duplicate messages
         if (prev.some((m) => m.id === msg.id)) return prev;
 
-        // 2. If message has a tempId matching an optimistic message, replace it
+        // 2. Swap optimistic UI message for real DB message
         const existingTempIndex = prev.findIndex(
           (m) => m.tempId && m.tempId === msg.tempId,
         );
@@ -43,7 +50,7 @@ export function useSupportChat(initialConversation = null) {
           return newMessages;
         }
 
-        // 3. Otherwise, new message from other person
+        // 3. Append new message from agent
         if (msg.senderId !== user?.id) {
           socket.emit("support:read", { conversationId: msg.conversationId });
         }
@@ -80,6 +87,7 @@ export function useSupportChat(initialConversation = null) {
 
       const tempId = `temp-${Date.now()}`;
 
+      // Add optimistic message to UI instantly
       setMessages((prev) => [
         ...prev,
         {
@@ -101,6 +109,7 @@ export function useSupportChat(initialConversation = null) {
         },
       ]);
 
+      // Send to backend
       socketRef.current.emit(
         "support:message",
         {
@@ -112,10 +121,12 @@ export function useSupportChat(initialConversation = null) {
         },
         (ack) => {
           if (ack.ok) {
+            // Replace optimistic message with the real DB message
             setMessages((prev) =>
               prev.map((m) => (m.id === tempId ? ack.message : m)),
             );
           } else {
+            // Mark as failed if the server rejects it
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === tempId
