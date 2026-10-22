@@ -1,9 +1,10 @@
 // src/pages/support/SupportChat.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { FiSend, FiPaperclip, FiX, FiCornerUpLeft } from "react-icons/fi"; // Removed FiMessageSquare as it's not in the widget header
+import { FiSend, FiPaperclip, FiX, FiCornerUpLeft } from "react-icons/fi";
 import { useSupportChat } from "../../hooks/useSupportChat";
 import { supportApi } from "../../lib/supportApi";
 import { useAuthStore } from "../../store/authStore";
+import { useSupportStore } from "../../store/supportStore"; // Import Store
 import WorkerLayout from "../../components/layout/WorkerLayout";
 import HirerLayout from "../../components/layout/HirerLayout";
 import { linkify } from "../../utils/linkify";
@@ -12,6 +13,7 @@ import styles from "./SupportChat.module.css";
 
 export default function SupportChat() {
   const { user } = useAuthStore();
+  const { clearUnread } = useSupportStore(); // Get clearUnread
   const Layout = user?.role === "HIRER" ? HirerLayout : WorkerLayout;
 
   const [inputText, setInputText] = useState("");
@@ -34,6 +36,11 @@ export default function SupportChat() {
     setTyping,
     isConnected,
   } = useSupportChat();
+
+  // ── Clear unread count when entering the page ──
+  useEffect(() => {
+    clearUnread();
+  }, [clearUnread]);
 
   // ── Double Tap Logic ──
   const handleBubbleClick = (msg) => {
