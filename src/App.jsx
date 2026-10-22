@@ -163,6 +163,7 @@ import WalletTransactionDetail from "./components/hirer/WalletTransactionDetail.
 import SupportChatWidget from "./components/support/SupportChatWidget.jsx";
 import SupportHub from "./components/support/SupportHub.jsx";
 import TicketThread from "./components/support/TicketThread.jsx";
+import AdminSupport from "./pages/admin/AdminSupport.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -379,6 +380,15 @@ export default function App() {
         />
 
         {/* ── User Management ── */}
+        <Route
+          path="/admin/support"
+          element={
+            <RequireAdmin>
+              <AdminSupport />
+            </RequireAdmin>
+          }
+        />
+
         <Route
           path="/admin/users"
           element={

@@ -29,7 +29,7 @@ export const supportApi = {
   reopenTicket: (id) => api.post(`/support/tickets/${id}/reopen`),
   submitTicketCsat: (id, data) => api.post(`/support/tickets/${id}/csat`, data),
 
-  // Live Chat
+  // Live Chat (User)
   startChat: (data) => api.post("/support/chat/start", data),
   getMyChats: (params) => api.get("/support/chat/my", { params }),
   getChat: (id) => api.get(`/support/chat/${id}`),
@@ -51,6 +51,9 @@ export const supportApi = {
   adminUpdateStatus: (id, data) =>
     api.patch(`/support/admin/tickets/${id}/status`, data),
   adminListChats: (params) => api.get("/support/admin/chats", { params }),
+
+  // ADDED MISSING ADMIN CHAT ENDPOINT
+  adminGetChat: (id) => api.get(`/support/admin/chats/${id}`),
 };
 
 // ── Socket Connection ─────────────────────────────────────────────────────────
