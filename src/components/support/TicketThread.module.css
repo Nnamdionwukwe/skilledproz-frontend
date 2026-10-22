@@ -1,6 +1,6 @@
 /* src/pages/support/TicketThread.module.css */
 
-/* ── Shell matching Messages.jsx ── */
+/* ── Shell matching Admin Support / Messages ── */
 .container {
   display: flex;
   flex-direction: column;
@@ -10,6 +10,9 @@
   width: 100%;
   overflow: hidden; /* Prevents the whole page from scrolling */
   background: var(--bg);
+
+  /* Negate the default layout padding so it's edge-to-edge */
+  margin: -1.5rem;
 }
 
 /* ── Header (Fixed at top) ── */
@@ -488,10 +491,10 @@
   color: #fff;
 }
 
-/* ── Responsive (Mobile) ── */
+/* ── Responsive: Mobile ── */
 @media (max-width: 768px) {
   .container {
-    /* Matches the mobile header height exactly, like Messages.jsx */
+    margin: -1rem; /* Negate mobile layout padding */
     height: calc(100vh - 56px);
     height: calc(100dvh - 56px);
   }
@@ -512,9 +515,30 @@
   }
   .replyBox {
     padding: 0.75rem 1rem;
-    padding-bottom: max(
-      0.75rem,
-      env(safe-area-inset-bottom)
-    ); /* iOS safe area */
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Responsive: Small Phones ── */
+@media (max-width: 380px) {
+  .header {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  .titleRow h1 {
+    font-size: 0.9rem;
+  }
+  .threadContainer {
+    padding: 0.75rem;
+  }
+  .messageWrapper {
+    max-width: 95%;
+  }
+  .messageBubble {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  .replyBox {
+    padding: 0.5rem 0.75rem;
   }
 }

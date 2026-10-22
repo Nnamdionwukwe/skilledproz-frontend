@@ -64,19 +64,6 @@ export default function TicketThread() {
   const [csatRating, setCsatRating] = useState(5);
   const [csatComment, setCsatComment] = useState("");
 
-  // Inject style to override parent layout's padding and overflow
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.innerHTML = `
-      .content { 
-        padding: 0 !important; 
-        overflow: hidden !important; 
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
-
   useEffect(() => {
     fetchTicket();
   }, [id]);
@@ -112,7 +99,7 @@ export default function TicketThread() {
       setTicket((prev) => ({
         ...prev,
         status: res.data.ticketStatus || prev.status,
-        messages: [...prev.messages, res.data.message],
+        messages: [...(prev.messages || []), res.data.message],
       }));
 
       setReplyBody("");
@@ -134,6 +121,7 @@ export default function TicketThread() {
       alert("Failed.");
     }
   };
+
   const handleReopenTicket = async () => {
     try {
       await supportApi.reopenTicket(id);
@@ -142,6 +130,7 @@ export default function TicketThread() {
       alert("Failed.");
     }
   };
+
   const handleSubmitCsat = async () => {
     try {
       await supportApi.submitTicketCsat(id, {
@@ -154,6 +143,7 @@ export default function TicketThread() {
       alert("Failed.");
     }
   };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "OPEN":
