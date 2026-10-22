@@ -54,6 +54,14 @@ export const supportApi = {
 
   // ADDED MISSING ADMIN CHAT ENDPOINT
   adminGetChat: (id) => api.get(`/support/admin/chats/${id}`),
+
+  // Contact Messages
+  adminListContactMessages: (params) => api.get("/contact/admin", { params }),
+  adminUpdateContactStatus: (id, data) =>
+    api.patch(`/contact/admin/${id}/status`, data),
+
+  // Inside src/lib/supportApi.js
+  getStaleMessages: () => api.get("/support/admin/stale-messages"),
 };
 
 // ── Socket Connection ─────────────────────────────────────────────────────────

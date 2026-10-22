@@ -39,6 +39,7 @@ import {
   FiFilter,
   FiTrendingUp,
   FiHelpCircle,
+  FiMail,
 } from "react-icons/fi";
 
 // Font Awesome Icons (Fa)
@@ -153,6 +154,7 @@ const NAV = [
         icon: FiHelpCircle,
         badge: "support",
       },
+      { label: "Contact Inbox", path: "/admin/contact-messages", icon: FiMail },
       { label: "Video Calls", path: "/admin/video-calls", icon: FiVideo },
       { label: "Reports", path: "/admin/reports", icon: FiFlag },
       { label: "Campaigns", path: "/admin/campaigns", icon: FaBullhorn },

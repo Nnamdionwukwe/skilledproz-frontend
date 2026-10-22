@@ -1,7 +1,12 @@
 // src/components/support/SupportNotificationListener.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiMessageSquare, FiFileText, FiX } from "react-icons/fi";
+import {
+  FiMessageSquare,
+  FiFileText,
+  FiX,
+  FiAlertTriangle,
+} from "react-icons/fi";
 import { createSupportSocket, supportApi } from "../../lib/supportApi";
 import { useAuthStore } from "../../store/authStore";
 import { useAdminSupportStore } from "../../store/adminSupportStore";
@@ -47,12 +52,11 @@ export default function SupportNotificationListener() {
 
   const addToast = (toast) => {
     setToasts((prev) => {
-      // Prevent identical toasts stacking up in the same second
+      // Prevent duplicate toasts within 10 seconds
       const exists = prev.find(
-        (t) => t.id === toast.id && Date.now() - t.toastId < 2000,
+        (t) => t.id === toast.id && Date.now() - t.toastId < 10000,
       );
       if (exists) return prev;
-
       return [...prev, { ...toast, toastId: Date.now() }];
     });
     playSound();
@@ -103,8 +107,45 @@ export default function SupportNotificationListener() {
       refreshUnreadCount();
     });
 
+    // 3. REMINDER: Poll for stale (unanswered) messages every 60s
+    const checkStale = async () => {
+      try {
+        const res = await supportApi.getStaleMessages();
+        const { staleChats, staleTickets } = res.data.data;
+
+        if (staleChats.length > 0) {
+          addToast({
+            id: "stale-chats",
+            type: "warning",
+            title: "Unanswered Chats",
+            message: `${staleChats.length} chat(s) have been waiting for a reply.`,
+            link: "/admin/support",
+          });
+        }
+
+        if (staleTickets.length > 0) {
+          addToast({
+            id: "stale-tickets",
+            type: "warning",
+            title: "Unanswered Tickets",
+            message: `${staleTickets.length} ticket(s) are waiting for a reply.`,
+            link: "/admin/support",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to check stale messages", err);
+      }
+    };
+
+    // Run check every 60 seconds (60000 ms)
+    const staleInterval = setInterval(checkStale, 60000);
+
+    // Initial check after 5 seconds (give the page time to load)
+    setTimeout(checkStale, 5000);
+
     return () => {
       socket.disconnect();
+      clearInterval(staleInterval);
     };
   }, [accessToken, user?.id]);
 
@@ -113,9 +154,14 @@ export default function SupportNotificationListener() {
   return (
     <div className={styles.toastContainer}>
       {toasts.map((toast) => (
-        <div key={toast.toastId} className={styles.toastBanner}>
+        <div
+          key={toast.toastId}
+          className={`${styles.toastBanner} ${toast.type === "warning" ? styles.warning : ""}`}
+        >
           <div className={styles.toastIcon}>
-            {toast.type === "chat" ? (
+            {toast.type === "warning" ? (
+              <FiAlertTriangle size={20} />
+            ) : toast.type === "chat" ? (
               <FiMessageSquare size={20} />
             ) : (
               <FiFileText size={20} />

@@ -164,6 +164,7 @@ import SupportChatWidget from "./components/support/SupportChatWidget.jsx";
 import SupportHub from "./components/support/SupportHub.jsx";
 import TicketThread from "./components/support/TicketThread.jsx";
 import AdminSupport from "./pages/admin/AdminSupport.jsx";
+import AdminContacts from "./pages/admin/AdminContacts.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -668,6 +669,14 @@ export default function App() {
           element={
             <RequireAdmin>
               <AdminLogs />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/contact-messages"
+          element={
+            <RequireAdmin>
+              <AdminContacts />
             </RequireAdmin>
           }
         />
