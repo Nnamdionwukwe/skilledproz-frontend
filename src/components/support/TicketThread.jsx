@@ -8,12 +8,39 @@ import {
   FiCheckCircle,
   FiStar,
   FiX,
+  FiCornerUpLeft,
 } from "react-icons/fi";
 import { useAuthStore } from "../../store/authStore";
 import HirerLayout from "../../components/layout/HirerLayout";
 import WorkerLayout from "../../components/layout/WorkerLayout";
 import { supportApi } from "../../lib/supportApi";
 import styles from "./TicketThread.module.css";
+import { linkify } from "../../utils/linkify";
+
+// Simple shimmer block for loading state
+const Skeleton = ({ width, height, style }) => (
+  <div
+    style={{
+      width: width || "100%",
+      height: height || "20px",
+      background: "var(--bg-input)",
+      borderRadius: "4px",
+      position: "relative",
+      overflow: "hidden",
+      ...style,
+    }}
+  >
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background:
+          "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)",
+        animation: "shimmer 1.5s infinite",
+      }}
+    />
+  </div>
+);
 
 export default function TicketThread() {
   const { id } = useParams();
@@ -27,12 +54,11 @@ export default function TicketThread() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Reply state
   const [replyBody, setReplyBody] = useState("");
   const [files, setFiles] = useState([]);
   const [isSending, setIsSending] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
 
-  // CSAT state
   const [showCsat, setShowCsat] = useState(false);
   const [csatRating, setCsatRating] = useState(5);
   const [csatComment, setCsatComment] = useState("");
@@ -40,7 +66,6 @@ export default function TicketThread() {
   useEffect(() => {
     fetchTicket();
   }, [id]);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [ticket?.messages]);
@@ -50,9 +75,7 @@ export default function TicketThread() {
       const res = await supportApi.getTicket(id);
       setTicket(res.data.ticket);
     } catch (err) {
-      setError(
-        "Failed to load ticket. It may not exist or you don't have access.",
-      );
+      setError("Failed to load ticket.");
     } finally {
       setLoading(false);
     }
@@ -66,6 +89,7 @@ export default function TicketThread() {
     try {
       const data = new FormData();
       if (replyBody.trim()) data.append("body", replyBody);
+      if (replyTo) data.append("replyToId", replyTo.id);
       files.forEach((f) => data.append("attachments", f));
 
       const res = await supportApi.replyToTicket(id, data);
@@ -78,6 +102,7 @@ export default function TicketThread() {
 
       setReplyBody("");
       setFiles([]);
+      setReplyTo(null);
     } catch (err) {
       alert("Failed to send reply.");
     } finally {
@@ -91,19 +116,17 @@ export default function TicketThread() {
       await supportApi.closeTicket(id);
       fetchTicket();
     } catch (err) {
-      alert("Failed to close ticket.");
+      alert("Failed.");
     }
   };
-
   const handleReopenTicket = async () => {
     try {
       await supportApi.reopenTicket(id);
       fetchTicket();
     } catch (err) {
-      alert("Failed to reopen ticket.");
+      alert("Failed.");
     }
   };
-
   const handleSubmitCsat = async () => {
     try {
       await supportApi.submitTicketCsat(id, {
@@ -113,10 +136,9 @@ export default function TicketThread() {
       setShowCsat(false);
       fetchTicket();
     } catch (err) {
-      alert("Failed to submit rating.");
+      alert("Failed.");
     }
   };
-
   const getStatusBadge = (status) => {
     switch (status) {
       case "OPEN":
@@ -146,12 +168,58 @@ export default function TicketThread() {
     }
   };
 
-  if (loading)
+  // SKELETON LOADER
+  if (loading) {
     return (
       <Layout>
-        <div className={styles.loading}>Loading ticket...</div>
+        <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <Skeleton
+              width="100px"
+              height="20px"
+              style={{ marginBottom: "1rem" }}
+            />
+            <div className={styles.headerMain}>
+              <div>
+                <Skeleton
+                  width="300px"
+                  height="30px"
+                  style={{ marginBottom: "0.5rem" }}
+                />
+                <Skeleton width="200px" height="16px" />
+              </div>
+              <Skeleton width="100px" height="40px" />
+            </div>
+          </div>
+          <div className={styles.threadContainer}>
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: i % 2 === 0 ? "flex-end" : "flex-start",
+                  width: "100%",
+                }}
+              >
+                <Skeleton
+                  width="60%"
+                  height="80px"
+                  style={{ borderRadius: "12px" }}
+                />
+              </div>
+            ))}
+          </div>
+          <Skeleton
+            width="100%"
+            height="120px"
+            style={{ borderRadius: "12px" }}
+          />
+        </div>
       </Layout>
     );
+  }
+
   if (error)
     return (
       <Layout>
@@ -165,7 +233,6 @@ export default function TicketThread() {
   return (
     <Layout>
       <div className={styles.container}>
-        {/* ── Header ── */}
         <div className={styles.header}>
           <button
             className={styles.backBtn}
@@ -203,19 +270,17 @@ export default function TicketThread() {
           </div>
         </div>
 
-        {/* ── Messages Thread ── */}
         <div className={styles.threadContainer}>
           {ticket.messages.map((msg, idx) => {
             const isMe = msg.authorType === "USER";
             const isSystem = msg.authorType === "SYSTEM";
 
-            if (isSystem) {
+            if (isSystem)
               return (
                 <div key={idx} className={styles.systemMessage}>
                   {msg.body}
                 </div>
               );
-            }
 
             return (
               <div
@@ -226,8 +291,18 @@ export default function TicketThread() {
                   {isMe ? "You" : "Support"}
                 </div>
                 <div className={styles.messageContent}>
-                  <div className={styles.messageBubble}>
-                    <p>{msg.body}</p>
+                  <div
+                    className={styles.messageBubble}
+                    onDoubleClick={() => setReplyTo(msg)}
+                    title="Double-click to reply"
+                  >
+                    {msg.replyTo && (
+                      <div className={styles.replyPreview}>
+                        <FiCornerUpLeft size={12} />
+                        <span>{msg.replyTo.body || "Attachment"}</span>
+                      </div>
+                    )}
+                    <p>{linkify(msg.body)}</p>
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className={styles.attachments}>
                         {msg.attachments.map((att, i) => (
@@ -257,7 +332,6 @@ export default function TicketThread() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ── Reply Area / CSAT ── */}
         {ticket.status === "RESOLVED" && !ticket.csatRating && !showCsat && (
           <div className={styles.csatBanner}>
             <p>This ticket was marked as resolved. How did we do?</p>
@@ -303,61 +377,76 @@ export default function TicketThread() {
             </span>
           </div>
         ) : (
-          <form onSubmit={handleReply} className={styles.replyBox}>
-            <div className={styles.replyInputWrap}>
-              <textarea
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                placeholder="Type your reply here..."
-                rows={3}
-              />
-              {files.length > 0 && (
-                <div className={styles.filePreviews}>
-                  {files.map((f, i) => (
-                    <div key={i} className={styles.fileChip}>
-                      <span>{f.name}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFiles(files.filter((_, idx) => idx !== i))
-                        }
-                      >
-                        <FiX size={12} />
-                      </button>
-                    </div>
-                  ))}
+          <div className={styles.replyBox}>
+            {replyTo && (
+              <div className={styles.replyHeader}>
+                <div className={styles.replyHeaderText}>
+                  <span>
+                    Replying to{" "}
+                    {replyTo.authorType === "USER" ? "yourself" : "Support"}
+                  </span>
+                  <p>{replyTo.body || "Attachment"}</p>
                 </div>
-              )}
-            </div>
-
-            <div className={styles.replyActions}>
-              <label className={styles.attachLabel}>
-                <FiPaperclip size={18} />
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime"
-                  onChange={(e) => setFiles(Array.from(e.target.files))}
-                  hidden
+                <button onClick={() => setReplyTo(null)}>
+                  <FiX size={14} />
+                </button>
+              </div>
+            )}
+            <form onSubmit={handleReply}>
+              <div className={styles.replyInputWrap}>
+                <textarea
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  placeholder="Type your reply here..."
+                  rows={3}
                 />
-              </label>
-              <button
-                type="submit"
-                className={styles.sendBtn}
-                disabled={
-                  isSending || (!replyBody.trim() && files.length === 0)
-                }
-              >
-                {isSending ? (
-                  "Sending..."
-                ) : (
-                  <>
-                    <FiSend size={18} /> Send
-                  </>
+                {files.length > 0 && (
+                  <div className={styles.filePreviews}>
+                    {files.map((f, i) => (
+                      <div key={i} className={styles.fileChip}>
+                        <span>{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFiles(files.filter((_, idx) => idx !== i))
+                          }
+                        >
+                          <FiX size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </button>
-            </div>
-          </form>
+              </div>
+              <div className={styles.replyActions}>
+                <label className={styles.attachLabel}>
+                  <FiPaperclip size={18} />
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime"
+                    onChange={(e) => setFiles(Array.from(e.target.files))}
+                    hidden
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className={styles.sendBtn}
+                  disabled={
+                    isSending || (!replyBody.trim() && files.length === 0)
+                  }
+                >
+                  {isSending ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      <FiSend size={18} /> Send
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </div>
     </Layout>

@@ -1,18 +1,26 @@
 // src/components/support/SupportChatWidget.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { FiMessageSquare, FiX, FiPaperclip, FiSend } from "react-icons/fi";
+import {
+  FiMessageSquare,
+  FiX,
+  FiPaperclip,
+  FiSend,
+  FiCornerUpLeft,
+} from "react-icons/fi";
 import { useSupportChat } from "../../hooks/useSupportChat";
 import { supportApi } from "../../lib/supportApi";
 import styles from "./SupportChatWidget.module.css";
+import { linkify } from "../../utils/linkify";
 
 const WIDGET_WIDTH = 360;
-const WIDGET_HEIGHT = 520;
+const WIDGET_HEIGHT = 550;
 const BTN_SIZE = 56;
 
 export default function SupportChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isStarting, setIsStarting] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
 
   const {
@@ -34,11 +42,10 @@ export default function SupportChatWidget() {
       } catch (e) {}
     }
     return {
-      x: Math.max(20, window.innerWidth - BTN_SIZE - 30),
-      y: Math.max(20, window.innerHeight - BTN_SIZE - 30),
+      x: window.innerWidth - BTN_SIZE - 24,
+      y: window.innerHeight - BTN_SIZE - 24,
     };
   });
-
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({
     startX: 0,
@@ -48,26 +55,10 @@ export default function SupportChatWidget() {
     moved: false,
   });
 
-  // Save position to localStorage
   useEffect(() => {
     localStorage.setItem("support_widget_pos", JSON.stringify(position));
   }, [position]);
 
-  // Re-clamp position on window resize to prevent it from going off-screen
-  useEffect(() => {
-    const handleResize = () => {
-      const w = isOpen ? WIDGET_WIDTH : BTN_SIZE;
-      const h = isOpen ? WIDGET_HEIGHT : BTN_SIZE;
-      setPosition((prev) => ({
-        x: Math.max(10, Math.min(window.innerWidth - w - 20, prev.x)),
-        y: Math.max(10, Math.min(window.innerHeight - h - 20, prev.y)),
-      }));
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isOpen]);
-
-  // ── Drag Handlers ──
   const handlePointerDown = (e) => {
     if (e.button !== 0) return;
     e.target.setPointerCapture(e.pointerId);
@@ -85,29 +76,23 @@ export default function SupportChatWidget() {
     if (!isDragging) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
-
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      dragRef.current.moved = true;
-    }
-
-    const newX = Math.max(
-      10,
-      Math.min(window.innerWidth - BTN_SIZE - 10, dragRef.current.posX + dx),
-    );
-    const newY = Math.max(
-      10,
-      Math.min(window.innerHeight - BTN_SIZE - 10, dragRef.current.posY + dy),
-    );
-
-    setPosition({ x: newX, y: newY });
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragRef.current.moved = true;
+    setPosition({
+      x: Math.max(
+        10,
+        Math.min(window.innerWidth - BTN_SIZE - 10, dragRef.current.posX + dx),
+      ),
+      y: Math.max(
+        10,
+        Math.min(window.innerHeight - BTN_SIZE - 10, dragRef.current.posY + dy),
+      ),
+    });
   };
 
   const handlePointerUp = (e) => {
     e.target.releasePointerCapture(e.pointerId);
     setIsDragging(false);
-
     if (!dragRef.current.moved && !isOpen) {
-      // When opening, adjust the position so the larger window stays on screen
       const safeX = Math.max(
         20,
         Math.min(position.x, window.innerWidth - WIDGET_WIDTH - 20),
@@ -116,7 +101,6 @@ export default function SupportChatWidget() {
         20,
         Math.min(position.y, window.innerHeight - WIDGET_HEIGHT - 20),
       );
-
       setPosition({ x: safeX, y: safeY });
       setIsOpen(true);
     }
@@ -140,16 +124,15 @@ export default function SupportChatWidget() {
   };
 
   useEffect(() => {
-    if (isOpen && !conversation && !isStarting) {
-      handleStartChat();
-    }
+    if (isOpen && !conversation && !isStarting) handleStartChat();
   }, [isOpen, conversation, isStarting]);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputText.trim() || conversation?.status === "ENDED") return;
-    sendMessage(inputText.trim());
+    sendMessage(inputText.trim(), [], replyTo);
     setInputText("");
+    setReplyTo(null);
     setTyping(false);
   };
 
@@ -157,8 +140,6 @@ export default function SupportChatWidget() {
     setInputText(e.target.value);
     setTyping(true);
   };
-
-  // ── Render ──
 
   if (!isOpen) {
     return (
@@ -206,31 +187,40 @@ export default function SupportChatWidget() {
           <div className={styles.emptyState}>Connecting you to an agent...</div>
         )}
 
-        {messages.map((msg, idx) => {
+        {messages.map((msg) => {
           const isMe = msg.senderType === "USER";
           const isSystem = msg.senderType === "SYSTEM";
 
-          if (isSystem) {
+          if (isSystem)
             return (
-              <div key={idx} className={styles.systemMsg}>
+              <div key={msg.id} className={styles.systemMsg}>
                 {msg.body}
               </div>
             );
-          }
 
           return (
             <div
-              key={msg.id || idx}
+              key={msg.id}
               className={`${styles.messageRow} ${isMe ? styles.myMsg : styles.theirMsg}`}
             >
-              <div className={styles.bubble}>
-                {msg.body && <p>{msg.body}</p>}
+              <div
+                className={styles.bubble}
+                onDoubleClick={() => setReplyTo(msg)}
+                title="Double-click to reply"
+              >
+                {msg.replyTo && (
+                  <div className={styles.replyPreview}>
+                    <FiCornerUpLeft size={12} />
+                    <span>{msg.replyTo.body || "Attachment"}</span>
+                  </div>
+                )}
+                {msg.body && <p>{linkify(msg.body)}</p>}
                 <span className={styles.time}>
                   {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
-                  {isMe && msg.readAt && " ✓✓"}
+                  {isMe && (msg.isSending ? " ⏳" : msg.readAt ? " ✓✓" : " ✓")}
                 </span>
               </div>
             </div>
@@ -242,29 +232,45 @@ export default function SupportChatWidget() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className={styles.inputArea}>
-        <button type="button" className={styles.attachBtn}>
-          <FiPaperclip size={18} />
-        </button>
-        <input
-          type="text"
-          value={inputText}
-          onChange={handleTyping}
-          placeholder={
-            conversation?.status === "ENDED"
-              ? "Chat ended."
-              : "Type a message..."
-          }
-          disabled={conversation?.status === "ENDED"}
-        />
-        <button
-          type="submit"
-          className={styles.sendBtn}
-          disabled={!inputText.trim() || conversation?.status === "ENDED"}
-        >
-          <FiSend size={18} />
-        </button>
-      </form>
+      <div className={styles.replyBoxWrap}>
+        {replyTo && (
+          <div className={styles.replyHeader}>
+            <div className={styles.replyHeaderText}>
+              <span>
+                Replying to{" "}
+                {replyTo.senderType === "USER" ? "yourself" : "Agent"}
+              </span>
+              <p>{replyTo.body || "Attachment"}</p>
+            </div>
+            <button onClick={() => setReplyTo(null)}>
+              <FiX size={14} />
+            </button>
+          </div>
+        )}
+        <form onSubmit={handleSend} className={styles.inputArea}>
+          <button type="button" className={styles.attachBtn}>
+            <FiPaperclip size={18} />
+          </button>
+          <input
+            type="text"
+            value={inputText}
+            onChange={handleTyping}
+            placeholder={
+              conversation?.status === "ENDED"
+                ? "Chat ended."
+                : "Type a message..."
+            }
+            disabled={conversation?.status === "ENDED"}
+          />
+          <button
+            type="submit"
+            className={styles.sendBtn}
+            disabled={!inputText.trim() || conversation?.status === "ENDED"}
+          >
+            <FiSend size={18} />
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

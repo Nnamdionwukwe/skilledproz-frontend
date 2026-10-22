@@ -29,8 +29,7 @@
 .widgetContainer {
   position: fixed;
   width: 360px;
-  height: 520px;
-  /* The max-height guarantees it won't break out of the screen */
+  height: 550px;
   max-height: calc(100vh - 40px);
   max-width: calc(100vw - 40px);
   background: var(--bg-panel);
@@ -90,8 +89,7 @@
 /* ── Messages Area ── */
 .messagesArea {
   flex: 1;
-  /* min-height: 0 is crucial for flex children to scroll properly inside a fixed-height container */
-  min-height: 0;
+  min-height: 0; /* Crucial for flex children to scroll properly inside a fixed-height container */
   padding: 1rem;
   overflow-y: auto;
   display: flex;
@@ -147,6 +145,28 @@
   text-align: right;
 }
 
+/* ── Reply Preview ── */
+.replyPreview {
+  background: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid rgba(255, 255, 255, 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theirMsg .replyPreview {
+  background: var(--bg-input);
+  border-left-color: var(--orange);
+  color: var(--text-dim);
+}
+
 /* ── System Messages & Indicators ── */
 .systemMsg {
   text-align: center;
@@ -162,14 +182,54 @@
 }
 
 /* ── Input Area ── */
-.inputArea {
-  padding: 1rem;
+.replyBoxWrap {
+  display: flex;
+  flex-direction: column;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.replyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+}
+.replyHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.replyHeaderText span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--orange);
+}
+.replyHeaderText p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.replyHeader button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.inputArea {
+  padding: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0;
 }
 .inputArea input {
   flex: 1;
@@ -184,6 +244,7 @@
 .inputArea input:focus {
   border-color: var(--border-focus);
 }
+
 .attachBtn,
 .sendBtn {
   background: transparent;

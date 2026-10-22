@@ -1,27 +1,54 @@
 /* src/pages/support/SupportHub.module.css */
+
+/* ── Full-bleed page matching MyReports ── */
 .container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+  width: auto;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding: 20px 16px 64px;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeUp 0.3s ease both;
 }
 
+@media (max-width: 640px) {
+  .container {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 16px 12px 64px;
+  }
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 28px 24px 64px;
+  }
+}
+
+/* ── Header ── */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
 
 .header h1 {
-  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 5vw, 28px);
+  font-weight: 900;
   color: var(--text);
-  margin-bottom: 0.25rem;
+  letter-spacing: -0.025em;
+  margin: 0 0 4px;
 }
 .header p {
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .createBtn {
@@ -45,7 +72,7 @@
 .ticketList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 10px;
 }
 
 .ticketCard {
@@ -54,24 +81,27 @@
   gap: 1rem;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  padding: 1.25rem;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 16px;
   text-decoration: none;
   color: inherit;
   transition:
-    border-color 0.2s,
+    border-color 0.15s,
+    background 0.12s,
     transform 0.2s;
 }
 .ticketCard:hover {
-  border-color: var(--orange);
+  border-color: var(--border-hover);
+  background: var(--bg-card);
   transform: translateY(-2px);
 }
 
 .ticketIcon {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: var(--orange-dim);
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   color: var(--orange);
   display: flex;
   align-items: center;
@@ -91,14 +121,16 @@
   margin-bottom: 0.25rem;
 }
 .ticketNumber {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  font-family: var(--font-display);
 }
 
 .ticketSubject {
-  font-size: 1rem;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -109,7 +141,7 @@
 .ticketMeta {
   display: flex;
   gap: 1rem;
-  font-size: 0.75rem;
+  font-size: 12px;
   color: var(--text-muted);
   align-items: center;
 }
@@ -122,7 +154,9 @@
   background: var(--bg-input);
   padding: 2px 6px;
   border-radius: 4px;
-  text-transform: capitalize;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
 }
 
 .chevron {
@@ -131,55 +165,77 @@
 
 /* ── Status Badges ── */
 .badge {
-  font-size: 0.7rem;
+  font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
+  padding: 4px 10px;
+  border-radius: 20px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .badge.open {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 .badge.progress {
-  background: rgba(234, 179, 8, 0.15);
+  background: rgba(234, 179, 8, 0.12);
   color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.25);
 }
 .badge.waiting {
-  background: rgba(249, 115, 22, 0.15);
+  background: rgba(249, 115, 22, 0.12);
   color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.25);
 }
 .badge.resolved {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.25);
 }
 .badge.closed {
-  background: rgba(107, 114, 128, 0.15);
-  color: #6b7280;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* ── Skeleton Loader ── */
+.skeletonCard {
+  height: 86px;
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(255, 255, 255, 0.03) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  border: 1px solid var(--border);
 }
 
 /* ── Modal & Form ── */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   padding: 1rem;
+  animation: fadeIn 0.2s ease;
 }
 
 .modal {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 550px;
+  max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow);
+  animation: popIn 0.2s ease;
 }
 
 .modalHeader {
@@ -190,14 +246,23 @@
   border-bottom: 1px solid var(--border);
 }
 .modalHeader h2 {
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
   color: var(--text);
+  margin: 0;
 }
 .modalHeader button {
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modalHeader button:hover {
+  color: var(--text);
 }
 
 .form {
@@ -213,7 +278,7 @@
   gap: 0.4rem;
 }
 .field label {
-  font-size: 0.85rem;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-dim);
 }
@@ -225,7 +290,7 @@
   border-radius: 8px;
   padding: 0.75rem;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 13px;
   outline: none;
   font-family: inherit;
 }
@@ -238,7 +303,7 @@
 /* Upload Box */
 .uploadBox {
   border: 2px dashed var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
   color: var(--text-muted);
@@ -249,9 +314,12 @@
   align-items: center;
   gap: 0.5rem;
   transition: border-color 0.2s;
+  background: var(--bg-card);
 }
 .uploadBox:hover {
   border-color: var(--orange);
+  background: var(--orange-dim);
+  color: var(--orange);
 }
 .uploadBox input {
   position: absolute;
@@ -266,11 +334,12 @@
   margin-top: 0.5rem;
 }
 .fileItem {
-  font-size: 0.8rem;
+  font-size: 12px;
   color: var(--green);
   background: var(--green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.2);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 /* Footer */
@@ -282,19 +351,25 @@
 }
 .cancelBtn {
   padding: 0.6rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.cancelBtn:hover {
+  background: var(--bg-input);
 }
 .submitBtn {
   padding: 0.6rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   background: var(--orange);
   color: #fff;
   font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
 }
 .submitBtn:disabled {
@@ -305,21 +380,71 @@
 .errorBox {
   background: var(--red-dim);
   color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   padding: 0.75rem;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 13px;
 }
 
 /* Empty state */
 .emptyState {
   text-align: center;
-  padding: 4rem 1rem;
+  padding: 60px 20px;
   background: var(--bg-panel);
   border-radius: 16px;
   border: 1px dashed var(--border);
   color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 .emptyState h3 {
   color: var(--text);
-  margin: 1rem 0 0.5rem;
+  font-size: 16px;
+  margin: 0;
+}
+.emptyState p {
+  font-size: 13px;
+  margin: 0;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* Keyframes */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes popIn {
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

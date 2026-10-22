@@ -133,7 +133,11 @@ export default function SupportHub() {
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Loading tickets...</div>
+          <div className={styles.ticketList}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.skeletonCard} />
+            ))}
+          </div>
         ) : tickets.length === 0 ? (
           <div className={styles.emptyState}>
             <FiFileText size={48} />

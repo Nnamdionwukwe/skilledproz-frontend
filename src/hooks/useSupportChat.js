@@ -28,28 +28,25 @@ export function useSupportChat(initialConversation = null) {
 
     socket.on("disconnect", () => setIsConnected(false));
 
-    // New message received (either from us or the agent)
     socket.on("support:message", (msg) => {
       setMessages((prev) => {
-        // 1. If the message ID is ALREADY in the list, ignore it (prevents duplicate echo)
-        if (prev.some((m) => m.id === msg.id)) {
-          return prev;
-        }
+        // 1. If message exists by real ID, ignore
+        if (prev.some((m) => m.id === msg.id)) return prev;
 
-        // 2. If the message has a tempId matching an optimistic message, replace it
-        // (This happens if the ack fails but the socket delivers the message)
-        const existingTempIndex = prev.findIndex((m) => m.id === msg.tempId);
+        // 2. If message has a tempId matching an optimistic message, replace it
+        const existingTempIndex = prev.findIndex(
+          (m) => m.tempId && m.tempId === msg.tempId,
+        );
         if (existingTempIndex !== -1) {
           const newMessages = [...prev];
           newMessages[existingTempIndex] = msg;
           return newMessages;
         }
 
-        // 3. Otherwise, it's a brand new message
+        // 3. Otherwise, new message from other person
         if (msg.senderId !== user?.id) {
           socket.emit("support:read", { conversationId: msg.conversationId });
         }
-
         return [...prev, msg];
       });
     });
@@ -78,19 +75,25 @@ export function useSupportChat(initialConversation = null) {
   }, [conversation?.id, accessToken, user?.id]);
 
   const sendMessage = useCallback(
-    (body, attachments = []) => {
+    (body, attachments = [], replyTo = null) => {
       if (!socketRef.current || !conversation?.id) return;
 
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const tempId = `temp-${Date.now()}`;
 
-      // 1. Instantly add to UI with a temporary ID
       setMessages((prev) => [
         ...prev,
         {
           id: tempId,
-          tempId: tempId, // We save this so we can match it later
+          tempId: tempId,
           body,
           attachments,
+          replyTo: replyTo
+            ? {
+                id: replyTo.id,
+                body: replyTo.body,
+                senderType: replyTo.senderType,
+              }
+            : null,
           senderType: "USER",
           senderId: user?.id,
           createdAt: new Date().toISOString(),
@@ -98,25 +101,21 @@ export function useSupportChat(initialConversation = null) {
         },
       ]);
 
-      // 2. Send to server
       socketRef.current.emit(
         "support:message",
-        { conversationId: conversation.id, body, attachments, tempId },
+        {
+          conversationId: conversation.id,
+          body,
+          attachments,
+          replyToId: replyTo?.id || null,
+          tempId,
+        },
         (ack) => {
           if (ack.ok) {
-            // 3. The server successfully saved it. Replace the temp message with the real one.
             setMessages((prev) =>
-              prev.map((m) => {
-                if (m.id === tempId) {
-                  // Keep the tempId reference on the real message so the socket listener can find it
-                  return { ...ack.message, tempId };
-                }
-                return m;
-              }),
+              prev.map((m) => (m.id === tempId ? ack.message : m)),
             );
           } else {
-            // Handle error (e.g., mark the message as failed)
-            console.error("Failed to send message", ack.error);
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === tempId
