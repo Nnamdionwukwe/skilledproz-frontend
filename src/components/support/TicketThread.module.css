@@ -692,3 +692,15 @@
     transform: scale(1);
   }
 }
+/* Add this to the bottom of src/pages/support/TicketThread.module.css */
+
+.hintText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  opacity: 0.8;
+}

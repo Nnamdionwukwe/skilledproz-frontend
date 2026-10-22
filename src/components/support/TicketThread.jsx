@@ -483,6 +483,12 @@ export default function TicketThread() {
           </div>
         ) : (
           <div className={styles.replyBox}>
+            {/* ADDED: Double-tap hint text */}
+            <div className={styles.hintText}>
+              <FiCornerUpLeft size={12} /> Double-click or double-tap a message
+              to reply
+            </div>
+
             {replyTo && (
               <div className={styles.replyHeader}>
                 <div className={styles.replyHeaderText}>
