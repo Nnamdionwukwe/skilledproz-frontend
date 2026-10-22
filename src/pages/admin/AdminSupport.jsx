@@ -18,21 +18,6 @@ import { linkify } from "../../utils/linkify";
 import AttachmentPreview from "../../components/support/AttachmentPreview";
 import styles from "./AdminSupport.module.css";
 
-// Skeleton Loader for the sidebar list
-const SidebarSkeleton = () => (
-  <div className={styles.list}>
-    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-      <div key={i} className={styles.skeletonItem}>
-        <div className={styles.skeletonAvatar} />
-        <div className={styles.skeletonInfo}>
-          <div className={styles.skeletonTitle} />
-          <div className={styles.skeletonText} />
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
 export default function AdminSupport() {
   const { user, accessToken } = useAuthStore();
   const { setUnreadCount, decrementUnread } = useAdminSupportStore();
@@ -318,9 +303,17 @@ export default function AdminSupport() {
             />
           </div>
 
-          {/* SKELETON LOADER LOGIC */}
+          {/* SKELETON LOADER MATCHING ADMINUSERS */}
           {loading ? (
-            <SidebarSkeleton />
+            <div className={styles.list}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={styles.skRow}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                />
+              ))}
+            </div>
           ) : (
             <div className={styles.list}>
               {activeTab === "chats"

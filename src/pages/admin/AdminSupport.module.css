@@ -544,3 +544,41 @@
     font-size: 0.85rem;
   }
 }
+/* Add this to src/pages/admin/AdminSupport.module.css */
+/* Remove the old .skeletonItem, .skeletonAvatar, .skeletonInfo, .skeletonTitle, .skeletonText if they exist */
+
+.skRow {
+  height: 73px; /* Matches the height of the list items */
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    var(--bg-card) 100%
+  );
+  background-size: 200% 100%;
+  animation:
+    shimmer 1.4s ease infinite,
+    fadeUp 0.3s ease both;
+}
+
+/* Ensure you have this animation at the bottom of the file */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
