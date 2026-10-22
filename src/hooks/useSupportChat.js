@@ -13,10 +13,34 @@ export function useSupportChat(initialConversation = null) {
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // 1. Load historical messages when the conversation is fetched from the API
+  // 1. Safely merge historical messages when fetched from the API
   useEffect(() => {
     if (conversation?.messages) {
-      setMessages(conversation.messages);
+      setMessages((prevMessages) => {
+        // If there are no previous messages (first load), just use the API ones
+        if (prevMessages.length === 0) return conversation.messages;
+
+        // Merge: Start with historical, then append any live messages that arrived via WebSocket
+        const merged = [...conversation.messages];
+
+        prevMessages.forEach((liveMsg) => {
+          // Only append if it doesn't already exist in the historical list
+          if (
+            !merged.some(
+              (m) =>
+                m.id === liveMsg.id ||
+                (m.tempId && m.tempId === liveMsg.tempId),
+            )
+          ) {
+            merged.push(liveMsg);
+          }
+        });
+
+        // Sort chronologically to ensure proper order
+        return merged.sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+        );
+      });
     }
   }, [conversation]);
 
@@ -121,12 +145,10 @@ export function useSupportChat(initialConversation = null) {
         },
         (ack) => {
           if (ack.ok) {
-            // Replace optimistic message with the real DB message
             setMessages((prev) =>
               prev.map((m) => (m.id === tempId ? ack.message : m)),
             );
           } else {
-            // Mark as failed if the server rejects it
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === tempId
