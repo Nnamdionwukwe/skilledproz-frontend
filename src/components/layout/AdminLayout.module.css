@@ -643,3 +643,37 @@
     background: rgba(255, 255, 255, 0.05);
   }
 }
+/* Add these to the bottom of AdminLayout.module.css */
+
+.navBadge {
+  margin-left: auto; /* Pushes the badge to the far right */
+  background: var(--orange);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--bg-panel); /* Creates a cutout effect */
+}
+
+/* The pulse animation for new support messages */
+.pulse {
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(249, 115, 22, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
