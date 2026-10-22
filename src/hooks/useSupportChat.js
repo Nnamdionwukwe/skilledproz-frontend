@@ -16,7 +16,6 @@ export function useSupportChat(initialConversation = null) {
   useEffect(() => {
     if (!accessToken) return;
 
-    // Connect to the /support namespace
     const socket = createSupportSocket(accessToken);
     socketRef.current = socket;
 
@@ -29,21 +28,36 @@ export function useSupportChat(initialConversation = null) {
 
     socket.on("disconnect", () => setIsConnected(false));
 
-    // New message received
+    // New message received (either from us or the agent)
     socket.on("support:message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      // If it's from the other person, mark as read immediately
-      if (msg.senderId !== user?.id) {
-        socket.emit("support:read", { conversationId: msg.conversationId });
-      }
+      setMessages((prev) => {
+        // 1. If the message ID is ALREADY in the list, ignore it (prevents duplicate echo)
+        if (prev.some((m) => m.id === msg.id)) {
+          return prev;
+        }
+
+        // 2. If the message has a tempId matching an optimistic message, replace it
+        // (This happens if the ack fails but the socket delivers the message)
+        const existingTempIndex = prev.findIndex((m) => m.id === msg.tempId);
+        if (existingTempIndex !== -1) {
+          const newMessages = [...prev];
+          newMessages[existingTempIndex] = msg;
+          return newMessages;
+        }
+
+        // 3. Otherwise, it's a brand new message
+        if (msg.senderId !== user?.id) {
+          socket.emit("support:read", { conversationId: msg.conversationId });
+        }
+
+        return [...prev, msg];
+      });
     });
 
-    // Someone is typing
     socket.on("support:typing", ({ isTyping: typing, userId }) => {
       if (userId !== user?.id) setIsTyping(typing);
     });
 
-    // Read receipt received
     socket.on("support:read", ({ byUserId, at }) => {
       if (byUserId !== user?.id) {
         setMessages((prev) =>
@@ -52,41 +66,63 @@ export function useSupportChat(initialConversation = null) {
       }
     });
 
-    // Chat ended
     socket.on("support:ended", ({ systemMessage }) => {
       setConversation((prev) => ({ ...prev, status: "ENDED" }));
       setMessages((prev) => [...prev, systemMessage]);
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
   }, [conversation?.id, accessToken, user?.id]);
 
   const sendMessage = useCallback(
     (body, attachments = []) => {
       if (!socketRef.current || !conversation?.id) return;
 
-      // Optimistic UI update (shows instantly before server responds)
-      const tempId = Date.now().toString();
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // 1. Instantly add to UI with a temporary ID
       setMessages((prev) => [
         ...prev,
         {
           id: tempId,
+          tempId: tempId, // We save this so we can match it later
           body,
           attachments,
           senderType: "USER",
           senderId: user?.id,
           createdAt: new Date().toISOString(),
+          isSending: true,
         },
       ]);
 
+      // 2. Send to server
       socketRef.current.emit(
         "support:message",
-        { conversationId: conversation.id, body, attachments },
+        { conversationId: conversation.id, body, attachments, tempId },
         (ack) => {
           if (ack.ok) {
-            // Replace optimistic message with the real one from the server
+            // 3. The server successfully saved it. Replace the temp message with the real one.
             setMessages((prev) =>
-              prev.map((m) => (m.id === tempId ? ack.message : m)),
+              prev.map((m) => {
+                if (m.id === tempId) {
+                  // Keep the tempId reference on the real message so the socket listener can find it
+                  return { ...ack.message, tempId };
+                }
+                return m;
+              }),
+            );
+          } else {
+            // Handle error (e.g., mark the message as failed)
+            console.error("Failed to send message", ack.error);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempId
+                  ? { ...m, isFailed: true, isSending: false }
+                  : m,
+              ),
             );
           }
         },
@@ -99,7 +135,6 @@ export function useSupportChat(initialConversation = null) {
     (typing) => {
       if (!socketRef.current || !conversation?.id) return;
 
-      // Throttle typing events to avoid spamming the server
       if (typing) {
         clearTimeout(typingTimeoutRef.current);
         socketRef.current.emit("support:typing", {

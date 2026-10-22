@@ -6,7 +6,7 @@ import { supportApi } from "../../lib/supportApi";
 import styles from "./SupportChatWidget.module.css";
 
 const WIDGET_WIDTH = 360;
-const WIDGET_HEIGHT = 550;
+const WIDGET_HEIGHT = 520;
 const BTN_SIZE = 56;
 
 export default function SupportChatWidget() {
@@ -25,7 +25,7 @@ export default function SupportChatWidget() {
     isConnected,
   } = useSupportChat();
 
-  // ── Draggable Logic State ──
+  // ── Draggable Logic ──
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem("support_widget_pos");
     if (saved) {
@@ -33,10 +33,9 @@ export default function SupportChatWidget() {
         return JSON.parse(saved);
       } catch (e) {}
     }
-    // Default: Bottom right
     return {
-      x: window.innerWidth - BTN_SIZE - 24,
-      y: window.innerHeight - BTN_SIZE - 24,
+      x: Math.max(20, window.innerWidth - BTN_SIZE - 30),
+      y: Math.max(20, window.innerHeight - BTN_SIZE - 30),
     };
   });
 
@@ -54,11 +53,24 @@ export default function SupportChatWidget() {
     localStorage.setItem("support_widget_pos", JSON.stringify(position));
   }, [position]);
 
+  // Re-clamp position on window resize to prevent it from going off-screen
+  useEffect(() => {
+    const handleResize = () => {
+      const w = isOpen ? WIDGET_WIDTH : BTN_SIZE;
+      const h = isOpen ? WIDGET_HEIGHT : BTN_SIZE;
+      setPosition((prev) => ({
+        x: Math.max(10, Math.min(window.innerWidth - w - 20, prev.x)),
+        y: Math.max(10, Math.min(window.innerHeight - h - 20, prev.y)),
+      }));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isOpen]);
+
   // ── Drag Handlers ──
   const handlePointerDown = (e) => {
     if (e.button !== 0) return;
     e.target.setPointerCapture(e.pointerId);
-
     setIsDragging(true);
     dragRef.current = {
       startX: e.clientX,
@@ -71,7 +83,6 @@ export default function SupportChatWidget() {
 
   const handlePointerMove = (e) => {
     if (!isDragging) return;
-
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
 
@@ -79,7 +90,6 @@ export default function SupportChatWidget() {
       dragRef.current.moved = true;
     }
 
-    // Clamp to screen bounds (using button size)
     const newX = Math.max(
       10,
       Math.min(window.innerWidth - BTN_SIZE - 10, dragRef.current.posX + dx),
@@ -97,19 +107,17 @@ export default function SupportChatWidget() {
     setIsDragging(false);
 
     if (!dragRef.current.moved && !isOpen) {
-      // If we are opening the chat, ensure the top-left of the window isn't off-screen
-      // We want to keep it near the button, but pull it in if it overflows the viewport.
-      const safeX = Math.min(position.x, window.innerWidth - WIDGET_WIDTH - 20);
-      const safeY = Math.min(
-        position.y,
-        window.innerHeight - WIDGET_HEIGHT - 20,
+      // When opening, adjust the position so the larger window stays on screen
+      const safeX = Math.max(
+        20,
+        Math.min(position.x, window.innerWidth - WIDGET_WIDTH - 20),
+      );
+      const safeY = Math.max(
+        20,
+        Math.min(position.y, window.innerHeight - WIDGET_HEIGHT - 20),
       );
 
-      setPosition({
-        x: Math.max(20, safeX),
-        y: Math.max(20, safeY),
-      });
-
+      setPosition({ x: safeX, y: safeY });
       setIsOpen(true);
     }
   };
@@ -212,7 +220,7 @@ export default function SupportChatWidget() {
 
           return (
             <div
-              key={idx}
+              key={msg.id || idx}
               className={`${styles.messageRow} ${isMe ? styles.myMsg : styles.theirMsg}`}
             >
               <div className={styles.bubble}>
