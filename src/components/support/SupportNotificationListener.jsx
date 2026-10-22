@@ -57,7 +57,11 @@ export default function SupportNotificationListener() {
         (t) => t.id === toast.id && Date.now() - t.toastId < 10000,
       );
       if (exists) return prev;
-      return [...prev, { ...toast, toastId: Date.now() }];
+
+      // FIX: Generate a guaranteed unique ID to prevent React key collisions
+      const uniqueToastId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      return [...prev, { ...toast, toastId: uniqueToastId }];
     });
     playSound();
   };
@@ -141,11 +145,12 @@ export default function SupportNotificationListener() {
     const staleInterval = setInterval(checkStale, 60000);
 
     // Initial check after 5 seconds (give the page time to load)
-    setTimeout(checkStale, 5000);
+    const initTimeout = setTimeout(checkStale, 5000);
 
     return () => {
       socket.disconnect();
       clearInterval(staleInterval);
+      clearTimeout(initTimeout);
     };
   }, [accessToken, user?.id]);
 
@@ -170,7 +175,7 @@ export default function SupportNotificationListener() {
 
           <div className={styles.toastContent}>
             <p className={styles.toastTitle}>{toast.title}</p>
-            <p className={styles.toastMessage}>{toast.message}</p>
+            <p className={toast.toastMessage}>{toast.message}</p>
           </div>
 
           <div className={styles.toastActions}>
