@@ -10,7 +10,14 @@ import {
   FaChevronUp,
   FaClock,
 } from "react-icons/fa";
-import { HIRER_FEE_RATE } from "../../../utils/pricing";
+
+// ── Currency-aware fee percent (mirrors utils/pricing.js) ────────────────
+// Two-tier: NGN → 2%, everything else → 5%
+// Keep in sync with backend/src/config/fees.js and frontend/src/utils/pricing.js
+function getFeePercent(currency = "NGN") {
+  const cur = (currency || "NGN").toUpperCase();
+  return cur === "NGN" ? 2 : 5;
+}
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -62,6 +69,11 @@ export default function BookingDetailPayment({
   isWorker,
 }) {
   const isJobPostBooking = booking?.source === "JOB_POST";
+
+  // ── Resolve the fee percent for the current currency ──
+  const feeCurrency =
+    (feeBreakdown && feeBreakdown.currency) || booking?.currency || "NGN";
+  const feePercent = getFeePercent(feeCurrency);
 
   // ── Real duration of the job-post booking (used instead of `qty`) ──
   const realDurationText =
@@ -129,7 +141,7 @@ export default function BookingDetailPayment({
               )}
 
               <div className={styles.feeRow}>
-                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
+                <span>Platform Fee ({feePercent}%)</span>
                 <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
               </div>
 
@@ -176,7 +188,7 @@ export default function BookingDetailPayment({
               )}
 
               <div className={styles.feeRow}>
-                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
+                <span>Platform Fee ({feePercent}%)</span>
                 <span>+ {formatPrice(feeBreakdown.platformFee || 0, cur)}</span>
               </div>
 
@@ -254,7 +266,7 @@ export default function BookingDetailPayment({
             )}
 
             <div className={styles.feeRow}>
-              <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
+              <span>Platform Fee ({feePercent}%)</span>
               <span>+ {formatPrice(platformFee, cur)}</span>
             </div>
 
@@ -309,7 +321,7 @@ export default function BookingDetailPayment({
             )}
 
             <div className={styles.feeRow}>
-              <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
+              <span>Platform Fee ({feePercent}%)</span>
               <span>+ {formatPrice(platformFee, cur)}</span>
             </div>
 
@@ -398,6 +410,7 @@ export default function BookingDetailPayment({
     const useBreakdown = feeBreakdown && !feeBreakdown.isActual;
     const cur =
       (useBreakdown ? feeBreakdown.currency : payment.currency) || "NGN";
+    const cardFeePercent = getFeePercent(cur);
 
     let total = useBreakdown ? feeBreakdown.total : payment.amount;
     let platformFee = useBreakdown
@@ -417,7 +430,7 @@ export default function BookingDetailPayment({
         <div className={styles.paymentCard}>
           <PayRow label="Total" value={formatPrice(total, cur)} />
           <PayRow
-            label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+            label={`Platform Fee (${cardFeePercent}%)`}
             value={formatPrice(platformFee, cur)}
             muted
           />

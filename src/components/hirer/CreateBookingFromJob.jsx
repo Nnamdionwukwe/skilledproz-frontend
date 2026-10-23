@@ -9,7 +9,7 @@ import {
 import HirerLayout from "../layout/HirerLayout";
 import api from "../../lib/api";
 import styles from "./CreateBookingFromJob.module.css";
-import { HIRER_FEE_RATE } from "../../utils/pricing";
+import { getHirerFeeRate } from "../../utils/pricing";
 
 import {
   FiChevronLeft,
@@ -85,10 +85,6 @@ const RATE_UNIT = {
 };
 
 // ── Hours per unit (mirrors PostJob + JobDetail + backend) ────────────────
-// 1 day    = 8 hours
-// 1 week   = 56 hours     (8 × 7)
-// 1 month  = 242.5 hours  (56 × 4.33)
-// 1 year   = 2910 hours   (242.5 × 12)
 const HOURS_PER_UNIT = {
   hours: 1,
   days: 8,
@@ -180,9 +176,6 @@ function formatNumber(n) {
   });
 }
 
-/**
- * Renders "1 week", "3 months", "a full weekend".
- */
 function formatDurationLabel(estimatedValue, estimatedUnit) {
   if (estimatedValue == null || estimatedValue === "") return null;
   const unit = estimatedUnit || "hours";
@@ -194,17 +187,11 @@ function formatDurationLabel(estimatedValue, estimatedUnit) {
   return `${formatNumber(num)} ${noun}`;
 }
 
-/**
- * Pluralize a numeric value with its unit noun.
- *  pluralize(1, "months")  → "1 month"
- *  pluralize(30.31, "days") → "30.31 days"
- */
 function pluralize(num, unit) {
   const [singular, plural] = DURATION_UNIT_NOUN[unit] || [unit, unit];
   return num === 1 ? `${num} ${singular}` : `${num} ${plural}`;
 }
 
-// ── Notes parsing — mirrors JobDetail.jsx exactly ─────────────────────────
 function parseRecurring(notes) {
   if (!notes) return null;
   const m = notes.match(/Recurring:\s*([^.]+)\./i);
@@ -223,18 +210,6 @@ function stripSystemNotes(notes) {
     .trim();
 }
 
-/**
- * Parse the recurring text "Monthly for 1 month" into { count, unit }.
- * Used as a fallback when the job post has no estimatedValue/estimatedUnit
- * (older job posts that predate the schema change).
- *
- *  "Monthly for 1 month"    → { count: 1, unit: "months" }
- *  "Weekly for 3 months"    → { count: 3, unit: "months" }
- *  "Daily for 2 weeks"      → { count: 2, unit: "weeks" }
- *  "Bi-weekly for 1 month"  → { count: 1, unit: "months" }
- *  "Yearly for 2 years"     → { count: 2, unit: "years" }
- *  "Monthly ongoing"        → { count: 1, unit: "months" }
- */
 function parseRecurringBreakdown(recurringText) {
   if (!recurringText) return null;
   const text = recurringText.toLowerCase();
@@ -332,29 +307,19 @@ export default function CreateBookingFromJob() {
     selectedPriceOption?.currency || draft?.lockedFields?.currency || "NGN";
 
   // ── Full payment breakdown ───────────────────────────────────────────
-  // Computes the multiplication "rate × duration_in_rate_unit = total"
-  // for every payment type. Mirrors JobDetail.jsx exactly so the two
-  // screens always show identical numbers.
   const breakdown = useMemo(() => {
     if (!draft || !selectedPriceOption) return null;
 
     const lf = draft.lockedFields || {};
     const snap = lf.jobRateSnapshot || {};
 
-    // ── The RATE is the raw amount the hirer entered on the job post
-    //    (e.g. NGN 1000 for "Per Day"). Backend returns this in
-    //    `selectedPriceOption.amount`.
     const rate = selectedPriceOption.amount;
     const rateCurrency = selectedPriceOption.currency || finalCurrency;
     const period = selectedPriceOption.period;
     const budgetType = period || snap.budgetType || lf.budgetType || "FIXED";
 
-    // ── Which unit is this rate priced in? (e.g. "days" for DAILY) ────
     const unitForRate = RATE_UNIT[budgetType];
 
-    // ── Resolve the raw duration from the job post's fields.
-    //    Prefer estimatedValue/estimatedUnit. If missing, parse the
-    //    recurring note to get the multiplier instead.
     let rawDurationValue = lf.estimatedValue;
     let rawDurationUnit = lf.estimatedUnit || "hours";
     const estimatedHours = lf.estimatedHours;
@@ -376,8 +341,8 @@ export default function CreateBookingFromJob() {
 
     const numericRaw = parseFloat(rawDurationValue);
     let numericInRateUnit = null;
-    let durationLabel = null; // e.g. "1 month"
-    let multiplierLabel = null; // e.g. "30.31 days"
+    let durationLabel = null;
+    let multiplierLabel = null;
 
     if (Number.isFinite(numericRaw) && numericRaw > 0) {
       durationLabel = pluralize(numericRaw, rawDurationUnit);
@@ -396,7 +361,6 @@ export default function CreateBookingFromJob() {
       }
     }
 
-    // ── Compute subtotal per payment type ─────────────────────────────
     let subtotal = 0;
     let calculationText = null;
     let isFixed = budgetType === "FIXED";
@@ -420,13 +384,15 @@ export default function CreateBookingFromJob() {
         `${BUDGET_TYPE_PERIOD_LABEL[budgetType] || BUDGET_TYPE_LABEL[budgetType]} ` +
         `× ${multiplierLabel} = ${formatMoney(subtotal, rateCurrency)}`;
     } else {
-      // No duration recorded — fall back to the server-computed total
       subtotal = selectedPriceOption.estimatedTotal ?? rate ?? 0;
       calculationText = `Estimated total: ${formatMoney(subtotal, rateCurrency)}`;
     }
 
-    const platformFeePct = HIRER_FEE_RATE;
-    const platformFee = Math.round(subtotal * platformFeePct * 100) / 100;
+    // ✅ Currency-aware fee — NGN 2%, foreign 5%
+    const feeRate = getHirerFeeRate(rateCurrency);
+    const feePercent = Math.round(feeRate * 100);
+
+    const platformFee = Math.round(subtotal * feeRate * 100) / 100;
     const grandTotal = subtotal + platformFee;
 
     return {
@@ -440,7 +406,8 @@ export default function CreateBookingFromJob() {
       estimatedHours,
       calculationText,
       subtotal,
-      platformFeePct,
+      platformFeeRate: feeRate,
+      platformFeePercent: feePercent,
       platformFee,
       grandTotal,
       isNegotiated: hasNegotiated,
@@ -969,14 +936,7 @@ export default function CreateBookingFromJob() {
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════
-              FULL PAYMENT BREAKDOWN
-              Mirrors JobDetail.jsx exactly:
-              - Rate is the raw rate the hirer typed.
-              - Duration is the hirer's raw duration, plus the converted
-                duration in the rate's unit when they differ.
-              - The multiplier line shows "rate × duration = total".
-          ══════════════════════════════════════════════════════════ */}
+          {/* FULL PAYMENT BREAKDOWN */}
           {breakdown && !selectedOptionBlocked && (
             <div className={styles.breakdownCard}>
               <div className={styles.breakdownHeader}>
@@ -990,7 +950,6 @@ export default function CreateBookingFromJob() {
               </div>
 
               <div className={styles.breakdownBody}>
-                {/* Rate row — always shown */}
                 <div className={styles.breakdownRow}>
                   <span className={styles.breakdownLabel}>
                     {breakdown.isFixed ? "Fixed Price" : "Rate"}
@@ -1006,9 +965,6 @@ export default function CreateBookingFromJob() {
                   </span>
                 </div>
 
-                {/* Duration row — shows the raw duration AND, when the
-                    rate unit differs, the converted duration in the
-                    rate's unit. */}
                 {breakdown.isRecurring && breakdown.durationLabel && (
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownLabel}>
@@ -1039,7 +995,6 @@ export default function CreateBookingFromJob() {
                     </div>
                   )}
 
-                {/* The multiplier line — "NGN 1,000 per day × 30.31 days = NGN 30,310" */}
                 {breakdown.calculationText && (
                   <div className={styles.breakdownCalc}>
                     <FiInfo size={12} />
@@ -1047,7 +1002,6 @@ export default function CreateBookingFromJob() {
                   </div>
                 )}
 
-                {/* Subtotal — hidden for FIXED, since the rate row IS the subtotal */}
                 {!breakdown.isFixed && (
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownLabel}>Subtotal</span>
@@ -1059,7 +1013,7 @@ export default function CreateBookingFromJob() {
 
                 <div className={styles.breakdownRow}>
                   <span className={styles.breakdownLabel}>
-                    Platform fee ({breakdown.platformFeePct * 100}%)
+                    Platform fee ({breakdown.platformFeePercent}%)
                     <span className={styles.breakdownHint}>
                       {" "}
                       — covers escrow, support, and payment processing

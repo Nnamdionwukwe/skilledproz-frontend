@@ -1,6 +1,6 @@
 // src/pages/hirer/retained-staff/CreateCycleModal.jsx
 import { useState, useEffect } from "react";
-import { HIRER_FEE_RATE } from "../../../utils/pricing"; // ✅ Import central fee
+import { getHirerFeeRate } from "../../../utils/pricing"; // ✅ Currency-aware fee
 import styles from "./CreateCycleModal.module.css";
 import {
   FiX,
@@ -74,17 +74,22 @@ export default function CreateCycleModal({
     setError("");
   }, [isOpen, member]);
 
-  // Live preview — Uses central fee rate
+  // Live preview — currency-aware fee
   const grossAmount =
     (parseFloat(form.baseAmount) || 0) + (parseFloat(form.bonusAmount) || 0);
   const workerPayout = Math.max(
     0,
     grossAmount - (parseFloat(form.deductionAmount) || 0),
   );
-  const platformFee = Math.round(workerPayout * HIRER_FEE_RATE * 100) / 100;
-  const netAmount = Math.round((workerPayout + platformFee) * 100) / 100;
 
   const currency = member?.currency || "NGN";
+
+  // ✅ Two-tier fee rate — NGN 2%, foreign 5%
+  const feeRate = getHirerFeeRate(currency);
+  const feePercent = feeRate * 100; // keep as float for .toFixed(1) display
+
+  const platformFee = Math.round(workerPayout * feeRate * 100) / 100;
+  const netAmount = Math.round((workerPayout + platformFee) * 100) / 100;
 
   const handleSubmit = async () => {
     setError("");
@@ -284,7 +289,7 @@ export default function CreateCycleModal({
                 </span>
               </div>
               <div className={styles.previewRow}>
-                <span>Platform Fee ({(HIRER_FEE_RATE * 100).toFixed(1)}%)</span>
+                <span>Platform Fee ({feePercent.toFixed(1)}%)</span>
                 <span>
                   + {currency} {platformFee.toLocaleString()}
                 </span>

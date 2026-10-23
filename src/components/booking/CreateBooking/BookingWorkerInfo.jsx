@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import styles from "./CreateBooking.module.css";
 import { useState, useEffect } from "react";
-import { HIRER_FEE_RATE } from "../../../utils/pricing";
+import { getHirerFeeRate } from "../../../utils/pricing";
 
 // ── Currency symbol map ──────────────────────────────────────────────────
 const CURRENCY_SYMBOLS = {
@@ -117,6 +117,10 @@ export default function BookingWorkerInfo({
 
   // Get currency symbol for display
   const currencySymbol = CURRENCY_SYMBOLS[lockedCurrency] || lockedCurrency;
+
+  // ── Currency-aware fee rate (NGN 2%, foreign 5%) ──
+  const feeRate = getHirerFeeRate(lockedCurrency);
+  const feePercent = Math.round(feeRate * 100);
 
   // ── Local state for custom quantity input ──
   const [quantityInput, setQuantityInput] = useState(
@@ -641,7 +645,7 @@ export default function BookingWorkerInfo({
                 <span>{format(estFees.subtotal)}</span>
               </div>
               <div className={styles.feeRow}>
-                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
+                <span>Platform Fee ({feePercent}%)</span>
                 <span>{format(estFees.hirerFee)}</span>
               </div>
               <div className={styles.feeTotal}>
@@ -658,14 +662,14 @@ export default function BookingWorkerInfo({
                 <span>{format(parseFloat(negotiatedRate))}</span>
               </div>
               <div className={styles.feeRow}>
-                <span>Platform Fee ({HIRER_FEE_RATE * 100}%)</span>
-                <span>
-                  {format(parseFloat(negotiatedRate) * HIRER_FEE_RATE)}
-                </span>
+                <span>Platform Fee ({feePercent}%)</span>
+                <span>{format(parseFloat(negotiatedRate) * feeRate)}</span>
               </div>
               <div className={styles.feeTotal}>
                 <span>Total to Pay</span>
-                <span>{format(parseFloat(negotiatedRate) * 1.05)}</span>
+                <span>
+                  {format(parseFloat(negotiatedRate) * (1 + feeRate))}
+                </span>
               </div>
             </div>
           )}

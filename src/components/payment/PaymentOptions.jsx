@@ -14,7 +14,7 @@ import {
   FaEthereum,
 } from "react-icons/fa";
 import CryptoRateConverter from "./CryptoRateConverter";
-import { calcPricing, HIRER_FEE_RATE } from "../../utils/pricing";
+import { calcPricing, getHirerFeeRate } from "../../utils/pricing";
 
 function formatPrice(amount, currency = "NGN") {
   if (amount == null) return `${currency} 0.00`;
@@ -64,14 +64,16 @@ export default function PaymentOptions({
 
   const currency = booking?.currency || p.currency || "NGN";
 
-  // Platform fee — sourced from the canonical HIRER_FEE_RATE.
+  // ✅ Currency-aware fee rate — NGN 2%, foreign 5%.
   // For job-post bookings we compute it from agreedRate directly
   // because calcPricing treats job-post bookings as zero-qty.
   // For direct bookings we read `p.hirerFee` (the key calcPricing
   // actually returns — it does not expose `platformFee`).
-  const PLATFORM_FEE_PCT = HIRER_FEE_RATE;
+  const PLATFORM_FEE_RATE = getHirerFeeRate(currency);
+  const PLATFORM_FEE_PCT = Math.round(PLATFORM_FEE_RATE * 100);
+
   const platformFee = isJobPost
-    ? Math.round(agreedTotal * PLATFORM_FEE_PCT * 100) / 100
+    ? Math.round(agreedTotal * PLATFORM_FEE_RATE * 100) / 100
     : Number(p.hirerFee || 0);
 
   // Referral deduction
@@ -228,7 +230,7 @@ export default function PaymentOptions({
         {/* Platform fee — always shown with the real value */}
         <div className={styles.summaryRow}>
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            Platform Fee ({PLATFORM_FEE_PCT * 100}%)
+            Platform Fee ({PLATFORM_FEE_PCT}%)
           </span>
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
             + {formatPrice(platformFee, currency)}

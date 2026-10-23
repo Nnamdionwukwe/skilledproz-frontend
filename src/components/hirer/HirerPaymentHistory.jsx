@@ -5,7 +5,7 @@ import styles from "./HirerPaymentHistory.module.css";
 import HirerLayout from "../layout/HirerLayout";
 import { useCurrency, CURRENCY_META } from "../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../common/DashboardCurrencySwitch";
-import { HIRER_FEE_RATE } from "../../utils/pricing";
+import { getHirerFeeRate } from "../../utils/pricing";
 import BookingReleaseDetails from "../booking/BookingDetail/BookingReleaseDetails";
 
 // ── Status config ─────────────────────────────────────────────────────────────
@@ -100,6 +100,8 @@ function generateReceiptHTML(payment) {
   const channel = getPaymentChannel(payment);
   const isPaid =
     payment.status === "RELEASED" || payment.status === "COMPLETED";
+  const feeRate = getHirerFeeRate(payment.currency);
+  const feePercent = Math.round(feeRate * 100);
 
   const isDark =
     document.documentElement.getAttribute("data-theme") === "dark" ||
@@ -236,7 +238,6 @@ function generateReceiptHTML(payment) {
         transform-origin: top center;
         margin: 0 auto;
       }
-      /* Force white background and dark text for printing */
       .receipt { background: #fff !important; }
       .receipt-body { background: #fff !important; padding: 16px 32px; }
       .receipt-footer { background: #fff !important; border-top: 1px solid #eee; }
@@ -280,8 +281,8 @@ function generateReceiptHTML(payment) {
       <div class="row"><span class="label">Hirer</span><span class="value">${payment.booking?.hirer?.firstName || ""} ${payment.booking?.hirer?.lastName || ""}</span></div>
 
       <div class="row section-title"><span class="label">Breakdown</span></div>
-      <div class="row"><span class="label">Worker's Earnings</span><span class="value">${fmt(payment.workerPayout || payment.amount * 0.95, payment.currency)}</span></div>
-      <div class="row fee-row"><span class="label">Platform Fee</span><span class="value">+ ${fmt(payment.platformFee || payment.amount * HIRER_FEE_RATE, payment.currency)}</span></div>
+      <div class="row"><span class="label">Worker's Earnings</span><span class="value">${fmt(payment.workerPayout || payment.amount * (1 - feeRate), payment.currency)}</span></div>
+      <div class="row fee-row"><span class="label">Platform Fee (${feePercent}%)</span><span class="value">+ ${fmt(payment.platformFee || payment.amount * feeRate, payment.currency)}</span></div>
       <div class="row net-row"><span class="label">Total Paid</span><span class="value">${fmt(payment.amount, payment.currency)}</span></div>
 
       ${
@@ -342,8 +343,12 @@ function ReceiptModal({ payment, onClose }) {
     cls: "pending",
   };
 
-  const workerPayout = payment.workerPayout ?? payment.amount * 0.95;
-  const platformFee = payment.platformFee ?? payment.amount * HIRER_FEE_RATE;
+  // ✅ Currency-aware rate for this specific payment
+  const feeRate = getHirerFeeRate(payment.currency);
+  const feePercent = Math.round(feeRate * 100);
+
+  const workerPayout = payment.workerPayout ?? payment.amount * (1 - feeRate);
+  const platformFee = payment.platformFee ?? payment.amount * feeRate;
 
   return (
     <div className={styles.backdrop} onMouseDown={handleBackdrop}>
@@ -448,7 +453,7 @@ function ReceiptModal({ payment, onClose }) {
             </span>
           </div>
           <div className={styles.breakdownRow}>
-            <span>Platform fee ({HIRER_FEE_RATE * 100}%)</span>
+            <span>Platform fee ({feePercent}%)</span>
             <span className={styles.feeAmount}>
               + {fmt(platformFee, payment.currency)}
             </span>
@@ -930,6 +935,11 @@ export default function HirerPaymentHistory() {
                     const bookingStatus =
                       BOOKING_STATUS_META[payment.booking?.status];
 
+                    // ✅ Currency-aware fee percent per row
+                    const rowFeePercent = Math.round(
+                      getHirerFeeRate(payment.currency) * 100,
+                    );
+
                     return (
                       <div
                         key={payment.id}
@@ -992,7 +1002,7 @@ export default function HirerPaymentHistory() {
                               fontSize: "0.6rem",
                             }}
                           >
-                            Platform fee: {HIRER_FEE_RATE * 100}%
+                            Platform fee: {rowFeePercent}%
                           </span>
                         </div>
 

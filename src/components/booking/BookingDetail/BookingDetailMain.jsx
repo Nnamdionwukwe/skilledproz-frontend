@@ -32,7 +32,7 @@ import {
   FaMinusCircle,
 } from "react-icons/fa";
 
-import { calcPricing, HIRER_FEE_RATE } from "../../../utils/pricing";
+import { calcPricing, getHirerFeeRate } from "../../../utils/pricing";
 import { RefundRequest } from "../Refund";
 import JobPostBookingDetails from "./JobPostBookingDetails";
 import BookingReleaseDetails from "./BookingReleaseDetails";
@@ -398,6 +398,7 @@ export default function BookingDetailMain({
               const platformFee = p.hirerFee || 0;
               const workerPayout = p.workerPayout || 0;
               const grossTotal = p.grossTotal || 0;
+              const feePercent = Math.round(getHirerFeeRate(currency) * 100);
 
               return isHirer ? (
                 <>
@@ -425,7 +426,7 @@ export default function BookingDetailMain({
 
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                    label={`Platform Fee (${feePercent}%)`}
                     value={`${currency} ${platformFee.toLocaleString()}`}
                     accent
                   />
@@ -462,7 +463,7 @@ export default function BookingDetailMain({
 
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                    label={`Platform Fee (${feePercent}%)`}
                     value={`${currency} ${platformFee.toLocaleString()}`}
                   />
                   <DetailItem
@@ -789,6 +790,7 @@ export default function BookingDetailMain({
               const platformFee = p.hirerFee || 0;
               const workerPayout = p.workerPayout || 0;
               const grossTotal = p.grossTotal || 0;
+              const feePercent = Math.round(getHirerFeeRate(currency) * 100);
 
               return isHirer ? (
                 <>
@@ -799,7 +801,7 @@ export default function BookingDetailMain({
                   />
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                    label={`Platform Fee (${feePercent}%)`}
                     value={`${currency} ${platformFee.toLocaleString()}`}
                     accent
                   />
@@ -820,7 +822,7 @@ export default function BookingDetailMain({
                   />
                   <DetailItem
                     icon={<FaMoneyBillWave />}
-                    label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                    label={`Platform Fee (${feePercent}%)`}
                     value={`${currency} ${platformFee.toLocaleString()}`}
                   />
                   <DetailItem
@@ -1269,6 +1271,7 @@ export default function BookingDetailMain({
             const platformFee = p.hirerFee || 0;
             const workerPayout = p.workerPayout || 0;
             const grossTotal = p.grossTotal || 0;
+            const feePercent = Math.round(getHirerFeeRate(currency) * 100);
 
             return isHirer ? (
               <>
@@ -1279,7 +1282,7 @@ export default function BookingDetailMain({
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
-                  label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                  label={`Platform Fee (${feePercent}%)`}
                   value={`${currency} ${platformFee.toLocaleString()}`}
                   accent
                 />
@@ -1300,7 +1303,7 @@ export default function BookingDetailMain({
                 />
                 <DetailItem
                   icon={<FaMoneyBillWave />}
-                  label={`Platform Fee (${HIRER_FEE_RATE * 100}%)`}
+                  label={`Platform Fee (${feePercent}%)`}
                   value={`${currency} ${platformFee.toLocaleString()}`}
                 />
                 <DetailItem

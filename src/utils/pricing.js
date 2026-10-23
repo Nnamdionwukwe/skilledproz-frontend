@@ -4,30 +4,28 @@
 // shows the exact same totals the backend will charge.
 //
 // ⚠️ Keep these constants in sync with backend/src/config/fees.js
+//
+// Two-tier fee model:
+//   NGN              → 2%  (covers Paystack's 1.5% + ₦100)
+//   Any other currency → 5%  (covers Flutterwave's ~4.8% international fee)
 
-export const HIRER_FEE_RATE = 0.02; // 2% default (NGN + any currency without an override)
+export const NGN_HIRER_FEE_RATE = 0.02;
+export const FOREIGN_HIRER_FEE_RATE = 0.05;
 
-// Currency-specific overrides — must match backend exactly.
-// Flutterwave charges ~4.8% for international cards; we charge 5%
-// to cover it and leave a small margin.
-const CURRENCY_FEE_OVERRIDES = {
-  USD: 0.05,
-  EUR: 0.05,
-  GBP: 0.05,
-  CAD: 0.05,
-  AUD: 0.05,
-};
+// Kept for backwards compatibility with existing importers that read
+// HIRER_FEE_RATE directly. Defaults to the NGN rate.
+export const HIRER_FEE_RATE = NGN_HIRER_FEE_RATE;
 
 export const WORKER_FEE_RATE = 0.0;
 
 /**
  * Get the effective hirer fee rate for a given currency.
+ * NGN → 2%
+ * everything else → 5%
  */
 export function getHirerFeeRate(currency = "NGN") {
   const cur = (currency || "NGN").toUpperCase();
-  return CURRENCY_FEE_OVERRIDES[cur] !== undefined
-    ? CURRENCY_FEE_OVERRIDES[cur]
-    : HIRER_FEE_RATE;
+  return cur === "NGN" ? NGN_HIRER_FEE_RATE : FOREIGN_HIRER_FEE_RATE;
 }
 
 export function calcPricing(booking, referralDiscount = 0) {
@@ -121,7 +119,7 @@ export function calcPricing(booking, referralDiscount = 0) {
       custom: "custom",
     }[unit] || unit;
 
-  // ✅ Currency-aware fee math — mirrors the backend exactly.
+  // ✅ Two-tier fee math — NGN (2%) vs. everything else (5%).
   const feeRate = getHirerFeeRate(currency);
   const feePercent = Math.round(feeRate * 100);
 

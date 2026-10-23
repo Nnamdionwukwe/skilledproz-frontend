@@ -8,14 +8,15 @@ import HirerLayout from "../../layout/HirerLayout";
 import BookingWorkerInfo from "./BookingWorkerInfo";
 import BookingFormFields from "./BookingFormFields";
 import tracker from "../../../lib/analytics/tracker";
-import { HIRER_FEE_RATE } from "../../../utils/pricing";
+import { getHirerFeeRate } from "../../../utils/pricing";
 
 // ── Fee config ──────────────────────────────────────────────────────────────
 const WORKER_FEE_RATE = 0.0;
 
-function computeFees(agreedRate, qty = 1) {
+function computeFees(agreedRate, qty = 1, currency = "NGN") {
   const subtotal = parseFloat((agreedRate * qty).toFixed(2));
-  const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
+  const rate = getHirerFeeRate(currency);
+  const hirerFee = parseFloat((subtotal * rate).toFixed(2));
   const totalToPay = parseFloat((subtotal + hirerFee).toFixed(2));
   const workerGets = subtotal;
   return { subtotal, hirerFee, totalToPay, workerGets };
@@ -266,14 +267,14 @@ export default function CreateBooking({ workerId: propWorkerId, onSuccess }) {
     const customRate = form.rate || worker?.customRate || 0;
     const customQty = form.quantity || 1;
     if (customRate > 0) {
-      estFees = computeFees(customRate, customQty);
+      estFees = computeFees(customRate, customQty, lockedCurrency);
     }
   } else if (
     lockedRate > 0 &&
     form.estimatedValue &&
     currentOption?.inputType === "number"
   ) {
-    estFees = computeFees(finalRate, estQty);
+    estFees = computeFees(finalRate, estQty, lockedCurrency);
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────

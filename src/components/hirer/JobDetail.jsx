@@ -8,7 +8,7 @@ import { formatJobDurationParts } from "../utils/formatDuration";
 import ReportButton from "../../pages/reports/ReportButton";
 import HirerLayout from "../layout/HirerLayout";
 import WorkerLayout from "../layout/WorkerLayout";
-import { HIRER_FEE_RATE } from "../../utils/pricing";
+import { getHirerFeeRate } from "../../utils/pricing";
 import {
   FiBriefcase,
   FiClock,
@@ -142,28 +142,6 @@ function stripSystemNotes(notes) {
 }
 
 // ─── Payment breakdown math (mirrors CreateBookingFromJob + PostJob) ─
-// Handles every payment type:
-//
-//   FIXED   → total = rate                              (no multiplier)
-//   HOURLY  → total = rate × hours
-//   DAILY   → total = rate × days
-//   WEEKLY  → total = rate × weeks
-//   MONTHLY → total = rate × months
-//   YEARLY  → total = rate × years
-//   CUSTOM  → total = rate                              (server-assigned)
-//
-// Recurring jobs whose estimatedValue/estimatedUnit are missing fall back
-// to parsing the "Recurring: Monthly for 1 month." note. Crucially, when
-// the rate period (budgetType) differs from the notes' duration unit —
-// e.g. Per Day rate + "for 1 month" note — we convert the duration INTO
-// the rate's unit so the multiplication is mathematically correct:
-//
-//   Per Day rate + "for 1 month"    → 30.31 days  → rate × 30.31
-//   Per Week rate + "for 1 month"   → 4.33 weeks  → rate × 4.33
-//   Per Hour rate + "for 1 week"    → 40 hours    → rate × 40
-//
-// This mirrors CreateBookingFromJob.jsx exactly, so the numbers the
-// hirer sees on the job page match what the booking form will charge.
 function computeJobPaymentBreakdown(jobPost) {
   if (!jobPost) return null;
 
@@ -228,12 +206,6 @@ function computeJobPaymentBreakdown(jobPost) {
   // ── Convert the duration into the RATE'S unit so the multiplication
   //    is mathematically correct. Uses the same multipliers as the
   //    rest of the app (mirrors PostJob.jsx + CreateBookingFromJob.jsx).
-  //
-  //    All conversions pass through hours as the common base:
-  //      1 day    = 8 hours
-  //      1 week   = 56 hours     (8 × 7)
-  //      1 month  = 242.5 hours  (56 × 4.33)
-  //      1 year   = 2910 hours   (242.5 × 12)
   const HOURS_PER_UNIT = {
     hours: 1,
     days: 8,
@@ -299,8 +271,10 @@ function computeJobPaymentBreakdown(jobPost) {
     }`;
   }
 
-  // ── Platform fee (5%) and grand total ──────────────────────────────
-  const platformFee = Math.round(subtotal * HIRER_FEE_RATE * 100) / 100;
+  // ── Platform fee — currency-aware (NGN 2%, foreign 5%) ─────────────
+  const feeRate = getHirerFeeRate(currency);
+  const platformFeePercent = Math.round(feeRate * 100);
+  const platformFee = Math.round(subtotal * feeRate * 100) / 100;
   const grandTotal = subtotal + platformFee;
 
   return {
@@ -309,11 +283,12 @@ function computeJobPaymentBreakdown(jobPost) {
     budgetType,
     budgetTypeLabel: BUDGET_TYPE_LABELS[budgetType] || budgetType,
     periodLabel: BUDGET_TYPE_PERIOD_LABELS[budgetType] || null,
-    durationLabel, // e.g. "1 month" — what the hirer typed
-    multiplierLabel, // e.g. "30.31 days" — duration in the rate's unit
+    durationLabel,
+    multiplierLabel,
     subtotal,
     platformFee,
-    platformFeePct: HIRER_FEE_RATE,
+    platformFeePct: feeRate,
+    platformFeePercent,
     grandTotal,
     calculationText,
     isFixed,
@@ -1132,11 +1107,7 @@ export default function JobDetail() {
               </div>
             </section>
 
-            {/* ═══════════════════════════════════════════════════════════
-                PAYMENT BREAKDOWN — full hirer-facing calculation
-                Mirrors the math used in PostJob, EditJob, and CreateBooking
-                so the hirer sees exactly what they'll pay for this job.
-            ═══════════════════════════════════════════════════════════ */}
+            {/* PAYMENT BREAKDOWN */}
             {paymentBreakdown && (
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>
@@ -1158,8 +1129,6 @@ export default function JobDetail() {
                   </div>
 
                   <div className={styles.paymentBreakdownBody}>
-                    {/* Rate row — always shown (even for FIXED — the
-                        rate IS the total in that case) */}
                     <div className={styles.paymentBreakdownRow}>
                       <span className={styles.paymentBreakdownLabel}>
                         {paymentBreakdown.isFixed ? "Fixed Price" : "Rate"}
@@ -1177,10 +1146,6 @@ export default function JobDetail() {
                       </span>
                     </div>
 
-                    {/* Duration row — shows the hirer's raw duration AND,
-                        when the rate period differs from the duration
-                        unit, the duration converted into the rate's unit
-                        so the multiplication is clear. */}
                     {paymentBreakdown.isRecurring &&
                       paymentBreakdown.durationLabel && (
                         <div className={styles.paymentBreakdownRow}>
@@ -1201,10 +1166,6 @@ export default function JobDetail() {
                         </div>
                       )}
 
-                    {/* The arithmetic line:
-                        - Fixed: "Fixed price · NGN 200,000"
-                        - Custom: "Custom rate · NGN 50,000"
-                        - Numeric: "NGN 1,000 per day × 30.31 days = NGN 30,310" */}
                     {paymentBreakdown.calculationText && (
                       <div className={styles.paymentBreakdownCalc}>
                         <FiInfo size={12} />
@@ -1212,9 +1173,6 @@ export default function JobDetail() {
                       </div>
                     )}
 
-                    {/* Subtotal — only shown when there's arithmetic above
-                        it, since for FIXED the rate row already IS the
-                        subtotal */}
                     {!paymentBreakdown.isFixed && (
                       <div className={styles.paymentBreakdownRow}>
                         <span className={styles.paymentBreakdownLabel}>
@@ -1227,10 +1185,9 @@ export default function JobDetail() {
                       </div>
                     )}
 
-                    {/* Platform fee */}
                     <div className={styles.paymentBreakdownRow}>
                       <span className={styles.paymentBreakdownLabel}>
-                        Platform fee ({paymentBreakdown.platformFeePct * 100}%)
+                        Platform fee ({paymentBreakdown.platformFeePercent}%)
                         <span className={styles.paymentBreakdownHint}>
                           {" "}
                           — covers escrow, support, and payment processing
@@ -1244,7 +1201,6 @@ export default function JobDetail() {
 
                     <div className={styles.paymentBreakdownDivider} />
 
-                    {/* Grand total */}
                     <div className={styles.paymentBreakdownTotal}>
                       <span className={styles.paymentBreakdownTotalLabel}>
                         Total to hire
@@ -1255,7 +1211,6 @@ export default function JobDetail() {
                       </span>
                     </div>
 
-                    {/* Contextual note */}
                     {paymentBreakdown.isFixed && (
                       <p className={styles.paymentBreakdownNote}>
                         <FiInfo size={11} /> This is a fixed-price job — the

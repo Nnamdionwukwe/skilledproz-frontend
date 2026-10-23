@@ -39,7 +39,7 @@ import {
 } from "../../../../context/CurrencyContext";
 import DashboardCurrencySwitch from "../../../../components/common/DashboardCurrencySwitch";
 import tracker from "../../../../lib/analytics/tracker";
-import { HIRER_FEE_RATE } from "../../../../utils/pricing";
+import { getHirerFeeRate } from "../../../../utils/pricing";
 
 const CRYPTO = ["USDC", "USDT"];
 
@@ -141,7 +141,24 @@ export default function WorkerEarningsPage() {
   const displayCurrency =
     activeCurrency !== "ALL" ? activeCurrency : dashboardCurrency;
 
-  const HIRER_FEE_DISPLAY = `${HIRER_FEE_RATE * 100}%`;
+  // ✅ Currency-aware fee percent for the banner.
+  // If a specific currency is selected → that currency's rate.
+  // If "ALL" is selected → show a two-tier label ("2% – 5%") because the
+  // worker may have earnings in both NGN and foreign currencies.
+  const ngnFeePercent = Math.round(getHirerFeeRate("NGN") * 100);
+  const foreignFeePercent = Math.round(getHirerFeeRate("USD") * 100);
+
+  const isSingleCurrency = activeCurrency !== "ALL";
+  const singleCurrencyFeePercent = isSingleCurrency
+    ? Math.round(getHirerFeeRate(activeCurrency) * 100)
+    : null;
+
+  const HIRER_FEE_DISPLAY = isSingleCurrency
+    ? `${singleCurrencyFeePercent}%`
+    : ngnFeePercent === foreignFeePercent
+      ? `${ngnFeePercent}%`
+      : `${ngnFeePercent}% – ${foreignFeePercent}%`;
+
   const WORKER_FEE_DISPLAY = "0%";
 
   // Totals across the whole filtered set
@@ -172,8 +189,10 @@ export default function WorkerEarningsPage() {
             </span>
             <span className={styles.feeBannerSub}>
               SkilledProz charges hirers a {HIRER_FEE_DISPLAY} service fee on
-              top of your rate. Zero fees are deducted from your earnings. Zero
-              withdrawal fees. Partial releases credit your wallet immediately.
+              top of your rate (NGN: {ngnFeePercent}%, other currencies:{" "}
+              {foreignFeePercent}%). Zero fees are deducted from your earnings.
+              Zero withdrawal fees. Partial releases credit your wallet
+              immediately.
             </span>
           </div>
           <div className={styles.feeBannerPills}>
@@ -360,13 +379,6 @@ export default function WorkerEarningsPage() {
               </div>
 
               {payments.map((p, idx) => {
-                // Each payment arrives pre-enriched by the backend:
-                //   p.workerPayout    = full contract value
-                //   p.earned          = releasedAmount (what the worker received)
-                //   p.remaining       = still in escrow
-                //   p.isFullyReleased = true when 100% released
-                //   p.releaseCount    = number of releases
-                //   p.releases        = release rows (with amount, currency, note, createdAt)
                 const agreedRate = Number(p.workerPayout) || 0;
                 const youEarned = Number(p.earned) || 0;
                 const inEscrow = Number(p.remaining) || 0;

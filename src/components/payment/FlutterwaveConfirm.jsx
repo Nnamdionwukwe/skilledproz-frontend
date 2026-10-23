@@ -29,17 +29,18 @@ import {
 import api from "../../lib/api";
 import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
-import { HIRER_FEE_RATE } from "../../utils/pricing";
+import { getHirerFeeRate } from "../../utils/pricing";
 
-// ── Fee config (mirrors backend FEE_CONFIG Phase 1) ───────────────────────────
 // ── Fee config ───────────────────────────────────────────────────────────────
-// HIRER_FEE_RATE now comes from src/utils/pricing.js — the single
-// source of truth for the fee rate across the app.
+// Two-tier fee rate comes from src/utils/pricing.js — NGN 2%, foreign 5%.
 
 function feeBreakdown(booking) {
   if (!booking) return null;
   const agreedRate = booking.agreedRate || 0;
-  const hirerFee = parseFloat((agreedRate * HIRER_FEE_RATE).toFixed(2));
+  const currency = booking.currency || "USD";
+  const rate = getHirerFeeRate(currency);
+  const feePercent = Math.round(rate * 100);
+  const hirerFee = parseFloat((agreedRate * rate).toFixed(2));
   const totalCharged = parseFloat((agreedRate + hirerFee).toFixed(2));
   const workerPayout = agreedRate; // 100%
   return {
@@ -47,7 +48,8 @@ function feeBreakdown(booking) {
     hirerFee,
     totalCharged,
     workerPayout,
-    currency: booking.currency || "USD",
+    currency,
+    feePercent,
   };
 }
 
@@ -259,7 +261,7 @@ export default function FlutterwaveConfirm() {
                   </div>
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownLabel}>
-                      Service Fee ({HIRER_FEE_RATE * 100}%)
+                      Service Fee ({fees.feePercent}%)
                     </span>
                     <span className={styles.breakdownVal}>
                       + {fees.currency}{" "}
