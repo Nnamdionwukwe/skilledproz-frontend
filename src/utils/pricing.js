@@ -1,8 +1,37 @@
-// src/utils/pricing.js
-export const HIRER_FEE_RATE = 0.01;
+// src/utils/pricing.js  (frontend)
+// Self-contained pricing utility — mirrors the backend's
+// src/services/payment.service.js + src/config/fees.js so the UI
+// shows the exact same totals the backend will charge.
+//
+// ⚠️ Keep these constants in sync with backend/src/config/fees.js
+
+export const HIRER_FEE_RATE = 0.02; // 2% default (NGN + any currency without an override)
+
+// Currency-specific overrides — must match backend exactly.
+// Flutterwave charges ~4.8% for international cards; we charge 5%
+// to cover it and leave a small margin.
+const CURRENCY_FEE_OVERRIDES = {
+  USD: 0.05,
+  EUR: 0.05,
+  GBP: 0.05,
+  CAD: 0.05,
+  AUD: 0.05,
+};
+
+export const WORKER_FEE_RATE = 0.0;
+
+/**
+ * Get the effective hirer fee rate for a given currency.
+ */
+export function getHirerFeeRate(currency = "NGN") {
+  const cur = (currency || "NGN").toUpperCase();
+  return CURRENCY_FEE_OVERRIDES[cur] !== undefined
+    ? CURRENCY_FEE_OVERRIDES[cur]
+    : HIRER_FEE_RATE;
+}
 
 export function calcPricing(booking, referralDiscount = 0) {
-  const agreedRate = booking?.agreedRate || 0;
+  const agreedRate = Number(booking?.agreedRate) || 0;
   const unit = booking?.estimatedUnit || "hours";
   const hours = booking?.estimatedHours;
   const value = booking?.estimatedValue
@@ -92,9 +121,16 @@ export function calcPricing(booking, referralDiscount = 0) {
       custom: "custom",
     }[unit] || unit;
 
-  const hirerFee = parseFloat((subtotal * HIRER_FEE_RATE).toFixed(2));
-  const workerPayout = subtotal;
+  // ✅ Currency-aware fee math — mirrors the backend exactly.
+  const feeRate = getHirerFeeRate(currency);
+  const feePercent = Math.round(feeRate * 100);
+
+  const hirerFee = parseFloat((subtotal * feeRate).toFixed(2));
+  const workerPayout = parseFloat(
+    (subtotal * (1 - WORKER_FEE_RATE)).toFixed(2),
+  );
   const grossTotal = parseFloat((subtotal + hirerFee).toFixed(2));
+
   const referralSaving = currency === "NGN" ? referralDiscount : 0;
   const totalCharged = parseFloat(
     Math.max(0, grossTotal - referralSaving).toFixed(2),
@@ -121,5 +157,9 @@ export function calcPricing(booking, referralDiscount = 0) {
     isNegotiated,
     negotiatedRate: isNegotiated ? booking.negotiatedRate : null,
     isJobPostBooking,
+    // Expose the effective rate so UI labels like "Service Fee (5%)"
+    // render the correct percentage per currency.
+    feeRate,
+    feePercent,
   };
 }
