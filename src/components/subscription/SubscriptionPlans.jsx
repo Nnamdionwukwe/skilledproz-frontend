@@ -834,8 +834,8 @@ export default function SubscriptionPlans({ onClose }) {
         )}
 
         <p className={styles.disclaimer}>
-          Payments processed securely by Paystack. Cancel anytime. All prices in
-          NGN.
+          Payments processed securely by Paystack via Card. Cancel anytime. All
+          prices in NGN.
         </p>
       </div>
 
