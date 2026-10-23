@@ -11,9 +11,7 @@ import HirerLayout from "../layout/HirerLayout";
 import styles from "./Payment.module.css";
 import {
   FaCreditCard,
-  FaUniversity,
   FaBitcoin,
-  FaEthereum,
   FaArrowLeft,
   FaExclamationTriangle,
   FaCheckCircle,
@@ -22,7 +20,6 @@ import {
   FaLock,
   FaGift,
   FaUser,
-  FaTag,
   FaFileAlt,
   FaGlobe,
   FaWallet,
@@ -55,12 +52,6 @@ const METHODS = [
     desc: "Redirected to Flutterwave or Paystack",
   },
   {
-    id: "bank_transfer",
-    icon: <FaUniversity />,
-    label: "Bank Transfer",
-    desc: "Send to our escrow, we verify & activate",
-  },
-  {
     id: "crypto",
     icon: <FaBitcoin />,
     label: "Crypto",
@@ -86,7 +77,6 @@ export default function InitiatePayment() {
   const [confirming, setConfirming] = useState(false);
   const [bookingStatus, setBookingStatus] = useState(null);
 
-  const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
 
   const [walletBalance, setWalletBalance] = useState(0);
@@ -307,98 +297,6 @@ export default function InitiatePayment() {
     }
   }
 
-  async function handleBankTransfer() {
-    setPaying(true);
-    setError("");
-
-    // ── ANALYTICS: bank transfer initiated ───────────────────────────────
-    tracker.action("initiatePayment.bank.initiated", {
-      bookingId,
-      amount: p.totalCharged,
-      currency: p.currency,
-      referralApplied,
-      referralAmount: referralApplied ? referralAmount : 0,
-    });
-
-    try {
-      const res = await api.post(`/payments/bank-transfer/${bookingId}`, {
-        amount: p.totalCharged,
-        currency: p.currency,
-        referralAmount: referralApplied ? referralAmount : 0,
-      });
-      setManualData(res.data.data);
-      setConfirmStep("bank_transfer");
-
-      // ── ANALYTICS: bank details loaded ──────────────────────────────────
-      tracker.action("initiatePayment.bank.details.loaded", {
-        bookingId,
-        reference: res.data.data?.reference || null,
-      });
-    } catch (e) {
-      setError(e.response?.data?.message || "Could not load bank details.");
-      // ── ANALYTICS: bank details load failed ─────────────────────────────
-      tracker.action("initiatePayment.bank.details.failed", {
-        bookingId,
-        reason: e.response?.data?.message || "unknown",
-      });
-    } finally {
-      setPaying(false);
-    }
-  }
-
-  async function confirmBankTransfer() {
-    setConfirming(true);
-    setError("");
-
-    // ── ANALYTICS: bank transfer confirmation attempt ────────────────────
-    tracker.action("initiatePayment.bank.confirm.attempt", {
-      bookingId,
-      hasSenderName: !!confirmForm.senderName,
-      hasBankName: !!confirmForm.bankName,
-      hasReceiptFile: !!bankReceiptFile,
-    });
-
-    try {
-      const fd = new FormData();
-      if (confirmForm.senderName)
-        fd.append("senderName", confirmForm.senderName);
-      if (confirmForm.bankName) fd.append("bankName", confirmForm.bankName);
-      if (bankReceiptFile) fd.append("proof", bankReceiptFile);
-
-      await api.patch(`/payments/bank-transfer/${bookingId}/confirm`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // ── ANALYTICS: bank transfer confirmed ──────────────────────────────
-      tracker.action("initiatePayment.bank.confirmed", {
-        bookingId,
-        amount: p.totalCharged,
-        currency: p.currency,
-      });
-
-      // ✅ Redirect based on redirectTo or default
-      if (redirectTo) {
-        navigate(`${decodeURIComponent(redirectTo)}&payment=success`, {
-          replace: true,
-        });
-      } else {
-        navigate("/payments/manual-success", {
-          state: { method: "bank", bookingId },
-          replace: true,
-        });
-      }
-    } catch (e) {
-      setError(e.response?.data?.message || "Confirmation failed.");
-      // ── ANALYTICS: bank confirmation failed ─────────────────────────────
-      tracker.action("initiatePayment.bank.confirm.failed", {
-        bookingId,
-        reason: e.response?.data?.message || "unknown",
-      });
-    } finally {
-      setConfirming(false);
-    }
-  }
-
   async function handleCrypto() {
     setPaying(true);
     setError("");
@@ -511,14 +409,12 @@ export default function InitiatePayment() {
 
   function handlePrimary() {
     if (method === "card") return handleCardPay();
-    if (method === "bank_transfer") return handleBankTransfer();
     if (method === "crypto") return handleCrypto();
   }
 
   function resetToMethodSelect() {
     setConfirmStep(null);
     setManualData(null);
-    setBankReceiptFile(null);
     setCryptoReceiptFile(null);
     setConfirmForm({});
     setError("");
@@ -526,7 +422,7 @@ export default function InitiatePayment() {
     // ── ANALYTICS: user changed method ──────────────────────────────────
     tracker.action("initiatePayment.method.change", {
       bookingId,
-      fromMethod: confirmStep === "bank_transfer" ? "bank_transfer" : "crypto",
+      fromMethod: confirmStep === "crypto" ? "crypto" : "card",
     });
   }
 
@@ -559,8 +455,6 @@ export default function InitiatePayment() {
     );
 
   if (confirmStep && manualData) {
-    const isBankTx = confirmStep === "bank_transfer";
-    const bd = manualData.bankDetails;
     const cd = manualData.cryptoDetails;
 
     return (
@@ -576,15 +470,7 @@ export default function InitiatePayment() {
                 <FaArrowLeft style={{ marginRight: "4px" }} /> Change method
               </button>
               <div className={styles.payBadge}>
-                {isBankTx ? (
-                  <>
-                    <FaUniversity /> Bank Transfer
-                  </>
-                ) : (
-                  <>
-                    <FaBitcoin /> {selectedCryptoToken} Crypto
-                  </>
-                )}
+                <FaBitcoin /> {selectedCryptoToken} Crypto
               </div>
             </div>
 
@@ -592,16 +478,16 @@ export default function InitiatePayment() {
               <div className={styles.summaryTop}>
                 <div className={styles.summaryIconWrap}>
                   <span className={styles.summaryIcon}>
-                    {isBankTx ? <FaUniversity /> : <FaBitcoin />}
+                    <FaBitcoin />
                   </span>
                 </div>
                 <div>
                   <p className={styles.summaryLabel}>Send exactly</p>
                   <h2 className={styles.summaryTitle}>
-                    {!isBankTx && convertedCryptoAmount && selectedCryptoToken
+                    {convertedCryptoAmount && selectedCryptoToken
                       ? `${convertedCryptoAmount.toFixed(6)} ${selectedCryptoToken}`
                       : formatPrice(p.totalCharged, p.currency)}
-                    {!isBankTx && convertedCryptoAmount && (
+                    {convertedCryptoAmount && (
                       <button
                         className={styles.copyFieldBtn}
                         onClick={() =>
@@ -636,40 +522,7 @@ export default function InitiatePayment() {
                 </div>
               </div>
 
-              {isBankTx && bd && (
-                <div className={styles.summaryMeta}>
-                  {[
-                    [<FaUniversity />, "Bank", bd.bankName],
-                    [<FaTag />, "Account", bd.accountNumber],
-                    [<FaUser />, "Name", bd.accountName],
-                    [<FaFileAlt />, "Narration", bd.narration],
-                  ].map(([icon, k, v]) =>
-                    v ? (
-                      <div key={k} className={styles.metaItem}>
-                        <span className={styles.metaIcon}>{icon}</span>
-                        <div style={{ flex: 1 }}>
-                          <div className={styles.metaRowLabel}>{k}</div>
-                          <div className={styles.metaRowValue}>
-                            {v}
-                            {k === "Account" && (
-                              <button
-                                className={styles.copyFieldBtn}
-                                onClick={() => handleCopy(v, "bankAcc")}
-                                title="Copy account number"
-                                data-track-id="initiatePayment.confirmStep.copy.bankAcc"
-                              >
-                                {copied.bankAcc ? <FaCheck /> : <FaCopy />}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null,
-                  )}
-                </div>
-              )}
-
-              {!isBankTx && cd && (
+              {cd && (
                 <div className={styles.summaryMeta}>
                   {[
                     [<FaGlobe />, "Network", cd.network],
@@ -726,175 +579,93 @@ export default function InitiatePayment() {
             <div className={styles.breakdownCard}>
               <p className={styles.breakdownTitle}>Confirm Your Transfer</p>
 
-              {isBankTx ? (
-                <div className={styles.manualFields}>
-                  <div className={styles.manualField}>
-                    <label className={styles.manualLabel}>Your Name</label>
-                    <input
-                      className={styles.manualInput}
-                      placeholder="As it appears on your bank"
-                      value={confirmForm.senderName || ""}
-                      onChange={(e) =>
-                        setConfirmForm((f) => ({
-                          ...f,
-                          senderName: e.target.value,
-                        }))
-                      }
-                      data-track-id="initiatePayment.confirmStep.bank.senderName"
-                    />
-                  </div>
-                  <div className={styles.manualField}>
-                    <label className={styles.manualLabel}>Your Bank Name</label>
-                    <input
-                      className={styles.manualInput}
-                      placeholder="e.g. GTBank, Zenith, Access"
-                      value={confirmForm.bankName || ""}
-                      onChange={(e) =>
-                        setConfirmForm((f) => ({
-                          ...f,
-                          bankName: e.target.value,
-                        }))
-                      }
-                      data-track-id="initiatePayment.confirmStep.bank.bankName"
-                    />
-                  </div>
-                  <div className={styles.manualField}>
-                    <label className={styles.manualLabel}>
-                      Receipt / Proof of Transfer (optional)
-                    </label>
-                    <label className={styles.fileUploadLabel}>
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className={styles.fileUploadInput}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          if (file && !validateFileSize(file)) {
-                            e.target.value = "";
-                            return;
-                          }
-                          setBankReceiptFile(file);
-                          if (file) {
-                            tracker.action(
-                              "initiatePayment.bank.receipt.selected",
-                              {
-                                bookingId,
-                                sizeMB: parseFloat(
-                                  (file.size / (1024 * 1024)).toFixed(2),
-                                ),
-                              },
-                            );
-                          }
-                        }}
-                        data-track-id="initiatePayment.confirmStep.bank.receipt"
-                      />
-                      <span className={styles.fileUploadBtn}>
-                        {bankReceiptFile
-                          ? `✅ ${bankReceiptFile.name}`
-                          : "📎 Upload receipt (image or PDF)"}
-                      </span>
-                    </label>
-                    {bankReceiptFile && (
-                      <button
-                        type="button"
-                        className={styles.fileRemoveBtn}
-                        onClick={() => setBankReceiptFile(null)}
-                        data-track-id="initiatePayment.confirmStep.bank.receipt.remove"
-                      >
-                        ✕ Remove
-                      </button>
-                    )}
-                  </div>
+              <div className={styles.manualFields}>
+                <div className={styles.manualField}>
+                  <label className={styles.manualLabel}>
+                    Transaction Hash *
+                  </label>
+                  <input
+                    className={styles.manualInput}
+                    style={{ fontFamily: "monospace" }}
+                    placeholder="0x... or TRC20 / BTC tx hash"
+                    value={confirmForm.txHash || ""}
+                    onChange={(e) =>
+                      setConfirmForm((f) => ({
+                        ...f,
+                        txHash: e.target.value,
+                      }))
+                    }
+                    data-track-id="initiatePayment.confirmStep.crypto.txHash"
+                  />
                 </div>
-              ) : (
-                <div className={styles.manualFields}>
-                  <div className={styles.manualField}>
-                    <label className={styles.manualLabel}>
-                      Transaction Hash *
-                    </label>
-                    <input
-                      className={styles.manualInput}
-                      style={{ fontFamily: "monospace" }}
-                      placeholder="0x... or TRC20 / BTC tx hash"
-                      value={confirmForm.txHash || ""}
-                      onChange={(e) =>
-                        setConfirmForm((f) => ({
-                          ...f,
-                          txHash: e.target.value,
-                        }))
-                      }
-                      data-track-id="initiatePayment.confirmStep.crypto.txHash"
-                    />
-                  </div>
-                  <div className={styles.manualField}>
-                    <label className={styles.manualLabel}>
-                      Amount Sent (optional)
-                    </label>
-                    <input
-                      className={styles.manualInput}
-                      type="number"
-                      step="0.0001"
-                      placeholder={`Amount in ${selectedCryptoToken}`}
-                      value={confirmForm.cryptoAmount || ""}
-                      onChange={(e) =>
-                        setConfirmForm((f) => ({
-                          ...f,
-                          cryptoAmount: e.target.value,
-                        }))
-                      }
-                      data-track-id="initiatePayment.confirmStep.crypto.amount"
-                    />
-                  </div>
-                  <div className={styles.manualField}>
-                    <label className={styles.manualLabel}>
-                      Transaction Screenshot (optional)
-                    </label>
-                    <label className={styles.fileUploadLabel}>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className={styles.fileUploadInput}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          if (file && !validateFileSize(file)) {
-                            e.target.value = "";
-                            return;
-                          }
-                          setCryptoReceiptFile(file);
-                          if (file) {
-                            tracker.action(
-                              "initiatePayment.crypto.receipt.selected",
-                              {
-                                bookingId,
-                                token: selectedCryptoToken,
-                                sizeMB: parseFloat(
-                                  (file.size / (1024 * 1024)).toFixed(2),
-                                ),
-                              },
-                            );
-                          }
-                        }}
-                        data-track-id="initiatePayment.confirmStep.crypto.receipt"
-                      />
-                      <span className={styles.fileUploadBtn}>
-                        {cryptoReceiptFile
-                          ? `✅ ${cryptoReceiptFile.name}`
-                          : "📎 Upload screenshot"}
-                      </span>
-                    </label>
-                    {cryptoReceiptFile && (
-                      <button
-                        type="button"
-                        className={styles.fileRemoveBtn}
-                        onClick={() => setCryptoReceiptFile(null)}
-                        data-track-id="initiatePayment.confirmStep.crypto.receipt.remove"
-                      >
-                        ✕ Remove
-                      </button>
-                    )}
-                  </div>
+                <div className={styles.manualField}>
+                  <label className={styles.manualLabel}>
+                    Amount Sent (optional)
+                  </label>
+                  <input
+                    className={styles.manualInput}
+                    type="number"
+                    step="0.0001"
+                    placeholder={`Amount in ${selectedCryptoToken}`}
+                    value={confirmForm.cryptoAmount || ""}
+                    onChange={(e) =>
+                      setConfirmForm((f) => ({
+                        ...f,
+                        cryptoAmount: e.target.value,
+                      }))
+                    }
+                    data-track-id="initiatePayment.confirmStep.crypto.amount"
+                  />
                 </div>
-              )}
+                <div className={styles.manualField}>
+                  <label className={styles.manualLabel}>
+                    Transaction Screenshot (optional)
+                  </label>
+                  <label className={styles.fileUploadLabel}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className={styles.fileUploadInput}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        if (file && !validateFileSize(file)) {
+                          e.target.value = "";
+                          return;
+                        }
+                        setCryptoReceiptFile(file);
+                        if (file) {
+                          tracker.action(
+                            "initiatePayment.crypto.receipt.selected",
+                            {
+                              bookingId,
+                              token: selectedCryptoToken,
+                              sizeMB: parseFloat(
+                                (file.size / (1024 * 1024)).toFixed(2),
+                              ),
+                            },
+                          );
+                        }
+                      }}
+                      data-track-id="initiatePayment.confirmStep.crypto.receipt"
+                    />
+                    <span className={styles.fileUploadBtn}>
+                      {cryptoReceiptFile
+                        ? `✅ ${cryptoReceiptFile.name}`
+                        : "📎 Upload screenshot"}
+                    </span>
+                  </label>
+                  {cryptoReceiptFile && (
+                    <button
+                      type="button"
+                      className={styles.fileRemoveBtn}
+                      onClick={() => setCryptoReceiptFile(null)}
+                      data-track-id="initiatePayment.confirmStep.crypto.receipt.remove"
+                    >
+                      ✕ Remove
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {error && (
@@ -905,7 +676,7 @@ export default function InitiatePayment() {
 
             <button
               className={styles.payBtn}
-              onClick={isBankTx ? confirmBankTransfer : confirmCrypto}
+              onClick={confirmCrypto}
               disabled={confirming}
               data-track-id="initiatePayment.confirmStep.confirm"
             >
@@ -921,9 +692,7 @@ export default function InitiatePayment() {
             </button>
 
             <p className={styles.payDisclaimer}>
-              {isBankTx
-                ? "We'll verify your transfer within 1–2 hours and activate your booking."
-                : "We'll verify on-chain within 30 minutes."}
+              We'll verify on-chain within 30 minutes.
             </p>
           </div>
         </div>
@@ -1431,11 +1200,6 @@ export default function InitiatePayment() {
               <>
                 <FaCreditCard /> Pay {formatPrice(p.totalCharged, p.currency)}{" "}
                 Securely
-              </>
-            ) : method === "bank_transfer" ? (
-              <>
-                <FaUniversity /> Get Bank Details —{" "}
-                {formatPrice(p.totalCharged, p.currency)}
               </>
             ) : (
               <>

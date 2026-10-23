@@ -4,7 +4,6 @@ import api from "../../lib/api";
 import styles from "./PaymentOptions.module.css";
 import {
   FaCheckCircle,
-  FaUniversity,
   FaExclamationTriangle,
   FaPaperclip,
   FaTimes,
@@ -35,21 +34,14 @@ export default function PaymentOptions({
   onReferralToggle,
 }) {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("crypto");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState("select");
-
-  const [senderName, setSenderName] = useState("");
-  const [senderBank, setSenderBank] = useState("");
-  const [bankDetails, setBankDetails] = useState(null);
 
   const [cryptoAsset, setCryptoAsset] = useState("USDC");
   const [cryptoTxHash, setCryptoTxHash] = useState("");
   const [cryptoAmount, setCryptoAmount] = useState("");
   const [cryptoDetails, setCryptoDetails] = useState(null);
-
-  const [bankReceiptFile, setBankReceiptFile] = useState(null);
   const [cryptoReceiptFile, setCryptoReceiptFile] = useState(null);
 
   const [convertedCryptoAmount, setConvertedCryptoAmount] = useState(null);
@@ -108,56 +100,6 @@ export default function PaymentOptions({
     setError("");
     return true;
   };
-
-  async function handleBankInitiate() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await api.post(`/payments/bank-transfer/${booking.id}`, {
-        amount: finalTotal,
-        currency,
-        narration: `SkilledProz-${booking.id.slice(0, 8).toUpperCase()}`,
-      });
-      setBankDetails(res.data.data.bankDetails);
-      setStep("details");
-    } catch (e) {
-      setError(e.response?.data?.message || "Failed to initiate bank transfer");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleBankConfirm() {
-    if (!senderName.trim()) {
-      setError("Please enter your name");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("senderName", senderName);
-      if (senderBank) fd.append("bankName", senderBank);
-      if (bankReceiptFile) fd.append("proof", bankReceiptFile);
-      if (referralApplied && referralAmount > 0) {
-        fd.append("referralAmount", String(referralAmount));
-      }
-
-      await api.patch(`/payments/bank-transfer/${booking.id}/confirm`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      navigate("/payments/manual-success", {
-        state: { method: "bank", bookingId: booking.id },
-        replace: true,
-      });
-      onSuccess?.();
-    } catch (e) {
-      setError(e.response?.data?.message || "Confirmation failed");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleCryptoInitiate() {
     setLoading(true);
@@ -314,194 +256,45 @@ export default function PaymentOptions({
         </div>
       </div>
 
-      {/* ── Tabs ── */}
+      {/* ── Crypto selection step ── */}
       {step === "select" && (
-        <>
-          <div className={styles.tabs}>
-            <button
-              className={`${styles.tab} ${tab === "bank" ? styles.tabActive : ""}`}
-              onClick={() => setTab("bank")}
-            >
-              <FaUniversity style={{ marginRight: "6px" }} /> Bank Transfer
-            </button>
-            <button
-              className={`${styles.tab} ${tab === "crypto" ? styles.tabActive : ""}`}
-              onClick={() => setTab("crypto")}
-            >
-              <FaBitcoin style={{ marginRight: "6px" }} /> Crypto
-            </button>
-          </div>
+        <div className={styles.tabContent}>
+          <p className={styles.tabDesc}>
+            Pay with cryptocurrency. Send to our wallet and submit your
+            transaction hash.
+          </p>
 
-          {tab === "bank" && (
-            <div className={styles.tabContent}>
-              <p className={styles.tabDesc}>
-                Transfer directly to our escrow account. We'll confirm receipt
-                within 1–2 minutes and notify the worker.
-              </p>
-              <button
-                className={styles.payBtn}
-                onClick={handleBankInitiate}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <FaSpinner className={styles.spinner} /> Loading…
-                  </>
-                ) : (
-                  <>
-                    <FaUniversity style={{ marginRight: "6px" }} /> Get Bank
-                    Details
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          <CryptoRateConverter
+            fiatAmount={finalTotal}
+            fiatCurrency={currency}
+            selectedToken={cryptoAsset}
+            onAmountChange={(data) => {
+              setCryptoAsset(data.token);
+              setConvertedCryptoAmount(data.amount);
+            }}
+          />
 
-          {tab === "crypto" && (
-            <div className={styles.tabContent}>
-              <p className={styles.tabDesc}>
-                Pay with cryptocurrency. Send to our wallet and submit your
-                transaction hash.
-              </p>
-
-              <CryptoRateConverter
-                fiatAmount={finalTotal}
-                fiatCurrency={currency}
-                selectedToken={cryptoAsset}
-                onAmountChange={(data) => {
-                  setCryptoAsset(data.token);
-                  setConvertedCryptoAmount(data.amount);
-                }}
-              />
-
-              <button
-                className={styles.payBtn}
-                onClick={handleCryptoInitiate}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <FaSpinner className={styles.spinner} /> Loading wallet…
-                  </>
-                ) : (
-                  <>
-                    <FaEthereum style={{ marginRight: "6px" }} /> Pay with{" "}
-                    {cryptoAsset}
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Bank details step ── */}
-      {step === "details" && tab === "bank" && bankDetails && (
-        <div className={styles.bankDetails}>
-          <p className={styles.bankTitle}>Transfer to this account</p>
-          <div className={styles.bankCard}>
-            <BankRow label="Bank" value={bankDetails.bankName} />
-            <BankRow
-              label="Account Number"
-              value={bankDetails.accountNumber}
-              copyable
-            />
-            <BankRow label="Account Name" value={bankDetails.accountName} />
-            <BankRow
-              label="Amount"
-              value={formatPrice(finalTotal, currency)}
-              accent
-            />
-            <BankRow label="Narration" value={bankDetails.narration} mono />
-          </div>
-          <div className={styles.bankWarn}>
-            <FaExclamationTriangle style={{ marginRight: "6px" }} />
-            Include the exact proof of payment. Payments without the proof may
-            be delayed.
-          </div>
-          <p className={styles.bankSubtitle}>Confirm your transfer</p>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Your Name *</label>
-            <input
-              className={styles.input}
-              value={senderName}
-              onChange={(e) => setSenderName(e.target.value)}
-              placeholder="Name on sending account"
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Your Bank</label>
-            <input
-              className={styles.input}
-              value={senderBank}
-              onChange={(e) => setSenderBank(e.target.value)}
-              placeholder="e.g. GTBank, Access Bank"
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Receipt / Proof of Payment (optional)
-            </label>
-            <label className={styles.fileLabel}>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                className={styles.fileInput}
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  if (file && !validateFileSize(file)) {
-                    e.target.value = "";
-                    return;
-                  }
-                  setBankReceiptFile(file);
-                }}
-              />
-              <span className={styles.fileBtn}>
-                <FaPaperclip style={{ marginRight: "6px" }} />
-                {bankReceiptFile
-                  ? `✅ ${bankReceiptFile.name}`
-                  : "Upload receipt (image or PDF)"}
-              </span>
-            </label>
-            {bankReceiptFile && (
-              <button
-                type="button"
-                className={styles.fileRemove}
-                onClick={() => setBankReceiptFile(null)}
-              >
-                <FaTimes />
-              </button>
+          <button
+            className={styles.payBtn}
+            onClick={handleCryptoInitiate}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <FaSpinner className={styles.spinner} /> Loading wallet…
+              </>
+            ) : (
+              <>
+                <FaEthereum style={{ marginRight: "6px" }} /> Pay with{" "}
+                {cryptoAsset}
+              </>
             )}
-          </div>
-          <div className={styles.bankBtns}>
-            <button
-              className={styles.backBtn}
-              onClick={() => setStep("select")}
-            >
-              ← Back
-            </button>
-            <button
-              className={styles.payBtn}
-              onClick={handleBankConfirm}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <FaSpinner className={styles.spinner} /> Submitting…
-                </>
-              ) : (
-                <>
-                  <FaCheckCircle style={{ marginRight: "6px" }} /> I Have
-                  Transferred
-                </>
-              )}
-            </button>
-          </div>
+          </button>
         </div>
       )}
 
       {/* ── Crypto details step ── */}
-      {step === "details" && tab === "crypto" && cryptoDetails && (
+      {step === "details" && cryptoDetails && (
         <div className={styles.cryptoDetails}>
           <p className={styles.bankTitle}>Send to this wallet</p>
           <div className={styles.bankCard}>
