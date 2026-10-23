@@ -57,6 +57,7 @@ export default function PrivacyPolicy() {
         </Link>
         <div className={styles.navLinks}>
           <Link to="/terms">Terms</Link>
+          <Link to="/refund-policy">Refund Policy</Link>
           <Link to="/contact">Contact</Link>
           <Link to="/login" className={styles.navCta}>
             Sign in
@@ -107,6 +108,7 @@ export default function PrivacyPolicy() {
         <div className={styles.footerLinks}>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <Link to="/refund-policy">Refunds</Link>
           <Link to="/contact">Contact</Link>
         </div>
       </footer>

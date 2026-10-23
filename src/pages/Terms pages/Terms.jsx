@@ -27,12 +27,12 @@ const sections = [
     content: `Once a booking is accepted, both parties are bound by the agreed terms. Cancellations with less than 24 hours notice may incur a fee. No-shows by either party will be reviewed and may affect account standing. Disputed bookings can be raised through our Dispute Resolution Centre.`,
   },
   {
-    title: "7. Payments & Escrow",
-    content: `SkilledProz uses an escrow system — hirers pay upfront, funds are held securely, and released to the worker upon job completion. Platform fees range from 1–2% of the transaction value. All fees are disclosed before booking confirmation. Refunds are subject to our refund policy.`,
+    title: "7. Payments, Escrow & Platform Fees",
+    content: `SkilledProz uses an escrow system — hirers pay upfront, funds are held securely, and released to the worker upon job completion. Platform service fees are added on top of the agreed job amount and are disclosed in full before booking confirmation. As of the effective date of these terms, the platform service fee is 2% for bookings paid in Nigerian Naira (NGN) and 5% for bookings paid in any other supported currency, reflecting the underlying payment processing costs of our regional partners. Platform service fees are non-refundable: they cover payment processing, escrow custody, and platform operations. When a booking is refunded, the job amount is refunded according to the applicable refund policy, but the platform service fee already incurred for the original transaction is not returned. Wallet top-ups are fee-free. Wallet withdrawals may be subject to a small processing fee disclosed at the time of withdrawal — currently 1% (capped at ₦100) for NGN withdrawals and 2% (uncapped) for withdrawals in other currencies. All fees are displayed before you confirm any transaction. For full details, see our Refund Policy at /refund-policy.`,
   },
   {
     title: "8. Multi-Currency & Regional Compliance",
-    content: `Payments are processed in local currencies through regional partners (Paystack, Flutterwave, etc.). Users are responsible for understanding their local tax obligations. SkilledProz will provide transaction records for tax purposes where required.`,
+    content: `Payments are processed in local currencies through regional partners (Paystack, Flutterwave, etc.). Users are responsible for understanding their local tax obligations. SkilledProz will provide transaction records for tax purposes where required. Currency-specific fees apply as disclosed in Section 7 and are displayed in the currency of the transaction.`,
   },
   {
     title: "9. Prohibited Conduct",
@@ -68,6 +68,7 @@ export default function Terms() {
           Skilled<span>Proz</span>
         </Link>
         <div className={styles.navLinks}>
+          <Link to="/refund-policy">Refund Policy</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/contact">Contact</Link>
           <Link to="/login" className={styles.navCta}>
@@ -104,6 +105,26 @@ export default function Terms() {
             <section key={i} id={`section-${i}`} className={styles.section}>
               <h2 className={styles.sectionTitle}>{s.title}</h2>
               <p className={styles.sectionContent}>{s.content}</p>
+              {/* Special case: render the Refund Policy link after §7 */}
+              {i === 6 && (
+                <p
+                  className={styles.sectionContent}
+                  style={{ marginTop: "0.75rem" }}
+                >
+                  For full details, please review our{" "}
+                  <Link
+                    to="/refund-policy"
+                    style={{
+                      color: "var(--orange)",
+                      textDecoration: "underline",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Refund Policy
+                  </Link>
+                  .
+                </p>
+              )}
             </section>
           ))}
         </main>
@@ -117,6 +138,7 @@ export default function Terms() {
         <div className={styles.footerLinks}>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <Link to="/refund-policy">Refunds</Link>
           <Link to="/contact">Contact</Link>
         </div>
       </footer>

@@ -166,6 +166,7 @@ import TicketThread from "./components/support/TicketThread.jsx";
 import AdminSupport from "./pages/admin/AdminSupport.jsx";
 import AdminContacts from "./pages/admin/AdminContacts.jsx";
 import SupportChat from "./components/support/SupportChat.jsx";
+import RefundPolicy from "./pages/Terms pages/RefundPolicy.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1456,6 +1457,7 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/terms" element={<Terms />} />
 
         <Route path="/download" element={<DownloadPage />} />

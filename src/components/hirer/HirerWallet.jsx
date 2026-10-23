@@ -164,6 +164,44 @@ function getCurrencySymbol(currency) {
   return symbols[currency] || currency;
 }
 
+// ─── Wallet withdrawal fee (mirrors backend FEE_CONFIG.computeWalletWithdrawalFee) ──
+// Two-tier model:
+//   NGN      → 1% capped at ₦100  (covers Paystack's ₦10–₦50 transfer cost)
+//   Foreign  → 2% uncapped        (covers Flutterwave's ~1.5–3% intl transfer)
+//
+// ⚠️ Keep in sync with backend/src/config/fees.js
+const NGN_WALLET_WITHDRAWAL_FEE_RATE = 0.01;
+const NGN_WALLET_WITHDRAWAL_FEE_CAP = 100;
+const FOREIGN_WALLET_WITHDRAWAL_FEE_RATE = 0.02;
+
+function getWalletWithdrawalFee(amount, currency = "NGN") {
+  const cur = (currency || "NGN").toUpperCase();
+  const numAmount = Number(amount) || 0;
+  if (numAmount <= 0) {
+    return { fee: 0, netAmount: 0, feeRate: 0, feePercent: 0 };
+  }
+
+  let feeRate;
+  let fee;
+
+  if (cur === "NGN") {
+    feeRate = NGN_WALLET_WITHDRAWAL_FEE_RATE;
+    fee = numAmount * feeRate;
+    if (NGN_WALLET_WITHDRAWAL_FEE_CAP > 0) {
+      fee = Math.min(fee, NGN_WALLET_WITHDRAWAL_FEE_CAP);
+    }
+  } else {
+    feeRate = FOREIGN_WALLET_WITHDRAWAL_FEE_RATE;
+    fee = numAmount * feeRate;
+  }
+
+  fee = parseFloat(fee.toFixed(2));
+  const netAmount = parseFloat((numAmount - fee).toFixed(2));
+  const feePercent = Math.round(feeRate * 100);
+
+  return { fee, netAmount, feeRate, feePercent };
+}
+
 function getTransactionLabel(type) {
   const labels = {
     DEPOSIT: "Deposit",
@@ -503,9 +541,13 @@ function WithdrawalConfirmModal({
 
   const { amount, currency, bankName, accountNumber, accountName } =
     withdrawalData;
-  const fee = Math.min(amount * 0.01, 100);
-  const netAmount = amount - fee;
   const symbol = getCurrencySymbol(currency);
+
+  // ✅ Currency-aware withdrawal fee
+  const { fee, netAmount, feePercent } = getWalletWithdrawalFee(
+    amount,
+    currency,
+  );
 
   function handleConfirmClick() {
     if (!pin || pin.length !== 4) {
@@ -571,7 +613,9 @@ function WithdrawalConfirmModal({
               </span>
             </div>
             <div className={styles.breakdownRow}>
-              <span className={styles.breakdownLabel}>Platform Fee (1%)</span>
+              <span className={styles.breakdownLabel}>
+                Platform Fee ({feePercent}%)
+              </span>
               <span
                 className={styles.breakdownValue}
                 style={{ color: "var(--orange)" }}
@@ -728,6 +772,13 @@ function WithdrawModal({
 
   const symbol = getCurrencySymbol(currency);
 
+  // ✅ Currency-aware note for the withdrawal form
+  const previewFee = getWalletWithdrawalFee(amount || 0, currency);
+  const isNgn = (currency || "NGN").toUpperCase() === "NGN";
+  const feeNote = isNgn
+    ? `Fee: 1% (max ${symbol}100)`
+    : `Fee: ${previewFee.feePercent}% of amount`;
+
   return (
     <>
       <div className={styles.modalOverlay} onClick={handleClose}>
@@ -772,7 +823,7 @@ function WithdrawModal({
                     required
                   />
                 </div>
-                <p className={styles.feeNote}>Fee: 1% (max {symbol}100)</p>
+                <p className={styles.feeNote}>{feeNote}</p>
               </div>
 
               <div className={styles.formGroup}>
@@ -998,8 +1049,6 @@ export default function HirerWallet() {
         } catch (err) {
           const status = err.response?.status;
 
-          // Only fall back when the endpoint is genuinely absent or errored.
-          // Never retry on 429 / 401 / 403 — that would double-burn the budget.
           if (status === 404 || status === 500) {
             console.log("Balances endpoint not available, using fallback");
             const walletRes = await api.get("/wallet/balance");
@@ -1170,8 +1219,6 @@ export default function HirerWallet() {
 
       api.get(`/wallet/verify/${reference}`).catch(() => {});
 
-      // ✅ Capture the baseline BEFORE polling starts, so the polling
-      // comparison is stable (not reading stale state from closures).
       const baseline =
         typeof currencyBalances[currency] === "number"
           ? currencyBalances[currency]
@@ -1182,7 +1229,6 @@ export default function HirerWallet() {
         attempts++;
 
         try {
-          // ✅ Use lightweight single-currency endpoint during polling
           const balanceRes = await api.get("/wallet/balance", {
             params: { currency },
           });
@@ -1251,8 +1297,12 @@ export default function HirerWallet() {
     setSubmitting(true);
     try {
       const res = await api.post("/wallet/withdraw", data);
-      const fee = Math.min(data.amount * 0.01, 100);
-      const netAmount = data.amount - fee;
+
+      // ✅ Use the same currency-aware helper as the backend
+      const { fee, netAmount } = getWalletWithdrawalFee(
+        data.amount,
+        data.currency,
+      );
 
       showMessage(
         "Withdrawal Request Submitted ✅",
