@@ -896,19 +896,43 @@ function WithdrawalModal({
       .then((r) => {
         let apiBanks = r.data.data?.banks ?? [];
 
-        // ✅ Map to add searchable keywords for known banks
-        apiBanks = apiBanks.map((b) => {
+        // ✅ FIX 1: Deduplicate banks by code to prevent React key errors
+        const uniqueBanks = Array.from(
+          new Map(apiBanks.map((b) => [b.code, b])).values(),
+        );
+
+        // ✅ FIX 2: Map to add searchable keywords
+        const processedBanks = uniqueBanks.map((b) => {
           let keywords = "";
-          if (b.name.toLowerCase().includes("paycom")) keywords = "opay";
-          if (b.name.toLowerCase().includes("kuda")) keywords = "kuda";
-          return { ...b, keywords };
+          const lowerName = b.name.toLowerCase();
+          if (lowerName.includes("paycom") || lowerName.includes("opay")) {
+            keywords = "opay paycom";
+          }
+          if (lowerName.includes("kuda")) keywords = "kuda";
+
+          return { ...b, type: b.type || "commercial", keywords };
         });
 
-        setBanks(apiBanks.sort((a, b) => a.name.localeCompare(b.name)));
+        setBanks(processedBanks.sort((a, b) => a.name.localeCompare(b.name)));
       })
-      .catch(() => {
-        setBanks([]);
-        setError("Could not load the bank list. Please try again.");
+      .catch((err) => {
+        console.warn("Bank API failed. Using fallback.", err);
+        if (country === "NG") {
+          // ✅ FIX 3: Ensure fallback list is deduplicated and has keywords
+          const uniqueFallback = Array.from(
+            new Map(NIGERIAN_BANKS.map((b) => [b.code, b])).values(),
+          );
+          const fallbackBanks = uniqueFallback.map((b) => {
+            let keywords = "";
+            const lowerName = b.name.toLowerCase();
+            if (lowerName.includes("opay")) keywords = "opay paycom";
+            return { ...b, keywords };
+          });
+          setBanks(fallbackBanks);
+        } else {
+          setBanks([]);
+          setError("Could not load bank list. Please try again later.");
+        }
       })
       .finally(() => setBanksLoading(false));
   }, [selMethod]);
