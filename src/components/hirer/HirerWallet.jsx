@@ -578,7 +578,18 @@ function WithdrawalConfirmModal({
             <p className={styles.disclaimerText}>
               Please <strong>verify your bank details carefully</strong> before
               confirming. Withdrawals cannot be reversed once approved by our
-              team.
+              team. See our{" "}
+              <Link
+                to="/refund-policy"
+                style={{
+                  color: "var(--orange)",
+                  textDecoration: "underline",
+                  fontWeight: 600,
+                }}
+              >
+                Refund Policy
+              </Link>{" "}
+              for details.
             </p>
           </div>
 

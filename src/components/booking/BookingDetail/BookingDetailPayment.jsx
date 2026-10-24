@@ -549,6 +549,28 @@ export default function BookingDetailPayment({
           </div>
         )}
 
+        {/* ✅ Refund policy reference */}
+        <p
+          style={{
+            fontSize: "0.75rem",
+            color: "var(--text-muted)",
+            margin: "0.5rem 0 0.25rem",
+          }}
+        >
+          By proceeding, you agree to our{" "}
+          <Link
+            to="/refund-policy"
+            style={{
+              color: "var(--orange)",
+              textDecoration: "underline",
+              fontWeight: 600,
+            }}
+          >
+            Refund Policy
+          </Link>
+          . Platform fees are non-refundable.
+        </p>
+
         <button
           className={`${styles.payNowBtn} ${showPayOptions ? styles.payNowBtnActive : ""}`}
           onClick={onTogglePayOptions}

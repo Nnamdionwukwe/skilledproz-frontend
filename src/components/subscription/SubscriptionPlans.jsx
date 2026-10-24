@@ -272,6 +272,7 @@ function generateReceiptHTML(transaction) {
     <div class="receipt-footer">
       <p>Thank you for using <strong>SkilledProz</strong></p>
       <p style="margin-top: 6px;">This is an electronically generated receipt. No signature required.</p>
+      <p style="margin-top: 8px; font-size: 11px;">Refund policy: <strong>skilledproz.com/refund-policy</strong></p>
       <p style="margin-top: 6px; font-size: 11px;">skilledproz.com · support@skilledproz.com</p>
     </div>
   </div>

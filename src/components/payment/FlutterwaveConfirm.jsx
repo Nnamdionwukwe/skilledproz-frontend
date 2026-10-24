@@ -345,9 +345,13 @@ export default function FlutterwaveConfirm() {
               <span className={styles.trustItem}>
                 <FiShield /> Escrow protected
               </span>
-              <span className={styles.trustItem}>
+              <Link
+                to="/refund-policy"
+                className={styles.trustItem}
+                style={{ textDecoration: "none" }}
+              >
                 <FiRefreshCw /> Refund policy
-              </span>
+              </Link>
             </div>
           </div>
         </div>

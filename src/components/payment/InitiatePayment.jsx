@@ -692,7 +692,19 @@ export default function InitiatePayment() {
             </button>
 
             <p className={styles.payDisclaimer}>
-              We'll verify on-chain within 30 minutes.
+              We'll verify on-chain within 30 minutes. By confirming, you agree
+              to our{" "}
+              <Link
+                to="/refund-policy"
+                style={{
+                  color: "var(--orange)",
+                  textDecoration: "underline",
+                  fontWeight: 600,
+                }}
+              >
+                Refund Policy
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -1210,8 +1222,14 @@ export default function InitiatePayment() {
           </button>
 
           <p className={styles.payDisclaimer}>
-            Powered by Flutterwave &amp; Paystack · Escrow protected · Refund
-            policy applies
+            Powered by Flutterwave &amp; Paystack · Escrow protected ·{" "}
+            <Link
+              to="/refund-policy"
+              style={{ color: "inherit", textDecoration: "underline" }}
+            >
+              Refund policy
+            </Link>{" "}
+            applies
           </p>
 
           <div className={styles.trustRow}>
