@@ -32,7 +32,7 @@ import api from "../../../../lib/api";
 import s from "./WorkerWithdrawals.module.css";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NIGERIAN BANKS — unchanged
+// NIGERIAN BANKS — Fallback list (Use API where possible)
 // ─────────────────────────────────────────────────────────────────────────────
 export const NIGERIAN_BANKS = [
   { name: "Access Bank", code: "044", type: "commercial" },
@@ -75,7 +75,7 @@ export const NIGERIAN_BANKS = [
   { name: "Kuda Bank", code: "090267", type: "digital" },
   { name: "Moniepoint MFB", code: "50515", type: "digital" },
   { name: "MoMo PSB (MTN Nigeria)", code: "120003", type: "digital" },
-  { name: "OPay Digital Services", code: "100004", type: "digital" },
+  { name: "OPay Digital Services", code: "999992", type: "digital" },
   { name: "PalmPay", code: "100033", type: "digital" },
   { name: "Paga", code: "327", type: "digital" },
   { name: "Rubies Bank (MFB)", code: "125", type: "digital" },
@@ -524,7 +524,7 @@ function PinSetupScreen({ onDone }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BANK DROPDOWN — unchanged
+// BANK DROPDOWN — updated to search keywords
 // ─────────────────────────────────────────────────────────────────────────────
 const BANK_TYPE_LABELS = {
   commercial: { label: "Commercial", color: "#818cf8" },
@@ -541,7 +541,9 @@ function BankDropdown({ banks, value, onChange, loading, placeholder }) {
   const filtered = banks.filter(
     (b) =>
       b.name.toLowerCase().includes(search.toLowerCase()) ||
-      b.code.includes(search),
+      b.code.includes(search) ||
+      // ✅ NEW: Check if the search matches any keywords (e.g. "opay" for Paycom)
+      (b.keywords && b.keywords.includes(search.toLowerCase())),
   );
   const selected = banks.find((b) => b.code === value);
 
@@ -826,7 +828,7 @@ function MetaItem({ label, value }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WITHDRAWAL FORM MODAL — unchanged
+// WITHDRAWAL FORM MODAL — updated bank fetching
 // ─────────────────────────────────────────────────────────────────────────────
 function WithdrawalModal({
   onClose,
@@ -886,34 +888,28 @@ function WithdrawalModal({
       return;
     }
     const country = selMethod.country ?? "NG";
-    if (country === "NG") {
-      setBanks(NIGERIAN_BANKS);
-      setBanksLoading(false);
-      api
-        .get("/payments/banks?country=NG")
-        .then((r) => {
-          const apibanks = r.data.data?.banks ?? [];
-          if (!apibanks.length) return;
-          const merged = new Map(NIGERIAN_BANKS.map((b) => [b.code, b]));
-          apibanks.forEach((b) =>
-            merged.set(b.code, {
-              name: b.name,
-              code: b.code,
-              type: b.type ?? "commercial",
-            }),
-          );
-          setBanks(
-            [...merged.values()].sort((a, b) => a.name.localeCompare(b.name)),
-          );
-        })
-        .catch(() => {});
-      return;
-    }
     setBanksLoading(true);
+
+    // ✅ Fetch the live, authoritative list from Paystack via your backend
     api
       .get(`/payments/banks?country=${country}`)
-      .then((r) => setBanks(r.data.data?.banks ?? []))
-      .catch(() => setBanks([]))
+      .then((r) => {
+        let apiBanks = r.data.data?.banks ?? [];
+
+        // ✅ Map to add searchable keywords for known banks
+        apiBanks = apiBanks.map((b) => {
+          let keywords = "";
+          if (b.name.toLowerCase().includes("paycom")) keywords = "opay";
+          if (b.name.toLowerCase().includes("kuda")) keywords = "kuda";
+          return { ...b, keywords };
+        });
+
+        setBanks(apiBanks.sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .catch(() => {
+        setBanks([]);
+        setError("Could not load the bank list. Please try again.");
+      })
       .finally(() => setBanksLoading(false));
   }, [selMethod]);
 
