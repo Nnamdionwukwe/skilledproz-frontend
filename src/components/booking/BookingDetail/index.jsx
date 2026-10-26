@@ -936,31 +936,10 @@ export default function BookingDetail() {
             {isWorker && booking.status === "PENDING" && (
               <WorkerPaymentPreview booking={booking} isWorker={isWorker} />
             )}
-
-            {booking.payment && (
-              <BookingDetailPayment
-                booking={booking}
-                payment={booking.payment}
-                feeBreakdown={feeBreakdown}
-                walletBalance={walletBalance}
-                referralAmount={referralAmount}
-                referralApplied={referralApplied}
-                referralPercent={referralPercent}
-                onPercentChange={handlePercentChange}
-                onReferralToggle={handleReferralToggle}
-                showPayOptions={showPayOptions}
-                onTogglePayOptions={() => setShowPayOptions((v) => !v)}
-                paymentRequired={paymentRequired}
-                refetch={refetch}
-                onSuccess={(msg) => showToastMessage("success", msg)}
-                isHirer={isHirer}
-                isWorker={isWorker}
-              />
-            )}
           </div>
 
           <div className={styles.sidebar}>
-            {isHirer && paymentRequired && (
+            {(isHirer || isWorker) && (
               <BookingDetailPayment
                 booking={booking}
                 payment={payment}
