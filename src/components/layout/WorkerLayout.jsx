@@ -36,6 +36,7 @@ import styles from "./WorkerLayout.module.css";
 import { useAuthStore } from "../../store/authStore";
 import { useSupportStore } from "../../store/supportStore";
 import api from "../../lib/api";
+import { FaWallet } from "react-icons/fa";
 
 // ─── Navigation config ──────────────────────────────────────────────────────
 const NAV = [
@@ -73,7 +74,7 @@ const NAV = [
       {
         label: "My Wallet",
         path: "/dashboard/worker/withdrawals",
-        icon: FiArrowUp,
+        icon: FaWallet,
       },
       {
         label: "Refunds",
