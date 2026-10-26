@@ -560,22 +560,21 @@ function WithdrawalConfirmModal({
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div
-        className={`${styles.modalBox} ${styles.modalLarge} ${styles.confirmModalBox}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FaExclamationTriangle /> Confirm Withdrawal
-          </h3>
+    <div
+      className={styles.backdrop}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className={styles.formModal}>
+        <div className={styles.formModalHeader}>
+          <h2 className={styles.formModalTitle}>Confirm Withdrawal</h2>
           <button className={styles.modalClose} onClick={onClose} type="button">
-            <FaTimes />
+            <FaTimes size={14} />
           </button>
         </div>
 
-        {/* Scrollable Body */}
-        <div className={`${styles.modalBody} ${styles.confirmModalBody}`}>
+        <div style={{ padding: "16px", flex: 1 }}>
           <div className={styles.confirmDisclaimer}>
             <FaExclamationTriangle className={styles.disclaimerIcon} />
             <p className={styles.disclaimerText}>
