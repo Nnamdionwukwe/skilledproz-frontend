@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import styles from "./BookingDetail.module.css";
 import PaymentOptions from "../../payment/PaymentOptions";
+import { getHirerFeeRate } from "../../../utils/pricing";
 import {
   FaCreditCard,
   FaGift,
@@ -11,12 +12,11 @@ import {
   FaClock,
 } from "react-icons/fa";
 
-// ── Currency-aware fee percent (mirrors utils/pricing.js) ────────────────
-// Two-tier: NGN → 2%, everything else → 5%
+// ── Currency-aware fee percent (pulls from utils/pricing.js) ──────────────
+// Two-tier: NGN → dynamic, everything else → dynamic
 // Keep in sync with backend/src/config/fees.js and frontend/src/utils/pricing.js
 function getFeePercent(currency = "NGN") {
-  const cur = (currency || "NGN").toUpperCase();
-  return cur === "NGN" ? 2 : 5;
+  return Math.round(getHirerFeeRate(currency) * 100);
 }
 
 function formatPrice(amount, currency = "NGN") {
