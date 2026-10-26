@@ -3728,3 +3728,172 @@
     font-size: 12px;
   }
 }
+/* ─── Worker-Style Withdraw Modal Layout & Overlay ───────────────────────── */
+
+/* Full-screen overlay backdrop */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease;
+  padding: max(0px, env(safe-area-inset-top)) 0
+    max(0px, env(safe-area-inset-bottom));
+}
+
+/* Modal box itself */
+.formModal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 95dvh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
+  scrollbar-width: thin;
+  box-sizing: border-box;
+}
+
+.formModal::-webkit-scrollbar {
+  width: 3px;
+}
+
+.formModal::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Modal header */
+.formModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  z-index: 1;
+  gap: 10px;
+}
+
+.formModalTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Form body */
+.payoutForm {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Submit button for the form */
+.submitBtn {
+  width: 100%;
+  padding: 12px;
+  background: var(--orange);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s;
+  min-height: 46px;
+  box-sizing: border-box;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
+.spinnerSm {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--border);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Desktop layout adjustments */
+@media (min-width: 640px) {
+  .backdrop {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .formModal {
+    border-radius: 20px;
+    max-width: 580px;
+    max-height: 92dvh;
+  }
+
+  .payoutForm {
+    padding: 18px 20px;
+    gap: 20px;
+  }
+
+  .formModalHeader {
+    padding: 16px 20px;
+  }
+
+  .formModalTitle {
+    font-size: 18px;
+  }
+
+  .submitBtn {
+    font-size: 15px;
+    padding: 14px;
+  }
+}

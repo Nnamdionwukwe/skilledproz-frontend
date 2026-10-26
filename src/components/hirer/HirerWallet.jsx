@@ -818,50 +818,6 @@ const BANK_TYPE_LABELS = {
   merchant: { label: "Merchant", color: "#a78bfa" },
 };
 
-function PinInput({ value, onChange, disabled, error }) {
-  const hiddenRef = useRef();
-  return (
-    <div className={styles.pinField}>
-      <div
-        className={`${styles.pinBoxes} ${disabled ? styles.pinBoxesDisabled : ""}`}
-        onClick={() => !disabled && hiddenRef.current?.focus()}
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={[
-              styles.pinBox,
-              value.length > i ? styles.pinBoxFilled : "",
-              value.length === i ? styles.pinBoxActive : "",
-              error ? styles.pinBoxError : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            {value.length > i ? "●" : ""}
-          </div>
-        ))}
-        <input
-          ref={hiddenRef}
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          autoComplete="off"
-          maxLength={4}
-          value={value}
-          onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-            onChange(v);
-          }}
-          disabled={disabled}
-          className={styles.pinHiddenInput}
-        />
-      </div>
-      {error && <p className={styles.pinError}>{error}</p>}
-    </div>
-  );
-}
-
 function BankDropdown({ banks, value, onChange, loading, placeholder }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -1059,26 +1015,9 @@ function WorkerStyleWithdrawModal({
   const [verifyErr, setVerifyErr] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [withdrawalData, setWithdrawalData] = useState(null);
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [pinStatus, setPinStatus] = useState(null);
-  const [pinStatusLoading, setPinStatusLoading] = useState(true);
   const [error, setError] = useState("");
 
   const methods = CURRENCY_METHODS[currency?.toUpperCase()] ?? INTL_METHODS;
-
-  useEffect(() => {
-    api
-      .get("/payments/pin/status")
-      .then((r) => {
-        const data = r.data.data;
-        setPinStatus(data);
-      })
-      .catch(() =>
-        setPinStatus({ pinSet: true, isLocked: false, attemptsRemaining: 3 }),
-      )
-      .finally(() => setPinStatusLoading(false));
-  }, []);
 
   useEffect(() => {
     setSelMethod(methods[0]);
@@ -1169,7 +1108,6 @@ function WorkerStyleWithdrawModal({
 
   function handleReview() {
     setError("");
-    setPinError("");
 
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return setError("Enter a valid amount.");
@@ -1179,13 +1117,6 @@ function WorkerStyleWithdrawModal({
         `Exceeds available balance (${formatCurrency(balance, currency)}).`,
       );
     if (!selMethod) return setError("Select a payout method.");
-
-    if (!pin || pin.length < 4)
-      return setPinError("Enter your 4-digit withdrawal PIN.");
-    if (pinStatus?.isLocked)
-      return setPinError(
-        "Too many wrong attempts. Please wait before trying again.",
-      );
 
     const m = selMethod.method;
     if (m === "bank_transfer" && !selMethod.isInternational) {
@@ -1209,7 +1140,6 @@ function WorkerStyleWithdrawModal({
     }
 
     const payload = {
-      pin,
       amount: amt,
       currency: currency.toUpperCase(),
       method: m,
@@ -1263,21 +1193,28 @@ function WorkerStyleWithdrawModal({
 
   return (
     <>
-      <div className={styles.modalOverlay} onClick={onClose}>
-        <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h3 className={styles.modalTitle}>
-              <FaMinus /> Withdraw Funds
-            </h3>
+      <div
+        className={styles.backdrop}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <div className={styles.formModal}>
+          <div className={styles.formModalHeader}>
+            <h2 className={styles.formModalTitle}>Request Payout</h2>
             <button
               className={styles.modalClose}
               onClick={onClose}
               type="button"
             >
-              <FaTimes />
+              <FaTimes size={14} />
             </button>
           </div>
-          <div className={styles.modalBody}>
+
+          <form
+            className={styles.payoutForm}
+            onSubmit={(e) => e.preventDefault()}
+          >
             <div className={styles.formSection}>
               <p className={styles.formSectionLabel}>
                 Withdraw from {currency} Wallet
@@ -1305,7 +1242,7 @@ function WorkerStyleWithdrawModal({
               </div>
             </div>
 
-            <div className={styles.formSection} style={{ marginTop: "16px" }}>
+            <div className={styles.formSection}>
               <p className={styles.formSectionLabel}>Payout Method</p>
               <div className={styles.methodGrid}>
                 {methods.map((m) => {
@@ -1333,7 +1270,7 @@ function WorkerStyleWithdrawModal({
             </div>
 
             {selMethod && (
-              <div className={styles.formSection} style={{ marginTop: "16px" }}>
+              <div className={styles.formSection}>
                 <p className={styles.formSectionLabel}>Payout Details</p>
 
                 {selMethod.method === "bank_transfer" &&
@@ -1547,7 +1484,7 @@ function WorkerStyleWithdrawModal({
               </div>
             )}
 
-            <div className={styles.formSection} style={{ marginTop: "16px" }}>
+            <div className={styles.formSection}>
               <p className={styles.formSectionLabel}>Amount ({currency})</p>
               <div className={styles.amountWrap}>
                 <span className={styles.amountCurrency}>{symbol}</span>
@@ -1592,35 +1529,14 @@ function WorkerStyleWithdrawModal({
                 })()}
             </div>
 
-            <div className={styles.formSection} style={{ marginTop: "16px" }}>
-              <p className={styles.formSectionLabel}>
-                Withdrawal PIN
-                {pinStatus && !pinStatus.isLocked && (
-                  <span className={styles.pinAttemptsHint}>
-                    {pinStatus.attemptsRemaining} attempt
-                    {pinStatus.attemptsRemaining !== 1 ? "s" : ""} remaining
-                  </span>
-                )}
-              </p>
-              <PinInput
-                value={pin}
-                onChange={(v) => {
-                  setPin(v);
-                  if (pinError) setPinError("");
-                }}
-                disabled={loading}
-                error={pinError}
-              />
-            </div>
-
             {error && (
-              <div className={styles.errorBox} style={{ marginTop: "16px" }}>
+              <div className={styles.errorBox}>
                 <FaExclamationTriangle size={14} />
                 <span>{error}</span>
               </div>
             )}
 
-            <div className={styles.formInfo} style={{ marginTop: "16px" }}>
+            <div className={styles.formInfo}>
               <FaInfo size={14} />
               <p>
                 Payouts processed within 1–3 business days ·{" "}
@@ -1629,29 +1545,24 @@ function WorkerStyleWithdrawModal({
               </p>
             </div>
 
-            <div className={styles.modalActions} style={{ marginTop: "16px" }}>
-              <button
-                type="button"
-                className={styles.modalCancel}
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={`${styles.modalConfirm} ${styles.withdrawBtn}`}
-                onClick={handleReview}
-                disabled={loading || !amount || !selMethod || pin.length < 4}
-              >
-                {loading ? (
-                  <FaSpinner className={styles.spinning} />
-                ) : (
-                  "Review Withdrawal"
-                )}
-              </button>
-            </div>
-          </div>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              onClick={handleReview}
+              disabled={loading || !amount || !selMethod}
+            >
+              {loading ? (
+                <>
+                  <span className={styles.spinner} /> Processing…
+                </>
+              ) : (
+                <>
+                  <FaArrowUp size={15} />
+                  <span>Review Withdrawal</span>
+                </>
+              )}
+            </button>
+          </form>
         </div>
       </div>
 

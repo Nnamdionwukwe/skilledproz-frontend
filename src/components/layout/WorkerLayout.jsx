@@ -71,7 +71,7 @@ const NAV = [
         icon: FiDollarSign,
       },
       {
-        label: "Wallet",
+        label: "My Wallet",
         path: "/dashboard/worker/withdrawals",
         icon: FiArrowUp,
       },
