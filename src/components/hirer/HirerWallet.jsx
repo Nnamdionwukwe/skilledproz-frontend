@@ -38,9 +38,15 @@ import {
   FaWallet as FaWalletIcon,
   FaShieldAlt,
   FaChevronRight,
+  FaGlobe,
+  FaLock,
+  FaChevronDown,
+  FaChevronUp,
+  FaInfo,
 } from "react-icons/fa";
 
-import { FiMail } from "react-icons/fi";
+import { SiBitcoin } from "react-icons/si";
+import { FiMail, FiSmartphone } from "react-icons/fi";
 
 // ─── Helper Functions ──────────────────────────────────────────────────────
 function formatCurrency(amount, currency = "NGN") {
@@ -165,11 +171,6 @@ function getCurrencySymbol(currency) {
 }
 
 // ─── Wallet withdrawal fee (mirrors backend FEE_CONFIG.computeWalletWithdrawalFee) ──
-// Two-tier model:
-//   NGN      → 1% capped at ₦100  (covers Paystack's ₦10–₦50 transfer cost)
-//   Foreign  → 2% uncapped        (covers Flutterwave's ~1.5–3% intl transfer)
-//
-// ⚠️ Keep in sync with backend/src/config/fees.js
 const NGN_WALLET_WITHDRAWAL_FEE_RATE = 0.01;
 const NGN_WALLET_WITHDRAWAL_FEE_CAP = 100;
 const FOREIGN_WALLET_WITHDRAWAL_FEE_RATE = 0.02;
@@ -719,9 +720,327 @@ function WithdrawalConfirmModal({
   );
 }
 
-// ─── Withdraw Modal ───────────────────────────────────────────────────────
+// ─── Worker-style Withdraw Modal ──────────────────────────────────────────
 
-function WithdrawModal({
+const NIGERIAN_BANKS = [
+  { name: "Access Bank", code: "044", type: "commercial" },
+  { name: "Ecobank Nigeria", code: "050", type: "commercial" },
+  { name: "Fidelity Bank", code: "070", type: "commercial" },
+  { name: "First Bank of Nigeria", code: "011", type: "commercial" },
+  { name: "First City Monument Bank (FCMB)", code: "214", type: "commercial" },
+  { name: "Guaranty Trust Bank (GTBank)", code: "058", type: "commercial" },
+  { name: "Stanbic IBTC Bank", code: "221", type: "commercial" },
+  { name: "Sterling Bank", code: "232", type: "commercial" },
+  { name: "United Bank for Africa (UBA)", code: "033", type: "commercial" },
+  { name: "Union Bank of Nigeria", code: "032", type: "commercial" },
+  { name: "Unity Bank", code: "215", type: "commercial" },
+  { name: "Wema Bank / ALAT", code: "035", type: "commercial" },
+  { name: "Zenith Bank", code: "057", type: "commercial" },
+  { name: "Citibank Nigeria", code: "023", type: "commercial" },
+  { name: "Kuda Bank", code: "090267", type: "digital" },
+  { name: "Moniepoint MFB", code: "50515", type: "digital" },
+  { name: "OPay Digital Services", code: "999992", type: "digital" },
+  { name: "PalmPay", code: "100033", type: "digital" },
+  { name: "Paga", code: "327", type: "digital" },
+].sort((a, b) => a.name.localeCompare(b.name));
+
+const CURRENCY_METHODS = {
+  NGN: [
+    {
+      key: "ng_bank",
+      method: "bank_transfer",
+      label: "Nigerian Bank / Fintech",
+      Icon: FaCreditCard,
+      desc: "GTBank, Kuda, OPay, Access, Zenith, UBA, PalmPay +70 more",
+      country: "NG",
+      hasBankList: true,
+    },
+    {
+      key: "ng_mtn",
+      method: "mobile_money",
+      label: "MTN MoMo Nigeria",
+      Icon: FiSmartphone,
+      desc: "MTN mobile money",
+      country: "NG",
+      provider: "MTN",
+    },
+    {
+      key: "ng_airtel",
+      method: "mobile_money",
+      label: "Airtel Money Nigeria",
+      Icon: FiSmartphone,
+      desc: "Airtel mobile money",
+      country: "NG",
+      provider: "Airtel",
+    },
+    {
+      key: "crypto",
+      method: "crypto",
+      label: "USDC / USDT",
+      Icon: SiBitcoin,
+      desc: "Stablecoin — any country",
+    },
+  ],
+};
+
+const INTL_METHODS = [
+  {
+    key: "intl_bank",
+    method: "bank_transfer",
+    label: "International Wire",
+    Icon: FaGlobe,
+    desc: "SWIFT / IBAN — 150+ countries",
+    isInternational: true,
+  },
+  {
+    key: "crypto",
+    method: "crypto",
+    label: "USDC / USDT",
+    Icon: SiBitcoin,
+    desc: "Stablecoin — any country",
+  },
+];
+
+const CRYPTO_NETWORKS = [
+  { value: "BSC", label: "BNB Smart Chain (BSC)" },
+  { value: "ETH", label: "Ethereum (ERC-20)" },
+  { value: "TRC20", label: "Tron (TRC-20)" },
+  { value: "POLYGON", label: "Polygon (MATIC)" },
+  { value: "SOLANA", label: "Solana (SOL)" },
+];
+
+const CRYPTO_TOKENS = ["USDC", "USDT", "BTC", "ETH"];
+
+const BANK_TYPE_LABELS = {
+  commercial: { label: "Commercial", color: "#818cf8" },
+  digital: { label: "Digital/Fintech", color: "#f97316" },
+  microfinance: { label: "Microfinance", color: "#22c55e" },
+  merchant: { label: "Merchant", color: "#a78bfa" },
+};
+
+function PinInput({ value, onChange, disabled, error }) {
+  const hiddenRef = useRef();
+  return (
+    <div className={styles.pinField}>
+      <div
+        className={`${styles.pinBoxes} ${disabled ? styles.pinBoxesDisabled : ""}`}
+        onClick={() => !disabled && hiddenRef.current?.focus()}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={[
+              styles.pinBox,
+              value.length > i ? styles.pinBoxFilled : "",
+              value.length === i ? styles.pinBoxActive : "",
+              error ? styles.pinBoxError : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {value.length > i ? "●" : ""}
+          </div>
+        ))}
+        <input
+          ref={hiddenRef}
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          maxLength={4}
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+            onChange(v);
+          }}
+          disabled={disabled}
+          className={styles.pinHiddenInput}
+        />
+      </div>
+      {error && <p className={styles.pinError}>{error}</p>}
+    </div>
+  );
+}
+
+function BankDropdown({ banks, value, onChange, loading, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef();
+
+  const filtered = banks.filter(
+    (b) =>
+      b.name.toLowerCase().includes(search.toLowerCase()) ||
+      b.code.includes(search) ||
+      (b.keywords && b.keywords.includes(search.toLowerCase())),
+  );
+  const selected = banks.find((b) => b.code === value);
+
+  const grouped = search.trim()
+    ? null
+    : ["digital", "commercial", "microfinance", "merchant"].reduce(
+        (acc, type) => {
+          const items = filtered.filter(
+            (b) => (b.type ?? "commercial") === type,
+          );
+          if (items.length) acc.push({ type, items });
+          return acc;
+        },
+        [],
+      );
+
+  useEffect(() => {
+    const fn = (e) => {
+      if (!ref.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  return (
+    <div className={styles.bankDropdown} ref={ref}>
+      <button
+        type="button"
+        className={`${styles.bankDropdownBtn} ${open ? styles.bankDropdownBtnOpen : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        disabled={loading}
+      >
+        <div className={styles.bankDropdownBtnInner}>
+          {loading ? (
+            <span className={styles.bankDropdownLoading}>Loading banks…</span>
+          ) : selected ? (
+            <>
+              <span className={styles.bankDropdownSelected}>
+                {selected.name}
+              </span>
+              {selected.type && BANK_TYPE_LABELS[selected.type] && (
+                <span
+                  className={styles.bankTypeChip}
+                  style={{ color: BANK_TYPE_LABELS[selected.type].color }}
+                >
+                  {BANK_TYPE_LABELS[selected.type].label}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className={styles.bankDropdownPlaceholder}>
+              {placeholder ?? "Select bank"}
+            </span>
+          )}
+        </div>
+        <span className={styles.bankDropdownChevron}>
+          {open ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
+        </span>
+      </button>
+
+      {open && (
+        <div className={styles.bankDropdownMenu}>
+          <div className={styles.bankSearchWrap}>
+            <span className={styles.bankSearchIcon}>
+              <FaSearch size={14} />
+            </span>
+            <input
+              className={styles.bankSearchInput}
+              placeholder={`Search ${banks.length} banks…`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+            {search && (
+              <button
+                className={styles.bankSearchClear}
+                onClick={() => setSearch("")}
+                type="button"
+              >
+                <FaTimes size={13} />
+              </button>
+            )}
+          </div>
+          {search && (
+            <div className={styles.bankResultCount}>
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""} for "
+              {search}"
+            </div>
+          )}
+          <div className={styles.bankList}>
+            {filtered.length === 0 ? (
+              <div className={styles.bankNoResults}>
+                <span>
+                  <FaSearch size={24} />
+                </span>
+                <p>No bank found for "{search}"</p>
+                <p className={styles.bankNoResultsSub}>
+                  Try a shorter name or bank code
+                </p>
+              </div>
+            ) : search.trim() ? (
+              filtered.map((b) => (
+                <BankOption
+                  key={b.code}
+                  bank={b}
+                  selected={value === b.code}
+                  onSelect={(b) => {
+                    onChange(b);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                />
+              ))
+            ) : (
+              grouped?.map(({ type, items }) => (
+                <div key={type} className={styles.bankGroup}>
+                  <div
+                    className={styles.bankGroupHeader}
+                    style={{ color: BANK_TYPE_LABELS[type]?.color }}
+                  >
+                    {BANK_TYPE_LABELS[type]?.label ?? type} ({items.length})
+                  </div>
+                  {items.map((b) => (
+                    <BankOption
+                      key={b.code}
+                      bank={b}
+                      selected={value === b.code}
+                      onSelect={(b) => {
+                        onChange(b);
+                        setOpen(false);
+                        setSearch("");
+                      }}
+                    />
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BankOption({ bank, selected, onSelect }) {
+  const typeMeta = BANK_TYPE_LABELS[bank.type ?? "commercial"];
+  return (
+    <button
+      type="button"
+      className={`${styles.bankOption} ${selected ? styles.bankOptionSelected : ""}`}
+      onClick={() => onSelect(bank)}
+    >
+      <span className={styles.bankOptionName}>{bank.name}</span>
+      <div className={styles.bankOptionRight}>
+        {typeMeta && (
+          <span
+            className={styles.bankOptionType}
+            style={{ color: typeMeta.color }}
+          >
+            {typeMeta.label}
+          </span>
+        )}
+        <span className={styles.bankOptionCode}>{bank.code}</span>
+      </div>
+    </button>
+  );
+}
+
+function WorkerStyleWithdrawModal({
   isOpen,
   onClose,
   onWithdraw,
@@ -730,52 +1049,211 @@ function WithdrawModal({
   currency,
   currencies,
 }) {
+  const [selMethod, setSelMethod] = useState(null);
+  const [form, setForm] = useState({});
   const [amount, setAmount] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [bankCode, setBankCode] = useState("");
+  const [banks, setBanks] = useState([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [verifiedName, setVerifiedName] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyErr, setVerifyErr] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [withdrawalData, setWithdrawalData] = useState(null);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinStatus, setPinStatus] = useState(null);
+  const [pinStatusLoading, setPinStatusLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleWithdraw = () => {
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 100) {
-      alert(`Minimum withdrawal amount is ${getCurrencySymbol(currency)}100`);
+  const methods = CURRENCY_METHODS[currency?.toUpperCase()] ?? INTL_METHODS;
+
+  useEffect(() => {
+    api
+      .get("/payments/pin/status")
+      .then((r) => {
+        const data = r.data.data;
+        setPinStatus(data);
+      })
+      .catch(() =>
+        setPinStatus({ pinSet: true, isLocked: false, attemptsRemaining: 3 }),
+      )
+      .finally(() => setPinStatusLoading(false));
+  }, []);
+
+  useEffect(() => {
+    setSelMethod(methods[0]);
+    setForm({});
+    setVerifiedName(null);
+    setVerifyErr("");
+  }, [currency]);
+
+  useEffect(() => {
+    if (!selMethod?.hasBankList) {
+      setBanks([]);
       return;
     }
-    if (numAmount > balance) {
-      alert(
-        `Insufficient balance. You have ${getCurrencySymbol(currency)}${balance.toFixed(2)}`,
+    const country = selMethod.country ?? "NG";
+    setBanksLoading(true);
+
+    api
+      .get(`/payments/banks?country=${country}`)
+      .then((r) => {
+        let apiBanks = r.data.data?.banks ?? [];
+        const uniqueBanks = Array.from(
+          new Map(apiBanks.map((b) => [b.code, b])).values(),
+        );
+        const processedBanks = uniqueBanks.map((b) => {
+          let keywords = "";
+          const lowerName = b.name.toLowerCase();
+          if (lowerName.includes("paycom") || lowerName.includes("opay")) {
+            keywords = "opay paycom";
+          }
+          if (lowerName.includes("kuda")) keywords = "kuda";
+          return { ...b, type: b.type || "commercial", keywords };
+        });
+        setBanks(processedBanks.sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .catch((err) => {
+        console.warn("Bank API failed. Using fallback.", err);
+        if (country === "NG") {
+          const uniqueFallback = Array.from(
+            new Map(NIGERIAN_BANKS.map((b) => [b.code, b])).values(),
+          );
+          const fallbackBanks = uniqueFallback.map((b) => {
+            let keywords = "";
+            const lowerName = b.name.toLowerCase();
+            if (lowerName.includes("opay")) keywords = "opay paycom";
+            return { ...b, keywords };
+          });
+          setBanks(fallbackBanks);
+        } else {
+          setBanks([]);
+          setError("Could not load bank list. Please try again later.");
+        }
+      })
+      .finally(() => setBanksLoading(false));
+  }, [selMethod]);
+
+  useEffect(() => {
+    setVerifiedName(null);
+    setVerifyErr("");
+  }, [form.accountNumber, form.bankCode]);
+
+  function setF(k, v) {
+    setForm((p) => ({ ...p, [k]: v }));
+  }
+
+  async function verifyAccount() {
+    if (!form.accountNumber || !form.bankCode) {
+      setVerifyErr("Enter account number and select a bank first.");
+      return;
+    }
+    setVerifying(true);
+    setVerifyErr("");
+    setVerifiedName(null);
+    try {
+      const res = await api.post("/payments/verify-account", {
+        accountNumber: form.accountNumber,
+        bankCode: form.bankCode,
+        country: selMethod?.country ?? "NG",
+      });
+      setVerifiedName(res.data.data.accountName);
+    } catch (e) {
+      setVerifyErr(
+        e.response?.data?.message ?? "Account not found. Check details.",
       );
-      return;
+    } finally {
+      setVerifying(false);
     }
-    if (!bankName || !accountNumber || !accountName) {
-      alert("Please fill in all bank details");
-      return;
+  }
+
+  function handleReview() {
+    setError("");
+    setPinError("");
+
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) return setError("Enter a valid amount.");
+    if (amt < 1) return setError("Minimum withdrawal is 1 unit.");
+    if (amt > balance)
+      return setError(
+        `Exceeds available balance (${formatCurrency(balance, currency)}).`,
+      );
+    if (!selMethod) return setError("Select a payout method.");
+
+    if (!pin || pin.length < 4)
+      return setPinError("Enter your 4-digit withdrawal PIN.");
+    if (pinStatus?.isLocked)
+      return setPinError(
+        "Too many wrong attempts. Please wait before trying again.",
+      );
+
+    const m = selMethod.method;
+    if (m === "bank_transfer" && !selMethod.isInternational) {
+      if (!form.bankCode) return setError("Select a bank.");
+      if (!form.accountNumber) return setError("Enter account number.");
+      if (!verifiedName)
+        return setError("Verify your account name before proceeding.");
+    }
+    if (m === "bank_transfer" && selMethod.isInternational) {
+      if (!form.accountNumber) return setError("Enter account / IBAN number.");
+      if (!form.swiftBic) return setError("Enter SWIFT / BIC code.");
+      if (!form.accountName) return setError("Enter account holder name.");
+    }
+    if (m === "mobile_money") {
+      if (!form.mobileNumber) return setError("Enter mobile number.");
+    }
+    if (m === "crypto") {
+      if (!form.cryptoAddress) return setError("Enter wallet address.");
+      if (!form.cryptoToken) return setError("Select crypto token.");
+      if (!form.cryptoNetwork) return setError("Select network.");
     }
 
-    setWithdrawalData({
-      amount: numAmount,
-      currency,
-      bankName,
-      accountNumber,
-      accountName,
-      bankCode,
-    });
+    const payload = {
+      pin,
+      amount: amt,
+      currency: currency.toUpperCase(),
+      method: m,
+      country: selMethod.country ?? "INTL",
+    };
+
+    if (m === "bank_transfer" && !selMethod.isInternational) {
+      Object.assign(payload, {
+        bankCode: form.bankCode,
+        bankName: form.bankName,
+        accountNumber: form.accountNumber,
+        accountName: verifiedName ?? form.accountName,
+      });
+    } else if (m === "bank_transfer" && selMethod.isInternational) {
+      Object.assign(payload, {
+        bankCode: form.swiftBic,
+        bankName: form.bankName,
+        accountNumber: form.accountNumber,
+        accountName: form.accountName,
+        swiftBic: form.swiftBic,
+        routingNumber: form.routingNumber ?? "",
+      });
+    } else if (m === "mobile_money") {
+      Object.assign(payload, {
+        mobileNumber: form.mobileNumber,
+        mobileName: form.mobileName ?? "",
+        mobileProvider: selMethod.provider ?? form.mobileProvider ?? "",
+      });
+    } else if (m === "crypto") {
+      Object.assign(payload, {
+        cryptoAddress: form.cryptoAddress,
+        cryptoCurrency: form.cryptoToken ?? "USDT",
+        cryptoNetwork: form.cryptoNetwork ?? "BSC",
+      });
+    }
+
+    setWithdrawalData(payload);
     setShowConfirm(true);
-  };
+  }
 
-  const handleConfirmWithdrawal = (pin) => {
+  const handleConfirmWithdrawal = (confirmedPin) => {
     if (!withdrawalData) return;
-    onWithdraw({ ...withdrawalData, pin });
+    onWithdraw({ ...withdrawalData, pin: confirmedPin });
     setShowConfirm(false);
-    onClose();
-  };
-
-  const handleClose = () => {
-    setShowConfirm(false);
-    setWithdrawalData(null);
     onClose();
   };
 
@@ -783,16 +1261,9 @@ function WithdrawModal({
 
   const symbol = getCurrencySymbol(currency);
 
-  // ✅ Currency-aware note for the withdrawal form
-  const previewFee = getWalletWithdrawalFee(amount || 0, currency);
-  const isNgn = (currency || "NGN").toUpperCase() === "NGN";
-  const feeNote = isNgn
-    ? `Fee: 1% (max ${symbol}100)`
-    : `Fee: ${previewFee.feePercent}% of amount`;
-
   return (
     <>
-      <div className={styles.modalOverlay} onClick={handleClose}>
+      <div className={styles.modalOverlay} onClick={onClose}>
         <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
           <div className={styles.modalHeader}>
             <h3 className={styles.modalTitle}>
@@ -800,111 +1271,386 @@ function WithdrawModal({
             </h3>
             <button
               className={styles.modalClose}
-              onClick={handleClose}
+              onClick={onClose}
               type="button"
             >
               <FaTimes />
             </button>
           </div>
           <div className={styles.modalBody}>
-            <p className={styles.modalSubtext}>
-              Withdraw funds from your {currency} wallet
-            </p>
-            <div className={styles.balanceDisplay}>
-              Available Balance: {formatCurrency(balance, currency)}
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleWithdraw();
-              }}
-            >
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Amount ({currency})</label>
-                <div className={styles.amountInputGroup}>
-                  <span className={styles.currencySymbol}>{symbol}</span>
-                  <input
-                    type="number"
-                    className={styles.amountInput}
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="100"
-                    step="100"
-                    required
-                  />
+            <div className={styles.formSection}>
+              <p className={styles.formSectionLabel}>
+                Withdraw from {currency} Wallet
+              </p>
+              <div className={styles.selectedCurrencyBar}>
+                <div className={styles.selectedCurrencyLeft}>
+                  <span className={styles.selectedCurrencyFlag}>{symbol}</span>
+                  <div>
+                    <span className={styles.selectedCurrencyName}>
+                      {currency} Wallet
+                    </span>
+                    <span className={styles.selectedCurrencyCode}>
+                      {currency}
+                    </span>
+                  </div>
                 </div>
-                <p className={styles.feeNote}>{feeNote}</p>
+                <div className={styles.selectedCurrencyBalance}>
+                  <span className={styles.selectedCurrencyBalLabel}>
+                    Available
+                  </span>
+                  <span className={styles.selectedCurrencyBalAmt}>
+                    {formatCurrency(balance, currency)}
+                  </span>
+                </div>
               </div>
+            </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Bank Name</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="e.g. GTBank"
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  required
-                />
+            <div className={styles.formSection} style={{ marginTop: "16px" }}>
+              <p className={styles.formSectionLabel}>Payout Method</p>
+              <div className={styles.methodGrid}>
+                {methods.map((m) => {
+                  const IconComp = m.Icon;
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className={`${styles.methodCard} ${selMethod?.key === m.key ? styles.methodCardActive : ""}`}
+                      onClick={() => {
+                        setSelMethod(m);
+                        setForm({});
+                        setVerifiedName(null);
+                      }}
+                    >
+                      <span className={styles.methodCardIcon}>
+                        <IconComp size={22} />
+                      </span>
+                      <span className={styles.methodCardLabel}>{m.label}</span>
+                      <span className={styles.methodCardDesc}>{m.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Account Number</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="Enter 10-digit account number"
-                  value={accountNumber}
-                  onChange={(e) =>
-                    setAccountNumber(e.target.value.replace(/\D/g, ""))
-                  }
-                  maxLength="10"
-                  required
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Account Name</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="Enter account holder name"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Bank Code (Optional)</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  placeholder="Enter bank code"
-                  value={bankCode}
-                  onChange={(e) => setBankCode(e.target.value)}
-                />
-              </div>
+            </div>
 
-              <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  className={styles.modalCancel}
-                  onClick={handleClose}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className={`${styles.modalConfirm} ${styles.withdrawBtn}`}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <FaSpinner className={styles.spinning} />
-                  ) : (
-                    "Review Withdrawal"
+            {selMethod && (
+              <div className={styles.formSection} style={{ marginTop: "16px" }}>
+                <p className={styles.formSectionLabel}>Payout Details</p>
+
+                {selMethod.method === "bank_transfer" &&
+                  !selMethod.isInternational && (
+                    <div className={styles.fieldsStack}>
+                      <div className={styles.formField}>
+                        <label className={styles.formLabel}>
+                          Bank / Fintech *
+                        </label>
+                        <BankDropdown
+                          banks={banks}
+                          loading={banksLoading}
+                          value={form.bankCode}
+                          onChange={(b) => {
+                            setF("bankCode", b.code);
+                            setF("bankName", b.name);
+                          }}
+                          placeholder="Select bank, Kuda, OPay…"
+                        />
+                      </div>
+                      <div className={styles.formField}>
+                        <label className={styles.formLabel}>
+                          Account Number *
+                        </label>
+                        <input
+                          className={styles.formInput}
+                          placeholder="0123456789"
+                          value={form.accountNumber ?? ""}
+                          onChange={(e) =>
+                            setF("accountNumber", e.target.value)
+                          }
+                          maxLength={12}
+                          required
+                        />
+                      </div>
+                      <div className={styles.verifyRow}>
+                        <div className={styles.verifyStatus}>
+                          {verifiedName ? (
+                            <div className={styles.verifiedTag}>
+                              <FaCheckCircle size={13} />
+                              <span>{verifiedName}</span>
+                            </div>
+                          ) : verifyErr ? (
+                            <div className={styles.verifyErrTag}>
+                              <FaExclamationTriangle size={13} />
+                              <span>{verifyErr}</span>
+                            </div>
+                          ) : (
+                            <span className={styles.verifyHint}>
+                              Verify to confirm account holder name
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.verifyBtn}
+                          onClick={verifyAccount}
+                          disabled={
+                            verifying || !form.accountNumber || !form.bankCode
+                          }
+                        >
+                          {verifying ? (
+                            <span className={styles.spinnerSm} />
+                          ) : (
+                            "Verify"
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </button>
+
+                {selMethod.method === "bank_transfer" &&
+                  selMethod.isInternational && (
+                    <div className={styles.fieldsGrid}>
+                      {[
+                        {
+                          key: "bankName",
+                          label: "Bank Name *",
+                          placeholder: "e.g. Bank of America",
+                        },
+                        {
+                          key: "accountNumber",
+                          label: "Account / IBAN *",
+                          placeholder: "IBAN or account number",
+                        },
+                        {
+                          key: "swiftBic",
+                          label: "SWIFT / BIC *",
+                          placeholder: "e.g. BOFAUS3N",
+                        },
+                        {
+                          key: "routingNumber",
+                          label: "Routing (US/CA)",
+                          placeholder: "9-digit routing",
+                        },
+                        {
+                          key: "accountName",
+                          label: "Account Holder Name *",
+                          placeholder: "Full name on account",
+                        },
+                        {
+                          key: "bankCountry",
+                          label: "Bank Country *",
+                          placeholder: "e.g. United States",
+                        },
+                      ].map(({ key, label, placeholder }) => (
+                        <div key={key} className={styles.formField}>
+                          <label className={styles.formLabel}>{label}</label>
+                          <input
+                            className={styles.formInput}
+                            placeholder={placeholder}
+                            value={form[key] ?? ""}
+                            onChange={(e) => setF(key, e.target.value)}
+                            required={label.includes("*")}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                {selMethod.method === "mobile_money" && (
+                  <div className={styles.fieldsStack}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>
+                        Mobile Number *
+                      </label>
+                      <input
+                        className={styles.formInput}
+                        placeholder="+234 800 000 0000"
+                        value={form.mobileNumber ?? ""}
+                        onChange={(e) => setF("mobileNumber", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>
+                        Account Name (optional)
+                      </label>
+                      <input
+                        className={styles.formInput}
+                        placeholder="Name on mobile account"
+                        value={form.mobileName ?? ""}
+                        onChange={(e) => setF("mobileName", e.target.value)}
+                      />
+                    </div>
+                    {selMethod.provider && (
+                      <div className={styles.providerChip}>
+                        <FiSmartphone size={13} />
+                        <span>
+                          Provider: <strong>{selMethod.provider}</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selMethod.method === "crypto" && (
+                  <div className={styles.fieldsStack}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Token *</label>
+                      <div className={styles.tokenGrid}>
+                        {CRYPTO_TOKENS.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            className={`${styles.tokenBtn} ${form.cryptoToken === t ? styles.tokenBtnActive : ""}`}
+                            onClick={() => setF("cryptoToken", t)}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Network *</label>
+                      <div className={styles.networkGrid}>
+                        {CRYPTO_NETWORKS.map((n) => (
+                          <button
+                            key={n.value}
+                            type="button"
+                            className={`${styles.networkBtn} ${form.cryptoNetwork === n.value ? styles.networkBtnActive : ""}`}
+                            onClick={() => setF("cryptoNetwork", n.value)}
+                          >
+                            {n.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>
+                        Wallet Address *
+                      </label>
+                      <input
+                        className={`${styles.formInput} ${styles.monoInput}`}
+                        placeholder="0x… or TRC20 address"
+                        value={form.cryptoAddress ?? ""}
+                        onChange={(e) => setF("cryptoAddress", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={styles.cryptoWarning}>
+                      <FaExclamationTriangle size={14} />
+                      <p>
+                        Double-check the network matches your wallet. Sending to
+                        the wrong network will result in permanent loss of
+                        funds.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-            </form>
+            )}
+
+            <div className={styles.formSection} style={{ marginTop: "16px" }}>
+              <p className={styles.formSectionLabel}>Amount ({currency})</p>
+              <div className={styles.amountWrap}>
+                <span className={styles.amountCurrency}>{symbol}</span>
+                <input
+                  className={styles.amountInput}
+                  type="number"
+                  placeholder="0.00"
+                  min="1"
+                  step="0.01"
+                  max={balance}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <div className={styles.quickAmounts}>
+                {[0.25, 0.5, 0.75, 1].map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    className={styles.quickBtn}
+                    onClick={() => setAmount((balance * f).toFixed(2))}
+                  >
+                    {f === 1 ? "Max" : `${f * 100}%`}
+                  </button>
+                ))}
+              </div>
+              {amount &&
+                parseFloat(amount) > 0 &&
+                (() => {
+                  const { fee, netAmount, feePercent } = getWalletWithdrawalFee(
+                    amount,
+                    currency,
+                  );
+                  return (
+                    <div className={styles.amountPreview}>
+                      You receive approx.{" "}
+                      <strong>{formatCurrency(netAmount, currency)}</strong>{" "}
+                      after {feePercent}% fee
+                    </div>
+                  );
+                })()}
+            </div>
+
+            <div className={styles.formSection} style={{ marginTop: "16px" }}>
+              <p className={styles.formSectionLabel}>
+                Withdrawal PIN
+                {pinStatus && !pinStatus.isLocked && (
+                  <span className={styles.pinAttemptsHint}>
+                    {pinStatus.attemptsRemaining} attempt
+                    {pinStatus.attemptsRemaining !== 1 ? "s" : ""} remaining
+                  </span>
+                )}
+              </p>
+              <PinInput
+                value={pin}
+                onChange={(v) => {
+                  setPin(v);
+                  if (pinError) setPinError("");
+                }}
+                disabled={loading}
+                error={pinError}
+              />
+            </div>
+
+            {error && (
+              <div className={styles.errorBox} style={{ marginTop: "16px" }}>
+                <FaExclamationTriangle size={14} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className={styles.formInfo} style={{ marginTop: "16px" }}>
+              <FaInfo size={14} />
+              <p>
+                Payouts processed within 1–3 business days ·{" "}
+                {getWalletWithdrawalFee(1, currency).feePercent}% withdrawal fee
+                applies · Crypto is USDC/USDT equivalent · Minimum: 1 {currency}
+              </p>
+            </div>
+
+            <div className={styles.modalActions} style={{ marginTop: "16px" }}>
+              <button
+                type="button"
+                className={styles.modalCancel}
+                onClick={onClose}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`${styles.modalConfirm} ${styles.withdrawBtn}`}
+                onClick={handleReview}
+                disabled={loading || !amount || !selMethod || pin.length < 4}
+              >
+                {loading ? (
+                  <FaSpinner className={styles.spinning} />
+                ) : (
+                  "Review Withdrawal"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1599,7 +2345,7 @@ export default function HirerWallet() {
           currencies={currencies}
         />
 
-        <WithdrawModal
+        <WorkerStyleWithdrawModal
           isOpen={showWithdrawModal}
           onClose={() => setShowWithdrawModal(false)}
           onWithdraw={handleWithdraw}
