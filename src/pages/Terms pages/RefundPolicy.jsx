@@ -20,7 +20,7 @@ const sections = [
   },
   {
     title: "5. Non-Refundable Charges",
-    content: `The following are non-refundable: the SkilledProz platform service fee (2% for NGN bookings, 5% for bookings in other currencies), because this fee covers payment processing and escrow custody that have already been incurred. Wallet top-up amounts are refundable only in cases of unauthorized transactions or platform error. Payment provider fees charged by Paystack or Flutterwave are handled per their own policies.`,
+    content: `The following are non-refundable: the SkilledProz platform service fee (3% for NGN bookings, 6% for bookings in other currencies), because this fee covers payment processing and escrow custody that have already been incurred. Wallet top-up amounts are refundable only in cases of unauthorized transactions or platform error. Payment provider fees charged by Paystack or Flutterwave are handled per their own policies.`,
   },
   {
     title: "6. How to Request a Refund",
