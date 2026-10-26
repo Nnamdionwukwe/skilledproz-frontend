@@ -1,0 +1,408 @@
+================================================================================
+  SKILLEDPROZ - FRONTEND AUDIT v3
+  10/26/2026, 11:32:05 AM
+  Root: /Users/onwukwennamdi/Desktop/skilledproz-frontend
+================================================================================
+
+--------------------------------------------------------------------------------
+  §1  PROJECT INVENTORY
+--------------------------------------------------------------------------------
+  Pages       : 110
+  Components  : 135
+  Stores      : 4
+  Hooks       : 10
+  Contexts    : 5
+  API/lib     : 13
+  CSS modules : 178
+  Total JS    : 277
+  Total lines : 124983
+
+  Largest files:
+      2612  src/components/settimg/SettingsPage.jsx
+      2113  src/pages/admin/AdminVerifications.jsx
+      2110  src/pages/worker/dashboard/earnings/WorkerWithdrawals.jsx
+      1794  src/components/hirer/PostJob.jsx
+      1768  src/components/hirer/JobDetail.jsx
+      1727  src/pages/referral/CampaignDashboard.jsx
+      1704  src/pages/admin/AdminWallet.jsx
+      1659  src/components/hirer/EditJob.jsx
+      1644  src/pages/admin/AdminCampaign.jsx
+      1623  src/components/hirer/HirerWallet.jsx
+      1502  src/components/booking/BookingDetail/BookingDetailMain.jsx
+      1499  src/pages/admin/AdminManualPayments.jsx
+      1474  src/App.jsx
+      1466  src/pages/admin/AdminPlatformJobs.jsx.jsx
+      1463  src/components/messages/Messages.jsx
+
+--------------------------------------------------------------------------------
+  §2  BROKEN RELATIVE IMPORTS
+--------------------------------------------------------------------------------
+  2 broken import(s):
+    X src/pages/worker/dashboard/earnings/WithdrawalPinSection.jsx -> ../../components/WithdrawalPinSection
+    X src/pages/worker/dashboard/earnings/WithdrawalPinSection.jsx -> ../lib/api
+
+--------------------------------------------------------------------------------
+  §3  ROUTES vs NAVIGATION TARGETS
+--------------------------------------------------------------------------------
+  Declared routes    : 159
+  navigate() targets : 46
+  <Link> targets     : 50
+  19 orphan navigation target(s):
+    ? /book/${user.id}
+    ? /bookings/${b.id}
+    ? /bookings/${booking.id}/pay
+    ? /bookings/${bookingId}
+    ? /bookings/${bookingId}/pay?method=${provider}
+    ? /bookings/${res.data.data.booking.id}
+    ? /call/${bookingId}
+    ? /call/${incoming.bookingId}
+    ? /dashboard/hirer/retained-staff/${booking.retainedCycle.memberId}/cycles/${booking.retainedCycle.id}?payment=success
+    ? /dashboard/hirer/retained-staff/${id}/cycles/${cycle.id}
+    ? /dashboard/hirer/retained-staff/${member.id}
+    ? /dashboard/hirer/retained-staff/${member.id}/cycles/${paidCycleId}?payment=success
+    ? /dashboard/hirer/retained-staff/${res.data.data.member.id}
+    ? /dashboard/worker/refunds/${refund.id}
+    ? /jobs/${job.id}
+    ? /jobs/${jobId}
+    ? /messages/call/${activeConvoId}
+    ? /messages/call/${incoming.conversationId}
+    ? /refunds/${activeRefund.id}
+
+--------------------------------------------------------------------------------
+  §4  API CALL INVENTORY
+--------------------------------------------------------------------------------
+  Total API calls        : 398
+  Unique endpoints called: 331
+
+  183 call(s) with unresolved template vars:
+    ! PATCH /bookings/${id}/status
+    ! PATCH /bookings/${booking.id}/sos/resolve
+    ! GET /voice-calls/${conversationId}
+    ! PATCH /voice-calls/${conversationId}/end
+    ! PATCH /bookings/${bookingId}/emergency-contact
+    ! GET /refunds/${id}
+    ! GET /refunds/my?${params.toString(
+    ! POST /bookings/${bookingId}/sos
+    ! GET /video-calls/${bookingId}
+    ! POST /video-calls/${bookingId}/initiate
+    ! PATCH /video-calls/${bookingId}/accept
+    ! PATCH /video-calls/${bookingId}/decline
+    ! PATCH /video-calls/${bookingId}/end
+    ! PATCH /disputes/${cancelBookingId}/cancel
+    ! POST /bookings/from-job/${jobPostId}
+    ! PUT /jobs/${jobId}
+    ! GET /notifications?${params}
+    ! PATCH /notifications/${notif.id}/read
+    ! DELETE /notifications/${pendingDeleteId}
+    ! POST /payments/release/${bookingId}
+
+--------------------------------------------------------------------------------
+  §5  CSS MODULE AUDIT (static-only)
+--------------------------------------------------------------------------------
+  src/app/LandingPage.module.css
+    UNDEFINED (5): label, value, num, title, desc
+    UNUSED    (11): footer, footerTop, footerBrandDesc, footerSocials, socialLink, footerColTitle, footerLinks, footerBottom ...
+  src/app/auth/login/AuthLayout.module.css
+    UNDEFINED (24): shell, brand, noise, grid, brandInner, logo, logoMark, logoName, taglines, tagline ...
+  src/components/Feedback/Feedback.module.css
+    UNDEFINED (83): form, toast, statCard, statCardIcon, statCardValue, statCardLabel, statCardSubtitle, statusBadge, typeBadge, ratingNumber ...
+  src/components/WaitlistSection/WaitlistSection.module.css
+    UNDEFINED (1): socialBtnText
+    UNUSED    (9): socialBtnMarquee, socialBtnMarqueeInner, socialBtnLabel, socialBtnCommunity, socialBtnCommunityIcons, socialBtnCommunityAvatars, socialBtnCommunityMore, socialBtnCommunityCount ...
+  src/components/auth/CategorySuggest.module.css
+    UNDEFINED (1): id
+  src/components/auth/GoogleSignInButton.module.css
+    UNDEFINED (69): container, header, eyebrow, title, subtitle, link, alertError, btn, btnOutline, form ...
+  src/components/auth/form.module.css
+    UNDEFINED (1): fieldError
+  src/components/booking/BookingDetail/BookingDetail.module.css
+    UNDEFINED (6): timelineLineActive, description, toast, toastIcon, toastMessage, toastClose
+    UNUSED    (45): alert_error, alert_success, badge_yellow, badge_orange, badge_indigo, badge_green, badge_red, badge_rose ...
+  src/components/booking/BookingList.module.css
+    UNDEFINED (1): toLowerCase
+    UNUSED    (17): accent_yellow, accent_orange, accent_indigo, accent_green, accent_red, accent_rose, badge_yellow, badge_orange ...
+  src/components/booking/CreateBooking/CreateBooking.module.css
+    UNDEFINED (8): typeListDisabled, typeListLock, lockedHint, iconInline, verifiedIcon, customEngagement, customLabelDisplay, feeTotal
+  src/components/booking/EmergencyContact.module.css
+    UNDEFINED (1): spinner
+  src/components/booking/Refund/Refund.module.css
+    UNDEFINED (53): refundCard, refundHeader, refundIcon, refundTitle, refundMessage, refundMeta, refundTimer, refundInfo, refundInfoRow, refundInfoLabel ...
+  src/components/booking/VideoCallButton.module.css
+    UNUSED    (12): callRoom, callRoomHeader, callLive, callTitle, endCallBtn, callIframeWrap, callIframe, callHint ...
+  src/components/common/Skeleton.module.css
+    UNDEFINED (19): card, header, avatar, authorInfo, nameLine, titleLine, timeLine, deleteBtn, content, textLine ...
+  src/components/common/Translator.module.css
+    UNUSED    (6): inline, inlineControls, inlineLangSelect, inlineBtn, inlineResult, inlineLang
+  src/components/context/ConfirmationModal.module.css
+    UNDEFINED (7): modalOverlay, modalBox, modalTitle, modalMessage, modalActions, modalCancelBtn, modalConfirmBtn
+  src/components/disputes/Disputes.module.css
+    UNDEFINED (66): cls, toast, statCard, statIcon, statValue, statLabel, partyCard, partyCardHirer, partyCardWorker, partyLabel ...
+    UNUSED    (14): icon_open, icon_under_review, icon_resolved, icon_cancelled, statusOpen, statusReview, statusResolved, statusCancelled ...
+  src/components/hirer/CreateBookingFromJob.module.css
+    UNDEFINED (1): resetBtn
+  src/components/hirer/HirerDashboard.module.css
+    UNUSED    (9): statCard_orange, statCard_green, badge_pending, badge_accepted, badge_inprogress, badge_completed, badge_cancelled, badge_disputed ...
+  src/components/hirer/HirerJobs.module.css
+    UNDEFINED (1): quoteIcon
+    UNUSED    (42): pageHeader, badge, title, sub, newBtn, filterTabs, filterTab, filterTabActive ...
+  src/components/hirer/HirerNotifications.module.css
+    UNDEFINED (1): toUpperCase
+  src/components/hirer/HirerPaymentHistory.module.css
+    UNUSED    (6): escrow, released, pending, refunded, failed, receiptDate
+  src/components/hirer/HirerWallet.module.css
+    UNUSED    (49): loadingContainer, spinnerLarge, accent_green, accent_orange, transactionsList, transactionRow, transactionIcon, depositIcon ...
+  src/components/hirer/InsuranceAddon.module.css
+    UNUSED    (8): successState, successIcon, successTitle, successPlan, receiptBox, receiptRow, receiptRef, successNote
+  src/components/hirer/JobDetail.module.css
+    UNDEFINED (40): backdrop, modal, modalHeader, modalTitle, modalClose, modalBody, disclaimerText, contactCopyRow, contactLabel, contactValue ...
+    UNUSED    (8): alert_error, alert_success, status_green, status_indigo, status_red, sk, hirerMeta, hirerWebsite
+  src/components/hirer/hirerjobs/HirerJobBoardManagement.module.css
+    UNUSED    (12): alert_error, alert_success, pill_green, pill_indigo, pill_red, pill_dim, accent_green, accent_indigo ...
+  src/components/layout/WorkerLayout.module.css
+    UNUSED    (8): navGroupOpen, navGroupLabelActive, navGroupChevron, navGroupChevronOpen, navGroupItems, modalConfirm_danger, modalConfirm_primary, modalConfirm_warning
+  src/components/messages/Messages.module.css
+    UNDEFINED (124): copyPill, copyPillLight, copyPillText, copyPillBtn, lightbox, lightboxImgWrap, lightboxImg, msgImgSingle, msgImgFull, msgImgOverlay ...
+  src/components/payment/CryptoRateConverter.module.css
+    UNDEFINED (1): lastUpdated
+  src/components/payment/Payment.module.css
+    UNDEFINED (1): summaryIcon
+    UNUSED    (10): stripeForm, stripeElementWrap, stripeSummary, cryptoTokens, tokenBtn, tokenBtnActive, tokenBtnIcon, tokenBtnNetwork ...
+  src/components/payment/PaymentOptions.module.css
+    UNUSED    (16): summaryNote, tabs, tab, tabActive, cryptoGrid, cryptoChip, cryptoChipActive, cryptoChipIcon ...
+  src/components/review/Review.module.css
+    UNUSED    (31): dashPage, successStar, summaryBlock, ratingHero, ratingBig, ratingCount, ratingBars, ratingBarRow ...
+  src/components/review/Reviews.module.css
+    UNDEFINED (34): stars, badge, title, sub, switchBtn, givenStats, givenStatItem, givenStatValue, givenStatLabel, skeleton ...
+  src/components/search/VoiceSearch.module.css
+    UNDEFINED (1): icon
+  src/components/settimg/SettingsPage.module.css
+    UNDEFINED (2): eligibilityLoading, spinnerDark
+    UNUSED    (8): toast_success, toast_error, dangerBlock, dangerTitle, dangerDesc, dangerBtn, dangerBody, dangerInput
+  src/components/support/TicketThread.module.css
+    UNDEFINED (1): error
+  src/components/survey/SurveyPage.module.css
+    UNDEFINED (1): form
+  src/components/ui/ConfirmationModal.module.css
+    UNDEFINED (7): overlay, modal, title, message, actions, cancelBtn, confirmBtn
+  src/components/ui/CountdownTimer/CountdownTimer.module.css
+    UNDEFINED (7): sm, md, lg, light, dark, orange, surveyBtn
+  src/components/ui/ui.module.css
+    UNDEFINED (39): page, statsRow, earningsCard, earningsLabel, earningsValue, earningsMeta, earningsPending, pendingLabel, pendingValue, pendingSub ...
+    UNUSED    (47): card, cardHeader, cardTitle, cardLink, statCard, statCardLabel, statCardValue, statCardSub ...
+  src/components/user/EditProfile.module.css
+    UNUSED    (29): wrap, header, backBtn, eyebrow, title, alertError, alertSuccess, form ...
+  src/components/user/UserProfile.module.css
+    UNDEFINED (1): websiteLink
+    UNUSED    (21): loadingWrap, avatarOwn, onlineDot, infoIcon, editPage, editHeader, editTitle, editForm ...
+  src/components/worker/WorkerPublicProfile.module.css
+    UNUSED    (12): verifiedDot, onlineDot, sk, lightboxBox, lightboxClose, lightboxInfo, lightboxCert, lightboxCertIcon ...
+  src/index.css
+    UNDEFINED (1): isHydrated
+  src/pages/Blog/BlogPage.module.css
+    UNDEFINED (1): blogHeaderContent
+  src/pages/Terms pages/About.module.css
+    UNDEFINED (2): value, label
+  src/pages/Terms pages/Contact.module.css
+    UNDEFINED (13): card, cardHeader, cardIcon, cardTitle, editBtn, contactRow, contactLabel, contactValue, contactPhone, cancelBtn ...
+  src/pages/Terms pages/Legal.module.css
+    UNDEFINED (1): content
+  src/pages/admin/Admin.module.css
+    UNDEFINED (1): dimText
+    UNUSED    (94): liveTag, primaryBtn, btnGreen, iconBtn, iconBtnRed, alert, alertText, alert_error ...
+  src/pages/admin/AdminAnalytics.module.css
+    UNDEFINED (14): funnelDropoffWarn, eventName, label, id, name, key, memberCount, description, startedAt, durationMs ...
+  src/pages/admin/AdminAuditLog.module.css
+    UNUSED    (9): accent_orange, accent_green, accent_red, accent_yellow, badge_green, badge_red, badge_yellow, badge_blue ...
+  src/pages/admin/AdminBookings.module.css
+    UNUSED    (10): chipAccent_orange, chipAccent_green, chipAccent_red, badge_yellow, badge_blue, badge_orange, badge_green, badge_red ...
+  src/pages/admin/AdminBroadcast.module.css
+    UNDEFINED (1): trim
+  src/pages/admin/AdminCampaign.module.css
+    UNDEFINED (4): accent, Icon, val, label
+    UNUSED    (23): accent_orange, accent_green, accent_yellow, accent_blue, accent_red, accent_indigo, subCard_PENDING, subCard_APPROVED ...
+  src/pages/admin/AdminContacts.module.css
+    UNDEFINED (1): tableBody
+  src/pages/admin/AdminDashboard.module.css
+    UNDEFINED (2): cls, label
+    UNUSED    (16): alertBanner, alertRed, alertAmber, alertGreen, alertArrow, accent_orange, accent_green, accent_amber ...
+  src/pages/admin/AdminDisputes.module.css
+    UNUSED    (12): toast_success, toast_error, toast_warn, accent_red, payStatus_HELD, payStatus_RELEASED, payStatus_REFUNDED, payStatus_FAILED ...
+  src/pages/admin/AdminExternalJobs.module.css
+    UNUSED    (16): toast_success, toast_error, accent_orange, accent_green, accent_indigo, accent_yellow, accent_blue, statSub ...
+  src/pages/admin/AdminFeatured.module.css
+    UNUSED    (24): toast_success, toast_error, accent_orange, accent_green, accent_yellow, accent_red, type_orange, type_indigo ...
+  src/pages/admin/AdminFeedback.module.css
+    UNDEFINED (5): detailContact, detailTags, detailUrl, detailNotes, cardTitle
+  src/pages/admin/AdminJobPost.module.css
+    UNDEFINED (7): toastMsg, toastIcon, trim, errorIcon, helperText, loadingCategories, categoryChipIcon
+  src/pages/admin/AdminLogs.module.css
+    UNUSED    (10): badge_red, badge_yellow, badge_green, badge_blue, badge_dim, hero_red, hero_yellow, hero_green ...
+  src/pages/admin/AdminManualPayments.module.css
+    UNDEFINED (8): copyPillMono, checkItemDone, payCardCrypto, Icon, label, accent, value, sub
+    UNUSED    (6): toast_success, toast_error, accent_yellow, accent_indigo, accent_orange, accent_red
+  src/pages/admin/AdminMessages.module.css
+    UNUSED    (8): accent_orange, accent_indigo, accent_green, accent_yellow, role_orange, role_indigo, role_red, role_dim
+  src/pages/admin/AdminPayments.module.css
+    UNDEFINED (3): descBox, descLabel, gmv
+    UNUSED    (15): toast_success, toast_warn, toast_error, accent_orange, accent_green, accent_amber, badge_yellow, badge_orange ...
+  src/pages/admin/AdminPlatformJobs.module.css
+    UNUSED    (22): toast_success, toast_error, accent_orange, accent_green, accent_indigo, accent_yellow, badge_green, badge_indigo ...
+  src/pages/admin/AdminPosts.module.css
+    UNDEFINED (2): dimText, mono
+    UNUSED    (16): toast_success, toast_error, accent_orange, accent_gold, accent_indigo, accent_green, type_dim, type_orange ...
+  src/pages/admin/AdminPromoCodes.module.css
+    UNUSED    (7): alert_success, alert_error, status_green, status_yellow, status_red, status_dim, loadingRow
+  src/pages/admin/AdminRefunds.module.css
+    UNUSED    (15): toast_success, toast_error, toast_warn, accent_amber, accent_green, accent_red, status_pending, status_approved ...
+  src/pages/admin/AdminReports.module.css
+    UNUSED    (22): accent_yellow, accent_blue, accent_green, accent_red, accent_orange, accent_dim, badge_yellow, badge_blue ...
+  src/pages/admin/AdminRetainedStaff.module.css
+    UNDEFINED (8): id, worker, hirer, jobTitle, department, currency, payRate, payFrequency
+  src/pages/admin/AdminSubscriptions.module.css
+    UNDEFINED (3): status, tier, price
+    UNUSED    (22): toast_success, toast_error, accent_orange, accent_green, accent_indigo, accent_gold, breakdownCard_dim, breakdownCard_indigo ...
+  src/pages/admin/AdminSupport.module.css
+    UNDEFINED (1): ticketActions
+    UNUSED    (7): skeletonItem, skeletonAvatar, skeletonInfo, skeletonTitle, toast_success, toast_error, toast_warning
+  src/pages/admin/AdminSurveys.module.css
+    UNUSED    (12): toast_success, toast_error, toast_warn, chipAccent_orange, chipAccent_green, chipAccent_blue, chipAccent_gray, pending ...
+  src/pages/admin/AdminUsers.module.css
+    UNDEFINED (5): cls, icon, label, key, dot
+    UNUSED    (15): toast_success, toast_warn, toast_error, role_worker, role_hirer, role_admin, mbStatus_COMPLETED, mbStatus_PENDING ...
+  src/pages/admin/AdminVerifications.module.css
+    UNDEFINED (5): cls, icon, label, key, count
+    UNUSED    (19): toast_success, toast_warn, toast_error, accent_amber, accent_green, accent_red, accent_orange, accent_indigo ...
+  src/pages/admin/AdminVideoCalls.module.css
+    UNDEFINED (3): timelineDone, timelineNeg, tdDuration
+    UNUSED    (16): accent_orange, accent_green, accent_indigo, accent_yellow, statusChip_green, statusChip_indigo, statusChip_red, statusChip_orange ...
+  src/pages/admin/AdminWaitlist.module.css
+    UNDEFINED (2): input, textarea
+    UNUSED    (23): toast_success, toast_error, toast_warn, chipAccent_orange, chipAccent_green, chipAccent_purple, chipAccent_gray, cardStats ...
+  src/pages/admin/AdminWallet.module.css
+    UNDEFINED (2): transactionsSection, withdrawalsSection
+    UNUSED    (15): toast_success, toast_error, toast_warn, chipAccent_green, chipAccent_orange, statusBadge_pending, statusBadge_processing, statusBadge_completed ...
+  src/pages/admin/AdminWithdrawals.module.css
+    UNUSED    (15): toast_success, toast_error, accent_yellow, accent_indigo, accent_orange, accent_green, badge_yellow, badge_indigo ...
+  src/pages/auth/WorkerRegister.module.css
+    UNDEFINED (4): Icon, id, stepActive, stepDone
+  src/pages/hirer/retained-staff/AddStaffModal.module.css
+    UNDEFINED (2): fieldHint, rateChangeBox
+  src/pages/hirer/retained-staff/HirerCycleDetail.module.css
+    UNUSED    (8): status_green, status_orange, status_yellow, status_red, cryptoPicker, cryptoButtons, cryptoBtn, cryptoBtnActive
+  src/pages/hirer/retained-staff/HirerRetainedStaff.module.css
+    UNDEFINED (2): twoCol, summaryActions
+    UNUSED    (11): headerLeft, statusACTIVE, statusPAUSED, statusENDED, statusTERMINATED, released, awaiting_payment, held ...
+  src/pages/referral/CampaignDashboard.module.css
+    UNDEFINED (7): icon, accent, val, label, step, text, id
+    UNUSED    (17): toast_success, toast_error, accent_green, accent_orange, taskDots, taskDotDone, socialProofInput, submissionCard_APPROVED ...
+  src/pages/referral/ReferralDashboard.module.css
+    UNDEFINED (7): icon, color, bg, border, accent, val, label
+    UNUSED    (12): toast_success, toast_error, accent_green, accent_orange, badge_yellow, badge_indigo, badge_blue, badge_green ...
+  src/pages/reports/MyReports.module.css
+    UNUSED    (10): toast_success, toast_error, badge_yellow, badge_blue, badge_green, badge_dim, statusHero_yellow, statusHero_blue ...
+  src/pages/reports/Reports.module.css
+    UNDEFINED (207): dimText, copyPill, copyPillText, copyPillBtn, badge, avatar, avatarMd, avatarOrange, statCard, statIcon ...
+  src/pages/worker/MyJobApplications/MyJobApplications.module.css
+    UNUSED    (10): content, badge_PENDING, badge_ACCEPTED, badge_REJECTED, jobOpen, jobFilled, jobCancelled, pending ...
+  src/pages/worker/availability/Availability.module.css
+    UNDEFINED (1): map
+  src/pages/worker/categories/Categories.module.css
+    UNDEFINED (78): spinner, dimText, copyPill, copyPillText, copyPillBtn, statChip, chipIcon, chipBody, chipVal, chipLabel ...
+  src/pages/worker/dashboard/earnings/WorkerWithdrawals.module.css
+    UNUSED    (8): toast_success, toast_error, pending, processing, paid, failed, cancelled, showAllBtn
+  src/pages/worker/dashboard/notifications/Notifications.module.css
+    UNDEFINED (1): toUpperCase
+  src/pages/worker/dashboard/profile/Profile.module.css
+    UNDEFINED (293): header, eyebrow, title, successBanner, layout, identityCard, avatarWrap, avatar, avatarGlow, name ...
+    UNUSED    (29): pageHeader, pageTitle, pageSub, msg, msgSuccess, msgError, formWrap, card ...
+  src/pages/worker/dashboard/reviews/Reviews.module.css
+    UNDEFINED (78): stars, starOn, starOff, pageHeader, badge, title, sub, switchBtn, givenStats, givenStatItem ...
+    UNUSED    (18): summaryRow, ratingNumber, ratingStars, distribution, distTitle, distRow, distStar, distStarIcon ...
+  src/pages/worker/refunds/WorkerRefunds.module.css
+    UNDEFINED (2): charAt, slice
+    UNUSED    (25): red, green, status_COMPLETED, status_APPROVED, status_PROCESSING, status_PENDING, status_FAILED, status_REJECTED ...
+  src/pages/worker/retained-staff/WorkerRetainedStaff.module.css
+    UNDEFINED (3): skeletonTitle, skeletonContent, status
+    UNUSED    (12): actionsContainer, emptyIcon, errorIcon, backButton, skeletonLine, skeletonCircle, released, held ...
+  src/pages/worker/verification/BackgroundCheck.module.css
+    UNDEFINED (2): n, desc
+  src/pages/worker/verification/Verification.module.css
+    UNDEFINED (2): cls, rejectionReason
+
+  Files with issues         : 99
+  Total undefined references: 1391
+  Total unused definitions  : 1059
+
+--------------------------------------------------------------------------------
+  §6  STORE AUDIT
+--------------------------------------------------------------------------------
+  src/store/adminSupportStore.js
+    OK  every action is referenced somewhere
+  src/store/authStore.js
+    UNUSED    clearAuth
+    UNUSED    fetchMe
+    UNUSED    handleAuthError
+    UNUSED    onRehydrateStorage
+    UNUSED    partialize
+    UNUSED    setHydrated
+    UNUSED    validateHydration
+  src/store/supportStore.js
+    UNUSED    incrementUnread
+
+--------------------------------------------------------------------------------
+  §7  UNUSED COMPONENT FILES
+--------------------------------------------------------------------------------
+  8 component file(s) never imported:
+    ? src/components/AppDownload/FloatingDownloadButton.jsx
+    ? src/components/AppDownload/QRCodeDownload.jsx
+    ? src/components/UserActivityLog.jsx
+    ? src/components/booking/BookingInvoice.jsx
+    ? src/components/common/TranslateButton.jsx
+    ? src/components/hirer/HirerBookings.jsx
+    ? src/components/support/GlobalSupportBanner.jsx
+    ? src/components/video/VoiceCallButton.jsx
+
+--------------------------------------------------------------------------------
+  §8  FRONTEND ENV VARS
+--------------------------------------------------------------------------------
+  Used in code       : 3
+  Declared in example: 0
+  3 var(s) used but missing from .env.example:
+    VITE_API_URL
+    VITE_CALL_BASE_URL
+    VITE_GOOGLE_CLIENT_ID
+
+--------------------------------------------------------------------------------
+  §9  PACKAGE & DEPENDENCIES
+--------------------------------------------------------------------------------
+  Name    : skilledproz-frontend
+  Version : 0.0.0
+  Deps    : 14
+  DevDeps : 9
+
+  Scripts:
+    dev                  -> vite
+    build                -> vite build
+    lint                 -> eslint .
+    preview              -> vite preview
+    audit:admin:frontend -> node scripts/audit-admin-frontend.mjs
+    audit:admin:match    -> node scripts/audit-admin-match.mjs
+    audit:admin          -> npm run audit:admin:frontend && npm run audit:admin:match
+
+--------------------------------------------------------------------------------
+  §10  SUMMARY
+--------------------------------------------------------------------------------
+  Files analysed       : 277
+  Broken imports       : 2
+  Orphan navigation    : 19
+  Total API calls      : 398
+  Unique endpoints     : 331
+  Suspicious API calls : 183
+  CSS undefined refs   : 1391
+  CSS unused defs      : 1059
+  Unused components    : 8
+  Env vars missing     : 3
+
+================================================================================
+ Audit complete
+================================================================================

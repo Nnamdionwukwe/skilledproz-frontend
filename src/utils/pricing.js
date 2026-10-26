@@ -9,8 +9,8 @@
 //   NGN              → 2%  (covers Paystack's 1.5% + ₦100)
 //   Any other currency → 5%  (covers Flutterwave's ~4.8% international fee)
 
-export const NGN_HIRER_FEE_RATE = 0.02;
-export const FOREIGN_HIRER_FEE_RATE = 0.05;
+export const NGN_HIRER_FEE_RATE = 0.03;
+export const FOREIGN_HIRER_FEE_RATE = 0.06;
 
 // Kept for backwards compatibility with existing importers that read
 // HIRER_FEE_RATE directly. Defaults to the NGN rate.
