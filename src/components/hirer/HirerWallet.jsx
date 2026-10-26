@@ -562,7 +562,7 @@ function WithdrawalConfirmModal({
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div
-        className={`${styles.modalBox} ${styles.modalLarge}`}
+        className={`${styles.modalBox} ${styles.modalLarge} ${styles.confirmModalBox}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.modalHeader}>
@@ -573,7 +573,9 @@ function WithdrawalConfirmModal({
             <FaTimes />
           </button>
         </div>
-        <div className={styles.modalBody}>
+
+        {/* Scrollable Body */}
+        <div className={`${styles.modalBody} ${styles.confirmModalBody}`}>
           <div className={styles.confirmDisclaimer}>
             <FaExclamationTriangle className={styles.disclaimerIcon} />
             <p className={styles.disclaimerText}>
@@ -689,7 +691,10 @@ function WithdrawalConfirmModal({
               take 24-48 hours.
             </span>
           </div>
+        </div>
 
+        {/* Sticky Footer for Actions */}
+        <div className={styles.confirmModalFooter}>
           <div className={styles.modalActions}>
             <button
               type="button"
