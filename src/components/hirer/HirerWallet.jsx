@@ -2247,33 +2247,33 @@ export default function HirerWallet() {
             </div>
           )}
         </div>
-
-        <DepositModal
-          isOpen={showDepositModal}
-          onClose={() => setShowDepositModal(false)}
-          onDeposit={handleDeposit}
-          loading={submitting}
-          currencies={currencies}
-        />
-
-        <WorkerStyleWithdrawModal
-          isOpen={showWithdrawModal}
-          onClose={() => setShowWithdrawModal(false)}
-          onWithdraw={handleWithdraw}
-          loading={submitting}
-          balance={currentBalance}
-          currency={activeCurrency}
-          currencies={currencies}
-        />
-
-        <MessageModal
-          isOpen={showMessageModal}
-          onClose={() => setShowMessageModal(false)}
-          title={messageConfig.title}
-          message={messageConfig.message}
-          type={messageConfig.type}
-        />
       </div>
+
+      <DepositModal
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        onDeposit={handleDeposit}
+        loading={submitting}
+        currencies={currencies}
+      />
+
+      <WorkerStyleWithdrawModal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        onWithdraw={handleWithdraw}
+        loading={submitting}
+        balance={currentBalance}
+        currency={activeCurrency}
+        currencies={currencies}
+      />
+
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        title={messageConfig.title}
+        message={messageConfig.message}
+        type={messageConfig.type}
+      />
     </HirerLayout>
   );
 }
