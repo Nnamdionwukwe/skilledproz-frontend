@@ -6,8 +6,8 @@
 // ⚠️ Keep these constants in sync with backend/src/config/fees.js
 //
 // Two-tier fee model:
-//   NGN              → 2%  (covers Paystack's 1.5% + ₦100)
-//   Any other currency → 5%  (covers Flutterwave's ~4.8% international fee)
+//   NGN              → 3%  (covers Paystack's 1.5% + ₦100)
+//   Any other currency → 6%  (covers Flutterwave's ~4.8% international fee)
 
 export const NGN_HIRER_FEE_RATE = 0.03;
 export const FOREIGN_HIRER_FEE_RATE = 0.06;
