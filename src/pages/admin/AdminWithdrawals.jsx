@@ -567,6 +567,86 @@ function DetailModal({
                 <CopyPill text={w.destination} />
               </div>
             )}
+
+            {/* Bank transfer — surface the bank + account name so the
+                admin can verify the worker's details before approving. */}
+            {w.method === "bank_transfer" && meta.bankName && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Bank Name</span>
+                <span className={s.detailVal}>{meta.bankName}</span>
+              </div>
+            )}
+            {w.method === "bank_transfer" && meta.accountName && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Account Name</span>
+                <span className={s.detailVal}>{meta.accountName}</span>
+              </div>
+            )}
+            {w.method === "bank_transfer" && meta.accountNumber && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Account Number</span>
+                <CopyPill text={meta.accountNumber} />
+              </div>
+            )}
+            {w.method === "bank_transfer" && meta.swiftBic && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>SWIFT / BIC</span>
+                <CopyPill text={meta.swiftBic} />
+              </div>
+            )}
+            {w.method === "bank_transfer" && meta.routingNumber && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Routing Number</span>
+                <CopyPill text={meta.routingNumber} />
+              </div>
+            )}
+            {w.method === "bank_transfer" && meta.country && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Country</span>
+                <span className={s.detailVal}>{meta.country}</span>
+              </div>
+            )}
+
+            {/* Mobile money — provider + account name */}
+            {w.method === "mobile_money" && meta.mobileProvider && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Provider</span>
+                <span className={s.detailVal}>{meta.mobileProvider}</span>
+              </div>
+            )}
+            {w.method === "mobile_money" && meta.mobileName && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Account Name</span>
+                <span className={s.detailVal}>{meta.mobileName}</span>
+              </div>
+            )}
+            {w.method === "mobile_money" && meta.mobileNumber && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Mobile Number</span>
+                <CopyPill text={meta.mobileNumber} />
+              </div>
+            )}
+
+            {/* Crypto — token + network already shown in the section title
+                on the worker-side receipt; add them here for the admin. */}
+            {w.method === "crypto" && meta.cryptoCurrency && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Token</span>
+                <span className={s.detailVal}>{meta.cryptoCurrency}</span>
+              </div>
+            )}
+            {w.method === "crypto" && meta.cryptoNetwork && (
+              <div className={s.detailCell}>
+                <span className={s.detailLabel}>Network</span>
+                <span className={s.detailVal}>{meta.cryptoNetwork}</span>
+              </div>
+            )}
+            {w.method === "crypto" && meta.cryptoAddress && (
+              <div className={s.detailCell} style={{ gridColumn: "1 / -1" }}>
+                <span className={s.detailLabel}>Wallet Address</span>
+                <CopyPill text={meta.cryptoAddress} />
+              </div>
+            )}
           </div>
 
           {/* Timestamps */}
