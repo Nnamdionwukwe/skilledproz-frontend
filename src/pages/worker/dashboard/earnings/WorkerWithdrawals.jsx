@@ -400,6 +400,35 @@ function getMethodsForCurrency(currency) {
   return CURRENCY_METHODS[currency?.toUpperCase()] ?? INTL_METHODS;
 }
 
+// Human-readable payout type for the history table and receipt modal.
+// Derived from `method` (the payout rail) and `details.provider` /
+// `details.cryptoCurrency` (the specific route chosen at request time).
+function getPaymentTypeLabel(withdrawal) {
+  if (!withdrawal) return "—";
+
+  const method = withdrawal.method;
+  const provider = withdrawal.details?.provider ?? withdrawal.meta?.provider;
+
+  if (method === "crypto") {
+    const token = withdrawal.details?.cryptoCurrency ?? "Crypto";
+    const network = withdrawal.details?.cryptoNetwork;
+    return network ? `${token} (${network})` : token;
+  }
+
+  if (method === "bank_transfer") {
+    if (provider === "paystack") return "Bank Transfer · Paystack";
+    if (provider === "flutterwave") return "Bank Transfer · Flutterwave";
+    return "Bank Transfer";
+  }
+
+  if (method === "mobile_money") {
+    if (provider === "flutterwave") return "Mobile Money · Flutterwave";
+    return "Mobile Money";
+  }
+
+  return withdrawal.method?.replace(/_/g, " ") ?? "—";
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PIN INPUT — unchanged
 // ─────────────────────────────────────────────────────────────────────────────
