@@ -12,7 +12,9 @@ import {
 export default function InterviewCallRoom() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
+
   const [callUrl, setCallUrl] = useState(null);
+  const [callId, setCallId] = useState(null); // ✅ NEW
   const [jobPostId, setJobPostId] = useState(null);
   const [error, setError] = useState("");
   const [callEnded, setCallEnded] = useState(false);
@@ -25,15 +27,13 @@ export default function InterviewCallRoom() {
         const data = res.data?.data;
         if (data?.callUrl) {
           setCallUrl(data.callUrl);
-          // Assuming the backend returns jobPostId, or we can fetch it.
-          // If your backend doesn't return jobPostId here, we'll just redirect to the management page.
+          setCallId(data.callId || null); // ✅ NEW
           setJobPostId(data.jobPostId || null);
         } else {
           setError("Call has ended or does not exist.");
         }
       })
       .catch((err) => {
-        // If the call ended/declined before we even loaded, send them back
         if (err.response?.status === 404) {
           setCallEnded(true);
         } else {
@@ -56,7 +56,6 @@ export default function InterviewCallRoom() {
           clearInterval(interval);
         }
       } catch (err) {
-        // If we get a 404, it means the call was deleted or ended
         if (err.response?.status === 404) {
           setCallEnded(true);
           clearInterval(interval);
@@ -70,30 +69,60 @@ export default function InterviewCallRoom() {
   // ── 3. Handle Redirect on End ──
   useEffect(() => {
     if (callEnded) {
-      // Navigate back to the Job Applications page.
-      // If we know the jobPostId, go to the specific job's applications,
-      // otherwise go to the hirer's general jobs management dashboard.
       const redirectPath = jobPostId
         ? `/jobs/${jobPostId}/applications`
         : "/dashboard/hirer/jobs-management";
 
       setTimeout(() => {
         navigate(redirectPath);
-      }, 2000); // Give them 2 seconds to read the "Call Ended" screen
+      }, 2000);
     }
   }, [callEnded, jobPostId, navigate]);
+
+  // ── 4. End call when the user clicks Leave ──
+  async function handleLeave() {
+    if (callId) {
+      try {
+        await api.patch(`/video-calls/${callId}/end`);
+      } catch {
+        /* silent — even if end fails, the user is leaving */
+      }
+    }
+    setCallEnded(true);
+  }
 
   // ── Render States ──
 
   if (callEnded) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-slate-900 text-white">
-        <FaPhoneSlash size={48} color="#ef4444" className="mb-4" />
-        <h2 className="text-2xl font-bold">Call Ended</h2>
-        <p className="text-slate-400 mt-2">Returning to applications...</p>
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0f172a",
+          color: "#fff",
+        }}
+      >
+        <FaPhoneSlash size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Call Ended</h2>
+        <p style={{ color: "#94a3b8", marginTop: 8 }}>
+          Returning to applications...
+        </p>
         <button
           onClick={() => navigate("/dashboard/hirer/jobs-management")}
-          className="mt-6 px-6 py-2 bg-blue-600 rounded-lg text-white font-medium hover:bg-blue-700"
+          style={{
+            marginTop: 24,
+            padding: "10px 24px",
+            background: "#3b82f6",
+            color: "#fff",
+            borderRadius: 8,
+            border: "none",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
         >
           Go Back Now
         </button>
@@ -103,13 +132,32 @@ export default function InterviewCallRoom() {
 
   if (error) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-slate-900 text-white">
-        <FaVideoSlash size={48} color="#ef4444" className="mb-4" />
-        <h2 className="text-2xl font-bold">Call Unavailable</h2>
-        <p className="text-slate-400 mt-2">{error}</p>
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0f172a",
+          color: "#fff",
+        }}
+      >
+        <FaVideoSlash size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Call Unavailable</h2>
+        <p style={{ color: "#94a3b8", marginTop: 8 }}>{error}</p>
         <button
           onClick={() => navigate(-1)}
-          className="mt-6 px-6 py-2 bg-blue-600 rounded-lg text-white font-medium hover:bg-blue-700"
+          style={{
+            marginTop: 24,
+            padding: "10px 24px",
+            background: "#3b82f6",
+            color: "#fff",
+            borderRadius: 8,
+            border: "none",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
         >
           Go Back
         </button>
@@ -119,19 +167,87 @@ export default function InterviewCallRoom() {
 
   if (!callUrl) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-slate-900 text-white">
-        <FaSpinner size={32} className="mb-4 animate-spin text-blue-500" />
-        <p className="text-slate-400">Connecting to interview room...</p>
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0f172a",
+          color: "#fff",
+        }}
+      >
+        <FaSpinner
+          size={32}
+          style={{
+            marginBottom: 16,
+            animation: "spin 1s linear infinite",
+            color: "#3b82f6",
+          }}
+        />
+        <p style={{ color: "#94a3b8" }}>Connecting to interview room...</p>
       </div>
     );
   }
 
+  // ── The Video Room ──
   return (
-    <div className="h-screen w-screen overflow-hidden">
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        display: "flex",
+        flexDirection: "column",
+        background: "#0f172a",
+      }}
+    >
+      {/* Top bar with Leave button */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "12px 20px",
+          background: "#1e293b",
+          color: "#fff",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <button
+          onClick={handleLeave}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "transparent",
+            border: "none",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          <FaArrowLeft /> Leave Call
+        </button>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#94a3b8",
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+          }}
+        >
+          Interview Session
+        </span>
+      </div>
+
+      {/* MiroTalk Iframe */}
       <iframe
         src={callUrl}
         allow="camera; microphone; display-capture; fullscreen"
-        className="w-full h-full border-none"
+        style={{ flex: 1, width: "100%", border: "none" }}
         title="Interview Video Call"
       />
     </div>
