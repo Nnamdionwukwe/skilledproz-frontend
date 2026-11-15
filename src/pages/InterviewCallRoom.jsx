@@ -3,13 +3,13 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import api from "../lib/api";
-import { useAuthStore } from "../store/authStore";
 import {
   FaArrowLeft,
   FaSpinner,
   FaVideoSlash,
   FaPhoneSlash,
 } from "react-icons/fa";
+import { useAuthStore } from "../store/authStore";
 
 export default function InterviewCallRoom() {
   const { applicationId } = useParams();
