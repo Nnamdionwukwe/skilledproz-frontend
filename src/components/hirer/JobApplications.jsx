@@ -668,6 +668,7 @@ function ApplicationCard({
             </p>
           </div>
           <InterviewCallButton
+            applicationId={app.id} // ✅ Add this
             jobPostId={jobId}
             workerId={worker?.id}
             workerName={`${worker?.firstName || ""} ${worker?.lastName || ""}`.trim()}
