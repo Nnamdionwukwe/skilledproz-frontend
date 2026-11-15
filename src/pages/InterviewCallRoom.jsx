@@ -30,11 +30,9 @@ export default function InterviewCallRoom() {
 
   // ── Compute the final redirect path ──
   const getRedirectPath = () => {
-    // If we know the job post, send them to that specific job's applications page
     if (jobPostId) {
-      return `/jobs/${jobPostId}/applications`;
+      return `/jobs/${jobPostId}`;
     }
-    // Otherwise, use the role-aware fallback
     return fallbackDashboard;
   };
 
