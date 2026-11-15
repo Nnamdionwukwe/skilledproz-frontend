@@ -1,14 +1,14 @@
+// src/components/video/VideoCallButton.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import styles from "./VideoCallButton.module.css";
 import {
   FaVideo,
-  FaCheckCircle,
-  FaTimesCircle,
   FaPhoneSlash,
   FaSpinner,
   FaExclamationTriangle,
+  FaTimesCircle,
 } from "react-icons/fa";
 
 const POLL_MS = 5000;
@@ -53,7 +53,6 @@ export default function VideoCallButton({
   // ── Poll for state changes ─────────────────────────────────────────────
   useEffect(() => {
     if (!canCall) return;
-    // Don't poll if we've already navigated away — avoids a race
     if (navigatedRef.current) return;
     if (call?.status === "ENDED" || call?.status === "DECLINED") return;
 
@@ -82,35 +81,8 @@ export default function VideoCallButton({
     try {
       const res = await api.post(`/video-calls/${bookingId}/initiate`);
       setCall(res.data.data.call);
-      // If the backend started us off ACTIVE (rare), navigate immediately.
-      // Normally we wait for the receiver to accept.
     } catch (e) {
       setError(e.response?.data?.message || "Failed to start call");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleAccept() {
-    setLoading(true);
-    try {
-      const res = await api.patch(`/video-calls/${bookingId}/accept`);
-      setCall(res.data.data.call);
-      // The useEffect above detects ACTIVE and navigates to /call/:bookingId
-    } catch {
-      setError("Failed to accept call");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDecline() {
-    setLoading(true);
-    try {
-      await api.patch(`/video-calls/${bookingId}/decline`);
-      setCall((prev) => ({ ...prev, status: "DECLINED" }));
-    } catch {
-      setError("Failed to decline call");
     } finally {
       setLoading(false);
     }
@@ -130,52 +102,15 @@ export default function VideoCallButton({
 
   if (!canCall) return null;
 
-  // ── Incoming call ──────────────────────────────────────────────────────
+  // ── Incoming — handled by global <IncomingCallBanner /> ────────────────
+  // We deliberately do NOT render an inline incoming panel here. The global
+  // banner handles the ring UI, and after Accept it navigates the receiver
+  // to /call/:bookingId where this component re-mounts and sees ACTIVE.
   if (call?.status === "PENDING" && call?.receiverId === userId) {
-    return (
-      <div className={styles.incomingWrap}>
-        <div className={styles.incomingPulse} />
-        <div className={styles.incomingContent}>
-          <span className={styles.callIcon}>
-            <FaVideo size={22} />
-          </span>
-          <div>
-            <p className={styles.incomingTitle}>Incoming Video Call</p>
-            <p className={styles.incomingHint}>Pre-job consultation</p>
-          </div>
-        </div>
-        <div className={styles.incomingBtns}>
-          <button
-            className={styles.acceptBtn}
-            onClick={handleAccept}
-            disabled={loading}
-          >
-            {loading ? (
-              <FaSpinner className={styles.spinner} />
-            ) : (
-              <>
-                <FaCheckCircle style={{ marginRight: 4 }} /> Accept
-              </>
-            )}
-          </button>
-          <button
-            className={styles.declineBtn}
-            onClick={handleDecline}
-            disabled={loading}
-          >
-            <FaTimesCircle style={{ marginRight: 4 }} /> Decline
-          </button>
-        </div>
-        {error && (
-          <p className={styles.error}>
-            <FaExclamationTriangle style={{ marginRight: 6 }} /> {error}
-          </p>
-        )}
-      </div>
-    );
+    return null;
   }
 
-  // ── Waiting for answer ─────────────────────────────────────────────────
+  // ── Waiting for answer (initiator only) ────────────────────────────────
   if (call?.status === "PENDING" && call?.initiatorId === userId) {
     return (
       <div className={styles.waitingWrap}>
