@@ -1,18 +1,4 @@
 // src/components/video/IncomingCallBanner.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Global incoming-call banner.
-//
-// Mounted once at the app root (main.jsx) as a sibling of <App />.
-// Polls GET /video-calls/incoming every 5s on EVERY page.
-//
-// Re-ring behavior:
-//   - When the user Declines, the server flips the call to DECLINED.
-//   - The next poll sees no PENDING call → banner hides automatically.
-//   - When the caller initiates again, the server flips the same call back
-//     to PENDING. The next poll sees a PENDING call → banner shows again.
-//   → We don't need a "dismissed" flag. Server state is the single truth.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../lib/api";
@@ -36,6 +22,7 @@ const SUPPRESSED_PREFIXES = [
   "/verify-email",
   "/auth/google/callback",
   "/call/",
+  "/interview/", // Suppress on interview call page
 ];
 
 export default function IncomingCallBanner() {
@@ -72,12 +59,7 @@ export default function IncomingCallBanner() {
 
         if (cancelled) return;
 
-        // The backend only returns a call when the current user is the
-        // receiver AND the call is PENDING. If it returns null, hide.
-        // If it returns a call, show it — regardless of whether we've
-        // seen this same call.id before.
         if (call) {
-          // Re-render only if the incoming payload actually changed.
           setIncoming((prev) => {
             if (!prev) return call;
             if (prev.id === call.id && prev.status === call.status) {
@@ -89,7 +71,7 @@ export default function IncomingCallBanner() {
           setIncoming(null);
         }
       } catch {
-        // silent — keep polling
+        // silent
       } finally {
         inFlightRef.current = false;
       }
@@ -108,11 +90,18 @@ export default function IncomingCallBanner() {
     if (!incoming) return;
     setLoading(true);
     try {
-      await api.patch(`/video-calls/${incoming.bookingId}/accept`);
+      // The backend accept endpoint uses the call ID, not the context ID
+      await api.patch(`/video-calls/${incoming.id}/accept`);
       setIncoming(null);
-      navigate(`/call/${incoming.bookingId}`);
-    } catch {
-      // Keep the banner up so they can retry.
+
+      // Route based on the call type
+      if (incoming.callType === "JOB_INTERVIEW") {
+        navigate(`/interview/${incoming.jobApplicationId}`);
+      } else {
+        navigate(`/call/${incoming.bookingId}`);
+      }
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -123,10 +112,7 @@ export default function IncomingCallBanner() {
     if (!incoming) return;
     setLoading(true);
     try {
-      await api.patch(`/video-calls/${incoming.bookingId}/decline`);
-      // Hide immediately for responsiveness — the next poll will confirm
-      // the server-side DECLINED status and keep it hidden until the
-      // caller initiates again.
+      await api.patch(`/video-calls/${incoming.id}/decline`);
       setIncoming(null);
     } catch {
       // silent
@@ -135,12 +121,15 @@ export default function IncomingCallBanner() {
     }
   }
 
-  // ── Render guard ───────────────────────────────────────────────────────
   if (!incoming || suppressed) return null;
 
-  const subtitle = incoming.booking?.title
-    ? `Regarding: ${incoming.booking.title}`
-    : "SkilledProz video consultation";
+  // Determine subtitle based on call type
+  const subtitle =
+    incoming.callType === "JOB_INTERVIEW"
+      ? "Job Interview Call"
+      : incoming.booking?.title
+        ? `Regarding: ${incoming.booking.title}`
+        : "SkilledProz video consultation";
 
   return (
     <div className={styles.overlay} role="alert" aria-live="assertive">

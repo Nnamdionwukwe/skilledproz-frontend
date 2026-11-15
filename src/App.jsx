@@ -167,6 +167,7 @@ import AdminSupport from "./pages/admin/AdminSupport.jsx";
 import AdminContacts from "./pages/admin/AdminContacts.jsx";
 import SupportChat from "./components/support/SupportChat.jsx";
 import RefundPolicy from "./pages/Terms pages/RefundPolicy.jsx";
+import InterviewCallRoom from "./pages/InterviewCallRoom.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1249,6 +1250,10 @@ export default function App() {
               <JobApplications />
             </RequireAuth>
           }
+        />
+        <Route
+          path="/interview/:applicationId"
+          element={<InterviewCallRoom />}
         />
 
         {/* ── Profiles ── */}
