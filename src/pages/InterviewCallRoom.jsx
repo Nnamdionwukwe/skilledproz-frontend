@@ -1,7 +1,9 @@
 // src/pages/InterviewCallRoom.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import api from "../lib/api";
+import { useAuthStore } from "../store/authStore";
 import {
   FaArrowLeft,
   FaSpinner,
@@ -12,12 +14,29 @@ import {
 export default function InterviewCallRoom() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const [callUrl, setCallUrl] = useState(null);
-  const [callId, setCallId] = useState(null); // ✅ NEW
+  const [callId, setCallId] = useState(null);
   const [jobPostId, setJobPostId] = useState(null);
   const [error, setError] = useState("");
   const [callEnded, setCallEnded] = useState(false);
+
+  // ── Role-aware fallback (used only if jobPostId is missing) ──
+  const fallbackDashboard =
+    user?.role === "WORKER"
+      ? "/dashboard/worker/applications"
+      : "/dashboard/hirer/jobs-management";
+
+  // ── Compute the final redirect path ──
+  const getRedirectPath = () => {
+    // If we know the job post, send them to that specific job's applications page
+    if (jobPostId) {
+      return `/jobs/${jobPostId}/applications`;
+    }
+    // Otherwise, use the role-aware fallback
+    return fallbackDashboard;
+  };
 
   // ── 1. Initial Fetch ──
   useEffect(() => {
@@ -27,8 +46,8 @@ export default function InterviewCallRoom() {
         const data = res.data?.data;
         if (data?.callUrl) {
           setCallUrl(data.callUrl);
-          setCallId(data.callId || null); // ✅ NEW
-          setJobPostId(data.jobPostId || null);
+          setCallId(data.callId || null);
+          setJobPostId(data.jobPostId || null); // ✅ Grabs the exact Job Post ID
         } else {
           setError("Call has ended or does not exist.");
         }
@@ -68,16 +87,16 @@ export default function InterviewCallRoom() {
 
   // ── 3. Handle Redirect on End ──
   useEffect(() => {
-    if (callEnded) {
-      const redirectPath = jobPostId
-        ? `/jobs/${jobPostId}/applications`
-        : "/dashboard/hirer/jobs-management";
+    if (!callEnded) return;
 
-      setTimeout(() => {
-        navigate(redirectPath);
-      }, 2000);
-    }
-  }, [callEnded, jobPostId, navigate]);
+    const redirectPath = getRedirectPath();
+    const timer = setTimeout(() => {
+      navigate(redirectPath);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callEnded, jobPostId, user?.role]);
 
   // ── 4. End call when the user clicks Leave ──
   async function handleLeave() {
@@ -94,10 +113,12 @@ export default function InterviewCallRoom() {
   // ── Render States ──
 
   if (callEnded) {
-    return (
+    return createPortal(
       <div
         style={{
-          height: "100vh",
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -109,10 +130,10 @@ export default function InterviewCallRoom() {
         <FaPhoneSlash size={48} color="#ef4444" style={{ marginBottom: 16 }} />
         <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Call Ended</h2>
         <p style={{ color: "#94a3b8", marginTop: 8 }}>
-          Returning to applications...
+          Returning to job details...
         </p>
         <button
-          onClick={() => navigate("/dashboard/hirer/jobs-management")}
+          onClick={() => navigate(getRedirectPath())}
           style={{
             marginTop: 24,
             padding: "10px 24px",
@@ -126,15 +147,18 @@ export default function InterviewCallRoom() {
         >
           Go Back Now
         </button>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
   if (error) {
-    return (
+    return createPortal(
       <div
         style={{
-          height: "100vh",
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -147,7 +171,7 @@ export default function InterviewCallRoom() {
         <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Call Unavailable</h2>
         <p style={{ color: "#94a3b8", marginTop: 8 }}>{error}</p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(getRedirectPath())}
           style={{
             marginTop: 24,
             padding: "10px 24px",
@@ -161,15 +185,18 @@ export default function InterviewCallRoom() {
         >
           Go Back
         </button>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
   if (!callUrl) {
-    return (
+    return createPortal(
       <div
         style={{
-          height: "100vh",
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -187,16 +214,18 @@ export default function InterviewCallRoom() {
           }}
         />
         <p style={{ color: "#94a3b8" }}>Connecting to interview room...</p>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
-  // ── The Video Room ──
-  return (
+  // ── The Video Room (full-screen portal) ──
+  return createPortal(
     <div
       style={{
-        height: "100vh",
-        width: "100vw",
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
         display: "flex",
         flexDirection: "column",
         background: "#0f172a",
@@ -211,6 +240,7 @@ export default function InterviewCallRoom() {
           background: "#1e293b",
           color: "#fff",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
+          flexShrink: 0,
         }}
       >
         <button
@@ -250,6 +280,7 @@ export default function InterviewCallRoom() {
         style={{ flex: 1, width: "100%", border: "none" }}
         title="Interview Video Call"
       />
-    </div>
+    </div>,
+    document.body,
   );
 }
