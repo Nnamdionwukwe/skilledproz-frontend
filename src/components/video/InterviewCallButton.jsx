@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import api from "../lib/api";
+import { useAuthStore } from "../store/authStore";
 import {
   FaArrowLeft,
   FaSpinner,
@@ -13,12 +14,27 @@ import {
 export default function InterviewCallRoom() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const [callUrl, setCallUrl] = useState(null);
   const [callId, setCallId] = useState(null);
   const [jobPostId, setJobPostId] = useState(null);
   const [error, setError] = useState("");
   const [callEnded, setCallEnded] = useState(false);
+
+  // ── Role-aware fallback destination ──
+  const fallbackDashboard =
+    user?.role === "WORKER"
+      ? "/dashboard/worker/applications"
+      : "/dashboard/hirer/jobs-management";
+
+  // ── Compute the final redirect path ──
+  const getRedirectPath = () => {
+    if (jobPostId && user?.role === "HIRER") {
+      return `/jobs/${jobPostId}/applications`;
+    }
+    return fallbackDashboard;
+  };
 
   // ── 1. Initial Fetch ──
   useEffect(() => {
@@ -69,16 +85,16 @@ export default function InterviewCallRoom() {
 
   // ── 3. Handle Redirect on End ──
   useEffect(() => {
-    if (callEnded) {
-      const redirectPath = jobPostId
-        ? `/jobs/${jobPostId}/applications`
-        : "/dashboard/hirer/jobs-management";
+    if (!callEnded) return;
 
-      setTimeout(() => {
-        navigate(redirectPath);
-      }, 2000);
-    }
-  }, [callEnded, jobPostId, navigate]);
+    const redirectPath = getRedirectPath();
+    const timer = setTimeout(() => {
+      navigate(redirectPath);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callEnded, jobPostId, user?.role]);
 
   // ── 4. End call when the user clicks Leave ──
   async function handleLeave() {
@@ -115,7 +131,7 @@ export default function InterviewCallRoom() {
           Returning to applications...
         </p>
         <button
-          onClick={() => navigate("/dashboard/hirer/jobs-management")}
+          onClick={() => navigate(getRedirectPath())}
           style={{
             marginTop: 24,
             padding: "10px 24px",
@@ -153,7 +169,7 @@ export default function InterviewCallRoom() {
         <h2 style={{ fontSize: 24, fontWeight: "bold" }}>Call Unavailable</h2>
         <p style={{ color: "#94a3b8", marginTop: 8 }}>{error}</p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(getRedirectPath())}
           style={{
             marginTop: 24,
             padding: "10px 24px",
