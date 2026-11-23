@@ -379,7 +379,7 @@ export default function LandingPage() {
         title="Hire Skilled Workers & Find Jobs in Nigeria | SkilledProz"
         description="Find trusted electricians, plumbers, carpenters, and office professionals. Post jobs for free, hire verified talent, and pay securely with escrow. Nigeria's #1 work marketplace."
         keywords="hire workers Nigeria, post jobs Abuja, find jobs Lagos, skilled trades, verified professionals, freelance work Nigeria, plumber, electrician, carpenter, gig economy"
-        canonical="https://skilledproz.com"
+        canonical="https://www.skilledproz.com"
         ogImage="https://skilledproz.com/og-image.jpg"
         ogType="website"
         author="SkilledProz"
