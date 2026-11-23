@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import {
   FaLock,
   FaMapMarkerAlt,
@@ -338,13 +339,46 @@ export default function LandingPage() {
     return <SkilledProzLoader />;
   }
 
+  // ── SEO: Inject Structured Data for Google ──
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "SkilledProz",
+    url: "https://www.skilledproz.com/",
+    description:
+      "SkilledProz connects hirers with verified tradespeople across every profession, every country, every currency.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.skilledproz.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "SkilledProz",
+      url: "https://www.skilledproz.com/",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.skilledproz.com/skilledproz.PNG",
+      },
+      sameAs: [
+        "https://twitter.com/skilledproz",
+        "https://www.linkedin.com/company/skilledproz",
+        "https://www.instagram.com/skilledproz",
+      ],
+    },
+  };
+
   return (
     <>
       {/* ── SEO Component ── */}
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
+      </Helmet>
+
       <SEO
-        title="Hire Verified Workers & Skilled Trades in Nigeria | SkilledProz"
-        description="Find trusted electricians, plumbers, carpenters, and skilled workers. Verified profiles, escrow payments, GPS tracking, and dispute resolution. Join 500+ early adopters."
-        keywords="hire workers, skilled trades, verified professionals, Nigeria, gig economy, plumber, electrician, carpenter, freelance work, escrow payments"
+        title="Hire Skilled Workers & Find Jobs in Nigeria | SkilledProz"
+        description="Find trusted electricians, plumbers, carpenters, and office professionals. Post jobs for free, hire verified talent, and pay securely with escrow. Nigeria's #1 work marketplace."
+        keywords="hire workers Nigeria, post jobs Abuja, find jobs Lagos, skilled trades, verified professionals, freelance work Nigeria, plumber, electrician, carpenter, gig economy"
         canonical="https://skilledproz.com"
         ogImage="https://skilledproz.com/og-image.jpg"
         ogType="website"
@@ -353,6 +387,8 @@ export default function LandingPage() {
           "hire workers",
           "skilled trades",
           "Nigeria",
+          "post jobs",
+          "find jobs Abuja",
           "gig economy",
           "verified professionals",
         ]}
