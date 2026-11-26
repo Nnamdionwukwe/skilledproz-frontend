@@ -13,6 +13,10 @@ import {
 } from "react-icons/fa";
 import styles from "./AppDownload.module.css";
 
+// ── Play Store listing (single source of truth for the download URL) ──
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.skilledproz.hirer";
+
 export default function AppDownload() {
   const [showModal, setShowModal] = useState(false);
   const [deviceType, setDeviceType] = useState("unknown");
@@ -39,10 +43,9 @@ export default function AppDownload() {
     android: {
       icon: <FaAndroid />,
       label: "Download for Android",
-      url: "/downloads/skilledproz.apk",
+      url: PLAY_STORE_URL,
       color: "#3DDC84",
-      storeUrl:
-        "https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share",
+      storeUrl: PLAY_STORE_URL,
     },
     ios: {
       icon: <FaApple />,
@@ -54,35 +57,27 @@ export default function AppDownload() {
     windows: {
       icon: <FaWindows />,
       label: "Download for Windows",
-      url: "/https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share",
+      url: PLAY_STORE_URL,
       color: "#0078D4",
     },
     mac: {
       icon: <FaApple />,
       label: "Download for Mac",
-      url: "/downloads/skilledproz.dmg",
+      url: PLAY_STORE_URL,
       color: "#000000",
     },
     other: {
       icon: <FaDownload />,
       label: "Download App",
-      url: "/downloads/skilledproz.apk",
+      url: PLAY_STORE_URL,
       color: "#6B7280",
     },
   };
 
   const currentLink = downloadLinks[deviceType] || downloadLinks.other;
 
-  // Get the download URL for QR code
-  const getDownloadUrl = () => {
-    if (deviceType === "android") {
-      return (
-        currentLink.storeUrl ||
-        "https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share"
-      );
-    }
-    return "https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share";
-  };
+  // The QR code always encodes the Play Store listing.
+  const getDownloadUrl = () => PLAY_STORE_URL;
 
   const handleDownload = () => {
     // Track download event
@@ -93,25 +88,20 @@ export default function AppDownload() {
       });
     }
 
-    // For Android, show modal with instructions
+    // Android → open Play Store directly
     if (deviceType === "android") {
-      setShowModal(true);
+      window.open(PLAY_STORE_URL, "_blank", "noopener,noreferrer");
       return;
     }
 
-    // For iOS, redirect to App Store
+    // iOS → open App Store directly
     if (deviceType === "ios") {
-      window.open(currentLink.storeUrl, "_blank");
+      window.open(currentLink.storeUrl, "_blank", "noopener,noreferrer");
       return;
     }
 
-    // For other devices, download directly
-    const link = document.createElement("a");
-    link.href = currentLink.url;
-    link.download = `skilledproz-app.${deviceType === "windows" ? "exe" : deviceType === "mac" ? "dmg" : "apk"}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Windows / Mac / other → open Play Store (no native desktop app yet)
+    window.open(PLAY_STORE_URL, "_blank", "noopener,noreferrer");
   };
 
   const handleCopyLink = () => {
