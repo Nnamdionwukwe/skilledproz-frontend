@@ -54,7 +54,7 @@ export default function AppDownload() {
     windows: {
       icon: <FaWindows />,
       label: "Download for Windows",
-      url: "/downloads/skilledproz-setup.exe",
+      url: "/https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share",
       color: "#0078D4",
     },
     mac: {
@@ -76,9 +76,12 @@ export default function AppDownload() {
   // Get the download URL for QR code
   const getDownloadUrl = () => {
     if (deviceType === "android") {
-      return currentLink.storeUrl || "https://skilledproz.com/download";
+      return (
+        currentLink.storeUrl ||
+        "https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share"
+      );
     }
-    return "https://skilledproz.com/download";
+    return "https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share";
   };
 
   const handleDownload = () => {
