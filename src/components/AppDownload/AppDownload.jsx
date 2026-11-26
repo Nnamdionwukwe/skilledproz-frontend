@@ -105,7 +105,7 @@ export default function AppDownload() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href + "download");
+    navigator.clipboard.writeText(PLAY_STORE_URL);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
   };
