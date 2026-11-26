@@ -41,7 +41,8 @@ export default function AppDownload() {
       label: "Download for Android",
       url: "/downloads/skilledproz.apk",
       color: "#3DDC84",
-      storeUrl: "https://play.google.com/store/apps/details?id=com.skilledproz",
+      storeUrl:
+        "https://play.google.com/store/apps/details?id=com.skilledproz.hirer&pcampaignid=web_share",
     },
     ios: {
       icon: <FaApple />,
